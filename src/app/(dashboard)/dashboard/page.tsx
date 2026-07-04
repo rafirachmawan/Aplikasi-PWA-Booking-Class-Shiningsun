@@ -1,12 +1,15 @@
 import { Icons } from "@/components/ui/icons";
+import { getDashboardStats } from "@/lib/actions";
 
-const stats = [
-  { name: 'Total Siswa Aktif', value: '142', icon: Icons.users, change: '+12%', changeType: 'positive' },
-  { name: 'Siswa Coba Gratis', value: '18', icon: Icons.sun, change: '-2%', changeType: 'negative' },
-  { name: 'Kelas Terjadwal Minggu Ini', value: '34', icon: Icons.calendar, change: '+4.5%', changeType: 'positive' },
-];
+export default async function DashboardPage() {
+  const statsData = await getDashboardStats();
 
-export default function DashboardPage() {
+  const stats = [
+    { name: 'Total Siswa Aktif', value: statsData.reguler.toString(), icon: Icons.users, change: 'Data Asli', changeType: 'neutral' },
+    { name: 'Siswa Coba Gratis', value: statsData.cg.toString(), icon: Icons.sun, change: 'Data Asli', changeType: 'neutral' },
+    { name: 'Total Tipe Kelas', value: statsData.classes.toString(), icon: Icons.calendar, change: 'Tersedia', changeType: 'positive' },
+  ];
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -14,7 +17,7 @@ export default function DashboardPage() {
           Overview Cabang
         </h2>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Ringkasan performa pendaftaran dan penjadwalan terkini.
+          Ringkasan performa pendaftaran dan penjadwalan terkini (Live Database).
         </p>
       </div>
 
