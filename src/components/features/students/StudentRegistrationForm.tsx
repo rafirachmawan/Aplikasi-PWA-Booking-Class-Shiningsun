@@ -384,13 +384,12 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
               {/* Pilihan Level (Wajib jika Reguler) */}
               <div className={`transition-all duration-300 overflow-hidden ${status === "REGISTERED" ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}`}>
                 <label htmlFor="label_id" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Pilih Tingkat / Label Level
+                  Pilih Tingkat / Label Level (Opsional)
                 </label>
                 <select
                   id="label_id"
                   value={labelId}
                   onChange={(e) => setLabelId(e.target.value)}
-                  required={status === "REGISTERED"}
                   className="mt-1 block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
                 >
                   <option value="" disabled>-- Pilih Level --</option>

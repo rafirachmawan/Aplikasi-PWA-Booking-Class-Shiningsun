@@ -244,6 +244,150 @@ export async function createStudent(formData: FormData) {
 // SCHEDULE ACTIONS
 // =========================================
 
+export async function autoBookStudentToClass(
+  studentId: string, 
+  classId: string, 
+  startDateStr: string,
+  time: string
+) {
+  const branchId = await getBranchId();
+  
+  // 1. Hitung range 1 bulan dari startDate
+  const startDate = new Date(startDateStr);
+  const endDate = new Date(startDateStr);
+  endDate.setMonth(endDate.getMonth() + 1); // Tambah 1 bulan
+  
+  const dayOfWeek = startDate.getDay();
+  const datesToBook: string[] = [];
+  const currentDate = new Date(startDate);
+  
+  while (currentDate < endDate) {
+    if (currentDate.getDay() === dayOfWeek) {
+      // YYYY-MM-DD
+      const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+      datesToBook.push(dateStr);
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  if (datesToBook.length === 0) throw new Error("Tidak ada hari tersebut dalam rentang 1 bulan dari tanggal mulai.");
+
+  let bookedCount = 0;
+
+  // 2. Loop setiap tanggal, cari slot, jika tidak ada buat baru
+  for (const dateStr of datesToBook) {
+    // Cari slot
+    let { data: slots, error: fetchError } = await supabase
+      .from('schedule_slots')
+      .select('id, class_id, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id)')
+      .eq('date', dateStr)
+      .eq('time', time)
+      .eq('class_id', classId);
+
+    if (fetchError) throw new Error("Gagal mengambil jadwal: " + fetchError.message);
+
+    let slotId = slots && slots.length > 0 ? slots[0].id : null;
+    let isFull = false;
+    let alreadyBooked = false;
+
+    if (!slotId) {
+      // Buat slot baru
+      const { data: newSlot, error: insertError } = await supabase
+        .from('schedule_slots')
+        .insert({
+          branch_id: branchId,
+          class_id: classId,
+          date: dateStr,
+          time: time,
+          is_locked: false
+        })
+        .select()
+        .single();
+      
+      if (insertError) throw new Error("Gagal membuat sesi jadwal baru: " + insertError.message);
+      slotId = newSlot.id;
+    } else {
+      // Cek kuota
+      const slot = slots![0];
+      const maxQ = (slot.max_quota as any).max_quota || 4;
+      if (slot.bookings && slot.bookings.length >= maxQ) {
+        isFull = true;
+      }
+      if (slot.bookings?.some((b: any) => b.student_id === studentId)) {
+        alreadyBooked = true;
+      }
+    }
+
+    if (!isFull && !alreadyBooked) {
+      // Booking
+      const { error: bookErr } = await supabase
+        .from('schedule_student')
+        .insert({ student_id: studentId, schedule_slot_id: slotId });
+      
+      if (!bookErr) bookedCount++;
+    }
+  }
+  
+  return bookedCount;
+}
+
+export async function bookStudentManual(
+  studentId: string, 
+  classId: string, 
+  dateStr: string, 
+  time: string
+) {
+  const branchId = await getBranchId();
+  
+  // Cari slot
+  let { data: slots, error: fetchError } = await supabase
+    .from('schedule_slots')
+    .select('id, class_id, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id)')
+    .eq('date', dateStr)
+    .eq('time', time)
+    .eq('class_id', classId);
+
+  if (fetchError) throw new Error("Gagal mengambil jadwal: " + fetchError.message);
+
+  let slotId = slots && slots.length > 0 ? slots[0].id : null;
+
+  if (!slotId) {
+    // Buat slot baru
+    const { data: newSlot, error: insertError } = await supabase
+      .from('schedule_slots')
+      .insert({
+        branch_id: branchId,
+        class_id: classId,
+        date: dateStr,
+        time: time,
+        is_locked: false
+      })
+      .select()
+      .single();
+    
+    if (insertError) throw new Error("Gagal membuat sesi jadwal baru: " + insertError.message);
+    slotId = newSlot.id;
+  } else {
+    // Cek kuota
+    const slot = slots![0];
+    const maxQ = (slot.max_quota as any).max_quota || 4;
+    if (slot.bookings && slot.bookings.length >= maxQ) {
+      throw new Error("Sesi pada tanggal dan jam tersebut sudah penuh.");
+    }
+    if (slot.bookings?.some((b: any) => b.student_id === studentId)) {
+      throw new Error("Siswa sudah terdaftar di sesi tersebut.");
+    }
+  }
+
+  // Booking
+  const { error: bookErr } = await supabase
+    .from('schedule_student')
+    .insert({ student_id: studentId, schedule_slot_id: slotId });
+  
+  if (bookErr) throw new Error("Gagal mem-booking siswa: " + bookErr.message);
+  return true;
+}
+
 export async function getMonthlySchedules(year: number, month: number) {
   // Hitung tanggal awal dan akhir bulan
   const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];

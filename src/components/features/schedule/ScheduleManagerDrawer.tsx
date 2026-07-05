@@ -11,21 +11,10 @@ interface ScheduleManagerDrawerProps {
   students: any[];
   onSuccess: () => void;
   existingSlots: any[];
+  defaultClassId?: string;
 }
 
-export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students, onSuccess, existingSlots }: ScheduleManagerDrawerProps) {
-  const [activeTab, setActiveTab] = useState<"view" | "add">("view");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // State for Booking Modal
-  const [bookingSlot, setBookingSlot] = useState<any | null>(null);
-  const [selectedStudentId, setSelectedStudentId] = useState("");
-
-  // Form State for Add Class
-  const [classId, setClassId] = useState("");
-  const [time, setTime] = useState("08:00");
-  const [isRecurring, setIsRecurring] = useState(false);
-
+export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students, onSuccess, existingSlots, defaultClassId = "" }: ScheduleManagerDrawerProps) {
   const formattedDate = new Date(selectedDate).toLocaleDateString("id-ID", {
     weekday: 'long',
     day: 'numeric',
@@ -33,51 +22,12 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
     year: 'numeric'
   });
 
-  const handleAddClass = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    try {
-      const formData = new FormData();
-      formData.append("class_id", classId);
-      formData.append("date", selectedDate);
-      formData.append("time", time);
-      formData.append("is_recurring", isRecurring.toString());
-      
-      await createScheduleSlot(formData);
-      onSuccess();
-      setActiveTab("view");
-    } catch (error: any) {
-      alert("Gagal membuat jadwal: " + error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleToggleLock = async (slotId: string, currentStatus: boolean) => {
     try {
       await toggleSlotLock(slotId, currentStatus);
       onSuccess(); // Refresh UI
     } catch (error: any) {
       alert("Gagal mengubah status lock: " + error.message);
-    }
-  };
-
-  const handleBookStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!bookingSlot || !selectedStudentId) return;
-    
-    setIsSubmitting(true);
-    try {
-      await bookStudentToSlot(selectedStudentId, bookingSlot.id);
-      alert("Siswa berhasil didaftarkan ke sesi ini!");
-      setBookingSlot(null);
-      setSelectedStudentId("");
-      onSuccess(); // Refresh UI to update quota
-    } catch (error: any) {
-      alert(error.message); // Pessimistic quota message
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -107,78 +57,11 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
               <Icons.close className="w-5 h-5" />
             </button>
           </div>
-          
-          {/* Tabs */}
-          <div className="flex space-x-4 mt-4 border-b border-slate-200 dark:border-slate-700">
-            <button
-              onClick={() => setActiveTab("view")}
-              className={`pb-2 text-sm font-medium transition-colors border-b-2 ${
-                activeTab === "view" ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-              }`}
-            >
-              Daftar Sesi ({existingSlots.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("add")}
-              className={`pb-2 text-sm font-medium transition-colors border-b-2 ${
-                activeTab === "add" ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-              }`}
-            >
-              + Buka Kelas Baru
-            </button>
-          </div>
         </div>
         
         {/* Body */}
         <div className="p-6 overflow-y-auto flex-1 relative">
           
-          {/* Booking Modal (Option B Overlay) */}
-          {bookingSlot && (
-             <div className="absolute inset-0 z-50 bg-white dark:bg-slate-900 p-6 flex flex-col">
-               <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 mb-4">
-                 <h4 className="font-semibold text-lg text-slate-900 dark:text-white">Booking Siswa</h4>
-                 <button onClick={() => setBookingSlot(null)} className="text-slate-400 hover:text-slate-600">
-                   <Icons.close className="w-5 h-5" />
-                 </button>
-               </div>
-               
-               <div className="bg-brand-50 dark:bg-brand-500/10 p-3 rounded-xl mb-6">
-                 <p className="text-sm font-medium text-brand-900 dark:text-brand-100">
-                   {bookingSlot.class.name} • {bookingSlot.time.substring(0,5)} WIB
-                 </p>
-                 <p className="text-xs text-brand-700 dark:text-brand-300 mt-1">
-                   Sisa Kuota: {bookingSlot.class.max_quota - (bookingSlot.bookings?.length || 0)} kursi
-                 </p>
-               </div>
-
-               <form onSubmit={handleBookStudent} className="flex-1 flex flex-col">
-                 <div className="flex-1">
-                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Pilih Siswa</label>
-                   <select
-                     required
-                     value={selectedStudentId}
-                     onChange={(e) => setSelectedStudentId(e.target.value)}
-                     className="block w-full rounded-xl border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-                   >
-                     <option value="" disabled>-- Pilih Siswa Aktif --</option>
-                     {students.map(s => (
-                       <option key={s.id} value={s.id}>{s.name} ({s.status === 'REGISTERED' ? 'Reguler' : 'CG'})</option>
-                     ))}
-                   </select>
-                 </div>
-                 
-                 <button
-                   type="submit"
-                   disabled={isSubmitting || !selectedStudentId}
-                   className="mt-6 w-full py-3 px-4 rounded-xl shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50"
-                 >
-                   {isSubmitting ? "Memproses..." : "Konfirmasi Booking"}
-                 </button>
-               </form>
-             </div>
-          )}
-
-          {activeTab === "view" && !bookingSlot ? (
             <div className="space-y-4">
               {existingSlots.length === 0 ? (
                 <div className="text-center py-10">
@@ -256,85 +139,16 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                         <div className="text-sm text-slate-500">
                           Kuota: <strong className="text-slate-900 dark:text-white">{bookedCount}/{slot.class.max_quota}</strong> Siswa
                         </div>
-                        <button 
-                          onClick={() => setBookingSlot(slot)}
-                          disabled={slot.is_locked || isFull}
-                          className="text-sm font-semibold text-brand-600 hover:text-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {slot.is_locked ? "Terkunci" : isFull ? "Penuh" : "+ Booking"}
-                        </button>
+                        <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                          Sisa Kuota: <strong className="text-slate-900 dark:text-white">{slot.class.max_quota - bookedCount}</strong> kursi
+                        </div>
                       </div>
                     </div>
                   );
                 })
               )}
             </div>
-          ) : !bookingSlot && (
-            <form id="schedule-form" onSubmit={handleAddClass} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Ruang Kelas / Tipe</label>
-                <select
-                  required
-                  value={classId}
-                  onChange={(e) => setClassId(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-                >
-                  <option value="" disabled>-- Pilih Kelas --</option>
-                  {classes.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} (Max: {c.max_quota})</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Waktu / Jam Mulai</label>
-                <input
-                  type="time"
-                  required
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-                />
-              </div>
-
-              <div className="bg-brand-50 dark:bg-brand-500/10 p-4 rounded-xl border border-brand-100 dark:border-brand-500/20">
-                <div className="flex items-start">
-                  <div className="flex h-6 items-center">
-                    <input
-                      id="recurring"
-                      type="checkbox"
-                      checked={isRecurring}
-                      onChange={(e) => setIsRecurring(e.target.checked)}
-                      className="h-5 w-5 rounded border-slate-300 text-brand-600 focus:ring-brand-600 dark:border-slate-700 dark:bg-slate-900"
-                    />
-                  </div>
-                  <div className="ml-3">
-                    <label htmlFor="recurring" className="text-sm font-medium text-brand-900 dark:text-brand-100 cursor-pointer">
-                      Ulangi Sepanjang Bulan
-                    </label>
-                    <p className="text-xs text-brand-700 dark:text-brand-300 mt-1">
-                      (Engine Generator) Jika dicentang, jadwal ini akan otomatis dibuat untuk setiap hari yang sama hingga akhir bulan ini.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </form>
-          )}
         </div>
-        
-        {/* Footer */}
-        {activeTab === "add" && !bookingSlot && (
-          <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
-            <button
-              type="submit"
-              form="schedule-form"
-              disabled={isSubmitting}
-              className="w-full flex justify-center items-center py-3 px-4 rounded-xl shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50"
-            >
-              {isSubmitting ? "Memproses..." : "Buat Jadwal Kelas"}
-            </button>
-          </div>
-        )}
       </div>
     </>
   );

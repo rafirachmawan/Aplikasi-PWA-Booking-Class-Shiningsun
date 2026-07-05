@@ -9,6 +9,7 @@ import { useEffect } from "react";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Icons.home },
   { name: "Jadwal Kelas", href: "/schedule", icon: Icons.calendar },
+  { name: "Penjadwalan Siswa", href: "/scheduling", icon: Icons.users },
   { name: "Buku Induk Siswa", href: "/students", icon: Icons.users },
   { name: "Master Data", href: "/master", icon: Icons.settings },
 ];

@@ -15,6 +15,20 @@ interface ScheduleClientWrapperProps {
 export function ScheduleClientWrapper({ schedules, classes, students, currentMonth, currentYear }: ScheduleClientWrapperProps) {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [filterClassId, setFilterClassId] = useState<string>("ALL");
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    let newMonth = direction === 'next' ? currentMonth + 1 : currentMonth - 1;
+    let newYear = currentYear;
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear++;
+    } else if (newMonth < 1) {
+      newMonth = 12;
+      newYear--;
+    }
+    router.push(`?month=${newMonth}&year=${newYear}`);
+  };
 
   // Helper kalender dasar
   const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
@@ -25,8 +39,12 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
   const emptyPadding = Array.from({ length: firstDayOfMonth }, (_, i) => i);
 
   // Group schedules by date string
+  const filteredSchedules = filterClassId === "ALL" 
+    ? schedules 
+    : schedules.filter(s => s.class_id === filterClassId);
+
   const schedulesByDate: Record<string, any[]> = {};
-  schedules.forEach(s => {
+  filteredSchedules.forEach(s => {
     if (!schedulesByDate[s.date]) {
       schedulesByDate[s.date] = [];
     }
@@ -49,12 +67,25 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
           </p>
         </div>
         
-        <div className="flex items-center gap-4 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm">
-          <button className="text-slate-400 hover:text-slate-600 transition-colors">&larr;</button>
-          <span className="font-semibold text-slate-900 dark:text-white min-w-[120px] text-center">
-            {monthNames[currentMonth - 1]} {currentYear}
-          </span>
-          <button className="text-slate-400 hover:text-slate-600 transition-colors">&rarr;</button>
+        <div className="flex items-center gap-3">
+          <select 
+            value={filterClassId} 
+            onChange={(e) => setFilterClassId(e.target.value)}
+            className="bg-white dark:bg-slate-900 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          >
+            <option value="ALL">Semua Kelas</option>
+            {classes.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+
+          <div className="flex items-center gap-4 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm">
+            <button onClick={() => navigateMonth('prev')} className="text-slate-400 hover:text-brand-600 transition-colors">&larr;</button>
+            <span className="font-semibold text-slate-900 dark:text-white min-w-[120px] text-center text-sm">
+              {monthNames[currentMonth - 1]} {currentYear}
+            </span>
+            <button onClick={() => navigateMonth('next')} className="text-slate-400 hover:text-brand-600 transition-colors">&rarr;</button>
+          </div>
         </div>
       </div>
 
@@ -92,25 +123,38 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
                       {date}
                     </span>
                     
-                    {/* Render Jadwal Items */}
+                    {/* Render Jadwal Items Berdasarkan Jam Paten */}
                     <div className="mt-2 space-y-1">
-                      {daySchedules.map(slot => {
-                        const bookedCount = slot.bookings?.length || 0;
-                        const isFull = bookedCount >= slot.class.max_quota;
+                      {["08:00", "09:00", "11:00", "13:00", "15:00", "16:00"].map(fixedTime => {
+                        // Cari apakah ada jadwal di jam ini (bisa lebih dari 1 jika "Semua Kelas")
+                        const slotsAtThisTime = daySchedules.filter(s => s.time.startsWith(fixedTime));
+                        
+                        if (slotsAtThisTime.length === 0) {
+                          return (
+                            <div key={fixedTime} className="px-2 py-1 text-[10px] sm:text-xs font-medium rounded border border-slate-100 bg-slate-50 text-slate-400 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-600 truncate">
+                              {fixedTime} - Kosong
+                            </div>
+                          );
+                        }
 
-                        let badgeColor = "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30";
-                        if (slot.is_locked) badgeColor = "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
-                        else if (isFull) badgeColor = "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30";
+                        return slotsAtThisTime.map(slot => {
+                          const bookedCount = slot.bookings?.length || 0;
+                          const isFull = bookedCount >= slot.class.max_quota;
 
-                        return (
-                          <div 
-                            key={slot.id} 
-                            className={`px-2 py-1 text-[10px] sm:text-xs font-medium rounded border truncate ${badgeColor}`}
-                            title={`${slot.class.name} (${bookedCount}/${slot.class.max_quota})`}
-                          >
-                            {slot.time.substring(0, 5)} {slot.class.name}
-                          </div>
-                        )
+                          let badgeColor = "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30";
+                          if (slot.is_locked) badgeColor = "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
+                          else if (isFull) badgeColor = "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30";
+
+                          return (
+                            <div 
+                              key={slot.id} 
+                              className={`px-2 py-1 text-[10px] sm:text-xs font-medium rounded border truncate ${badgeColor}`}
+                              title={`${slot.class.name} (${bookedCount}/${slot.class.max_quota})`}
+                            >
+                              {slot.time.substring(0, 5)} {slot.class.name}
+                            </div>
+                          )
+                        });
                       })}
                     </div>
                   </div>
@@ -132,6 +176,7 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
           classes={classes}
           students={students}
           existingSlots={schedulesByDate[selectedDate] || []}
+          defaultClassId={filterClassId !== "ALL" ? filterClassId : ""}
           onClose={() => setSelectedDate(null)}
           onSuccess={() => {
             router.refresh();
