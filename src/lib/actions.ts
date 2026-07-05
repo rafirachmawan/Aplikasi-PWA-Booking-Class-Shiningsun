@@ -207,19 +207,28 @@ export async function getStudents() {
 
 export async function createStudent(formData: FormData) {
   const name = formData.get('name') as string;
+  const nickname = formData.get('nickname') as string;
   const date_of_birth = formData.get('date_of_birth') as string;
+  const phone = formData.get('phone') as string;
+  const address = formData.get('address') as string;
+  const school = formData.get('school') as string;
   const status = formData.get('status') as string;
   const label_id = formData.get('label_id') as string;
+  const registration_date = formData.get('registration_date') as string || new Date().toISOString().split('T')[0];
 
   const { error } = await supabase
     .from('students')
     .insert({
       branch_id: await getBranchId(),
       name,
+      nickname,
       date_of_birth,
+      phone,
+      address,
+      school,
       status,
       label_id: label_id ? label_id : null,
-      registration_date: new Date().toISOString().split('T')[0],
+      registration_date,
     });
 
   if (error) {
@@ -240,7 +249,8 @@ export async function getMonthlySchedules(year: number, month: number) {
   const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
   const endDate = new Date(year, month, 0).toISOString().split('T')[0]; // Hari terakhir bulan tersebut
 
-  const { data, error } = await supabase
+  const branchId = await getBranchId();
+  let query = supabase
     .from('schedule_slots')
     .select(`
       *,
@@ -250,11 +260,16 @@ export async function getMonthlySchedules(year: number, month: number) {
         student:students(name, status)
       )
     `)
-    .eq('branch_id', await getBranchId())
     .gte('date', startDate)
     .lte('date', endDate)
     .order('date', { ascending: true })
     .order('time', { ascending: true });
+
+  if (branchId !== 'ALL') {
+    query = query.eq('branch_id', branchId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching schedules:", error);
@@ -328,7 +343,7 @@ export async function bookStudentToSlot(studentId: string, scheduleSlotId: strin
     throw new Error("Jadwal ini sudah dikunci (Locked). Tidak bisa menambah siswa.");
   }
 
-  const maxQuota = slotData.class?.max_quota || 4;
+  const maxQuota = (slotData.class as any)?.max_quota || 4;
 
   // 2. Hitung jumlah siswa yang sudah booking
   const { count, error: countError } = await supabase
@@ -394,6 +409,7 @@ export async function createClass(formData: FormData) {
     .insert({
       branch_id: branchId,
       name,
+      // @ts-ignore: max_quota doesn't exist in generated types yet but is in the DB schema
       max_quota,
     });
 
@@ -442,18 +458,33 @@ export async function deleteStudent(id: string) {
 
 export async function updateStudent(id: string, formData: FormData) {
   const name = formData.get('name') as string;
+  const nickname = formData.get('nickname') as string;
   const date_of_birth = formData.get('date_of_birth') as string;
+  const phone = formData.get('phone') as string;
+  const address = formData.get('address') as string;
+  const school = formData.get('school') as string;
   const status = formData.get('status') as string;
   const label_id = formData.get('label_id') as string;
+  const registration_date = formData.get('registration_date') as string;
+
+  const updatePayload: any = {
+    name,
+    nickname,
+    date_of_birth,
+    phone,
+    address,
+    school,
+    status,
+    label_id: label_id ? label_id : null,
+  };
+  
+  if (registration_date) {
+    updatePayload.registration_date = registration_date;
+  }
 
   const { error } = await supabase
     .from('students')
-    .update({
-      name,
-      date_of_birth,
-      status,
-      label_id: label_id ? label_id : null,
-    })
+    .update(updatePayload)
     .eq('id', id);
 
   if (error) throw new Error(error.message);

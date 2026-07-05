@@ -53,7 +53,11 @@ CREATE TABLE students (
     branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
     label_id UUID REFERENCES labels(id) ON DELETE RESTRICT,
     name VARCHAR(150) NOT NULL,
+    nickname VARCHAR(100),
     date_of_birth DATE NOT NULL,
+    phone VARCHAR(20),
+    address TEXT,
+    school VARCHAR(150),
     status student_status NOT NULL DEFAULT 'CG',
     registration_date DATE NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

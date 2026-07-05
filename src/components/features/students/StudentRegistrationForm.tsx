@@ -18,8 +18,47 @@ interface StudentRegistrationFormProps {
   initialData?: any;
 }
 
+function parseIndonesianDate(dateStr: string) {
+  if (!dateStr) return "";
+  
+  const months: Record<string, string> = {
+    'januari': '01', 'jan': '01',
+    'februari': '02', 'feb': '02',
+    'maret': '03', 'mar': '03',
+    'april': '04', 'apr': '04',
+    'mei': '05',
+    'juni': '06', 'jun': '06',
+    'juli': '07', 'jul': '07',
+    'agustus': '08', 'agu': '08', 'agus': '08',
+    'september': '09', 'sep': '09',
+    'oktober': '10', 'okt': '10',
+    'november': '11', 'nov': '11',
+    'desember': '12', 'des': '12'
+  };
+
+  const parts = dateStr.toLowerCase().replace(/,/g, '').split(/\s+/);
+  let day = "", month = "", year = "";
+  for (const part of parts) {
+    if (!isNaN(parseInt(part)) && part.length <= 2) day = part.padStart(2, '0');
+    else if (!isNaN(parseInt(part)) && part.length === 4) year = part;
+    else if (months[part]) month = months[part];
+  }
+  
+  if (day && month && year) {
+    return `${year}-${month}-${day}`;
+  }
+  return "";
+}
+
 export function StudentRegistrationForm({ onClose, labels, onSuccess, initialData }: StudentRegistrationFormProps) {
   const [name, setName] = useState(initialData ? initialData.name : "");
+  const [nickname, setNickname] = useState(initialData?.nickname || "");
+  const [phone, setPhone] = useState(initialData?.phone || "");
+  const [address, setAddress] = useState(initialData?.address || "");
+  const [school, setSchool] = useState(initialData?.school || "");
+  const [registrationDate, setRegistrationDate] = useState(
+    initialData?.registration_date || new Date().toISOString().split('T')[0]
+  );
   const [dob, setDob] = useState(initialData ? initialData.date_of_birth : "");
   const [status, setStatus] = useState(initialData ? initialData.status : "CG");
   const [labelId, setLabelId] = useState(initialData?.label_id ? initialData.label_id : "");
@@ -66,6 +105,11 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
     try {
       const formData = new FormData();
       formData.append("name", name);
+      formData.append("nickname", nickname);
+      formData.append("phone", phone);
+      formData.append("address", address);
+      formData.append("school", school);
+      formData.append("registration_date", registrationDate);
       formData.append("date_of_birth", dob);
       formData.append("status", status);
       if (status === "REGISTERED" && labelId) {
@@ -88,6 +132,45 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handlePasteWA = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    if (!text) return;
+
+    // Tanggal Pendaftaran
+    const tglDaftarMatch = text.match(/Tanggal Pendaftaran\s*:\s*(.+)/i);
+    if (tglDaftarMatch) {
+      const parsedDate = parseIndonesianDate(tglDaftarMatch[1].trim());
+      if (parsedDate) setRegistrationDate(parsedDate);
+    }
+
+    // Nama Lengkap anak
+    const nameMatch = text.match(/Nama Lengkap(?: anak)?\s*:\s*(.+)/i);
+    if (nameMatch) setName(nameMatch[1].trim());
+
+    // Nama panggilan
+    const nicknameMatch = text.match(/Nama panggilan\s*:\s*(.+)/i);
+    if (nicknameMatch) setNickname(nicknameMatch[1].trim());
+
+    // Tanggal lahir anak
+    const dobMatch = text.match(/Tanggal lahir(?: anak)?\s*:\s*(.+)/i);
+    if (dobMatch) {
+      const parsedDate = parseIndonesianDate(dobMatch[1].trim());
+      if (parsedDate) setDob(parsedDate);
+    }
+
+    // No hp
+    const phoneMatch = text.match(/No(?:[\s\.]*)?hp\s*:\s*(.+)/i);
+    if (phoneMatch) setPhone(phoneMatch[1].trim().replace(/[^0-9\+\-]/g, ''));
+
+    // Alamat
+    const addressMatch = text.match(/Alamat\s*:\s*(.+)/i);
+    if (addressMatch) setAddress(addressMatch[1].trim());
+
+    // Sekolah
+    const schoolMatch = text.match(/Sekolah\s*:\s*(.+)/i);
+    if (schoolMatch) setSchool(schoolMatch[1].trim());
   };
 
   return (
@@ -119,23 +202,76 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
           
           {/* Form Body - Scrollable */}
           <div className="p-6 overflow-y-auto flex-1">
+            
+            {!initialData && (
+              <div className="mb-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                <label htmlFor="wa-paste" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="currentColor">
+                    <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 9a.75.75 0 00-1.5 0v2.25H9a.75.75 0 000 1.5h2.25V15a.75.75 0 001.5 0v-2.25H15a.75.75 0 000-1.5h-2.25V9z" clipRule="evenodd" />
+                  </svg>
+                  Isi Otomatis dari WhatsApp
+                </label>
+                <textarea
+                  id="wa-paste"
+                  rows={2}
+                  onChange={handlePasteWA}
+                  className="block w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm placeholder:text-slate-400"
+                  placeholder="Paste (Tempel) text pendaftaran dari WA di sini untuk mengisi form otomatis..."
+                />
+              </div>
+            )}
+
             <form id="student-form" onSubmit={handleSubmit} className="space-y-6">
               
-              {/* Nama Lengkap */}
+              {/* Tanggal Pendaftaran */}
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Nama Lengkap Siswa
+                <label htmlFor="registrationDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Tanggal Pendaftaran
                 </label>
-                <div className="mt-1 relative">
+                <div className="mt-1">
                   <input
-                    type="text"
-                    id="name"
+                    type="date"
+                    id="registrationDate"
                     required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    value={registrationDate}
+                    onChange={(e) => setRegistrationDate(e.target.value)}
                     className="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
-                    placeholder="Masukkan nama lengkap"
                   />
+                </div>
+              </div>
+
+              {/* Nama Lengkap & Panggilan */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Nama Lengkap Anak
+                  </label>
+                  <div className="mt-1 relative">
+                    <input
+                      type="text"
+                      id="name"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
+                      placeholder="Nama Lengkap"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="nickname" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Nama Panggilan
+                  </label>
+                  <div className="mt-1 relative">
+                    <input
+                      type="text"
+                      id="nickname"
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
+                      className="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
+                      placeholder="Nama Panggilan"
+                    />
+                  </div>
                 </div>
               </div>
               
@@ -159,9 +295,59 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Usia riil: {calculatedAge}
+                    Usia: {calculatedAge}
                   </div>
                 )}
+              </div>
+              
+              {/* Kontak & Alamat */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    No. HP (WhatsApp)
+                  </label>
+                  <div className="mt-1 relative">
+                    <input
+                      type="tel"
+                      id="phone"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
+                      placeholder="08xxxxxxxxxx"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="school" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Sekolah Asal
+                  </label>
+                  <div className="mt-1 relative">
+                    <input
+                      type="text"
+                      id="school"
+                      value={school}
+                      onChange={(e) => setSchool(e.target.value)}
+                      className="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
+                      placeholder="TK/PAUD/SD..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="address" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Alamat Lengkap
+                </label>
+                <div className="mt-1 relative">
+                  <textarea
+                    id="address"
+                    rows={2}
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
+                    placeholder="Alamat domisili anak..."
+                  />
+                </div>
               </div>
               
               {/* Status Pendaftaran */}
