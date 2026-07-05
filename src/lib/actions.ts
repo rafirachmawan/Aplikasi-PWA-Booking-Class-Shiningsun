@@ -2,47 +2,143 @@
 
 import { supabase } from "./supabase";
 import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
+
+export async function syncUserIdentity() {
+  const supabaseServer = await createClient();
+  const { data: { user } } = await supabaseServer.auth.getUser();
+  if (!user || !user.email) return;
+
+  // Cek apakah user id ini sudah terdaftar di public.users
+  const { data: existingUser } = await supabaseServer
+    .from('users')
+    .select('id')
+    .eq('id', user.id)
+    .single();
+
+  if (!existingUser) {
+    // Hapus data lama yang mungkin memiliki email sama tapi ID salah (akibat salah SQL/buat ulang auth)
+    await supabaseServer.from('users').delete().eq('email', user.email);
+
+    let role = 'BRANCH_ADMIN';
+    let branchId = null;
+
+    if (user.email.includes('superadmin') || user.email.includes('pusat')) {
+      role = 'SUPERADMIN';
+    } else {
+      // Deteksi cabang dari nama email (misal: ngunut@... -> Ngunut)
+      const prefix = user.email.split('@')[0];
+      const { data: branches } = await supabaseServer
+        .from('branches')
+        .select('id, name');
+        
+      if (branches) {
+        const matched = branches.find(b => b.name.toLowerCase().includes(prefix.toLowerCase()));
+        if (matched) branchId = matched.id;
+      }
+    }
+
+    // Insert otomatis identitas baru yang nyambung dengan ID Auth asli
+    const { error: insertError } = await supabaseServer.from('users').insert({
+      id: user.id,
+      email: user.email,
+      name: role === 'SUPERADMIN' ? 'Superadmin Utama' : `Admin ${user.email.split('@')[0]}`,
+      role: role,
+      branch_id: branchId,
+      password: 'auth_managed'
+    });
+    
+    if (insertError) {
+      console.error("Auto-sync failed:", insertError.message);
+    }
+  }
+}
+
+export async function getCurrentUserRole() {
+  const supabaseServer = await createClient();
+  const { data: { user } } = await supabaseServer.auth.getUser();
+  if (!user) return null;
+  
+  const { data: profile } = await supabaseServer
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+    
+  return profile?.role || null;
+}
+
+export async function setSuperadminBranch(branchId: string) {
+  const cookieStore = await cookies();
+  cookieStore.set('superadmin_branch_id', branchId, { path: '/' });
+}
 
 export async function getBranchId() {
   const supabaseServer = await createClient();
   const { data: { user } } = await supabaseServer.auth.getUser();
   
   if (!user) {
-    // Jika tidak ada user (saat build atau belum login), gunakan branch default
     return '11111111-1111-1111-1111-111111111111';
   }
 
-  // Coba ambil profile
   const { data: profile } = await supabaseServer
     .from('users')
-    .select('branch_id')
+    .select('branch_id, role')
     .eq('id', user.id)
     .single();
 
-  return profile?.branch_id || '11111111-1111-1111-1111-111111111111';
+  if (profile?.role === 'SUPERADMIN') {
+    const cookieStore = await cookies();
+    const selectedBranch = cookieStore.get('superadmin_branch_id')?.value;
+    if (selectedBranch) {
+      return selectedBranch;
+    }
+    return 'ALL'; // Default untuk Superadmin adalah Semua Cabang
+  }
+
+  return profile?.branch_id || 'ALL'; // Fallback aman jika branch_id kosong
+}
+
+export async function getBranches() {
+  const { data, error } = await supabase
+    .from('branches')
+    .select('*')
+    .eq('is_active', true)
+    .order('name');
+    
+  if (error) {
+    console.error("Error fetching branches:", error);
+    return [];
+  }
+  return data;
 }
 
 export async function getDashboardStats() {
   try {
+    const branchId = await getBranchId();
+    
     // 1. Hitung Siswa Aktif (Reguler)
-    const { count: regulerCount } = await supabase
+    let regulerQuery = supabase
       .from('students')
       .select('*', { count: 'exact', head: true })
-      .eq('branch_id', await getBranchId())
       .eq('status', 'REGISTERED');
+    if (branchId !== 'ALL') regulerQuery = regulerQuery.eq('branch_id', branchId);
+    const { count: regulerCount } = await regulerQuery;
 
     // 2. Hitung Siswa Coba Gratis (CG)
-    const { count: cgCount } = await supabase
+    let cgQuery = supabase
       .from('students')
       .select('*', { count: 'exact', head: true })
-      .eq('branch_id', await getBranchId())
       .eq('status', 'CG');
+    if (branchId !== 'ALL') cgQuery = cgQuery.eq('branch_id', branchId);
+    const { count: cgCount } = await cgQuery;
 
-    // 3. Hitung Kelas (Hanya sebagai contoh master data)
-    const { count: classCount } = await supabase
+    // 3. Hitung Kelas
+    let classQuery = supabase
       .from('classes')
-      .select('*', { count: 'exact', head: true })
-      .eq('branch_id', await getBranchId());
+      .select('*', { count: 'exact', head: true });
+    if (branchId !== 'ALL') classQuery = classQuery.eq('branch_id', branchId);
+    const { count: classCount } = await classQuery;
 
     return {
       reguler: regulerCount || 0,
@@ -56,10 +152,14 @@ export async function getDashboardStats() {
 }
 
 export async function getClasses() {
-  const { data, error } = await supabase
-    .from('classes')
-    .select('*')
-    .eq('branch_id', await getBranchId());
+  const branchId = await getBranchId();
+  let query = supabase.from('classes').select('*');
+  
+  if (branchId !== 'ALL') {
+    query = query.eq('branch_id', branchId);
+  }
+  
+  const { data, error } = await query;
     
   if (error) {
     console.error("Error fetching classes:", error);
@@ -69,10 +169,14 @@ export async function getClasses() {
 }
 
 export async function getLabels() {
-  const { data, error } = await supabase
-    .from('labels')
-    .select('*')
-    .or(`branch_id.eq.${await getBranchId()},is_system_default.eq.true`);
+  const branchId = await getBranchId();
+  let query = supabase.from('labels').select('*');
+  
+  if (branchId !== 'ALL') {
+    query = query.or(`branch_id.eq.${branchId},is_system_default.eq.true`);
+  }
+  
+  const { data, error } = await query;
     
   if (error) {
     console.error("Error fetching labels:", error);
@@ -82,11 +186,17 @@ export async function getLabels() {
 }
 
 export async function getStudents() {
-  const { data, error } = await supabase
+  const branchId = await getBranchId();
+  let query = supabase
     .from('students')
     .select('*, label:labels(main_level, sub_level, hex_color)')
-    .eq('branch_id', await getBranchId())
     .order('created_at', { ascending: false });
+    
+  if (branchId !== 'ALL') {
+    query = query.eq('branch_id', branchId);
+  }
+  
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching students:", error);

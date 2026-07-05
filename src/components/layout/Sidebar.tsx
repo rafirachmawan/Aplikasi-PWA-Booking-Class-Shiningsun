@@ -13,7 +13,12 @@ const navigation = [
   { name: "Master Data", href: "/master", icon: Icons.settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  userName?: string;
+  branchName?: string;
+}
+
+export function Sidebar({ userName = "Admin", branchName = "Tidak Diketahui" }: SidebarProps) {
   const pathname = usePathname();
   const { isOpen, close } = useSidebar();
 
@@ -91,12 +96,12 @@ export function Sidebar() {
       
         <div className="p-4 mt-auto border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-            <div className="w-8 h-8 rounded-full bg-brand-200 flex items-center justify-center text-brand-700 font-bold shrink-0">
-              A
+            <div className="w-8 h-8 rounded-full bg-brand-200 flex items-center justify-center text-brand-700 font-bold shrink-0 uppercase">
+              {userName.charAt(0)}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">Admin Cabang</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400 truncate">Surabaya Pusat</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">{userName}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{branchName}</span>
             </div>
           </div>
         </div>
