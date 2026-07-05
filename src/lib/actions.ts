@@ -383,11 +383,16 @@ export async function toggleSlotLock(scheduleSlotId: string, currentStatus: bool
 export async function createClass(formData: FormData) {
   const name = formData.get('name') as string;
   const max_quota = parseInt(formData.get('max_quota') as string, 10) || 4;
+  const branchId = await getBranchId();
+
+  if (branchId === 'ALL') {
+    throw new Error("Tidak dapat membuat kelas di mode 'Semua Cabang'. Silakan pilih cabang spesifik terlebih dahulu.");
+  }
 
   const { error } = await supabase
     .from('classes')
     .insert({
-      branch_id: await getBranchId(),
+      branch_id: branchId,
       name,
       max_quota,
     });

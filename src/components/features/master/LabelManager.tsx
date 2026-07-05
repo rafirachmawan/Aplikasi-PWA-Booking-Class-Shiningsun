@@ -2,9 +2,21 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { HexColorPicker } from "react-colorful";
 import { Icons } from "@/components/ui/icons";
 import { createLabel, deleteLabel } from "@/lib/actions";
+
+const PREDEFINED_COLORS = [
+  { name: "Merah", hex: "#ef4444" },
+  { name: "Oranye", hex: "#f97316" },
+  { name: "Kuning", hex: "#eab308" },
+  { name: "Hijau", hex: "#22c55e" },
+  { name: "Biru Muda", hex: "#0ea5e9" },
+  { name: "Biru", hex: "#3b82f6" },
+  { name: "Nila", hex: "#6366f1" },
+  { name: "Ungu", hex: "#a855f7" },
+  { name: "Pink", hex: "#ec4899" },
+  { name: "Abu-abu", hex: "#64748b" },
+];
 
 export function LabelManager({ labels }: { labels: any[] }) {
   const router = useRouter();
@@ -97,7 +109,20 @@ export function LabelManager({ labels }: { labels: any[] }) {
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Pilih Warna Label</label>
               <div className="flex flex-col sm:flex-row gap-6 items-start">
-                <HexColorPicker color={color} onChange={setColor} />
+                <div className="grid grid-cols-5 gap-3">
+                  {PREDEFINED_COLORS.map((c) => (
+                    <button
+                      key={c.hex}
+                      type="button"
+                      onClick={() => setColor(c.hex)}
+                      className={`w-10 h-10 rounded-full shadow-sm transition-transform hover:scale-110 focus:outline-none ${
+                        color === c.hex ? "ring-4 ring-offset-2 ring-brand-500 dark:ring-offset-slate-900" : "ring-1 ring-black/10 dark:ring-white/10"
+                      }`}
+                      style={{ backgroundColor: c.hex }}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
                 <div className="flex-1 flex flex-col items-center justify-center space-y-4 p-6 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 w-full sm:w-auto">
                   <div className="text-sm font-medium text-slate-500">Preview:</div>
                   <div className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-200 text-lg">
