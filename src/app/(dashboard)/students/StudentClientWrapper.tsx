@@ -145,7 +145,14 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
                   const ageText = y === 0 && m === 0 ? "Baru lahir" : `${y} Thn ${m} Bln`;
 
                   return (
-                    <tr key={person.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <tr 
+                      key={person.id} 
+                      className="transition-all hover:brightness-95 dark:hover:brightness-110"
+                      style={person.label ? { 
+                        backgroundColor: `${person.label.hex_color}10`, // 10% opacity
+                        borderLeft: `4px solid ${person.label.hex_color}` 
+                      } : {}}
+                    >
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 dark:text-white sm:pl-6">
                         {person.name}
                       </td>

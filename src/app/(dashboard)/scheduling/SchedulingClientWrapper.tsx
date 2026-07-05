@@ -164,6 +164,43 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
               <option key={s.id} value={s.id}>{s.name} ({s.status === 'REGISTERED' ? 'Reguler' : 'CG'})</option>
             ))}
           </select>
+
+          {/* Tampilkan Jadwal Siswa yang Terdaftar */}
+          {studentId && (
+            <div className="mt-4 pt-4 border-t border-brand-200 dark:border-brand-500/30">
+              <h4 className="text-sm font-medium text-brand-800 dark:text-brand-200 mb-2">
+                Jadwal Terdaftar (Bulan {monthNames[currentMonth - 1]}):
+              </h4>
+              {(() => {
+                const studentSchedules = schedules.filter(s => s.bookings?.some((b: any) => b.student_id === studentId));
+                
+                if (studentSchedules.length === 0) {
+                  return <p className="text-xs text-brand-600/70 dark:text-brand-300/70 italic">Belum ada jadwal untuk siswa ini di bulan {monthNames[currentMonth - 1]}.</p>;
+                }
+                
+                return (
+                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                    {studentSchedules.map(slot => {
+                      const dateObj = new Date(slot.date);
+                      const hari = isNaN(dateObj.getTime()) ? "" : ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][dateObj.getDay()];
+                      const tgl = isNaN(dateObj.getTime()) ? "" : dateObj.getDate();
+                      
+                      return (
+                        <div key={slot.id} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-brand-200 dark:border-brand-500/30 shadow-sm">
+                          <Icons.calendar className="w-3 h-3 text-brand-500" />
+                          <span>{hari}, {tgl} {monthNames[currentMonth - 1]}</span>
+                          <span className="text-slate-300 mx-0.5">|</span>
+                          <span className="text-brand-600 dark:text-brand-400">{slot.time.substring(0,5)}</span>
+                          <span className="text-slate-300 mx-0.5">|</span>
+                          <span className="font-semibold">{slot.class?.name}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </div>
 
         {activeMode === "auto" ? (

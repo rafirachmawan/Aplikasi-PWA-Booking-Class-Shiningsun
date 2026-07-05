@@ -401,7 +401,7 @@ export async function getMonthlySchedules(year: number, month: number) {
       class:classes(name, max_quota),
       bookings:schedule_student(
         student_id,
-        student:students(name, status)
+        student:students(name, status, label:labels(hex_color))
       )
     `)
     .gte('date', startDate)

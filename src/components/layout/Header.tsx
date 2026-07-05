@@ -42,9 +42,7 @@ export function Header({ role, branches, currentBranchId }: HeaderProps) {
         </form>
 
         <div className="flex items-center gap-x-4 lg:gap-x-6 w-full justify-end">
-          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded font-mono">
-            DEBUG: {role === null ? 'NULL' : role}
-          </span>
+
           {role === 'SUPERADMIN' && (
             <div className="mr-auto lg:mr-0 pl-4 lg:pl-0">
                <BranchSelector branches={branches} currentBranchId={currentBranchId} />

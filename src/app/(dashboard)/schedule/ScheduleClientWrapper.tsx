@@ -15,7 +15,7 @@ interface ScheduleClientWrapperProps {
 export function ScheduleClientWrapper({ schedules, classes, students, currentMonth, currentYear }: ScheduleClientWrapperProps) {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [filterClassId, setFilterClassId] = useState<string>("ALL");
+  const [filterClassId, setFilterClassId] = useState<string>(classes.length > 0 ? classes[0].id : "");
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     let newMonth = direction === 'next' ? currentMonth + 1 : currentMonth - 1;
@@ -39,9 +39,7 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
   const emptyPadding = Array.from({ length: firstDayOfMonth }, (_, i) => i);
 
   // Group schedules by date string
-  const filteredSchedules = filterClassId === "ALL" 
-    ? schedules 
-    : schedules.filter(s => s.class_id === filterClassId);
+  const filteredSchedules = schedules.filter(s => s.class_id === filterClassId);
 
   const schedulesByDate: Record<string, any[]> = {};
   filteredSchedules.forEach(s => {
@@ -73,7 +71,7 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
             onChange={(e) => setFilterClassId(e.target.value)}
             className="bg-white dark:bg-slate-900 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
-            <option value="ALL">Semua Kelas</option>
+            <option value="" disabled>-- Pilih Kelas --</option>
             {classes.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -141,17 +139,38 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
                           const bookedCount = slot.bookings?.length || 0;
                           const isFull = bookedCount >= slot.class.max_quota;
 
-                          let badgeColor = "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30";
-                          if (slot.is_locked) badgeColor = "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
-                          else if (isFull) badgeColor = "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30";
-
                           return (
-                            <div 
-                              key={slot.id} 
-                              className={`px-2 py-1 text-[10px] sm:text-xs font-medium rounded border truncate ${badgeColor}`}
-                              title={`${slot.class.name} (${bookedCount}/${slot.class.max_quota})`}
-                            >
-                              {slot.time.substring(0, 5)} {slot.class.name}
+                            <div key={slot.id} className="space-y-1 mb-2">
+                              <div className="flex justify-between items-center px-1">
+                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{slot.time.substring(0, 5)}</span>
+                                <span className={`text-[9px] font-semibold ${isFull ? 'text-red-500' : 'text-slate-400'}`}>{bookedCount}/{slot.class.max_quota}</span>
+                              </div>
+                              
+                              {bookedCount === 0 ? (
+                                <div className="px-2 py-1 text-[10px] font-medium rounded border border-dashed border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800/50 truncate text-center">
+                                  Kosong
+                                </div>
+                              ) : (
+                                <div className="space-y-1">
+                                  {slot.bookings.map((b: any) => {
+                                    const hexColor = b.student?.label?.hex_color || '#94a3b8'; // Default color if no label
+                                    return (
+                                      <div 
+                                        key={b.student_id}
+                                        className="px-1.5 py-1 text-[10px] font-medium rounded-r-md border-y border-r border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 truncate shadow-sm"
+                                        style={{ 
+                                          backgroundColor: `${hexColor}15`, 
+                                          borderLeft: `3px solid ${hexColor}` 
+                                        }}
+                                        title={`${b.student?.status === 'CG' ? '(CG) ' : ''}${b.student?.name}`}
+                                      >
+                                        {b.student?.status === 'CG' && <span className="text-amber-600 dark:text-amber-500 font-bold mr-1">(CG)</span>}
+                                        {b.student?.name}
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              )}
                             </div>
                           )
                         });
@@ -176,7 +195,7 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
           classes={classes}
           students={students}
           existingSlots={schedulesByDate[selectedDate] || []}
-          defaultClassId={filterClassId !== "ALL" ? filterClassId : ""}
+          defaultClassId={filterClassId}
           onClose={() => setSelectedDate(null)}
           onSuccess={() => {
             router.refresh();

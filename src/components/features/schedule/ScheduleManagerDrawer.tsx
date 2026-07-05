@@ -115,7 +115,7 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                           {slot.bookings.map((b: any) => (
                             <div key={b.student_id} className="flex justify-between items-center text-xs p-1.5 bg-slate-50 dark:bg-slate-800/50 rounded-md">
                               <span className="text-slate-700 dark:text-slate-300 truncate max-w-[200px]">
-                                • {b.student?.name}
+                                • {b.student?.status === 'CG' && <strong className="text-amber-600 dark:text-amber-500 mr-1">(CG)</strong>}{b.student?.name}
                               </span>
                               <button 
                                 onClick={async () => {
