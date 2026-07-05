@@ -38,6 +38,20 @@ export function Header() {
               <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></div>
             </div>
           </button>
+          
+          <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-slate-200 dark:lg:bg-slate-700" aria-hidden="true" />
+          
+          <button 
+            onClick={async () => {
+              if (confirm("Yakin ingin keluar?")) {
+                const { logout } = await import('@/lib/authActions');
+                await logout();
+              }
+            }}
+            className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 transition-colors"
+          >
+            Keluar
+          </button>
         </div>
       </div>
     </header>

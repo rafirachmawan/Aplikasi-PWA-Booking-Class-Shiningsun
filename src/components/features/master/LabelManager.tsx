@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { HexColorPicker } from "react-colorful";
 import { Icons } from "@/components/ui/icons";
-import { createLabel } from "@/lib/actions";
+import { createLabel, deleteLabel } from "@/lib/actions";
 
 export function LabelManager({ labels }: { labels: any[] }) {
   const router = useRouter();
@@ -34,6 +34,17 @@ export function LabelManager({ labels }: { labels: any[] }) {
       console.error(error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (confirm(`Yakin ingin menghapus label "${name}"? Data yang terhubung ke siswa tidak bisa dihapus.`)) {
+      try {
+        await deleteLabel(id);
+        router.refresh();
+      } catch (error: any) {
+        alert(error.message);
+      }
     }
   };
 
@@ -140,9 +151,18 @@ export function LabelManager({ labels }: { labels: any[] }) {
                   Bawaan Sistem
                 </span>
               ) : (
-                <span className="inline-flex items-center rounded-md bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-700/10 dark:bg-brand-500/10 dark:text-brand-400 dark:ring-brand-500/20">
-                  Kustom Cabang
-                </span>
+                <div className="flex items-center gap-4">
+                  <span className="inline-flex items-center rounded-md bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-700/10 dark:bg-brand-500/10 dark:text-brand-400 dark:ring-brand-500/20">
+                    Kustom Cabang
+                  </span>
+                  <button 
+                    onClick={() => handleDelete(label.id, label.main_level)}
+                    className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
+                    title="Hapus Label"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                  </button>
+                </div>
               )}
             </div>
           </li>

@@ -4,11 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { StudentRegistrationForm } from "@/components/features/students/StudentRegistrationForm";
+import { deleteStudent } from "@/lib/actions";
 
 export function StudentClientWrapper({ initialStudents, labels }: { initialStudents: any[], labels: any[] }) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  
+  // State for Edit
+  const [editingStudent, setEditingStudent] = useState<any>(null);
 
   const regulerStudents = initialStudents.filter(s => s.status === 'REGISTERED');
   const cgStudents = initialStudents.filter(s => s.status === 'CG');
@@ -16,6 +20,17 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
   const displayedStudents = 
     activeTab === "all" ? initialStudents :
     activeTab === "reguler" ? regulerStudents : cgStudents;
+
+  const handleDelete = async (id: string, name: string) => {
+    if (confirm(`Yakin ingin menghapus data siswa "${name}" secara permanen? Data yang sudah dihapus tidak dapat dikembalikan.`)) {
+      try {
+        await deleteStudent(id);
+        router.refresh();
+      } catch (error: any) {
+        alert(error.message);
+      }
+    }
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -160,10 +175,22 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500 dark:text-slate-400">
                         {new Date(person.registration_date).toLocaleDateString('id-ID')}
                       </td>
-                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                        <a href="#" className="text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-300">
+                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 space-x-3">
+                        <button 
+                          onClick={() => {
+                            setEditingStudent(person);
+                            setIsModalOpen(true);
+                          }}
+                          className="text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-300"
+                        >
                           Edit<span className="sr-only">, {person.name}</span>
-                        </a>
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(person.id, person.name)}
+                          className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
+                        >
+                          Hapus<span className="sr-only">, {person.name}</span>
+                        </button>
                       </td>
                     </tr>
                   )
@@ -175,11 +202,16 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
       </div>
       
       {/* Pendaftaran Form Modal */}
-      {isModalOpen && (
+      {(isModalOpen || editingStudent) && (
         <StudentRegistrationForm 
           labels={labels} 
-          onClose={() => setIsModalOpen(false)} 
+          initialData={editingStudent}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingStudent(null);
+          }} 
           onSuccess={() => {
+            setEditingStudent(null);
             router.refresh();
           }}
         />

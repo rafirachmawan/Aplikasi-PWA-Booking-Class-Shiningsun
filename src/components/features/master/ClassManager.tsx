@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
-import { createClass } from "@/lib/actions";
+import { createClass, deleteClass } from "@/lib/actions";
 
 export function ClassManager({ classes }: { classes: any[] }) {
   const router = useRouter();
@@ -31,6 +31,17 @@ export function ClassManager({ classes }: { classes: any[] }) {
       console.error(error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (confirm(`Yakin ingin menghapus kelas "${name}"? Data yang sudah dipakai di jadwal tidak bisa dihapus.`)) {
+      try {
+        await deleteClass(id);
+        router.refresh();
+      } catch (error: any) {
+        alert(error.message);
+      }
     }
   };
 
@@ -118,10 +129,17 @@ export function ClassManager({ classes }: { classes: any[] }) {
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-x-4">
-              <div className="hidden sm:flex sm:flex-col sm:items-end">
+              <div className="hidden sm:flex sm:flex-col sm:items-end mr-4">
                 <p className="text-sm leading-6 text-slate-900 dark:text-white">Maks {cls.max_quota} Siswa</p>
                 <p className="mt-1 text-xs leading-5 text-slate-500">Kuota penuh / sesi</p>
               </div>
+              <button 
+                onClick={() => handleDelete(cls.id, cls.name)}
+                className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
+                title="Hapus Kelas"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              </button>
             </div>
           </li>
         ))}

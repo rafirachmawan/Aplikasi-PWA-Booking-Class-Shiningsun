@@ -15,13 +15,14 @@ interface StudentRegistrationFormProps {
   onClose: () => void;
   labels: Label[];
   onSuccess: () => void;
+  initialData?: any;
 }
 
-export function StudentRegistrationForm({ onClose, labels, onSuccess }: StudentRegistrationFormProps) {
-  const [name, setName] = useState("");
-  const [dob, setDob] = useState("");
-  const [status, setStatus] = useState("CG"); // CG by default
-  const [labelId, setLabelId] = useState("");
+export function StudentRegistrationForm({ onClose, labels, onSuccess, initialData }: StudentRegistrationFormProps) {
+  const [name, setName] = useState(initialData ? initialData.name : "");
+  const [dob, setDob] = useState(initialData ? initialData.date_of_birth : "");
+  const [status, setStatus] = useState(initialData ? initialData.status : "CG");
+  const [labelId, setLabelId] = useState(initialData?.label_id ? initialData.label_id : "");
   
   const [calculatedAge, setCalculatedAge] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,7 +72,14 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess }: StudentR
         formData.append("label_id", labelId);
       }
       
-      await createStudent(formData);
+      if (initialData) {
+        const { updateStudent } = await import('@/lib/actions');
+        await updateStudent(initialData.id, formData);
+      } else {
+        const { createStudent } = await import('@/lib/actions');
+        await createStudent(formData);
+      }
+      
       onSuccess();
       onClose();
     } catch (error) {

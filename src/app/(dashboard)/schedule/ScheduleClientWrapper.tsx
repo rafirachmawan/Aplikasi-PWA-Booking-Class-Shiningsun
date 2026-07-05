@@ -7,11 +7,12 @@ import { ScheduleManagerDrawer } from "@/components/features/schedule/ScheduleMa
 interface ScheduleClientWrapperProps {
   schedules: any[];
   classes: any[];
+  students: any[];
   currentMonth: number; // 1-12
   currentYear: number;
 }
 
-export function ScheduleClientWrapper({ schedules, classes, currentMonth, currentYear }: ScheduleClientWrapperProps) {
+export function ScheduleClientWrapper({ schedules, classes, students, currentMonth, currentYear }: ScheduleClientWrapperProps) {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -94,7 +95,7 @@ export function ScheduleClientWrapper({ schedules, classes, currentMonth, curren
                     {/* Render Jadwal Items */}
                     <div className="mt-2 space-y-1">
                       {daySchedules.map(slot => {
-                        const bookedCount = slot.bookings[0]?.count || 0;
+                        const bookedCount = slot.bookings?.length || 0;
                         const isFull = bookedCount >= slot.class.max_quota;
 
                         let badgeColor = "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30";
@@ -129,6 +130,7 @@ export function ScheduleClientWrapper({ schedules, classes, currentMonth, curren
         <ScheduleManagerDrawer 
           selectedDate={selectedDate}
           classes={classes}
+          students={students}
           existingSlots={schedulesByDate[selectedDate] || []}
           onClose={() => setSelectedDate(null)}
           onSuccess={() => {

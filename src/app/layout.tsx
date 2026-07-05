@@ -7,10 +7,23 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+import type { Viewport } from "next";
+
+export const viewport: Viewport = {
+  themeColor: "#2563eb",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export const metadata: Metadata = {
   title: "ShiningSun Booking Class",
   description: "Sistem Manajemen Penjadwalan Multi-Branch",
-  manifest: "/manifest.json",
+  appleWebApp: {
+    title: "ShiningSun",
+    statusBarStyle: "default",
+    capable: true,
+  },
 };
 
 export default function RootLayout({

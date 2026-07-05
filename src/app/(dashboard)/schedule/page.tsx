@@ -1,4 +1,4 @@
-import { getMonthlySchedules, getClasses } from "@/lib/actions";
+import { getMonthlySchedules, getClasses, getStudents } from "@/lib/actions";
 import { ScheduleClientWrapper } from "./ScheduleClientWrapper";
 
 export const dynamic = 'force-dynamic';
@@ -9,11 +9,13 @@ export default async function SchedulePage() {
 
   const schedules = await getMonthlySchedules(currentYear, currentMonth);
   const classes = await getClasses();
+  const students = await getStudents();
 
   return (
     <ScheduleClientWrapper 
       schedules={schedules} 
       classes={classes} 
+      students={students}
       currentMonth={currentMonth} 
       currentYear={currentYear} 
     />
