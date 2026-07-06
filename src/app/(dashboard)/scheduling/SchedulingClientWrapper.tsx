@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { autoBookStudentToClass, bookStudentManual } from "@/lib/actions";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface SchedulingClientWrapperProps {
   students: any[];
@@ -18,6 +19,13 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
   const [activeMode, setActiveMode] = useState<"auto" | "manual">("auto");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [studentId, setStudentId] = useState("");
+  
+  // Custom Modal State
+  const [modalConfig, setModalConfig] = useState<{isOpen: boolean, type: 'success' | 'error' | 'warning', message: string}>({isOpen: false, type: 'success', message: ''});
+  
+  const showAlert = (type: 'success' | 'error' | 'warning', message: string) => {
+    setModalConfig({ isOpen: true, type, message });
+  };
   
   // Auto Mode State
   const [autoSchedules, setAutoSchedules] = useState([{ startDate: new Date().toISOString().split('T')[0], time: "08:00", classId: "" }]);
@@ -47,7 +55,7 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
     // Validasi
     const isValid = autoSchedules.every(s => s.classId !== "");
     if (!isValid) {
-      alert("Harap lengkapi pilihan kelas untuk semua jadwal.");
+      showAlert('warning', "Harap lengkapi pilihan kelas untuk semua jadwal.");
       return;
     }
     
@@ -65,15 +73,15 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
       }
       
       if (totalBooked === 0) {
-        alert("Tidak ada jadwal baru yang ditambahkan (Siswa sudah terdaftar di sesi tersebut, atau kelas sudah penuh).");
+        showAlert('warning', "Tidak ada jadwal baru yang ditambahkan (Siswa sudah terdaftar di sesi tersebut, atau kelas sudah penuh).");
       } else {
-        alert(`Berhasil! Siswa telah didaftarkan ke total ${totalBooked} sesi kelas baru.`);
+        showAlert('success', `Berhasil! Siswa telah didaftarkan ke total ${totalBooked} sesi kelas baru.`);
         setStudentId("");
         setAutoSchedules([{ startDate: new Date().toISOString().split('T')[0], time: "08:00", classId: "" }]);
       }
       router.refresh();
     } catch (error: any) {
-      alert(error.message);
+      showAlert('error', error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -104,11 +112,11 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
     setIsSubmitting(true);
     try {
       await bookStudentManual(studentId, manualClassId, manualDate, manualTime);
-      alert("Siswa berhasil didaftarkan ke sesi tersebut!");
+      showAlert('success', "Siswa berhasil didaftarkan ke sesi tersebut!");
       setStudentId("");
       router.refresh();
     } catch (error: any) {
-      alert(error.message);
+      showAlert('error', error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -122,6 +130,9 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
   });
 
   return (
+    <>
+    {isSubmitting && <LoadingSpinner usePortal={true} />}
+    
     <div className="bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5 sm:rounded-xl overflow-hidden">
       
       {/* Tabs */}
@@ -216,6 +227,10 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
                   return (
                     <div key={index} className="flex flex-wrap md:flex-nowrap items-center gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
                       <div className="flex-1 min-w-[150px]">
+                        <div className="flex items-center justify-between mb-1.5 px-1">
+                          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tanggal</label>
+                          {hari && <span className="text-[10px] font-bold text-brand-700 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/30 px-2 py-0.5 rounded shadow-sm">{hari}</span>}
+                        </div>
                         <input
                           type="date"
                           required
@@ -223,7 +238,6 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
                           onChange={(e) => updateAutoSchedule(index, 'startDate', e.target.value)}
                           className="block w-full rounded-xl border-slate-200 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
                         />
-                        {hari && <span className="text-[10px] text-slate-500 mt-1 block px-2">Hari: {hari}</span>}
                       </div>
                       
                       <select
@@ -293,7 +307,16 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Tanggal</label>
+                  {(() => {
+                    const d = new Date(manualDate);
+                    const manualHari = isNaN(d.getTime()) ? "" : ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][d.getDay()];
+                    return (
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Tanggal</label>
+                        {manualHari && <span className="text-[11px] font-bold text-brand-700 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/30 px-2.5 py-0.5 rounded-md shadow-sm">{manualHari}</span>}
+                      </div>
+                    );
+                  })()}
                   <input
                     required
                     type="date"
@@ -347,5 +370,52 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
         )}
       </div>
     </div>
+
+    {/* Custom Notification Modal */}
+    {modalConfig.isOpen && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
+          <div className="p-6 text-center">
+            {modalConfig.type === 'success' && (
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/10 mb-4">
+                <svg className="h-7 w-7 text-emerald-600 dark:text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </div>
+            )}
+            {modalConfig.type === 'warning' && (
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/10 mb-4">
+                <svg className="h-7 w-7 text-amber-600 dark:text-amber-500" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            )}
+            {modalConfig.type === 'error' && (
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/10 mb-4">
+                <svg className="h-7 w-7 text-red-600 dark:text-red-500" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+            )}
+            
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+              {modalConfig.type === 'success' ? 'Berhasil!' : modalConfig.type === 'warning' ? 'Perhatian' : 'Terjadi Kesalahan'}
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {modalConfig.message}
+            </p>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4">
+            <button
+              onClick={() => setModalConfig({ ...modalConfig, isOpen: false })}
+              className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 rounded-xl hover:bg-brand-700 transition-colors shadow-sm"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

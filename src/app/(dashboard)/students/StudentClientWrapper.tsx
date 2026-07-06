@@ -100,8 +100,8 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
         </nav>
       </div>
 
-      {/* Table */}
-      <div className="bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5 sm:rounded-xl overflow-hidden">
+      {/* Desktop Table (Sembunyi di Mobile) */}
+      <div className="hidden sm:block bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5 sm:rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
             <thead className="bg-slate-50 dark:bg-slate-800/50">
@@ -206,6 +206,90 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Card Layout (Sembunyi di Desktop) */}
+      <div className="block sm:hidden space-y-3">
+        {displayedStudents.length === 0 ? (
+          <div className="py-10 text-center text-sm text-slate-500 bg-white dark:bg-slate-900 rounded-xl ring-1 ring-slate-900/5">
+            Belum ada data siswa untuk kategori ini.
+          </div>
+        ) : (
+          displayedStudents.map((person) => {
+            const bDate = new Date(person.date_of_birth);
+            const tDate = new Date();
+            let y = tDate.getFullYear() - bDate.getFullYear();
+            let m = tDate.getMonth() - bDate.getMonth();
+            if (m < 0 || (m === 0 && tDate.getDate() < bDate.getDate())) { y--; m += 12; }
+            if (tDate.getDate() < bDate.getDate()) { m--; if (m < 0) { m += 12; } }
+            const ageText = y === 0 && m === 0 ? "Baru lahir" : `${y} Thn ${m} Bln`;
+
+            return (
+              <div 
+                key={person.id}
+                className="bg-white dark:bg-slate-900 rounded-xl shadow-sm ring-1 ring-slate-900/5 p-4 relative overflow-hidden"
+                style={person.label ? { borderLeft: `4px solid ${person.label.hex_color}` } : {}}
+              >
+                {person.label && (
+                   <div className="absolute inset-0 w-full opacity-[0.03] pointer-events-none" style={{ backgroundColor: person.label.hex_color }}></div>
+                )}
+                
+                <div className="flex justify-between items-start mb-3 relative z-10">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">{person.name}</h3>
+                    <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                      {person.label ? (
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: person.label.hex_color }}></span>
+                          {person.label.main_level} - {person.label.sub_level}
+                        </span>
+                      ) : (
+                        <span>Tidak ada tingkat</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold ring-1 ring-inset ${
+                    person.status === 'REGISTERED' 
+                      ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20' 
+                      : 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20'
+                  }`}>
+                    {person.status === 'REGISTERED' ? 'Reguler' : 'CG'}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 mb-4 relative z-10 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                  <div>
+                    <span className="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Lahir & Usia</span>
+                    <span className="block font-medium text-slate-700 dark:text-slate-300">{new Date(person.date_of_birth).toLocaleDateString('id-ID')}</span>
+                    <span className="block text-brand-600 dark:text-brand-400 font-bold mt-0.5">{ageText}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Tgl Masuk</span>
+                    <span className="block font-medium text-slate-700 dark:text-slate-300">{new Date(person.registration_date).toLocaleDateString('id-ID')}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 relative z-10 border-t border-slate-100 dark:border-slate-800 pt-3">
+                  <button 
+                    onClick={() => {
+                      setEditingStudent(person);
+                      setIsModalOpen(true);
+                    }}
+                    className="flex-1 py-2 text-xs font-semibold rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20 transition-colors text-center ring-1 ring-brand-200/50 dark:ring-brand-900/30"
+                  >
+                    Edit Data
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(person.id, person.name)}
+                    className="flex-1 py-2 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors text-center ring-1 ring-red-200/50 dark:ring-red-900/30"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
       
       {/* Pendaftaran Form Modal */}

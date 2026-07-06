@@ -113,9 +113,22 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                       {bookedCount > 0 && (
                         <div className="mt-3 space-y-1">
                           {slot.bookings.map((b: any) => (
-                            <div key={b.student_id} className="flex justify-between items-center text-xs p-1.5 bg-slate-50 dark:bg-slate-800/50 rounded-md">
-                              <span className="text-slate-700 dark:text-slate-300 truncate max-w-[200px]">
-                                • {b.student?.status === 'CG' && <strong className="text-amber-600 dark:text-amber-500 mr-1">(CG)</strong>}{b.student?.name}
+                            <div 
+                              key={b.student_id} 
+                              className={`flex justify-between items-center text-xs p-2 rounded-md border-l-4 ${!b.student?.label ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600' : ''}`}
+                              style={b.student?.label ? {
+                                backgroundColor: `${b.student.label.hex_color}20`,
+                                borderLeftColor: b.student.label.hex_color
+                              } : {}}
+                            >
+                              <span className="text-slate-800 dark:text-slate-200 font-semibold truncate max-w-[200px] flex items-center gap-2">
+                                {b.student?.label && (
+                                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: b.student.label.hex_color }}></span>
+                                )}
+                                <span>
+                                  {b.student?.status === 'CG' && <strong className="text-amber-600 dark:text-amber-500 mr-1">(CG)</strong>}
+                                  {b.student?.name}
+                                </span>
                               </span>
                               <button 
                                 onClick={async () => {
@@ -125,10 +138,10 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                                     onSuccess(); // refresh
                                   }
                                 }}
-                                className="text-red-500 hover:bg-red-100 p-1 rounded transition-colors"
+                                className="text-red-500 hover:bg-white dark:hover:bg-slate-800 p-1.5 rounded-md transition-colors shadow-sm"
                                 title="Keluarkan"
                               >
-                                <Icons.close className="w-3 h-3" />
+                                <Icons.close className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           ))}

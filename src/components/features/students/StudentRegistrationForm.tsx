@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Icons } from "@/components/ui/icons";
 import { createStudent } from "@/lib/actions";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Label {
   id: string;
@@ -175,6 +176,8 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
 
   return (
     <>
+      {isSubmitting && <LoadingSpinner usePortal={true} />}
+      
       {/* Backdrop */}
       <div 
         className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
