@@ -9,6 +9,9 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  devIndicators: {
+    buildActivity: false,
+  },
   async redirects() {
     return [
       {

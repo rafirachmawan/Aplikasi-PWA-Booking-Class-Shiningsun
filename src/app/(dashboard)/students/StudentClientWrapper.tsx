@@ -39,7 +39,7 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold leading-7 text-slate-900 dark:text-white sm:truncate sm:text-3xl sm:tracking-tight">
-            Buku Induk Siswa
+            Kelola Siswa
           </h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Kelola data siswa, tingkat level, dan status percobaan gratis (CG).

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Icons } from "../ui/icons";
 import { useSidebar } from "@/lib/SidebarContext";
 import { BranchSelector } from "@/components/features/auth/BranchSelector";
@@ -36,7 +37,13 @@ export function Header({ role, branches, currentBranchId }: HeaderProps) {
           </button>
           
           <div className="flex items-center gap-3 lg:hidden ml-4 text-brand-600 font-bold text-lg">
-             <Icons.sun className="w-6 h-6" />
+             <Image 
+                src="/logo.png" 
+                alt="ShiningSun Logo" 
+                width={24} 
+                height={24} 
+                className="object-contain"
+              />
              ShiningSun
           </div>
         </form>
@@ -60,6 +67,16 @@ export function Header({ role, branches, currentBranchId }: HeaderProps) {
           </button>
           
           <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-slate-200 dark:lg:bg-slate-700" aria-hidden="true" />
+          
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden shrink-0">
+            <Image 
+              src="/logo.png" 
+              alt="User Profile" 
+              width={32} 
+              height={32} 
+              className="object-cover"
+            />
+          </div>
           
           <button 
             onClick={async () => {

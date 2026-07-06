@@ -19,6 +19,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "ShiningSun Booking Class",
   description: "Sistem Manajemen Penjadwalan Multi-Branch",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
   appleWebApp: {
     title: "ShiningSun",
     statusBarStyle: "default",

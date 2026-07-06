@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { createClass, deleteClass } from "@/lib/actions";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 export function ClassManager({ classes }: { classes: any[] }) {
   const router = useRouter();
@@ -47,6 +48,7 @@ export function ClassManager({ classes }: { classes: any[] }) {
 
   return (
     <div className="bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5 sm:rounded-xl overflow-hidden mb-8">
+      {isSubmitting && <LoadingSpinner />}
       <div className="px-4 py-5 sm:px-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
         <div>
           <h3 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">Ruang Kelas</h3>

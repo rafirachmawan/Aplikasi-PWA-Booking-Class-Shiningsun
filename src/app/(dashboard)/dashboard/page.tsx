@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Icons } from "@/components/ui/icons";
 import { getDashboardStats } from "@/lib/actions";
 
@@ -5,9 +6,15 @@ export default async function DashboardPage() {
   const statsData = await getDashboardStats();
 
   const stats = [
-    { name: 'Total Siswa Aktif', value: statsData.reguler.toString(), icon: Icons.users, change: 'Data Asli', changeType: 'neutral' },
-    { name: 'Siswa Coba Gratis', value: statsData.cg.toString(), icon: Icons.sun, change: 'Data Asli', changeType: 'neutral' },
-    { name: 'Total Tipe Kelas', value: statsData.classes.toString(), icon: Icons.calendar, change: 'Tersedia', changeType: 'positive' },
+    { name: 'Total Siswa Aktif', value: statsData.reguler.toString(), icon: Icons.users, change: 'Data Asli', changeType: 'neutral', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10', hoverBg: 'group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20' },
+    { name: 'Siswa Coba Gratis', value: statsData.cg.toString(), icon: Icons.sun, change: 'Data Asli', changeType: 'neutral', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10', hoverBg: 'group-hover:bg-amber-100 dark:group-hover:bg-amber-500/20' },
+    { name: 'Total Tipe Kelas', value: statsData.classes.toString(), icon: Icons.calendar, change: 'Tersedia', changeType: 'positive', color: 'text-brand-600 dark:text-brand-400', bg: 'bg-brand-50 dark:bg-brand-500/10', hoverBg: 'group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20' },
+  ];
+
+  const quickActions = [
+    { name: 'Kelola Siswa', description: 'Kelola data dan status siswa', href: '/students', icon: Icons.users, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10', borderHover: 'hover:border-blue-200 dark:hover:border-blue-800' },
+    { name: 'Jadwal Kelas', description: 'Atur jadwal dan sesi pertemuan', href: '/schedule', icon: Icons.calendar, color: 'text-brand-600 dark:text-brand-400', bg: 'bg-brand-50 dark:bg-brand-500/10', borderHover: 'hover:border-brand-200 dark:hover:border-brand-800' },
+    { name: 'Master Data', description: 'Kelola kelas dan label', href: '/master', icon: Icons.settings, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-500/10', borderHover: 'hover:border-purple-200 dark:hover:border-purple-800' },
   ];
 
   return (
@@ -25,58 +32,59 @@ export default async function DashboardPage() {
         {stats.map((item) => (
           <div
             key={item.name}
-            className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 px-4 pb-12 pt-5 shadow-sm border border-slate-100 dark:border-slate-800 sm:px-6 sm:pt-6 transition-all hover:shadow-md hover:border-brand-200 dark:hover:border-brand-800 group"
+            className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm border border-slate-100 dark:border-slate-800 transition-all hover:shadow-md hover:-translate-y-1 hover:border-slate-200 dark:hover:border-slate-700 group flex items-center gap-4"
           >
-            <dt>
-              <div className="absolute rounded-xl bg-brand-50 dark:bg-brand-500/10 p-3 group-hover:scale-110 group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20 transition-all">
-                <item.icon className="h-6 w-6 text-brand-600 dark:text-brand-400" aria-hidden="true" />
-              </div>
-              <p className="ml-16 truncate text-sm font-medium text-slate-500 dark:text-slate-400">
+            <div className={`rounded-xl p-3 ${item.bg} ${item.hoverBg} transition-all duration-300 group-hover:scale-110 flex-shrink-0`}>
+              <item.icon className={`h-6 w-6 ${item.color}`} aria-hidden="true" />
+            </div>
+            <div>
+              <dt className="truncate text-sm font-medium text-slate-500 dark:text-slate-400">
                 {item.name}
-              </p>
-            </dt>
-            <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
-              <p className="text-2xl font-semibold text-slate-900 dark:text-white">
-                {item.value}
-              </p>
-              <p
-                className={`ml-2 flex items-baseline text-sm font-semibold
-                  ${item.changeType === 'positive' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}
-                `}
-              >
-                {item.change}
-              </p>
-            </dd>
+              </dt>
+              <dd className="flex items-baseline">
+                <p className="text-2xl font-semibold text-slate-900 dark:text-white">
+                  {item.value}
+                </p>
+                <p
+                  className={`ml-2 flex items-baseline text-xs font-semibold
+                    ${item.changeType === 'positive' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}
+                  `}
+                >
+                  {item.change}
+                </p>
+              </dd>
+            </div>
           </div>
         ))}
       </dl>
 
-      {/* Placeholder for Calendar Widget */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="border-b border-slate-100 dark:border-slate-800 px-6 py-5">
-          <h3 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">
-            Jadwal Hari Ini
-          </h3>
-        </div>
-        <div className="px-6 py-12 flex flex-col items-center justify-center text-center">
-          <div className="p-4 rounded-full bg-slate-50 dark:bg-slate-800 mb-4">
-            <Icons.calendar className="h-8 w-8 text-slate-400" />
-          </div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Belum ada jadwal</h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Mulai atur kelas untuk hari ini melalui menu Jadwal Kelas.
-          </p>
-          <div className="mt-6">
-            <button
-              type="button"
-              className="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 transition-colors"
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold leading-6 text-slate-900 dark:text-white mb-4">
+          Akses Cepat
+        </h3>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {quickActions.map((action) => (
+            <Link
+              key={action.name}
+              href={action.href}
+              className={`relative flex items-center space-x-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1 ${action.borderHover} group`}
             >
-              <Icons.calendar className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Buat Jadwal Baru
-            </button>
-          </div>
+              <div className={`flex-shrink-0 rounded-xl p-3 ${action.bg} transition-transform duration-300 group-hover:scale-110`}>
+                <action.icon className={`h-5 w-5 ${action.color}`} aria-hidden="true" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">
+                  {action.name}
+                </h4>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  {action.description}
+                </p>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
+
     </div>
   );
 }

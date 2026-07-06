@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import { Icons } from "../ui/icons";
 import { useSidebar } from "@/lib/SidebarContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Icons.home },
   { name: "Jadwal Kelas", href: "/schedule", icon: Icons.calendar },
   { name: "Penjadwalan Siswa", href: "/scheduling", icon: Icons.users },
-  { name: "Buku Induk Siswa", href: "/students", icon: Icons.users },
+  { name: "Kelola Siswa", href: "/students", icon: Icons.users },
   { name: "Master Data", href: "/master", icon: Icons.settings },
 ];
 
@@ -22,14 +24,17 @@ interface SidebarProps {
 export function Sidebar({ userName = "Admin", branchName = "Tidak Diketahui" }: SidebarProps) {
   const pathname = usePathname();
   const { isOpen, close } = useSidebar();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Close sidebar on route change on mobile
   useEffect(() => {
     close();
+    setIsNavigating(false);
   }, [pathname, close]);
 
   return (
     <>
+      {isNavigating && <LoadingSpinner />}
       {/* Mobile backdrop */}
       {isOpen && (
         <div 
@@ -46,8 +51,15 @@ export function Sidebar({ userName = "Admin", branchName = "Tidak Diketahui" }: 
       `}>
         <div className="flex h-16 shrink-0 items-center justify-between px-6 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-brand-500 text-white rounded-lg shadow-md shadow-brand-500/20">
-              <Icons.sun className="w-6 h-6" />
+            <div className="flex items-center justify-center p-1 bg-white rounded-lg shadow-sm">
+              <Image 
+                src="/logo.png" 
+                alt="ShiningSun Logo" 
+                width={32} 
+                height={32} 
+                className="object-contain"
+                priority
+              />
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
               Shining<span className="text-brand-500">Sun</span>
@@ -73,6 +85,11 @@ export function Sidebar({ userName = "Admin", branchName = "Tidak Diketahui" }: 
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={(e) => {
+                  if (pathname !== item.href) {
+                    setIsNavigating(true);
+                  }
+                }}
                 className={`
                   group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200
                   ${
@@ -97,8 +114,14 @@ export function Sidebar({ userName = "Admin", branchName = "Tidak Diketahui" }: 
       
         <div className="p-4 mt-auto border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-            <div className="w-8 h-8 rounded-full bg-brand-200 flex items-center justify-center text-brand-700 font-bold shrink-0 uppercase">
-              {userName.charAt(0)}
+            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 shadow-sm border border-slate-200 dark:border-slate-700 bg-white flex items-center justify-center">
+              <Image 
+                src="/logo.png" 
+                alt="User Profile" 
+                width={32} 
+                height={32} 
+                className="object-cover"
+              />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">{userName}</span>
