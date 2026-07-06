@@ -63,7 +63,7 @@ export function LabelManager({ labels }: { labels: any[] }) {
 
   return (
     <div className="bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5 sm:rounded-xl overflow-hidden">
-      {isSubmitting && <LoadingSpinner />}
+      {isSubmitting && <LoadingSpinner usePortal={true} />}
       <div className="px-4 py-5 sm:px-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
         <div>
           <h3 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">Tingkat Level / Label</h3>
@@ -164,9 +164,16 @@ export function LabelManager({ labels }: { labels: any[] }) {
                 <span className="text-white font-bold text-xs drop-shadow-md">L</span>
               </div>
               <div className="min-w-0 flex-auto">
-                <p className="text-sm font-semibold leading-6 text-slate-900 dark:text-white">
-                  {label.main_level}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold leading-6 text-slate-900 dark:text-white">
+                    {label.main_level}
+                  </p>
+                  {label.branch?.name && (
+                    <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-500/20">
+                      {label.branch.name}
+                    </span>
+                  )}
+                </div>
                 <p className="mt-1 truncate text-xs leading-5 text-slate-500">
                   Sub-Level: {label.sub_level}
                 </p>

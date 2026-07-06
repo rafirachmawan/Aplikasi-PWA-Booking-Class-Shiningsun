@@ -34,7 +34,7 @@ export function Sidebar({ userName = "Admin", branchName = "Tidak Diketahui" }: 
 
   return (
     <>
-      {isNavigating && <LoadingSpinner />}
+      {isNavigating && <LoadingSpinner usePortal={true} />}
       {/* Mobile backdrop */}
       {isOpen && (
         <div 

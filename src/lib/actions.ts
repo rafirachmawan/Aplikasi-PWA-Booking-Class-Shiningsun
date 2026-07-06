@@ -153,7 +153,7 @@ export async function getDashboardStats() {
 
 export async function getClasses() {
   const branchId = await getBranchId();
-  let query = supabase.from('classes').select('*');
+  let query = supabase.from('classes').select('*, branch:branches(name)');
   
   if (branchId !== 'ALL') {
     query = query.eq('branch_id', branchId);
@@ -170,7 +170,7 @@ export async function getClasses() {
 
 export async function getLabels() {
   const branchId = await getBranchId();
-  let query = supabase.from('labels').select('*');
+  let query = supabase.from('labels').select('*, branch:branches(name)');
   
   if (branchId !== 'ALL') {
     query = query.or(`branch_id.eq.${branchId},is_system_default.eq.true`);

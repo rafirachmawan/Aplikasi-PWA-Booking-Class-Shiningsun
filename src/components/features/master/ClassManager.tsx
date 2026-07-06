@@ -13,6 +13,14 @@ export function ClassManager({ classes }: { classes: any[] }) {
   
   const [name, setName] = useState("");
   const [maxQuota, setMaxQuota] = useState("4");
+  const [selectedBranch, setSelectedBranch] = useState("");
+
+  const uniqueBranches = Array.from(new Set(classes.filter(c => c.branch?.name).map(c => c.branch.name as string)));
+
+  const filteredClasses = classes.filter(cls => {
+    if (!selectedBranch) return true;
+    return cls.branch?.name === selectedBranch;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,21 +56,40 @@ export function ClassManager({ classes }: { classes: any[] }) {
 
   return (
     <div className="bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5 sm:rounded-xl overflow-hidden mb-8">
-      {isSubmitting && <LoadingSpinner />}
-      <div className="px-4 py-5 sm:px-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+      {isSubmitting && <LoadingSpinner usePortal={true} />}
+      <div className="px-4 py-5 sm:px-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">Ruang Kelas</h3>
           <p className="mt-1 text-sm text-slate-500">Kelola daftar ruangan dan batas maksimal (kuota) siswa per sesi.</p>
         </div>
-        {!isAdding && (
-          <button 
-            onClick={() => setIsAdding(true)}
-            className="inline-flex items-center gap-x-1.5 rounded-full bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500"
-          >
-            <Icons.add className="-ml-0.5 h-4 w-4" />
-            Tambah Ruangan
-          </button>
-        )}
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-48">
+            <select
+              value={selectedBranch}
+              onChange={(e) => setSelectedBranch(e.target.value)}
+              className="block w-full rounded-full border-0 py-1.5 pl-4 pr-8 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 dark:bg-slate-800 dark:ring-slate-700 dark:text-white appearance-none"
+            >
+              <option value="">Semua Filter Cabang</option>
+              {uniqueBranches.map(branchName => (
+                <option key={branchName} value={branchName}>{branchName}</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+              <svg className="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+          {!isAdding && (
+            <button 
+              onClick={() => setIsAdding(true)}
+              className="inline-flex items-center justify-center gap-x-1.5 rounded-full bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 whitespace-nowrap shrink-0"
+            >
+              <Icons.add className="-ml-0.5 h-4 w-4" />
+              Tambah Ruangan
+            </button>
+          )}
+        </div>
       </div>
       
       {isAdding && (
@@ -115,16 +142,28 @@ export function ClassManager({ classes }: { classes: any[] }) {
       )}
 
       <ul role="list" className="divide-y divide-slate-100 dark:divide-slate-800">
-        {classes.map((cls) => (
+        {filteredClasses.length === 0 ? (
+          <li className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+            Tidak ada kelas yang sesuai dengan pencarian.
+          </li>
+        ) : (
+          filteredClasses.map((cls) => (
           <li key={cls.id} className="flex items-center justify-between gap-x-6 px-4 py-5 sm:px-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
             <div className="flex min-w-0 gap-x-4 items-center">
               <div className="h-12 w-12 flex-none rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center dark:bg-brand-500/20 dark:text-brand-400">
                 <Icons.home className="h-6 w-6" />
               </div>
               <div className="min-w-0 flex-auto">
-                <p className="text-sm font-semibold leading-6 text-slate-900 dark:text-white">
-                  {cls.name}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold leading-6 text-slate-900 dark:text-white">
+                    {cls.name}
+                  </p>
+                  {cls.branch?.name && (
+                    <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-500/20">
+                      {cls.branch.name}
+                    </span>
+                  )}
+                </div>
                 <p className="mt-1 truncate text-xs leading-5 text-slate-500">
                   ID: {cls.id.split('-')[0]}...
                 </p>
@@ -144,7 +183,7 @@ export function ClassManager({ classes }: { classes: any[] }) {
               </button>
             </div>
           </li>
-        ))}
+        )))}
       </ul>
     </div>
   );
