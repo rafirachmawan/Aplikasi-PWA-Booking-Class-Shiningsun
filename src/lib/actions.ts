@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { supabase } from "./supabase";
 import { createClient } from '@/lib/supabase/server';
@@ -664,4 +664,33 @@ export async function deleteLabel(id: string) {
 
   if (error) throw new Error("Gagal menghapus label. Pastikan tidak ada siswa yang menggunakan label ini.");
   return true;
+}
+
+export async function getTodaySchedules() {
+  const branchId = await getBranchId();
+  const today = new Date().toLocaleDateString('sv-SE');
+
+  let query = supabase
+    .from('schedule_slots')
+    .select(`
+      *,
+      class:classes(name, max_quota),
+      bookings:schedule_student(
+        student_id,
+        student:students(name, status, label:labels(hex_color))
+      )
+    `)
+    .eq('date', today)
+    .order('time', { ascending: true });
+
+  if (branchId !== 'ALL') {
+    query = query.eq('branch_id', branchId);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("Error fetching today schedules:", error);
+    return [];
+  }
+  return data || [];
 }

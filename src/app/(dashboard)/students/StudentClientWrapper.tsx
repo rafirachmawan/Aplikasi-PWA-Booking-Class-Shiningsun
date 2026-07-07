@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -35,41 +35,41 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      {/* Header & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold leading-7 text-slate-900 dark:text-white sm:truncate sm:text-3xl sm:tracking-tight">
-            Kelola Siswa
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Kelola data siswa, tingkat level, dan status percobaan gratis (CG).
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <Icons.search className="h-5 w-5 text-slate-400" aria-hidden="true" />
-            </div>
-            <input
-              type="text"
-              className="block w-full rounded-full border-0 py-2 pl-10 pr-3 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white"
-              placeholder="Cari nama siswa..."
-            />
+      {/* Header Card */}
+      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+              Kelola Siswa
+            </h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Kelola data siswa, tingkat level, dan status percobaan gratis (CG).
+            </p>
           </div>
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-x-2 rounded-full bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 shrink-0"
+            className="inline-flex items-center gap-x-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 shrink-0 w-full sm:w-auto justify-center"
           >
             <Icons.add className="-ml-0.5 h-5 w-5" aria-hidden="true" />
             Pendaftaran Baru
           </button>
         </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="border-b border-slate-200 dark:border-slate-800">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+        {/* Search */}
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            <Icons.search className="h-5 w-5 text-slate-400" aria-hidden="true" />
+          </div>
+          <input
+            type="text"
+            className="block w-full rounded-lg border-0 py-2 pl-10 pr-3 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white"
+            placeholder="Cari nama siswa..."
+          />
+        </div>
+
+        {/* Tabs */}
+        <nav className="-mb-5 sm:-mb-6 flex space-x-6 border-b border-slate-100 dark:border-slate-800" aria-label="Tabs">
           <button
             onClick={() => setActiveTab("all")}
             className={`

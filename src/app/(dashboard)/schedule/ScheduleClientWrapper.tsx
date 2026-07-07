@@ -92,10 +92,10 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {isLoadingMonth && <LoadingSpinner usePortal={true} />}
 
-      {/* Header */}
-      <div className="space-y-3">
+      {/* Header Card */}
+      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm space-y-4">
         <div>
-          <h2 className="text-2xl font-bold leading-7 text-slate-900 dark:text-white sm:truncate sm:text-3xl sm:tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Matriks Kalender Jadwal
           </h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -103,13 +103,12 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
           </p>
         </div>
 
-        {/* Controls Bar */}
+        {/* Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-          {/* Kelas */}
           <select
             value={filterClassId}
             onChange={(e) => setFilterClassId(e.target.value)}
-            className="w-full sm:w-auto bg-white dark:bg-slate-900 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full sm:w-auto bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="" disabled>-- Pilih Kelas --</option>
             {classes.map(c => (
@@ -117,10 +116,8 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
             ))}
           </select>
 
-          {/* Bulan & Minggu row */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            {/* Navigasi Bulan */}
-            <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex-1 sm:flex-none justify-center">
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 flex-1 sm:flex-none justify-center">
               <button onClick={() => navigateMonth('prev')} className="text-slate-400 hover:text-brand-600 transition-colors">&larr;</button>
               <span className="font-semibold text-slate-900 dark:text-white text-sm whitespace-nowrap">
                 {MONTH_NAMES[currentMonth - 1].substring(0, 3)} {currentYear}
@@ -128,8 +125,7 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
               <button onClick={() => navigateMonth('next')} className="text-slate-400 hover:text-brand-600 transition-colors">&rarr;</button>
             </div>
 
-            {/* Navigasi Minggu */}
-            <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex-1 sm:flex-none justify-center">
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 flex-1 sm:flex-none justify-center">
               <button
                 onClick={() => setWeekIndex(i => Math.max(0, i - 1))}
                 disabled={weekIndex === 0}
