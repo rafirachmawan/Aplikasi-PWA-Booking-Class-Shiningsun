@@ -10,7 +10,7 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {
   turbopack: {},
   devIndicators: {
-    buildActivity: false,
+    // Next 16: buildActivity is removed, just pass an empty object or position if needed
   },
   async redirects() {
     return [

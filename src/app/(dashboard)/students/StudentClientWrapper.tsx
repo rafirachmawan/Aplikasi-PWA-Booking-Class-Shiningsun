@@ -236,7 +236,9 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
                 
                 <div className="flex justify-between items-start mb-3 relative z-10">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">{person.name}</h3>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      {person.name} <span className="font-normal text-slate-900 dark:text-white">( {ageText} )</span>
+                    </h3>
                     <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
                       {person.label ? (
                         <span className="flex items-center gap-1.5 font-medium">
@@ -259,9 +261,8 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
                 
                 <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 mb-4 relative z-10 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
                   <div>
-                    <span className="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Lahir & Usia</span>
+                    <span className="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Tgl Lahir</span>
                     <span className="block font-medium text-slate-700 dark:text-slate-300">{new Date(person.date_of_birth).toLocaleDateString('id-ID')}</span>
-                    <span className="block text-brand-600 dark:text-brand-400 font-bold mt-0.5">{ageText}</span>
                   </div>
                   <div>
                     <span className="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Tgl Masuk</span>
