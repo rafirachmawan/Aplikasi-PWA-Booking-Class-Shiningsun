@@ -92,16 +92,25 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {isLoadingMonth && <LoadingSpinner usePortal={true} />}
 
-      {/* Header Card */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm space-y-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Matriks Kalender Jadwal
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Pilih kolom hari untuk mengelola jadwal kelas atau booking siswa.
-          </p>
+      {/* Header Card - Unified Design */}
+      <div className="rounded-3xl bg-brand-600 p-6 sm:p-10 shadow-lg relative overflow-hidden mb-6 sm:mb-8">
+        {/* Abstract Background Decoration */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+          <div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
+              Jadwal Keseluruhan
+            </h2>
+            <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
+              Lihat jadwal operasional seluruh kelas dan siswa bulan ini.
+            </p>
+          </div>
         </div>
+      </div>
+
+      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 
         {/* Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">

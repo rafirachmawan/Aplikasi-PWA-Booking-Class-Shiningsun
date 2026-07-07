@@ -4,21 +4,13 @@ import { useState } from "react";
 import Image from "next/image";
 import { Icons } from "../ui/icons";
 import { useSidebar } from "@/lib/SidebarContext";
-import { BranchSelector } from "@/components/features/auth/BranchSelector";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-
-interface Branch {
-  id: string;
-  name: string;
-}
 
 interface HeaderProps {
   role: string | null;
-  branches: Branch[];
-  currentBranchId: string;
 }
 
-export function Header({ role, branches, currentBranchId }: HeaderProps) {
+export function Header({ role }: HeaderProps) {
   const { toggle } = useSidebar();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -60,12 +52,6 @@ export function Header({ role, branches, currentBranchId }: HeaderProps) {
         </form>
 
         <div className="flex items-center gap-x-4 lg:gap-x-6 w-full justify-end">
-
-          {role === 'SUPERADMIN' && (
-            <div className="mr-auto lg:mr-0 pl-4 lg:pl-0">
-               <BranchSelector branches={branches} currentBranchId={currentBranchId} />
-            </div>
-          )}
           
           <button type="button" className="-m-2.5 p-2.5 text-slate-400 hover:text-slate-500">
             <span className="sr-only">Lihat notifikasi</span>

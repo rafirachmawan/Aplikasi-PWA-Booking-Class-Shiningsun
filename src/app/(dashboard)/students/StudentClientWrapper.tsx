@@ -33,29 +33,36 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      {/* Header Card */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      {/* Header Card - Unified Design */}
+      <div className="rounded-3xl bg-brand-600 p-6 sm:p-10 shadow-lg relative overflow-hidden">
+        {/* Abstract Background Decoration */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
               Kelola Siswa
             </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
               Kelola data siswa, tingkat level, dan status percobaan gratis (CG).
             </p>
           </div>
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-x-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 shrink-0 w-full sm:w-auto justify-center"
+            className="inline-flex items-center gap-x-2 rounded-xl bg-white text-brand-700 px-5 py-3 text-sm font-bold shadow-sm hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white shrink-0 w-full sm:w-auto justify-center transition-all"
           >
             <Icons.add className="-ml-0.5 h-5 w-5" aria-hidden="true" />
             Pendaftaran Baru
           </button>
         </div>
-
+      </div>
+      
+      {/* Toolbar / Search / Tabs */}
+      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm space-y-4">
         {/* Search */}
         <div className="relative">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -235,11 +242,11 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
                 )}
                 
                 <div className="flex justify-between items-start mb-3 relative z-10">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      {person.name} <span className="font-normal text-slate-900 dark:text-white">( {ageText} )</span>
+                  <div className="flex-1 pr-3">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                      {person.name} <span className="font-normal text-slate-900 dark:text-white whitespace-nowrap">( {ageText} )</span>
                     </h3>
-                    <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                    <div className="mt-1.5 flex items-center gap-2 text-xs text-slate-500">
                       {person.label ? (
                         <span className="flex items-center gap-1.5 font-medium">
                           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: person.label.hex_color }}></span>

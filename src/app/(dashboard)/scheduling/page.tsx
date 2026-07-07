@@ -13,14 +13,21 @@ export default async function SchedulingPage({ searchParams }: { searchParams: P
   const schedules = await getMonthlySchedules(currentYear, currentMonth);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm">
-        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-          Penjadwalan Siswa
-        </h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Kelola jadwal pendaftaran siswa ke kelas secara manual ataupun otomatis.
-        </p>
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header Card - Unified Design */}
+      <div className="rounded-3xl bg-brand-600 p-6 sm:p-10 shadow-lg relative overflow-hidden">
+        {/* Abstract Background Decoration */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div className="relative z-10">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
+            Penjadwalan Siswa
+          </h2>
+          <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
+            Kelola jadwal pendaftaran siswa ke kelas secara manual ataupun otomatis.
+          </p>
+        </div>
       </div>
 
       <SchedulingClientWrapper 

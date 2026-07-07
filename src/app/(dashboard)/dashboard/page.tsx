@@ -13,37 +13,44 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Hero Banner */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
-        <div>
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-            {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight mt-1">
-            Selamat {new Date().getHours() < 12 ? 'Pagi' : new Date().getHours() < 15 ? 'Siang' : new Date().getHours() < 18 ? 'Sore' : 'Malam'}, ShiningSun!
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            Ringkasan performa pendaftaran dan penjadwalan terkini.
-          </p>
+      <div className="rounded-3xl bg-brand-600 p-6 sm:p-10 shadow-lg relative overflow-hidden">
+        {/* Abstract Background Decoration */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/20 text-white/90 text-xs font-medium backdrop-blur-sm mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
+              Selamat {new Date().getHours() < 12 ? 'Pagi' : new Date().getHours() < 15 ? 'Siang' : new Date().getHours() < 18 ? 'Sore' : 'Malam'}, ShiningSun!
+            </h2>
+            <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
+              Ini adalah ringkasan sistem pendaftaran dan penjadwalan hari ini. Semoga aktivitas berjalan lancar.
+            </p>
+          </div>
         </div>
 
         {/* Stats */}
-        <dl className="grid grid-cols-3 gap-3 mt-5">
+        <div className="grid grid-cols-3 gap-3 mt-8 sm:mt-10 relative z-10">
           {stats.map((item) => (
             <div
               key={item.name}
-              className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 sm:p-4 border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 transition-colors"
+              className="rounded-2xl bg-white/10 border border-white/10 p-3 sm:p-5 backdrop-blur-md hover:bg-white/15 transition-all"
             >
-              <dt className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 truncate">
+              <dt className="text-[10px] sm:text-xs font-semibold text-brand-100 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">
                 {item.name}
               </dt>
-              <dd className="mt-1">
-                <span className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">{item.value}</span>
+              <dd>
+                <span className="text-2xl sm:text-4xl font-bold text-white">{item.value}</span>
               </dd>
             </div>
           ))}
-        </dl>
+        </div>
       </div>
 
       <div className="mt-8">

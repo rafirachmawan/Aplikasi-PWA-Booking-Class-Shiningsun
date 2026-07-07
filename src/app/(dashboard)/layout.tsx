@@ -13,6 +13,12 @@ export default async function DashboardLayout({
   const currentBranchId = await getBranchId();
   let branches = [];
   
+  // Set default empty branch selection instead of "ALL" initially if not set
+  let effectiveBranchId = currentBranchId;
+  if (!effectiveBranchId && role === 'SUPERADMIN') {
+    effectiveBranchId = ""; 
+  }
+
   if (role === 'SUPERADMIN') {
     branches = await getBranches();
   }
@@ -28,15 +34,27 @@ export default async function DashboardLayout({
     if (profile) userName = profile.name;
   }
   
-  const { data: currentBranch } = await supabase.from('branches').select('name').eq('id', currentBranchId).single();
-  if (currentBranch) branchName = currentBranch.name;
+  if (effectiveBranchId && effectiveBranchId !== "ALL") {
+    const { data: currentBranch } = await supabase.from('branches').select('name').eq('id', effectiveBranchId).single();
+    if (currentBranch) branchName = currentBranch.name;
+  } else if (effectiveBranchId === "ALL") {
+    branchName = "Semua Cabang";
+  } else {
+    branchName = "Pilih Cabang";
+  }
 
   return (
     <SidebarProvider>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-        <Sidebar userName={userName} branchName={branchName} />
+        <Sidebar 
+          userName={userName} 
+          branchName={branchName} 
+          role={role} 
+          branches={branches} 
+          currentBranchId={effectiveBranchId} 
+        />
         <div className="lg:pl-72 flex flex-col min-h-screen">
-          <Header role={role} branches={branches} currentBranchId={currentBranchId} />
+          <Header role={role} />
           <main className="flex-1">
             <div className="px-4 py-8 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
               {children}

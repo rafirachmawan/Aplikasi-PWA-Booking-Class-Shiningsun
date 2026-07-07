@@ -40,15 +40,21 @@ export default function LoginPage() {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16 bg-slate-50 dark:bg-slate-900">
-        <div className="mx-auto w-full max-w-[440px]">
-          {/* Mobile Logo (hidden on desktop) */}
-          <div className="flex flex-col items-center mb-8 lg:hidden">
-            <div className="h-14 w-14 flex items-center justify-center">
-              <Image src="/logo.png" alt="ShiningSun Logo" width={56} height={56} className="object-contain" priority />
+      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16 bg-slate-50 dark:bg-slate-900 relative">
+        {/* Mobile Header Decoration */}
+        <div className="lg:hidden absolute top-0 left-0 right-0 h-64 bg-brand-600 rounded-b-[40px] -z-0">
+          <div className="absolute -top-20 -left-20 w-48 h-48 rounded-full bg-brand-500/30 blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-32 h-32 rounded-full bg-brand-700/40 blur-2xl" />
+        </div>
+
+        <div className="mx-auto w-full max-w-[440px] relative z-10 mt-10 lg:mt-0">
+          {/* Mobile Logo & Welcome (hidden on desktop) */}
+          <div className="flex flex-col items-center mb-8 lg:hidden text-center -mt-20">
+            <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-sm border border-white/30 mb-5">
+              <Image src="/logo.png" alt="ShiningSun Logo" width={40} height={40} className="object-contain" priority />
             </div>
-            <h2 className="mt-4 text-2xl font-bold text-slate-900 dark:text-white">Portal ShiningSun</h2>
-            <p className="mt-1 text-sm text-slate-500">Masuk ke sistem manajemen cabang Anda</p>
+            <h2 className="text-3xl font-bold text-white">ShiningSun</h2>
+            <p className="mt-2 text-brand-100 text-sm max-w-xs">Sistem penjadwalan cerdas & mudah untuk cabang Anda</p>
           </div>
 
           {/* Desktop heading */}
@@ -57,7 +63,7 @@ export default function LoginPage() {
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Masuk ke sistem manajemen cabang Anda</p>
           </div>
 
-          <div className="bg-white px-6 py-10 shadow-sm sm:rounded-2xl sm:px-10 dark:bg-slate-800 ring-1 ring-slate-900/5 dark:ring-slate-700/50">
+          <div className="bg-white px-6 py-8 sm:py-10 shadow-xl shadow-slate-200/40 sm:rounded-3xl sm:px-10 dark:bg-slate-800 ring-1 ring-slate-900/5 dark:ring-slate-700/50 dark:shadow-none rounded-3xl">
             <LoginForm />
           </div>
         </div>
