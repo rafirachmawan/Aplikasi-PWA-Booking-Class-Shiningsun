@@ -50,8 +50,6 @@ export default async function DashboardLayout({
           userName={userName} 
           branchName={branchName} 
           role={role} 
-          branches={branches} 
-          currentBranchId={effectiveBranchId} 
         />
         <div className="lg:pl-72 flex flex-col min-h-screen">
           <Header role={role} />

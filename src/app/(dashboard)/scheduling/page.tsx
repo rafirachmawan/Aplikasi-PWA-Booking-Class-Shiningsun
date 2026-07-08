@@ -1,9 +1,17 @@
-﻿import { getStudents, getClasses, getMonthlySchedules } from "@/lib/actions";
+import { getStudents, getClasses, getMonthlySchedules, getCurrentUserRole, getBranchId } from "@/lib/actions";
 import { SchedulingClientWrapper } from "./SchedulingClientWrapper";
+import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 
 export const dynamic = 'force-dynamic';
 
 export default async function SchedulingPage({ searchParams }: { searchParams: Promise<{ month?: string, year?: string }> }) {
+  // Cek apakah superadmin belum pilih cabang
+  const role = await getCurrentUserRole();
+  const branchId = await getBranchId();
+  if (role === 'SUPERADMIN' && !branchId) {
+    return <NoBranchSelected pageName="Penjadwalan Siswa" />;
+  }
+
   const params = await searchParams;
   const currentMonth = params.month ? parseInt(params.month) : new Date().getMonth() + 1; // 1-12
   const currentYear = params.year ? parseInt(params.year) : new Date().getFullYear();

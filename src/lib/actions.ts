@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { supabase } from "./supabase";
 import { createClient } from '@/lib/supabase/server';
@@ -73,6 +73,11 @@ export async function setSuperadminBranch(branchId: string) {
   cookieStore.set('superadmin_branch_id', branchId, { path: '/' });
 }
 
+export async function clearSuperadminBranch() {
+  const cookieStore = await cookies();
+  cookieStore.delete('superadmin_branch_id');
+}
+
 export async function getBranchId() {
   const supabaseServer = await createClient();
   const { data: { user } } = await supabaseServer.auth.getUser();
@@ -93,7 +98,7 @@ export async function getBranchId() {
     if (selectedBranch) {
       return selectedBranch;
     }
-    return 'ALL'; // Default untuk Superadmin adalah Semua Cabang
+    return ''; // Default kosong agar superadmin harus pilih cabang dulu
   }
 
   return profile?.branch_id || 'ALL'; // Fallback aman jika branch_id kosong
@@ -116,6 +121,9 @@ export async function getBranches() {
 export async function getDashboardStats() {
   try {
     const branchId = await getBranchId();
+    
+    // Jika belum pilih cabang, return 0
+    if (!branchId) return { reguler: 0, cg: 0, classes: 0 };
     
     // 1. Hitung Siswa Aktif (Reguler)
     let regulerQuery = supabase
@@ -153,6 +161,8 @@ export async function getDashboardStats() {
 
 export async function getClasses() {
   const branchId = await getBranchId();
+  if (!branchId) return [];
+  
   let query = supabase.from('classes').select('*, branch:branches(name)');
   
   if (branchId !== 'ALL') {
@@ -170,6 +180,8 @@ export async function getClasses() {
 
 export async function getLabels() {
   const branchId = await getBranchId();
+  if (!branchId) return [];
+  
   let query = supabase.from('labels').select('*, branch:branches(name)');
   
   if (branchId !== 'ALL') {
@@ -187,6 +199,8 @@ export async function getLabels() {
 
 export async function getStudents() {
   const branchId = await getBranchId();
+  if (!branchId) return [];
+  
   let query = supabase
     .from('students')
     .select('*, label:labels(main_level, sub_level, hex_color)')
@@ -389,11 +403,13 @@ export async function bookStudentManual(
 }
 
 export async function getMonthlySchedules(year: number, month: number) {
+  const branchId = await getBranchId();
+  if (!branchId) return [];
+  
   // Hitung tanggal awal dan akhir bulan
   const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
   const endDate = new Date(year, month, 0).toISOString().split('T')[0]; // Hari terakhir bulan tersebut
 
-  const branchId = await getBranchId();
   let query = supabase
     .from('schedule_slots')
     .select(`
@@ -668,6 +684,10 @@ export async function deleteLabel(id: string) {
 
 export async function getTodaySchedules() {
   const branchId = await getBranchId();
+  
+  // Jika belum pilih cabang, return kosong
+  if (!branchId) return [];
+  
   const today = new Date().toLocaleDateString('sv-SE');
 
   let query = supabase

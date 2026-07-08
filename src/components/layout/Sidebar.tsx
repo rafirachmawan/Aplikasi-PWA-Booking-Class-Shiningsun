@@ -7,7 +7,7 @@ import { Icons } from "../ui/icons";
 import { useSidebar } from "@/lib/SidebarContext";
 import { useEffect, useState } from "react";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
-import { BranchSelector } from "@/components/features/auth/BranchSelector";
+
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Icons.home },
@@ -17,25 +17,16 @@ const navigation = [
   { name: "Master Data", href: "/master", icon: Icons.settings },
 ];
 
-interface Branch {
-  id: string;
-  name: string;
-}
-
 interface SidebarProps {
   userName?: string;
   branchName?: string;
   role?: string | null;
-  branches?: Branch[];
-  currentBranchId?: string;
 }
 
 export function Sidebar({ 
   userName = "Admin", 
   branchName = "Tidak Diketahui",
   role = null,
-  branches = [],
-  currentBranchId = "" // Empty default to force user to choose
 }: SidebarProps) {
   const pathname = usePathname();
   const { isOpen, close } = useSidebar();
@@ -94,14 +85,6 @@ export function Sidebar({
         </div>
         
         <nav className="flex flex-1 flex-col p-4 space-y-1 overflow-y-auto">
-          {/* Branch Selector for Superadmin in Sidebar instead of Header */}
-          {role === 'SUPERADMIN' && branches && branches.length > 0 && (
-            <div className="mb-6 px-1">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block px-2">Pilih Cabang</label>
-              <BranchSelector branches={branches} currentBranchId={currentBranchId} />
-            </div>
-          )}
-          
           <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block px-3 mt-2">Menu</label>
           {navigation.map((item) => {
             const isActive = pathname.startsWith(item.href);
