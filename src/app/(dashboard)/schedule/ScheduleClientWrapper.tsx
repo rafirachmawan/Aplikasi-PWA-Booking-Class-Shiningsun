@@ -119,45 +119,64 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
       <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 
         {/* Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-          <select
-            value={filterClassId}
-            onChange={(e) => setFilterClassId(e.target.value)}
-            className="w-full sm:w-auto bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          >
-            <option value="" disabled>-- Pilih Kelas --</option>
-            {classes.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+        {/* Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 w-full">
+          <div className="flex flex-col gap-1.5 w-full sm:w-auto">
+            <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1">Filter Kelas</label>
+            <div className="relative w-full sm:w-auto">
+              <select
+                value={filterClassId}
+                onChange={(e) => setFilterClassId(e.target.value)}
+                className="appearance-none w-full sm:w-48 bg-slate-50 dark:bg-slate-800 pl-4 pr-10 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer h-[42px]"
+              >
+                <option value="">-- Semua Kelas --</option>
+                {classes.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 flex-1 sm:flex-none justify-center">
-              <button onClick={() => navigateMonth('prev')} className="text-slate-400 hover:text-brand-600 transition-colors">&larr;</button>
-              <span className="font-semibold text-slate-900 dark:text-white text-sm whitespace-nowrap">
-                {MONTH_NAMES[currentMonth - 1].substring(0, 3)} {currentYear}
-              </span>
-              <button onClick={() => navigateMonth('next')} className="text-slate-400 hover:text-brand-600 transition-colors">&rarr;</button>
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            <div className="flex flex-col gap-1.5 flex-1 sm:flex-none">
+              <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1">Bulan</label>
+              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 justify-center h-[42px]">
+                <button onClick={() => navigateMonth('prev')} className="text-slate-400 hover:text-brand-600 transition-colors p-1" title="Bulan Sebelumnya">&larr;</button>
+                <span className="font-semibold text-slate-900 dark:text-white text-sm whitespace-nowrap min-w-[70px] text-center">
+                  {MONTH_NAMES[currentMonth - 1].substring(0, 3)} {currentYear}
+                </span>
+                <button onClick={() => navigateMonth('next')} className="text-slate-400 hover:text-brand-600 transition-colors p-1" title="Bulan Berikutnya">&rarr;</button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 flex-1 sm:flex-none justify-center">
-              <button
-                onClick={() => setWeekIndex(i => Math.max(0, i - 1))}
-                disabled={weekIndex === 0}
-                className="text-slate-400 hover:text-brand-600 disabled:opacity-30 transition-colors"
-              >
-                &larr;
-              </button>
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                Mg {weekIndex + 1}/{weeks.length}
-              </span>
-              <button
-                onClick={() => setWeekIndex(i => Math.min(weeks.length - 1, i + 1))}
-                disabled={weekIndex >= weeks.length - 1}
-                className="text-slate-400 hover:text-brand-600 disabled:opacity-30 transition-colors"
-              >
-                &rarr;
-              </button>
+            <div className="flex flex-col gap-1.5 flex-1 sm:flex-none">
+              <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1">Minggu Ke</label>
+              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 justify-center h-[42px]">
+                <button
+                  onClick={() => setWeekIndex(i => Math.max(0, i - 1))}
+                  disabled={weekIndex === 0}
+                  className="text-slate-400 hover:text-brand-600 disabled:opacity-30 transition-colors p-1"
+                  title="Minggu Sebelumnya"
+                >
+                  &larr;
+                </button>
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap min-w-[40px] text-center">
+                  {weekIndex + 1} / {weeks.length}
+                </span>
+                <button
+                  onClick={() => setWeekIndex(i => Math.min(weeks.length - 1, i + 1))}
+                  disabled={weekIndex >= weeks.length - 1}
+                  className="text-slate-400 hover:text-brand-600 disabled:opacity-30 transition-colors p-1"
+                  title="Minggu Berikutnya"
+                >
+                  &rarr;
+                </button>
+              </div>
             </div>
           </div>
         </div>

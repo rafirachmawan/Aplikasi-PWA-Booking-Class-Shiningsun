@@ -416,6 +416,17 @@ export async function bookStudentManual(
   return true;
 }
 
+export async function removeStudentBooking(scheduleSlotId: string, studentId: string) {
+  const { error } = await supabase
+    .from('schedule_student')
+    .delete()
+    .eq('schedule_slot_id', scheduleSlotId)
+    .eq('student_id', studentId);
+
+  if (error) throw new Error("Gagal menghapus jadwal: " + error.message);
+  return true;
+}
+
 export async function getMonthlySchedules(year: number, month: number) {
   const branchId = await getBranchId();
   if (!branchId) return [];
@@ -727,4 +738,55 @@ export async function getTodaySchedules() {
     return [];
   }
   return data || [];
+}
+
+export async function resetAllDatabaseData() {
+  const role = await getCurrentUserRole();
+  if (role !== 'SUPERADMIN') {
+    throw new Error("Hanya Superadmin yang memiliki izin untuk meriset semua data.");
+  }
+
+  const supabaseServer = await createClient();
+
+  // 1. Delete all from schedule_student
+  const { error: err1 } = await supabaseServer
+    .from('schedule_student')
+    .delete()
+    .neq('student_id', '00000000-0000-0000-0000-000000000000');
+
+  if (err1) throw new Error("Gagal menghapus data booking: " + err1.message);
+
+  // 2. Delete all from schedule_slots
+  const { error: err2 } = await supabaseServer
+    .from('schedule_slots')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000');
+
+  if (err2) throw new Error("Gagal menghapus data slot jadwal: " + err2.message);
+
+  // 3. Delete all from students
+  const { error: err3 } = await supabaseServer
+    .from('students')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000');
+
+  if (err3) throw new Error("Gagal menghapus data siswa: " + err3.message);
+
+  // 4. Delete all from classes
+  const { error: err4 } = await supabaseServer
+    .from('classes')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000');
+
+  if (err4) throw new Error("Gagal menghapus data kelas: " + err4.message);
+
+  // 5. Delete all from labels
+  const { error: err5 } = await supabaseServer
+    .from('labels')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000');
+
+  if (err5) throw new Error("Gagal menghapus data label: " + err5.message);
+
+  return { success: true };
 }

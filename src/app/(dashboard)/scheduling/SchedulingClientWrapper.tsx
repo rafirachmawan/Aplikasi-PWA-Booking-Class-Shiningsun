@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
-import { autoBookStudentToClass, bookStudentManual } from "@/lib/actions";
+import { autoBookStudentToClass, bookStudentManual, removeStudentBooking } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface SchedulingClientWrapperProps {
@@ -20,11 +20,48 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [studentId, setStudentId] = useState("");
   
+  // Custom Student Dropdown States
+  const [isOpenStudentDropdown, setIsOpenStudentDropdown] = useState(false);
+  const [studentSearchQuery, setStudentSearchQuery] = useState("");
+  const studentDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Click outside for student dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (studentDropdownRef.current && !studentDropdownRef.current.contains(event.target as Node)) {
+        setIsOpenStudentDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   // Custom Modal State
   const [modalConfig, setModalConfig] = useState<{isOpen: boolean, type: 'success' | 'error' | 'warning', message: string}>({isOpen: false, type: 'success', message: ''});
   
   const showAlert = (type: 'success' | 'error' | 'warning', message: string) => {
     setModalConfig({ isOpen: true, type, message });
+  };
+
+  // Delete Booking Confirmation Modal State
+  const [deleteConfirm, setDeleteConfirm] = useState<{isOpen: boolean, slotId: string, studentId: string, label: string}>({isOpen: false, slotId: '', studentId: '', label: ''});
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteBooking = async () => {
+    if (!deleteConfirm.slotId || !deleteConfirm.studentId) return;
+    setIsDeleting(true);
+    try {
+      await removeStudentBooking(deleteConfirm.slotId, deleteConfirm.studentId);
+      setDeleteConfirm({isOpen: false, slotId: '', studentId: '', label: ''});
+      showAlert('success', 'Jadwal berhasil dihapus.');
+      router.refresh();
+    } catch (error: any) {
+      showAlert('error', error.message);
+    } finally {
+      setIsDeleting(false);
+    }
   };
   
   // Auto Mode State
@@ -36,15 +73,6 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
   const [manualClassId, setManualClassId] = useState("");
 
   const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-  const daysOfWeek = [
-    { value: 1, label: "Senin" },
-    { value: 2, label: "Selasa" },
-    { value: 3, label: "Rabu" },
-    { value: 4, label: "Kamis" },
-    { value: 5, label: "Jumat" },
-    { value: 6, label: "Sabtu" },
-    { value: 0, label: "Minggu" }
-  ];
   
   const timeSlots = ["08:00", "09:00", "11:00", "13:00", "15:00", "16:00"];
 
@@ -122,12 +150,10 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
     }
   };
 
-  // Filter schedules that are valid for manual booking (not full, not locked)
-  const validSchedules = schedules.filter(slot => {
-    const bookedCount = slot.bookings?.length || 0;
-    const isFull = bookedCount >= (slot.class?.max_quota || 0);
-    return !slot.is_locked && !isFull;
-  });
+  const selectedStudent = students.find(s => s.id === studentId);
+  const filteredStudents = students.filter(s => 
+    s.name.toLowerCase().includes(studentSearchQuery.toLowerCase())
+  );
 
   return (
     <>
@@ -165,16 +191,78 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
           <label className="block text-sm font-semibold text-brand-900 dark:text-brand-100 mb-2">
             Langkah 1: Pilih Siswa
           </label>
-          <select
-            value={studentId}
-            onChange={(e) => setStudentId(e.target.value)}
-            className="block w-full rounded-xl border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-          >
-            <option value="" disabled>-- Cari dan Pilih Siswa --</option>
-            {students.map(s => (
-              <option key={s.id} value={s.id}>{s.name} ({s.status === 'REGISTERED' ? 'Reguler' : 'CG'})</option>
-            ))}
-          </select>
+          
+          {/* Custom Searchable Dropdown */}
+          <div className="relative" ref={studentDropdownRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpenStudentDropdown(!isOpenStudentDropdown);
+                setStudentSearchQuery("");
+              }}
+              className="flex items-center justify-between w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-white text-left text-sm cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <span className="truncate text-slate-700 dark:text-slate-300 font-medium">
+                {selectedStudent 
+                  ? `${selectedStudent.name} (${selectedStudent.status === 'REGISTERED' ? 'Reguler' : 'CG'})` 
+                  : "-- Cari dan Pilih Siswa --"
+                }
+              </span>
+              <svg className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${isOpenStudentDropdown ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+              </svg>
+            </button>
+
+            {isOpenStudentDropdown && (
+              <div className="absolute z-50 mt-1.5 w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-2 animate-in fade-in slide-in-from-top-1 duration-100">
+                {/* Search Input */}
+                <div className="relative mb-2">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Icons.search className="h-4 w-4 text-slate-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Cari nama siswa..."
+                    value={studentSearchQuery}
+                    onChange={(e) => setStudentSearchQuery(e.target.value)}
+                    className="block w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 pl-9 pr-3 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  />
+                </div>
+
+                {/* Options List (Max 5 items before scrolling) */}
+                <div className="max-h-[190px] overflow-y-auto space-y-0.5">
+                  {filteredStudents.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-slate-400 italic text-center">
+                      Siswa tidak ditemukan
+                    </div>
+                  ) : (
+                    filteredStudents.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => {
+                          setStudentId(s.id);
+                          setIsOpenStudentDropdown(false);
+                        }}
+                        className={`w-full px-3 py-2 text-xs text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-between ${
+                          studentId === s.id ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300"
+                        }`}
+                      >
+                        <span className="truncate pr-2">{s.name}</span>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                          s.status === 'REGISTERED' 
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                            : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
+                        }`}>
+                          {s.status === 'REGISTERED' ? 'Reguler' : 'CG'}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Tampilkan Jadwal Siswa yang Terdaftar */}
           {studentId && (
@@ -190,20 +278,29 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
                 }
                 
                 return (
-                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                  <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
                     {studentSchedules.map(slot => {
                       const dateObj = new Date(slot.date);
                       const hari = isNaN(dateObj.getTime()) ? "" : ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][dateObj.getDay()];
                       const tgl = isNaN(dateObj.getTime()) ? "" : dateObj.getDate();
+                      const jadwalLabel = `${hari}, ${tgl} ${monthNames[currentMonth - 1]} | ${slot.time.substring(0,5)} | ${slot.class?.name}`;
                       
                       return (
-                        <div key={slot.id} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-brand-200 dark:border-brand-500/30 shadow-sm">
+                        <div key={slot.id} className="group inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-brand-200 dark:border-brand-500/30 shadow-sm hover:border-red-300 dark:hover:border-red-500/30 transition-colors">
                           <Icons.calendar className="w-3 h-3 text-brand-500" />
                           <span>{hari}, {tgl} {monthNames[currentMonth - 1]}</span>
                           <span className="text-slate-300 mx-0.5">|</span>
                           <span className="text-brand-600 dark:text-brand-400">{slot.time.substring(0,5)}</span>
                           <span className="text-slate-300 mx-0.5">|</span>
                           <span className="font-semibold">{slot.class?.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteConfirm({isOpen: true, slotId: slot.id, studentId: studentId, label: jadwalLabel})}
+                            className="ml-1 p-1 rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors opacity-50 group-hover:opacity-100"
+                            title="Hapus jadwal ini"
+                          >
+                            <Icons.close className="w-3 h-3" />
+                          </button>
                         </div>
                       );
                     })}
@@ -240,37 +337,63 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
                         />
                       </div>
                       
-                      <select
-                        value={schedule.time}
-                        onChange={(e) => updateAutoSchedule(index, 'time', e.target.value)}
-                        className="block flex-1 min-w-[120px] rounded-xl border-slate-200 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-                      >
-                        {timeSlots.map(t => (
-                          <option key={t} value={t}>{t} - {String(parseInt(t) + 1).padStart(2, '0')}:00 WIB</option>
-                        ))}
-                      </select>
+                      <div className="flex-1 min-w-[120px]">
+                        <div className="flex items-center justify-between mb-1.5 px-1">
+                          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Jam Sesi</label>
+                        </div>
+                        <div className="relative">
+                          <select
+                            value={schedule.time}
+                            onChange={(e) => updateAutoSchedule(index, 'time', e.target.value)}
+                            className="appearance-none block w-full rounded-xl border-slate-200 bg-white pl-4 pr-10 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
+                          >
+                            {timeSlots.map(t => (
+                              <option key={t} value={t}>{t} - {String(parseInt(t) + 1).padStart(2, '0')}:00 WIB</option>
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                            <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
 
-                      <select
-                        required
-                        value={schedule.classId}
-                        onChange={(e) => updateAutoSchedule(index, 'classId', e.target.value)}
-                        className="block flex-[2] min-w-[150px] rounded-xl border-slate-200 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-                      >
-                        <option value="" disabled>-- Pilih Tipe Kelas --</option>
-                        {classes.map(c => (
-                          <option key={c.id} value={c.id}>{c.name} (Max: {c.max_quota})</option>
-                        ))}
-                      </select>
+                      <div className="flex-[2] min-w-[150px]">
+                        <div className="flex items-center justify-between mb-1.5 px-1">
+                          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tipe Kelas</label>
+                        </div>
+                        <div className="relative">
+                          <select
+                            required
+                            value={schedule.classId}
+                            onChange={(e) => updateAutoSchedule(index, 'classId', e.target.value)}
+                            className="appearance-none block w-full rounded-xl border-slate-200 bg-white pl-4 pr-10 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
+                          >
+                            <option value="" disabled>-- Pilih Tipe Kelas --</option>
+                            {classes.map(c => (
+                              <option key={c.id} value={c.id}>{c.name} (Max: {c.max_quota})</option>
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                            <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
 
                       {autoSchedules.length > 1 && (
-                        <button 
-                          type="button" 
-                          onClick={() => removeAutoScheduleRow(index)}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded-full"
-                          title="Hapus Jadwal"
-                        >
-                          <Icons.close className="w-4 h-4" />
-                        </button>
+                        <div className="self-end pb-1.5">
+                          <button 
+                            type="button" 
+                            onClick={() => removeAutoScheduleRow(index)}
+                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-full transition-colors"
+                            title="Hapus Jadwal"
+                          >
+                            <Icons.close className="w-4 h-4" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   );
@@ -327,31 +450,45 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Pilih Jam</label>
-                  <select
-                    required
-                    value={manualTime}
-                    onChange={(e) => setManualTime(e.target.value)}
-                    className="block w-full rounded-xl border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-                  >
-                    <option value="" disabled>-- Pilih Jam --</option>
-                    {timeSlots.map(t => (
-                      <option key={t} value={t}>{t} - {String(parseInt(t) + 1).padStart(2, '0')}:00 WIB</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      required
+                      value={manualTime}
+                      onChange={(e) => setManualTime(e.target.value)}
+                      className="appearance-none block w-full rounded-xl border-slate-200 bg-white pl-4 pr-10 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
+                    >
+                      <option value="" disabled>-- Pilih Jam --</option>
+                      {timeSlots.map(t => (
+                        <option key={t} value={t}>{t} - {String(parseInt(t) + 1).padStart(2, '0')}:00 WIB</option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                      <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Pilih Kelas</label>
-                  <select
-                    required
-                    value={manualClassId}
-                    onChange={(e) => setManualClassId(e.target.value)}
-                    className="block w-full rounded-xl border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-                  >
-                    <option value="" disabled>-- Pilih Tipe Kelas --</option>
-                    {classes.map(c => (
-                      <option key={c.id} value={c.id}>{c.name} (Max: {c.max_quota})</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      required
+                      value={manualClassId}
+                      onChange={(e) => setManualClassId(e.target.value)}
+                      className="appearance-none block w-full rounded-xl border-slate-200 bg-white pl-4 pr-10 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
+                    >
+                      <option value="" disabled>-- Pilih Tipe Kelas --</option>
+                      {classes.map(c => (
+                        <option key={c.id} value={c.id}>{c.name} (Max: {c.max_quota})</option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                      <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
               <p className="text-xs text-slate-500 mt-2">
@@ -411,6 +548,45 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
               className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 rounded-xl hover:bg-brand-700 transition-colors shadow-sm"
             >
               Tutup
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Delete Booking Confirmation Modal */}
+    {deleteConfirm.isOpen && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
+          <div className="p-6 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/10 mb-4">
+              <Icons.trash className="h-7 w-7 text-red-600 dark:text-red-500" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+              Hapus Jadwal Siswa?
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
+              Apakah Anda yakin ingin menghapus jadwal berikut?
+            </p>
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+              <Icons.calendar className="w-3 h-3 text-brand-500" />
+              {deleteConfirm.label}
+            </div>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 flex gap-3">
+            <button
+              onClick={() => setDeleteConfirm({isOpen: false, slotId: '', studentId: '', label: ''})}
+              disabled={isDeleting}
+              className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm border border-slate-200 dark:border-slate-700 disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleDeleteBooking}
+              disabled={isDeleting}
+              className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+            >
+              {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
             </button>
           </div>
         </div>
