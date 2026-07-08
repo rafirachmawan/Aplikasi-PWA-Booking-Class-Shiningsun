@@ -7,30 +7,46 @@ import { createLabel, deleteLabel } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 const PREDEFINED_COLORS = [
-  // Reds / Pinks
-  { name: "Merah Muda", hex: "#f87171" }, { name: "Merah", hex: "#ef4444" }, { name: "Merah Gelap", hex: "#dc2626" },
-  { name: "Rose Muda", hex: "#fb7185" }, { name: "Rose", hex: "#f43f5e" }, { name: "Rose Gelap", hex: "#e11d48" },
-  { name: "Pink Muda", hex: "#f472b6" }, { name: "Pink", hex: "#ec4899" }, { name: "Pink Gelap", hex: "#db2777" },
-  { name: "Fuchsia Muda", hex: "#e879f9" }, { name: "Fuchsia", hex: "#d946ef" }, { name: "Fuchsia Gelap", hex: "#c026d3" },
-  // Purples
-  { name: "Ungu Muda", hex: "#c084fc" }, { name: "Ungu", hex: "#a855f7" }, { name: "Ungu Gelap", hex: "#9333ea" },
-  { name: "Violet Muda", hex: "#a78bfa" }, { name: "Violet", hex: "#8b5cf6" }, { name: "Violet Gelap", hex: "#7c3aed" },
-  { name: "Nila Muda", hex: "#818cf8" }, { name: "Nila", hex: "#6366f1" }, { name: "Nila Gelap", hex: "#4f46e5" },
-  // Blues
-  { name: "Biru Muda", hex: "#60a5fa" }, { name: "Biru", hex: "#3b82f6" }, { name: "Biru Gelap", hex: "#2563eb" },
-  { name: "Sky Muda", hex: "#38bdf8" }, { name: "Sky", hex: "#0ea5e9" }, { name: "Sky Gelap", hex: "#0284c7" },
-  { name: "Cyan Muda", hex: "#22d3ee" }, { name: "Cyan", hex: "#06b6d4" }, { name: "Cyan Gelap", hex: "#0891b2" },
-  // Greens
-  { name: "Teal Muda", hex: "#2dd4bf" }, { name: "Teal", hex: "#14b8a6" }, { name: "Teal Gelap", hex: "#0d9488" },
-  { name: "Zamrud Muda", hex: "#34d399" }, { name: "Zamrud", hex: "#10b981" }, { name: "Zamrud Gelap", hex: "#059669" },
-  { name: "Hijau Muda", hex: "#4ade80" }, { name: "Hijau", hex: "#22c55e" }, { name: "Hijau Gelap", hex: "#16a34a" },
-  { name: "Lime Muda", hex: "#a3e635" }, { name: "Lime", hex: "#84cc16" }, { name: "Lime Gelap", hex: "#65a30d" },
-  // Yellows / Oranges
-  { name: "Kuning Muda", hex: "#facc15" }, { name: "Kuning", hex: "#eab308" }, { name: "Kuning Gelap", hex: "#ca8a04" },
-  { name: "Amber Muda", hex: "#fbbf24" }, { name: "Amber", hex: "#f59e0b" }, { name: "Amber Gelap", hex: "#d97706" },
-  { name: "Oranye Muda", hex: "#fb923c" }, { name: "Oranye", hex: "#f97316" }, { name: "Oranye Gelap", hex: "#ea580c" },
-  // Neutrals
-  { name: "Abu-abu Muda", hex: "#94a3b8" }, { name: "Abu-abu", hex: "#64748b" }, { name: "Abu-abu Gelap", hex: "#1e293b" }, { name: "Hitam", hex: "#000000" },
+  // Red
+  { name: "Merah Paling Muda", hex: "#fca5a5" }, { name: "Merah Muda", hex: "#f87171" }, { name: "Merah", hex: "#ef4444" }, { name: "Merah Gelap", hex: "#dc2626" }, { name: "Merah Paling Gelap", hex: "#b91c1c" },
+  // Rose
+  { name: "Rose Paling Muda", hex: "#fda4af" }, { name: "Rose Muda", hex: "#fb7185" }, { name: "Rose", hex: "#f43f5e" }, { name: "Rose Gelap", hex: "#e11d48" }, { name: "Rose Paling Gelap", hex: "#be123c" },
+  // Pink
+  { name: "Pink Paling Muda", hex: "#f9a8d4" }, { name: "Pink Muda", hex: "#f472b6" }, { name: "Pink", hex: "#ec4899" }, { name: "Pink Gelap", hex: "#db2777" }, { name: "Pink Paling Gelap", hex: "#be185d" },
+  // Fuchsia
+  { name: "Fuchsia Paling Muda", hex: "#f0abfc" }, { name: "Fuchsia Muda", hex: "#e879f9" }, { name: "Fuchsia", hex: "#d946ef" }, { name: "Fuchsia Gelap", hex: "#c026d3" }, { name: "Fuchsia Paling Gelap", hex: "#a21caf" },
+  // Purple
+  { name: "Ungu Paling Muda", hex: "#d8b4fe" }, { name: "Ungu Muda", hex: "#c084fc" }, { name: "Ungu", hex: "#a855f7" }, { name: "Ungu Gelap", hex: "#9333ea" }, { name: "Ungu Paling Gelap", hex: "#7e22ce" },
+  // Violet
+  { name: "Violet Paling Muda", hex: "#c4b5fd" }, { name: "Violet Muda", hex: "#a78bfa" }, { name: "Violet", hex: "#8b5cf6" }, { name: "Violet Gelap", hex: "#7c3aed" }, { name: "Violet Paling Gelap", hex: "#6d28d9" },
+  // Indigo
+  { name: "Nila Paling Muda", hex: "#a5b4fc" }, { name: "Nila Muda", hex: "#818cf8" }, { name: "Nila", hex: "#6366f1" }, { name: "Nila Gelap", hex: "#4f46e5" }, { name: "Nila Paling Gelap", hex: "#4338ca" },
+  // Blue
+  { name: "Biru Paling Muda", hex: "#93c5fd" }, { name: "Biru Muda", hex: "#60a5fa" }, { name: "Biru", hex: "#3b82f6" }, { name: "Biru Gelap", hex: "#2563eb" }, { name: "Biru Paling Gelap", hex: "#1d4ed8" },
+  // Sky
+  { name: "Sky Paling Muda", hex: "#7dd3fc" }, { name: "Sky Muda", hex: "#38bdf8" }, { name: "Sky", hex: "#0ea5e9" }, { name: "Sky Gelap", hex: "#0284c7" }, { name: "Sky Paling Gelap", hex: "#0369a1" },
+  // Cyan
+  { name: "Cyan Paling Muda", hex: "#67e8f9" }, { name: "Cyan Muda", hex: "#22d3ee" }, { name: "Cyan", hex: "#06b6d4" }, { name: "Cyan Gelap", hex: "#0891b2" }, { name: "Cyan Paling Gelap", hex: "#0e7490" },
+  // Teal
+  { name: "Teal Paling Muda", hex: "#5eead4" }, { name: "Teal Muda", hex: "#2dd4bf" }, { name: "Teal", hex: "#14b8a6" }, { name: "Teal Gelap", hex: "#0d9488" }, { name: "Teal Paling Gelap", hex: "#0f766e" },
+  // Emerald
+  { name: "Zamrud Paling Muda", hex: "#6ee7b7" }, { name: "Zamrud Muda", hex: "#34d399" }, { name: "Zamrud", hex: "#10b981" }, { name: "Zamrud Gelap", hex: "#059669" }, { name: "Zamrud Paling Gelap", hex: "#047857" },
+  // Green
+  { name: "Hijau Paling Muda", hex: "#86efac" }, { name: "Hijau Muda", hex: "#4ade80" }, { name: "Hijau", hex: "#22c55e" }, { name: "Hijau Gelap", hex: "#16a34a" }, { name: "Hijau Paling Gelap", hex: "#15803d" },
+  // Lime
+  { name: "Lime Paling Muda", hex: "#bef264" }, { name: "Lime Muda", hex: "#a3e635" }, { name: "Lime", hex: "#84cc16" }, { name: "Lime Gelap", hex: "#65a30d" }, { name: "Lime Paling Gelap", hex: "#4d7c0f" },
+  // Yellow
+  { name: "Kuning Paling Muda", hex: "#fde047" }, { name: "Kuning Muda", hex: "#facc15" }, { name: "Kuning", hex: "#eab308" }, { name: "Kuning Gelap", hex: "#ca8a04" }, { name: "Kuning Paling Gelap", hex: "#a16207" },
+  // Amber
+  { name: "Amber Paling Muda", hex: "#fcd34d" }, { name: "Amber Muda", hex: "#fbbf24" }, { name: "Amber", hex: "#f59e0b" }, { name: "Amber Gelap", hex: "#d97706" }, { name: "Amber Paling Gelap", hex: "#b45309" },
+  // Orange
+  { name: "Oranye Paling Muda", hex: "#fdba74" }, { name: "Oranye Muda", hex: "#fb923c" }, { name: "Oranye", hex: "#f97316" }, { name: "Oranye Gelap", hex: "#ea580c" }, { name: "Oranye Paling Gelap", hex: "#c2410c" },
+  // Slate
+  { name: "Slate Paling Muda", hex: "#cbd5e1" }, { name: "Slate Muda", hex: "#94a3b8" }, { name: "Slate", hex: "#64748b" }, { name: "Slate Gelap", hex: "#475569" }, { name: "Slate Paling Gelap", hex: "#334155" },
+  // Stone
+  { name: "Stone Paling Muda", hex: "#d6d3d1" }, { name: "Stone Muda", hex: "#a8a29e" }, { name: "Stone", hex: "#78716c" }, { name: "Stone Gelap", hex: "#57534e" }, { name: "Stone Paling Gelap", hex: "#44403c" },
+  // Black/White/Monochrome
+  { name: "Abu-abu Pucat", hex: "#f8fafc" }, { name: "Abu-abu Terang", hex: "#e2e8f0" }, { name: "Abu-abu Tua", hex: "#0f172a" }, { name: "Hampir Hitam", hex: "#020617" }, { name: "Hitam Pekat", hex: "#000000" },
 ];
 
 export function LabelManager({ labels }: { labels: any[] }) {
@@ -192,7 +208,7 @@ export function LabelManager({ labels }: { labels: any[] }) {
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Pilih Warna Label</label>
               <div className="flex flex-col sm:flex-row gap-6 items-start">
-                <div className="grid grid-cols-6 sm:grid-cols-9 gap-2.5">
+                <div className="grid grid-cols-5 sm:grid-cols-10 gap-2.5">
                   {PREDEFINED_COLORS.map((c) => (
                     <button
                       key={c.hex}
