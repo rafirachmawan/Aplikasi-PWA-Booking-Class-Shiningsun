@@ -32,34 +32,42 @@ export async function updateSession(request: NextRequest) {
         },
       }
     )
-  } catch (e) {
-    // If env vars are missing or invalid, return a clear error instead of crashing the middleware
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    // Protect Dashboard routes
+    if (
+      !user &&
+      !request.nextUrl.pathname.startsWith('/login')
+    ) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+
+    // Redirect to dashboard if logged in and trying to access /login
+    if (user && request.nextUrl.pathname.startsWith('/login')) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+
+    return supabaseResponse
+  } catch (e: any) {
+    // If env vars are missing or any other error occurs, return a clear JSON error
+    console.error("Middleware Error:", e);
     return new NextResponse(
-      "ERROR: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel Environment Variables.", 
-      { status: 500 }
+      JSON.stringify({ 
+        error: "Sistem belum dikonfigurasi dengan benar.", 
+        message: "Pastikan NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY sudah diisi di Vercel Environment Variables.",
+        details: e.message || "Unknown error"
+      }),
+      { 
+        status: 500, 
+        headers: { 'content-type': 'application/json' } 
+      }
     );
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // Protect Dashboard routes
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login')
-  ) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  // Redirect to dashboard if logged in and trying to access /login
-  if (user && request.nextUrl.pathname.startsWith('/login')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
-  }
-
-  return supabaseResponse
 }
