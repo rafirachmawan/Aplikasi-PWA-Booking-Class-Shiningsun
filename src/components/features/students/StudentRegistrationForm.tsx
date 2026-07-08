@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Icons } from "@/components/ui/icons";
 import { createStudent } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -64,6 +64,21 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
   const [status, setStatus] = useState(initialData ? initialData.status : "CG");
   const [labelId, setLabelId] = useState(initialData?.label_id ? initialData.label_id : "");
   
+  const [isLevelOpen, setIsLevelOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsLevelOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const [calculatedAge, setCalculatedAge] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -385,23 +400,70 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
               </div>
               
               {/* Pilihan Level (Wajib jika Reguler) */}
-              <div className={`transition-all duration-300 overflow-hidden ${status === "REGISTERED" ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}`}>
-                <label htmlFor="label_id" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              <div 
+                className={`transition-all duration-300 ${
+                  status === "REGISTERED" 
+                    ? "opacity-100 overflow-visible" 
+                    : "max-h-0 opacity-0 overflow-hidden pointer-events-none"
+                }`}
+              >
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                   Pilih Tingkat / Label Level (Opsional)
                 </label>
-                <select
-                  id="label_id"
-                  value={labelId}
-                  onChange={(e) => setLabelId(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
-                >
-                  <option value="" disabled>-- Pilih Level --</option>
-                  {labels.map((lbl) => (
-                    <option key={lbl.id} value={lbl.id}>
-                      {lbl.main_level} - {lbl.sub_level}
-                    </option>
-                  ))}
-                </select>
+                
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsLevelOpen(!isLevelOpen)}
+                    className="flex items-center justify-between w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-white text-left text-sm cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  >
+                    <span className="truncate text-slate-700 dark:text-slate-300 font-medium">
+                      {labelId === "" 
+                        ? "-- Pilih Level --" 
+                        : (() => {
+                            const selectedLabel = labels.find(l => l.id === labelId);
+                            return selectedLabel ? `${selectedLabel.main_level} - ${selectedLabel.sub_level}` : "-- Pilih Level --";
+                          })()
+                      }
+                    </span>
+                    <svg className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${isLevelOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+
+                  {isLevelOpen && (
+                    <div className="absolute z-50 mt-1.5 w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl max-h-[195px] overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1 duration-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLabelId("");
+                          setIsLevelOpen(false);
+                        }}
+                        className={`w-full px-4 py-2.5 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
+                          labelId === "" ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300"
+                        }`}
+                      >
+                        -- Pilih Level --
+                      </button>
+                      {labels.map((lbl) => (
+                        <button
+                          key={lbl.id}
+                          type="button"
+                          onClick={() => {
+                            setLabelId(lbl.id);
+                            setIsLevelOpen(false);
+                          }}
+                          className={`w-full px-4 py-2.5 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 ${
+                            labelId === lbl.id ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300"
+                          }`}
+                        >
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: lbl.hex_color }}></span>
+                          {lbl.main_level} - {lbl.sub_level}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
             </form>

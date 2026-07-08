@@ -13,14 +13,8 @@ export function ClassManager({ classes }: { classes: any[] }) {
   
   const [name, setName] = useState("");
   const [maxQuota, setMaxQuota] = useState("4");
-  const [selectedBranch, setSelectedBranch] = useState("");
 
-  const uniqueBranches = Array.from(new Set(classes.filter(c => c.branch?.name).map(c => c.branch.name as string)));
-
-  const filteredClasses = classes.filter(cls => {
-    if (!selectedBranch) return true;
-    return cls.branch?.name === selectedBranch;
-  });
+  const filteredClasses = classes;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,28 +56,11 @@ export function ClassManager({ classes }: { classes: any[] }) {
           <h3 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">Ruang Kelas</h3>
           <p className="mt-1 text-sm text-slate-500">Kelola daftar ruangan dan batas maksimal (kuota) siswa per sesi.</p>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-48">
-            <select
-              value={selectedBranch}
-              onChange={(e) => setSelectedBranch(e.target.value)}
-              className="block w-full rounded-full border-0 py-1.5 pl-4 pr-8 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 dark:bg-slate-800 dark:ring-slate-700 dark:text-white appearance-none"
-            >
-              <option value="">Semua Filter Cabang</option>
-              {uniqueBranches.map(branchName => (
-                <option key={branchName} value={branchName}>{branchName}</option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-              <svg className="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
           {!isAdding && (
             <button 
               onClick={() => setIsAdding(true)}
-              className="inline-flex items-center justify-center gap-x-1.5 rounded-full bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 whitespace-nowrap shrink-0"
+              className="inline-flex items-center justify-center gap-x-1.5 rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 whitespace-nowrap shrink-0 transition-colors"
             >
               <Icons.add className="-ml-0.5 h-4 w-4" />
               Tambah Ruangan
@@ -164,9 +141,6 @@ export function ClassManager({ classes }: { classes: any[] }) {
                     </span>
                   )}
                 </div>
-                <p className="mt-1 truncate text-xs leading-5 text-slate-500">
-                  ID: {cls.id.split('-')[0]}...
-                </p>
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-x-4">

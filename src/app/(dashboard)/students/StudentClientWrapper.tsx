@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { StudentRegistrationForm } from "@/components/features/students/StudentRegistrationForm";
@@ -10,16 +10,75 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLabelId, setSelectedLabelId] = useState("");
+  const [isLevelOpen, setIsLevelOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsLevelOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
   
   // State for Edit
   const [editingStudent, setEditingStudent] = useState<any>(null);
 
-  const regulerStudents = initialStudents.filter(s => s.status === 'REGISTERED');
-  const cgStudents = initialStudents.filter(s => s.status === 'CG');
+  // Filter and sort students based on all states (search, level filter, active tab, and sort by label)
+  const displayedStudents = initialStudents.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (s.nickname && s.nickname.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const matchesLabel = selectedLabelId === "" || s.label_id === selectedLabelId;
+    
+    const matchesTab = activeTab === "all" || 
+                       (activeTab === "reguler" && s.status === 'REGISTERED') ||
+                       (activeTab === "cg" && s.status === 'CG');
+                       
+    return matchesSearch && matchesLabel && matchesTab;
+  }).sort((a, b) => {
+    // Put students with labels first
+    if (a.label && !b.label) return -1;
+    if (!a.label && b.label) return 1;
+    if (!a.label && !b.label) {
+      return a.name.localeCompare(b.name);
+    }
+    
+    // Sort by main_level
+    const mainCompare = a.label.main_level.localeCompare(b.label.main_level);
+    if (mainCompare !== 0) return mainCompare;
+    
+    // Sort by sub_level
+    const subCompare = a.label.sub_level.localeCompare(b.label.sub_level);
+    if (subCompare !== 0) return subCompare;
+    
+    // Sort by name if levels are same
+    return a.name.localeCompare(b.name);
+  });
 
-  const displayedStudents = 
-    activeTab === "all" ? initialStudents :
-    activeTab === "reguler" ? regulerStudents : cgStudents;
+  // Calculate totals dynamically for tabs based on current search & level filters
+  const regulerCount = initialStudents.filter(s => 
+    s.status === 'REGISTERED' && 
+    (s.name.toLowerCase().includes(searchQuery.toLowerCase()) || (s.nickname && s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) && 
+    (selectedLabelId === "" || s.label_id === selectedLabelId)
+  ).length;
+
+  const cgCount = initialStudents.filter(s => 
+    s.status === 'CG' && 
+    (s.name.toLowerCase().includes(searchQuery.toLowerCase()) || (s.nickname && s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) && 
+    (selectedLabelId === "" || s.label_id === selectedLabelId)
+  ).length;
+
+  const allCount = initialStudents.filter(s => 
+    (s.name.toLowerCase().includes(searchQuery.toLowerCase()) || (s.nickname && s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) && 
+    (selectedLabelId === "" || s.label_id === selectedLabelId)
+  ).length;
 
   const handleDelete = async (id: string, name: string) => {
     if (confirm(`Yakin ingin menghapus data siswa "${name}" secara permanen? Data yang sudah dihapus tidak dapat dikembalikan.`)) {
@@ -70,9 +129,69 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
           </div>
           <input
             type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="block w-full rounded-lg border-0 py-2 pl-10 pr-3 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white"
             placeholder="Cari nama siswa..."
           />
+        </div>
+
+        {/* Custom Level Dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            type="button"
+            onClick={() => setIsLevelOpen(!isLevelOpen)}
+            className="flex items-center justify-between w-full rounded-lg border-0 py-2.5 pl-10 pr-3 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white text-left cursor-pointer"
+          >
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+              <Icons.settings className="h-5 w-5 text-slate-400" aria-hidden="true" />
+            </span>
+            <span className="truncate text-slate-700 dark:text-slate-300 font-medium">
+              {selectedLabelId === "" 
+                ? "✨ Semua Level / Tingkat" 
+                : (() => {
+                    const selectedLabel = labels.find(l => l.id === selectedLabelId);
+                    return selectedLabel ? `${selectedLabel.main_level} - ${selectedLabel.sub_level}` : "✨ Semua Level / Tingkat";
+                  })()
+              }
+            </span>
+            <svg className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${isLevelOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+            </svg>
+          </button>
+
+          {isLevelOpen && (
+            <div className="absolute z-50 mt-1.5 w-full rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg max-h-[195px] overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1 duration-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedLabelId("");
+                  setIsLevelOpen(false);
+                }}
+                className={`w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 ${
+                  selectedLabelId === "" ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300"
+                }`}
+              >
+                ✨ Semua Level / Tingkat
+              </button>
+              {labels.map((label) => (
+                <button
+                  key={label.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedLabelId(label.id);
+                    setIsLevelOpen(false);
+                  }}
+                  className={`w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 ${
+                    selectedLabelId === label.id ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300"
+                  }`}
+                >
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: label.hex_color }}></span>
+                  {label.main_level} - {label.sub_level}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
@@ -84,7 +203,7 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
               ${activeTab === "all" ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"}
             `}
           >
-            Semua Siswa <span className="ml-2 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2.5 text-xs">{initialStudents.length}</span>
+            Semua Siswa <span className="ml-2 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2.5 text-xs">{allCount}</span>
           </button>
           <button
              onClick={() => setActiveTab("reguler")}
@@ -93,7 +212,7 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
               ${activeTab === "reguler" ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"}
             `}
           >
-            Reguler <span className="ml-2 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2.5 text-xs">{regulerStudents.length}</span>
+            Reguler <span className="ml-2 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2.5 text-xs">{regulerCount}</span>
           </button>
           <button
             onClick={() => setActiveTab("cg")}
@@ -102,7 +221,7 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
               ${activeTab === "cg" ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"}
             `}
           >
-            Coba Gratis (CG) <span className="ml-2 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2.5 text-xs">{cgStudents.length}</span>
+            Coba Gratis (CG) <span className="ml-2 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2.5 text-xs">{cgCount}</span>
           </button>
         </nav>
       </div>
