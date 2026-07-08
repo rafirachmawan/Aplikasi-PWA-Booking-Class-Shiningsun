@@ -1,4 +1,4 @@
-import { getStudents, getLabels, getCurrentUserRole, getBranchId } from "@/lib/actions";
+import { getStudents, getLabels, getCurrentUserRole, getBranchId, getActiveBranchName } from "@/lib/actions";
 import { StudentClientWrapper } from "./StudentClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 
@@ -12,8 +12,10 @@ export default async function StudentsPage() {
     return <NoBranchSelected pageName="Kelola Siswa" />;
   }
 
+  const activeBranchName = role === 'SUPERADMIN' ? await getActiveBranchName() : null;
+
   const students = await getStudents();
   const labels = await getLabels();
   
-  return <StudentClientWrapper initialStudents={students} labels={labels} />;
+  return <StudentClientWrapper initialStudents={students} labels={labels} activeBranchName={activeBranchName} />;
 }

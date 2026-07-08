@@ -1,4 +1,4 @@
-import { getStudents, getClasses, getMonthlySchedules, getCurrentUserRole, getBranchId } from "@/lib/actions";
+import { getStudents, getClasses, getMonthlySchedules, getCurrentUserRole, getBranchId, getActiveBranchName } from "@/lib/actions";
 import { SchedulingClientWrapper } from "./SchedulingClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 
@@ -11,6 +11,8 @@ export default async function SchedulingPage({ searchParams }: { searchParams: P
   if (role === 'SUPERADMIN' && !branchId) {
     return <NoBranchSelected pageName="Penjadwalan Siswa" />;
   }
+
+  const activeBranchName = role === 'SUPERADMIN' ? await getActiveBranchName() : null;
 
   const params = await searchParams;
   const currentMonth = params.month ? parseInt(params.month) : new Date().getMonth() + 1; // 1-12
@@ -29,8 +31,13 @@ export default async function SchedulingPage({ searchParams }: { searchParams: P
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
 
         <div className="relative z-10">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
-            Penjadwalan Siswa
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap items-center gap-x-2">
+            <span>Penjadwalan Siswa</span>
+            {activeBranchName && (
+              <span className="text-brand-100 font-normal text-lg sm:text-xl lg:text-2xl whitespace-nowrap">
+                ({activeBranchName})
+              </span>
+            )}
           </h2>
           <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
             Kelola jadwal pendaftaran siswa ke kelas secara manual ataupun otomatis.

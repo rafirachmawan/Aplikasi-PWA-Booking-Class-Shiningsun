@@ -6,7 +6,7 @@ import { Icons } from "@/components/ui/icons";
 import { StudentRegistrationForm } from "@/components/features/students/StudentRegistrationForm";
 import { deleteStudent } from "@/lib/actions";
 
-export function StudentClientWrapper({ initialStudents, labels }: { initialStudents: any[], labels: any[] }) {
+export function StudentClientWrapper({ initialStudents, labels, activeBranchName }: { initialStudents: any[], labels: any[], activeBranchName?: string | null }) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
@@ -102,8 +102,13 @@ export function StudentClientWrapper({ initialStudents, labels }: { initialStude
 
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
-              Kelola Siswa
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap items-center gap-x-2">
+              <span>Kelola Siswa</span>
+              {activeBranchName && (
+                <span className="text-brand-100 font-normal text-lg sm:text-xl lg:text-2xl whitespace-nowrap">
+                  ({activeBranchName})
+                </span>
+              )}
             </h2>
             <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
               Kelola data siswa, tingkat level, dan status percobaan gratis (CG).

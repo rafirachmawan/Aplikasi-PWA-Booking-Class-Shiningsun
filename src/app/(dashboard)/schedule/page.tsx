@@ -1,4 +1,4 @@
-import { getMonthlySchedules, getClasses, getStudents, getCurrentUserRole, getBranchId } from "@/lib/actions";
+import { getMonthlySchedules, getClasses, getStudents, getCurrentUserRole, getBranchId, getActiveBranchName } from "@/lib/actions";
 import { ScheduleClientWrapper } from "./ScheduleClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 
@@ -11,6 +11,8 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
   if (role === 'SUPERADMIN' && !branchId) {
     return <NoBranchSelected pageName="Jadwal Kelas" />;
   }
+
+  const activeBranchName = role === 'SUPERADMIN' ? await getActiveBranchName() : null;
 
   const params = await searchParams;
   const currentMonth = params.month ? parseInt(params.month) : new Date().getMonth() + 1; // 1-12
@@ -27,6 +29,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
       students={students}
       currentMonth={currentMonth} 
       currentYear={currentYear} 
+      activeBranchName={activeBranchName}
     />
   );
 }

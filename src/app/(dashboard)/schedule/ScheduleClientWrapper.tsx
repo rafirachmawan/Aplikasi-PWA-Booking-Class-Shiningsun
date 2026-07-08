@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ interface ScheduleClientWrapperProps {
   students: any[];
   currentMonth: number; // 1-12
   currentYear: number;
+  activeBranchName?: string | null;
 }
 
 const FIXED_TIMES = [
@@ -50,7 +51,7 @@ function fmtDate(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export function ScheduleClientWrapper({ schedules, classes, students, currentMonth, currentYear }: ScheduleClientWrapperProps) {
+export function ScheduleClientWrapper({ schedules, classes, students, currentMonth, currentYear, activeBranchName }: ScheduleClientWrapperProps) {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [filterClassId, setFilterClassId] = useState<string>(classes.length > 0 ? classes[0].id : "");
@@ -100,8 +101,13 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
 
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
-              Jadwal Keseluruhan
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap items-center gap-x-2">
+              <span>Jadwal Keseluruhan</span>
+              {activeBranchName && (
+                <span className="text-brand-100 font-normal text-lg sm:text-xl lg:text-2xl whitespace-nowrap">
+                  ({activeBranchName})
+                </span>
+              )}
             </h2>
             <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
               Lihat jadwal operasional seluruh kelas dan siswa bulan ini.

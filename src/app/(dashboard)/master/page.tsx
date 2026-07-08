@@ -1,4 +1,4 @@
-import { getClasses, getLabels, getCurrentUserRole, getBranchId } from "@/lib/actions";
+import { getClasses, getLabels, getCurrentUserRole, getBranchId, getActiveBranchName } from "@/lib/actions";
 import { MasterClientWrapper } from "./MasterClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 
@@ -12,8 +12,10 @@ export default async function MasterDataPage() {
     return <NoBranchSelected pageName="Master Data" />;
   }
 
+  const activeBranchName = role === 'SUPERADMIN' ? await getActiveBranchName() : null;
+
   const classes = await getClasses();
   const labels = await getLabels();
 
-  return <MasterClientWrapper classes={classes} labels={labels} />;
+  return <MasterClientWrapper classes={classes} labels={labels} activeBranchName={activeBranchName} />;
 }

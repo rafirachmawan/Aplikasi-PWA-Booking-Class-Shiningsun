@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { ClassManager } from "@/components/features/master/ClassManager";
 import { LabelManager } from "@/components/features/master/LabelManager";
@@ -6,9 +6,10 @@ import { LabelManager } from "@/components/features/master/LabelManager";
 interface MasterClientWrapperProps {
   classes: any[];
   labels: any[];
+  activeBranchName?: string | null;
 }
 
-export function MasterClientWrapper({ classes, labels }: MasterClientWrapperProps) {
+export function MasterClientWrapper({ classes, labels, activeBranchName }: MasterClientWrapperProps) {
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
@@ -19,8 +20,13 @@ export function MasterClientWrapper({ classes, labels }: MasterClientWrapperProp
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
 
         <div className="relative z-10">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
-            Konfigurasi Cabang (Master Data)
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap items-center gap-x-2">
+            <span>Konfigurasi Cabang (Master Data)</span>
+            {activeBranchName && (
+              <span className="text-brand-100 font-normal text-lg sm:text-xl lg:text-2xl whitespace-nowrap">
+                ({activeBranchName})
+              </span>
+            )}
           </h2>
           <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
             Kelola profil cabang, ruang kelas, dan opsi label kustom Anda.

@@ -104,6 +104,20 @@ export async function getBranchId() {
   return profile?.branch_id || 'ALL'; // Fallback aman jika branch_id kosong
 }
 
+export async function getActiveBranchName() {
+  const branchId = await getBranchId();
+  if (!branchId || branchId === 'ALL') return null;
+  
+  const supabaseServer = await createClient();
+  const { data } = await supabaseServer
+    .from('branches')
+    .select('name')
+    .eq('id', branchId)
+    .single();
+    
+  return data?.name || null;
+}
+
 export async function getBranches() {
   const { data, error } = await supabase
     .from('branches')
