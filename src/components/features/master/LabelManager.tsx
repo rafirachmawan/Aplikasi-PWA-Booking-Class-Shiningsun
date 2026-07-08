@@ -7,16 +7,30 @@ import { createLabel, deleteLabel } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 const PREDEFINED_COLORS = [
-  { name: "Merah", hex: "#ef4444" },
-  { name: "Oranye", hex: "#f97316" },
-  { name: "Kuning", hex: "#eab308" },
-  { name: "Hijau", hex: "#22c55e" },
-  { name: "Biru Muda", hex: "#0ea5e9" },
-  { name: "Biru", hex: "#3b82f6" },
-  { name: "Nila", hex: "#6366f1" },
-  { name: "Ungu", hex: "#a855f7" },
-  { name: "Pink", hex: "#ec4899" },
-  { name: "Abu-abu", hex: "#64748b" },
+  // Reds / Pinks
+  { name: "Merah Muda", hex: "#f87171" }, { name: "Merah", hex: "#ef4444" }, { name: "Merah Gelap", hex: "#dc2626" },
+  { name: "Rose Muda", hex: "#fb7185" }, { name: "Rose", hex: "#f43f5e" }, { name: "Rose Gelap", hex: "#e11d48" },
+  { name: "Pink Muda", hex: "#f472b6" }, { name: "Pink", hex: "#ec4899" }, { name: "Pink Gelap", hex: "#db2777" },
+  { name: "Fuchsia Muda", hex: "#e879f9" }, { name: "Fuchsia", hex: "#d946ef" }, { name: "Fuchsia Gelap", hex: "#c026d3" },
+  // Purples
+  { name: "Ungu Muda", hex: "#c084fc" }, { name: "Ungu", hex: "#a855f7" }, { name: "Ungu Gelap", hex: "#9333ea" },
+  { name: "Violet Muda", hex: "#a78bfa" }, { name: "Violet", hex: "#8b5cf6" }, { name: "Violet Gelap", hex: "#7c3aed" },
+  { name: "Nila Muda", hex: "#818cf8" }, { name: "Nila", hex: "#6366f1" }, { name: "Nila Gelap", hex: "#4f46e5" },
+  // Blues
+  { name: "Biru Muda", hex: "#60a5fa" }, { name: "Biru", hex: "#3b82f6" }, { name: "Biru Gelap", hex: "#2563eb" },
+  { name: "Sky Muda", hex: "#38bdf8" }, { name: "Sky", hex: "#0ea5e9" }, { name: "Sky Gelap", hex: "#0284c7" },
+  { name: "Cyan Muda", hex: "#22d3ee" }, { name: "Cyan", hex: "#06b6d4" }, { name: "Cyan Gelap", hex: "#0891b2" },
+  // Greens
+  { name: "Teal Muda", hex: "#2dd4bf" }, { name: "Teal", hex: "#14b8a6" }, { name: "Teal Gelap", hex: "#0d9488" },
+  { name: "Zamrud Muda", hex: "#34d399" }, { name: "Zamrud", hex: "#10b981" }, { name: "Zamrud Gelap", hex: "#059669" },
+  { name: "Hijau Muda", hex: "#4ade80" }, { name: "Hijau", hex: "#22c55e" }, { name: "Hijau Gelap", hex: "#16a34a" },
+  { name: "Lime Muda", hex: "#a3e635" }, { name: "Lime", hex: "#84cc16" }, { name: "Lime Gelap", hex: "#65a30d" },
+  // Yellows / Oranges
+  { name: "Kuning Muda", hex: "#facc15" }, { name: "Kuning", hex: "#eab308" }, { name: "Kuning Gelap", hex: "#ca8a04" },
+  { name: "Amber Muda", hex: "#fbbf24" }, { name: "Amber", hex: "#f59e0b" }, { name: "Amber Gelap", hex: "#d97706" },
+  { name: "Oranye Muda", hex: "#fb923c" }, { name: "Oranye", hex: "#f97316" }, { name: "Oranye Gelap", hex: "#ea580c" },
+  // Neutrals
+  { name: "Abu-abu Muda", hex: "#94a3b8" }, { name: "Abu-abu", hex: "#64748b" }, { name: "Abu-abu Gelap", hex: "#1e293b" }, { name: "Hitam", hex: "#000000" },
 ];
 
 export function LabelManager({ labels }: { labels: any[] }) {
@@ -178,14 +192,14 @@ export function LabelManager({ labels }: { labels: any[] }) {
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Pilih Warna Label</label>
               <div className="flex flex-col sm:flex-row gap-6 items-start">
-                <div className="grid grid-cols-5 gap-3">
+                <div className="grid grid-cols-6 sm:grid-cols-9 gap-2.5">
                   {PREDEFINED_COLORS.map((c) => (
                     <button
                       key={c.hex}
                       type="button"
                       onClick={() => setColor(c.hex)}
-                      className={`w-10 h-10 rounded-full shadow-sm transition-transform hover:scale-110 focus:outline-none ${
-                        color === c.hex ? "ring-4 ring-offset-2 ring-brand-500 dark:ring-offset-slate-900" : "ring-1 ring-black/10 dark:ring-white/10"
+                      className={`w-8 h-8 rounded-full shadow-sm transition-transform hover:scale-110 focus:outline-none ${
+                        color === c.hex ? "ring-4 ring-offset-2 ring-brand-500 dark:ring-offset-slate-900 scale-110" : "ring-1 ring-black/10 dark:ring-white/10"
                       }`}
                       style={{ backgroundColor: c.hex }}
                       title={c.name}
@@ -231,40 +245,25 @@ export function LabelManager({ labels }: { labels: any[] }) {
                 <span className="text-white font-bold text-xs drop-shadow-md">L</span>
               </div>
               <div className="min-w-0 flex-auto">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold leading-6 text-slate-900 dark:text-white">
-                    {label.main_level}
-                  </p>
-                  {label.branch?.name && (
-                    <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-500/20">
-                      {label.branch.name}
-                    </span>
-                  )}
-                </div>
+                <p className="text-sm font-semibold leading-6 text-slate-900 dark:text-white">
+                  {label.main_level}
+                </p>
                 <p className="mt-1 truncate text-xs leading-5 text-slate-500">
                   Sub-Level: {label.sub_level}
                 </p>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-x-4">
-              {label.is_system_default ? (
-                <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                  Bawaan Sistem
-                </span>
-              ) : (
-                <div className="flex items-center gap-4">
-                  <span className="inline-flex items-center rounded-md bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-700/10 dark:bg-brand-500/10 dark:text-brand-400 dark:ring-brand-500/20">
-                    Kustom Cabang
-                  </span>
-                  <button 
-                    onClick={() => confirmDelete(label.id, label.main_level)}
-                    className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
-                    title="Hapus Label"
-                  >
-                    <Icons.trash className="w-5.5 h-5.5" />
-                  </button>
-                </div>
-              )}
+            <div className="flex shrink-0 items-center gap-x-3">
+              <span className="inline-flex items-center rounded-md bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-700/10 dark:bg-brand-500/10 dark:text-brand-400 dark:ring-brand-500/20">
+                Global
+              </span>
+              <button 
+                onClick={() => confirmDelete(label.id, label.main_level)}
+                className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
+                title="Hapus Label"
+              >
+                <Icons.trash className="w-5.5 h-5.5" />
+              </button>
             </div>
           </li>
         ))}

@@ -193,16 +193,12 @@ export async function getClasses() {
 }
 
 export async function getLabels() {
-  const branchId = await getBranchId();
-  if (!branchId) return [];
-  
-  let query = supabase.from('labels').select('*, branch:branches(name)');
-  
-  if (branchId !== 'ALL') {
-    query = query.or(`branch_id.eq.${branchId},is_system_default.eq.true`);
-  }
-  
-  const { data, error } = await query;
+  // Labels are global — shared across all branches
+  const { data, error } = await supabase
+    .from('labels')
+    .select('*')
+    .order('main_level')
+    .order('sub_level');
     
   if (error) {
     console.error("Error fetching labels:", error);
@@ -610,10 +606,11 @@ export async function createLabel(formData: FormData) {
   const sub_level = formData.get('sub_level') as string;
   const hex_color = formData.get('hex_color') as string;
 
+  // Labels are global — no branch_id needed
   const { error } = await supabase
     .from('labels')
     .insert({
-      branch_id: await getBranchId(),
+      branch_id: null,
       is_system_default: false,
       main_level,
       sub_level,
@@ -700,8 +697,7 @@ export async function deleteLabel(id: string) {
   const { error } = await supabase
     .from('labels')
     .delete()
-    .eq('id', id)
-    .eq('is_system_default', false); // Pengamanan ekstra agar label default tidak dihapus
+    .eq('id', id);
 
   if (error) throw new Error("Gagal menghapus label. Pastikan tidak ada siswa yang menggunakan label ini.");
   return true;
@@ -780,13 +776,7 @@ export async function resetAllDatabaseData() {
 
   if (err4) throw new Error("Gagal menghapus data kelas: " + err4.message);
 
-  // 5. Delete all from labels
-  const { error: err5 } = await supabaseServer
-    .from('labels')
-    .delete()
-    .neq('id', '00000000-0000-0000-0000-000000000000');
-
-  if (err5) throw new Error("Gagal menghapus data label: " + err5.message);
+  // Labels are global and NOT deleted during reset
 
   return { success: true };
 }
