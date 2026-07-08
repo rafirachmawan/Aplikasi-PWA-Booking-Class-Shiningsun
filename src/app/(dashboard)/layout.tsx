@@ -4,6 +4,8 @@ import { SidebarProvider } from "@/lib/SidebarContext";
 import { getCurrentUserRole, getBranches, getBranchId } from "@/lib/actions";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardLayout({
   children,
 }: {

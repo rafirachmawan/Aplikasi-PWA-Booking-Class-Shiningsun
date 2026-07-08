@@ -4,6 +4,8 @@ import { TodaySchedule } from "@/components/features/dashboard/TodaySchedule";
 import { QuickAccessLinks } from "@/components/features/dashboard/QuickAccessLinks";
 import { BranchSelector } from "@/components/features/auth/BranchSelector";
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage() {
   const role = await getCurrentUserRole();
   const currentBranchId = await getBranchId();
