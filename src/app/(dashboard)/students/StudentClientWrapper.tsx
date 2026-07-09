@@ -117,7 +117,8 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-x-2 rounded-xl bg-white dark:bg-white/95 text-brand-700 dark:text-brand-700 px-5 py-3 text-sm font-bold shadow-md hover:bg-brand-50 dark:hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white shrink-0 w-full sm:w-auto justify-center transition-all active:scale-95"
+            className="inline-flex items-center gap-x-2 rounded-xl bg-white text-brand-700 px-5 py-3 text-sm font-bold shadow-md hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white shrink-0 w-full sm:w-auto justify-center transition-all active:scale-95"
+            style={{ color: '#1d4ed8', backgroundColor: 'white' }}
           >
             <Icons.add className="-ml-0.5 h-5 w-5" aria-hidden="true" />
             Pendaftaran Baru
