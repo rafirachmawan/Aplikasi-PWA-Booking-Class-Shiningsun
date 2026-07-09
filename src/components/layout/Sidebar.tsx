@@ -8,6 +8,7 @@ import { useSidebar } from "@/lib/SidebarContext";
 import { useEffect, useState, useRef } from "react";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { resetAllDatabaseData } from "@/lib/actions";
+import { usePWAUpdate } from "@/hooks/usePWAUpdate";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Icons.home },
@@ -32,6 +33,7 @@ export function Sidebar({
   const { isOpen, close } = useSidebar();
   const [isNavigating, setIsNavigating] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const { updateAvailable, isUpdating, applyUpdate } = usePWAUpdate();
 
   // Modal state: 'closed' | 'confirm' | 'password' | 'success' | 'error'
   const [resetModal, setResetModal] = useState<'closed' | 'confirm' | 'password' | 'success' | 'error'>('closed');
@@ -319,6 +321,55 @@ export function Sidebar({
               </button>
             </div>
           )}
+
+          {/* PWA Update Button */}
+          <div className="px-4 pb-2">
+            {updateAvailable ? (
+              <button
+                type="button"
+                onClick={applyUpdate}
+                disabled={isUpdating}
+                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600 transition-all duration-200 shadow-sm animate-in fade-in slide-in-from-bottom-2"
+              >
+                {isUpdating ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Memperbarui...
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 2v6h-6"/>
+                      <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+                      <path d="M3 22v-6h6"/>
+                      <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+                    </svg>
+                    Update Tersedia — Perbarui
+                  </>
+                )}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={async () => {
+                  const reg = await navigator.serviceWorker?.getRegistration();
+                  await reg?.update();
+                }}
+                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-400 transition-all duration-200"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 2v6h-6"/>
+                  <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+                  <path d="M3 22v-6h6"/>
+                  <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+                </svg>
+                Cek Update Aplikasi
+              </button>
+            )}
+          </div>
 
           {/* User Profile Card */}
           <div className="p-4 border-t border-slate-100 dark:border-slate-800">

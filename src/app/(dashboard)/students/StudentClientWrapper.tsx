@@ -117,7 +117,7 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-x-2 rounded-xl bg-white text-brand-700 px-5 py-3 text-sm font-bold shadow-sm hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white shrink-0 w-full sm:w-auto justify-center transition-all"
+            className="inline-flex items-center gap-x-2 rounded-xl bg-white dark:bg-white/95 text-brand-700 dark:text-brand-700 px-5 py-3 text-sm font-bold shadow-md hover:bg-brand-50 dark:hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white shrink-0 w-full sm:w-auto justify-center transition-all active:scale-95"
           >
             <Icons.add className="-ml-0.5 h-5 w-5" aria-hidden="true" />
             Pendaftaran Baru
@@ -199,36 +199,43 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
           )}
         </div>
 
-        {/* Tabs */}
-        <nav className="-mb-5 sm:-mb-6 flex space-x-6 border-b border-slate-100 dark:border-slate-800" aria-label="Tabs">
-          <button
-            onClick={() => setActiveTab("all")}
-            className={`
-              whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors
-              ${activeTab === "all" ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"}
-            `}
+        {/* Tabs — scrollable on mobile agar tidak kepotong */}
+        <div className="-mb-5 sm:-mb-6 -mx-5 sm:mx-0 border-b border-slate-100 dark:border-slate-800">
+          <nav
+            className="flex overflow-x-auto px-5 sm:px-0 gap-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            aria-label="Tabs"
           >
-            Semua Siswa <span className="ml-2 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2.5 text-xs">{allCount}</span>
-          </button>
-          <button
-             onClick={() => setActiveTab("reguler")}
-            className={`
-              whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors
-              ${activeTab === "reguler" ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"}
-            `}
-          >
-            Reguler <span className="ml-2 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2.5 text-xs">{regulerCount}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("cg")}
-            className={`
-              whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors
-              ${activeTab === "cg" ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"}
-            `}
-          >
-            Coba Gratis (CG) <span className="ml-2 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2.5 text-xs">{cgCount}</span>
-          </button>
-        </nav>
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`
+                shrink-0 whitespace-nowrap border-b-2 py-3.5 px-3 text-sm font-medium transition-colors
+                ${activeTab === "all" ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"}
+              `}
+            >
+              Semua Siswa <span className="ml-1.5 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2 text-xs font-semibold">{allCount}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("reguler")}
+              className={`
+                shrink-0 whitespace-nowrap border-b-2 py-3.5 px-3 text-sm font-medium transition-colors
+                ${activeTab === "reguler" ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"}
+              `}
+            >
+              Reguler <span className="ml-1.5 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2 text-xs font-semibold">{regulerCount}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("cg")}
+              className={`
+                shrink-0 whitespace-nowrap border-b-2 py-3.5 px-3 text-sm font-medium transition-colors
+                ${activeTab === "cg" ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"}
+              `}
+            >
+              <span className="hidden sm:inline">Coba Gratis (CG)</span>
+              <span className="sm:hidden">Coba Gratis</span>
+              <span className="ml-1.5 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2 text-xs font-semibold">{cgCount}</span>
+            </button>
+          </nav>
+        </div>
       </div>
 
       {/* Desktop Table (Sembunyi di Mobile) */}

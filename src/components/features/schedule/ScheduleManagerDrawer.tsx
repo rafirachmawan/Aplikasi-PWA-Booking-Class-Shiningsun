@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Icons } from "@/components/ui/icons";
 import { createScheduleSlot, bookStudentToSlot, toggleSlotLock } from "@/lib/actions";
 
@@ -22,17 +23,96 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
     year: 'numeric'
   });
 
-  const handleToggleLock = async (slotId: string, currentStatus: boolean) => {
+  // State untuk modal konfirmasi lock
+  const [lockConfirm, setLockConfirm] = useState<{ slotId: string; currentStatus: boolean; className: string; time: string } | null>(null);
+  const [isLocking, setIsLocking] = useState(false);
+
+  const handleToggleLock = async (slotId: string, currentStatus: boolean, className: string, time: string) => {
+    // Kalau mau LOCK (currentStatus = false → mau jadi true), tampilkan konfirmasi
+    if (!currentStatus) {
+      setLockConfirm({ slotId, currentStatus, className, time });
+      return;
+    }
+    // Kalau UNLOCK, langsung eksekusi tanpa konfirmasi
+    await executeLock(slotId, currentStatus);
+  };
+
+  const executeLock = async (slotId: string, currentStatus: boolean) => {
+    setIsLocking(true);
     try {
       await toggleSlotLock(slotId, currentStatus);
-      onSuccess(); // Refresh UI
+      onSuccess();
     } catch (error: any) {
       alert("Gagal mengubah status lock: " + error.message);
+    } finally {
+      setIsLocking(false);
+      setLockConfirm(null);
     }
   };
 
   return (
     <>
+      {/* Loading overlay saat proses lock */}
+      {isLocking && <LoadingSpinner usePortal={true} />}
+
+      {/* Modal Konfirmasi Lock */}
+      {lockConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"
+            onClick={() => !isLocking && setLockConfirm(null)}
+          />
+          {/* Card Modal */}
+          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200">
+            {/* Icon Header */}
+            <div className="flex flex-col items-center pt-8 pb-4 px-6">
+              <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center mb-4 shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center">Kunci Sesi Ini?</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 text-center leading-relaxed">
+                Kelas <strong className="text-slate-700 dark:text-slate-200">{lockConfirm.className}</strong> pukul{" "}
+                <strong className="text-slate-700 dark:text-slate-200">{lockConfirm.time} WIB</strong> akan dikunci.
+              </p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 text-center bg-amber-50 dark:bg-amber-900/30 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800">
+                ⚠️ Siswa baru tidak dapat melakukan booking pada sesi yang dikunci.
+              </p>
+            </div>
+            {/* Action Buttons */}
+            <div className="flex gap-3 px-6 pb-6">
+              <button
+                onClick={() => setLockConfirm(null)}
+                disabled={isLocking}
+                className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => executeLock(lockConfirm.slotId, lockConfirm.currentStatus)}
+                disabled={isLocking}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isLocking ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Mengunci...
+                  </>
+                ) : (
+                  <>Ya, Kunci Sesi</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div 
         className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
         onClick={onClose}
@@ -86,7 +166,7 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => handleToggleLock(slot.id, slot.is_locked)}
+                            onClick={() => handleToggleLock(slot.id, slot.is_locked, slot.class.name, slot.time.substring(0, 5))}
                             title={slot.is_locked ? "Buka Gembok Sesi" : "Kunci Sesi Ini"}
                             className={`p-1.5 rounded-md text-xs font-medium transition-colors ${
                               slot.is_locked 
