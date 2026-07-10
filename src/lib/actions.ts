@@ -829,14 +829,18 @@ export async function getRecentActivities() {
 
   if (!profile) return [];
 
-  let query = supabaseServer
+  // Single unified query with branch_id always in select to keep types consistent
+  const isBranchAdmin = profile.role !== 'SUPERADMIN' && !!profile.branch_id;
+
+  const selectQuery = supabaseServer
     .from('schedule_student')
     .select(`
       created_at,
       student:students(name, status),
-      slot:schedule_slots(
+      slot:schedule_slots!inner(
         date,
         time,
+        branch_id,
         class:classes(name),
         branch:branches(name)
       )
@@ -844,28 +848,11 @@ export async function getRecentActivities() {
     .order('created_at', { ascending: false })
     .limit(20);
 
-  // If branch admin, filter by their branch via slot.branch_id
-  if (profile.role !== 'SUPERADMIN' && profile.branch_id) {
-    // We filter through slot's branch_id
-    query = supabaseServer
-      .from('schedule_student')
-      .select(`
-        created_at,
-        student:students(name, status),
-        slot:schedule_slots!inner(
-          date,
-          time,
-          branch_id,
-          class:classes(name),
-          branch:branches(name)
-        )
-      `)
-      .eq('slot.branch_id', profile.branch_id)
-      .order('created_at', { ascending: false })
-      .limit(20);
-  }
+  const finalQuery = isBranchAdmin
+    ? selectQuery.eq('slot.branch_id', profile.branch_id)
+    : selectQuery;
 
-  const { data, error } = await query;
+  const { data, error } = await finalQuery;
   if (error) {
     console.error('Error fetching activities:', error);
     return [];
