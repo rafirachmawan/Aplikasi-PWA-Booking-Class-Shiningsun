@@ -204,7 +204,7 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
             >
               <span className="truncate text-slate-700 dark:text-slate-300 font-medium">
                 {selectedStudent 
-                  ? `${selectedStudent.name} (${selectedStudent.status === 'REGISTERED' ? 'Reguler' : 'CG'})` 
+                  ? `${selectedStudent.name} (${selectedStudent.status === 'REGISTERED' ? 'Reguler' : selectedStudent.status === 'CG' ? 'CG' : 'Nonaktif'})` 
                   : "-- Cari dan Pilih Siswa --"
                 }
               </span>
@@ -236,28 +236,45 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
                       Siswa tidak ditemukan
                     </div>
                   ) : (
-                    filteredStudents.map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => {
-                          setStudentId(s.id);
-                          setIsOpenStudentDropdown(false);
-                        }}
-                        className={`w-full px-3 py-2 text-xs text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-between ${
-                          studentId === s.id ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300"
-                        }`}
-                      >
-                        <span className="truncate pr-2">{s.name}</span>
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
-                          s.status === 'REGISTERED' 
-                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' 
-                            : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
-                        }`}>
-                          {s.status === 'REGISTERED' ? 'Reguler' : 'CG'}
-                        </span>
-                      </button>
-                    ))
+                    filteredStudents.map((s) => {
+                      const isInactive = s.status === 'INACTIVE';
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          disabled={isInactive}
+                          onClick={() => {
+                            if (!isInactive) {
+                              setStudentId(s.id);
+                              setIsOpenStudentDropdown(false);
+                            }
+                          }}
+                          className={`w-full px-3 py-2 text-xs text-left rounded-lg transition-colors flex items-center justify-between ${
+                            isInactive 
+                              ? "opacity-60 cursor-not-allowed bg-slate-50 dark:bg-slate-800/30" 
+                              : "hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer " + (studentId === s.id ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300")
+                          }`}
+                        >
+                          <div className="truncate pr-2 flex flex-col">
+                            <span className={isInactive ? "text-slate-500 dark:text-slate-400" : ""}>{s.name}</span>
+                            {isInactive && (
+                              <span className="text-[9px] text-red-500 dark:text-red-400 font-medium mt-0.5">
+                                *Siswa nonaktif
+                              </span>
+                            )}
+                          </div>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                            s.status === 'REGISTERED' 
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                              : s.status === 'CG' 
+                                ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
+                                : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                          }`}>
+                            {s.status === 'REGISTERED' ? 'Reguler' : s.status === 'CG' ? 'CG' : 'Nonaktif'}
+                          </span>
+                        </button>
+                      );
+                    })
                   )}
                 </div>
               </div>

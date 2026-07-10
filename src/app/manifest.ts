@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'ShiningSun Penjadwalan',
-    short_name: 'ShiningSun',
+    name: 'Shiningsun Jadwal',
+    short_name: 'Shiningsun Jadwal',
     description: 'Aplikasi Penjadwalan dan Booking Kelas ShiningSun',
     start_url: '/',
     display: 'standalone',

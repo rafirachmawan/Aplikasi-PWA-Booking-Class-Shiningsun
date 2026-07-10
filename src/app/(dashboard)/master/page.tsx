@@ -5,7 +5,6 @@ import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 export const dynamic = 'force-dynamic';
 
 export default async function MasterDataPage() {
-  // Cek apakah superadmin belum pilih cabang
   const role = await getCurrentUserRole();
   const branchId = await getBranchId();
   if (role === 'SUPERADMIN' && !branchId) {
@@ -17,5 +16,5 @@ export default async function MasterDataPage() {
   const classes = await getClasses();
   const labels = await getLabels();
 
-  return <MasterClientWrapper classes={classes} labels={labels} activeBranchName={activeBranchName} />;
+  return <MasterClientWrapper classes={classes} labels={labels} activeBranchName={activeBranchName} role={role} />;
 }

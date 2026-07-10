@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { StudentRegistrationForm } from "@/components/features/students/StudentRegistrationForm";
-import { deleteStudent } from "@/lib/actions";
+import { deleteStudent, updateStudentStatus } from "@/lib/actions";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 export function StudentClientWrapper({ initialStudents, labels, activeBranchName }: { initialStudents: any[], labels: any[], activeBranchName?: string | null }) {
   const router = useRouter();
@@ -30,6 +31,22 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
   // State for Edit
   const [editingStudent, setEditingStudent] = useState<any>(null);
 
+  // Custom Confirm Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    type: 'delete' | 'toggle';
+    studentId: string;
+    studentName: string;
+    newStatus?: string;
+  }>({
+    isOpen: false,
+    type: 'delete',
+    studentId: '',
+    studentName: '',
+  });
+  const [modalError, setModalError] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+
   // Filter and sort students based on all states (search, level filter, active tab, and sort by label)
   const displayedStudents = initialStudents.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -39,7 +56,8 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
     
     const matchesTab = activeTab === "all" || 
                        (activeTab === "reguler" && s.status === 'REGISTERED') ||
-                       (activeTab === "cg" && s.status === 'CG');
+                       (activeTab === "cg" && s.status === 'CG') ||
+                       (activeTab === "inactive" && s.status === 'INACTIVE');
                        
     return matchesSearch && matchesLabel && matchesTab;
   }).sort((a, b) => {
@@ -75,25 +93,128 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
     (selectedLabelId === "" || s.label_id === selectedLabelId)
   ).length;
 
+  const inactiveCount = initialStudents.filter(s => 
+    s.status === 'INACTIVE' && 
+    (s.name.toLowerCase().includes(searchQuery.toLowerCase()) || (s.nickname && s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) && 
+    (selectedLabelId === "" || s.label_id === selectedLabelId)
+  ).length;
+
   const allCount = initialStudents.filter(s => 
     (s.name.toLowerCase().includes(searchQuery.toLowerCase()) || (s.nickname && s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) && 
     (selectedLabelId === "" || s.label_id === selectedLabelId)
   ).length;
 
-  const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Yakin ingin menghapus data siswa "${name}" secara permanen? Data yang sudah dihapus tidak dapat dikembalikan.`)) {
-      try {
-        await deleteStudent(id);
-        router.refresh();
-      } catch (error: any) {
-        alert(error.message);
+  const handleDelete = (id: string, name: string) => {
+    setConfirmModal({
+      isOpen: true,
+      type: 'delete',
+      studentId: id,
+      studentName: name
+    });
+    setModalError("");
+  };
+
+  const handleToggleActive = (id: string, name: string, currentStatus: string) => {
+    const isInactive = currentStatus === 'INACTIVE';
+    const newStatus = isInactive ? 'REGISTERED' : 'INACTIVE';
+    
+    setConfirmModal({
+      isOpen: true,
+      type: 'toggle',
+      studentId: id,
+      studentName: name,
+      newStatus
+    });
+    setModalError("");
+  };
+
+  const handleExecuteAction = async () => {
+    setIsProcessing(true);
+    setModalError("");
+    try {
+      if (confirmModal.type === 'delete') {
+        await deleteStudent(confirmModal.studentId);
+      } else if (confirmModal.type === 'toggle' && confirmModal.newStatus) {
+        await updateStudentStatus(confirmModal.studentId, confirmModal.newStatus);
       }
+      setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      router.refresh();
+    } catch (error: any) {
+      setModalError(error.message || "Terjadi kesalahan saat memproses data.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
+      {isProcessing && <LoadingSpinner usePortal={true} />}
+
+      {/* Custom Confirm Modal */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => !isProcessing && setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+          />
+          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${
+              confirmModal.type === 'delete' ? 'bg-red-100 dark:bg-red-500/10' : 'bg-brand-100 dark:bg-brand-500/10'
+            }`}>
+              {confirmModal.type === 'delete' ? (
+                <Icons.trash className="w-6 h-6 text-red-600 dark:text-red-400" />
+              ) : (
+                <Icons.settings className="w-6 h-6 text-brand-600 dark:text-brand-400" />
+              )}
+            </div>
+            
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center">
+              {confirmModal.type === 'delete' ? 'Hapus Data Siswa?' : confirmModal.newStatus === 'INACTIVE' ? 'Nonaktifkan Siswa?' : 'Aktifkan Siswa?'}
+            </h3>
+            
+            <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-2 leading-relaxed">
+              {confirmModal.type === 'delete' ? (
+                <>Apakah Anda yakin ingin menghapus data siswa <strong className="text-slate-700 dark:text-slate-300">"{confirmModal.studentName}"</strong> secara permanen? Data yang dihapus tidak dapat dikembalikan.</>
+              ) : confirmModal.newStatus === 'INACTIVE' ? (
+                <>Apakah Anda yakin ingin menonaktifkan siswa <strong className="text-slate-700 dark:text-slate-300">"{confirmModal.studentName}"</strong>? Data siswa akan dipindah ke tab Nonaktif.</>
+              ) : (
+                <>Apakah Anda yakin ingin mengaktifkan kembali siswa <strong className="text-slate-700 dark:text-slate-300">"{confirmModal.studentName}"</strong> sebagai siswa Reguler?</>
+              )}
+            </p>
+
+            {modalError && (
+              <p className="text-xs text-red-500 mt-3 text-center font-medium bg-red-50 dark:bg-red-950/20 p-2.5 rounded-xl border border-red-100 dark:border-red-900/50">
+                {modalError}
+              </p>
+            )}
+
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                disabled={isProcessing}
+                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isProcessing}
+                onClick={handleExecuteAction}
+                className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 ${
+                  confirmModal.type === 'delete' 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-brand-600 hover:bg-brand-700'
+                }`}
+              >
+                {isProcessing ? "Memproses..." : (confirmModal.type === 'delete' ? 'Ya, Hapus' : 'Ya, Lanjutkan')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Card - Unified Design */}
       <div className="rounded-3xl bg-brand-600 p-6 sm:p-10 shadow-lg relative overflow-hidden">
         {/* Abstract Background Decoration */}
@@ -235,6 +356,15 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
               <span className="sm:hidden">Coba Gratis</span>
               <span className="ml-1.5 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2 text-xs font-semibold">{cgCount}</span>
             </button>
+            <button
+              onClick={() => setActiveTab("inactive")}
+              className={`
+                shrink-0 whitespace-nowrap border-b-2 py-3.5 px-3 text-sm font-medium transition-colors
+                ${activeTab === "inactive" ? "border-red-500 text-red-600 dark:text-red-400" : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"}
+              `}
+            >
+              Nonaktif <span className="ml-1.5 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2 text-xs font-semibold">{inactiveCount}</span>
+            </button>
           </nav>
         </div>
       </div>
@@ -299,9 +429,11 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                         <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
                           person.status === 'REGISTERED' 
                             ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20' 
-                            : 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20'
+                            : person.status === 'CG' 
+                              ? 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20'
+                              : 'bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-500/20'
                         }`}>
-                          {person.status === 'REGISTERED' ? 'Reguler' : 'CG'}
+                          {person.status === 'REGISTERED' ? 'Reguler' : person.status === 'CG' ? 'CG' : 'Nonaktif'}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500 dark:text-slate-400">
@@ -322,6 +454,12 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                         {new Date(person.registration_date).toLocaleDateString('id-ID')}
                       </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 space-x-3">
+                        <button 
+                          onClick={() => handleToggleActive(person.id, person.name, person.status)}
+                          className={`${person.status === 'INACTIVE' ? 'text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                        >
+                          {person.status === 'INACTIVE' ? 'Aktifkan' : 'Nonaktifkan'}<span className="sr-only">, {person.name}</span>
+                        </button>
                         <button 
                           onClick={() => {
                             setEditingStudent(person);
@@ -392,9 +530,11 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                   <span className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold ring-1 ring-inset ${
                     person.status === 'REGISTERED' 
                       ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20' 
-                      : 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20'
+                      : person.status === 'CG' 
+                        ? 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20'
+                        : 'bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-500/20'
                   }`}>
-                    {person.status === 'REGISTERED' ? 'Reguler' : 'CG'}
+                    {person.status === 'REGISTERED' ? 'Reguler' : person.status === 'CG' ? 'CG' : 'Nonaktif'}
                   </span>
                 </div>
                 
@@ -409,19 +549,29 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                   </div>
                 </div>
 
-                <div className="flex gap-2 relative z-10 border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div className="flex gap-2 relative z-10 border-t border-slate-100 dark:border-slate-800 pt-3 flex-wrap">
+                  <button 
+                    onClick={() => handleToggleActive(person.id, person.name, person.status)}
+                    className={`flex-1 py-2 px-2 text-xs font-semibold rounded-lg transition-colors text-center ring-1 ${
+                      person.status === 'INACTIVE' 
+                        ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ring-emerald-200/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 dark:ring-emerald-900/30'
+                        : 'bg-slate-50 text-slate-700 hover:bg-slate-100 ring-slate-200/50 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:ring-slate-700'
+                    }`}
+                  >
+                    {person.status === 'INACTIVE' ? 'Aktifkan' : 'Nonaktifkan'}
+                  </button>
                   <button 
                     onClick={() => {
                       setEditingStudent(person);
                       setIsModalOpen(true);
                     }}
-                    className="flex-1 py-2 text-xs font-semibold rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20 transition-colors text-center ring-1 ring-brand-200/50 dark:ring-brand-900/30"
+                    className="flex-1 py-2 px-2 text-xs font-semibold rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20 transition-colors text-center ring-1 ring-brand-200/50 dark:ring-brand-900/30"
                   >
-                    Edit Data
+                    Edit
                   </button>
                   <button 
                     onClick={() => handleDelete(person.id, person.name)}
-                    className="flex-1 py-2 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors text-center ring-1 ring-red-200/50 dark:ring-red-900/30"
+                    className="flex-1 py-2 px-2 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors text-center ring-1 ring-red-200/50 dark:ring-red-900/30"
                   >
                     Hapus
                   </button>

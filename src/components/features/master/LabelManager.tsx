@@ -48,7 +48,7 @@ const PREDEFINED_COLORS = [
   { name: "Stone 50",  hex: "#fafaf9" }, { name: "Stone 100", hex: "#f5f5f4" }, { name: "Stone 200", hex: "#e7e5e4" }, { name: "Stone 300", hex: "#d6d3d1" }, { name: "Stone 400", hex: "#a8a29e" }, { name: "Stone 500", hex: "#78716c" }, { name: "Stone 600", hex: "#57534e" }, { name: "Stone 700", hex: "#44403c" }, { name: "Stone 800", hex: "#292524" }, { name: "Stone 900", hex: "#1c1917" }, { name: "Stone 950", hex: "#0c0a09" },
 ];
 
-export function LabelManager({ labels }: { labels: any[] }) {
+export function LabelManager({ labels, role }: { labels: any[], role?: string | null }) {
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -270,13 +270,15 @@ export function LabelManager({ labels }: { labels: any[] }) {
               <span className="inline-flex items-center rounded-md bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-700/10 dark:bg-brand-500/10 dark:text-brand-400 dark:ring-brand-500/20">
                 Global
               </span>
-              <button 
-                onClick={() => confirmDelete(label.id, label.main_level)}
-                className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
-                title="Hapus Label"
-              >
-                <Icons.trash className="w-5.5 h-5.5" />
-              </button>
+              {role === 'SUPERADMIN' && (
+                <button 
+                  onClick={() => confirmDelete(label.id, label.main_level)}
+                  className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
+                  title="Hapus Label"
+                >
+                  <Icons.trash className="w-5.5 h-5.5" />
+                </button>
+              )}
             </div>
           </li>
         ))}

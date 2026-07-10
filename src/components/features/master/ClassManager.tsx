@@ -6,7 +6,7 @@ import { Icons } from "@/components/ui/icons";
 import { createClass, deleteClass } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
-export function ClassManager({ classes }: { classes: any[] }) {
+export function ClassManager({ classes, role }: { classes: any[], role?: string | null }) {
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -215,13 +215,15 @@ export function ClassManager({ classes }: { classes: any[] }) {
                 <p className="text-sm leading-6 text-slate-900 dark:text-white">Maks {cls.max_quota} Siswa</p>
                 <p className="mt-1 text-xs leading-5 text-slate-500">Kuota penuh / sesi</p>
               </div>
-              <button 
-                onClick={() => confirmDelete(cls.id, cls.name)}
-                className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
-                title="Hapus Kelas"
-              >
-                <Icons.trash className="w-5.5 h-5.5" />
-              </button>
+              {role === 'SUPERADMIN' && (
+                <button 
+                  onClick={() => confirmDelete(cls.id, cls.name)}
+                  className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
+                  title="Hapus Kelas"
+                >
+                  <Icons.trash className="w-5.5 h-5.5" />
+                </button>
+              )}
             </div>
           </li>
         )))}

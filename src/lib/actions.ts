@@ -638,6 +638,16 @@ export async function deleteStudent(id: string) {
   return true;
 }
 
+export async function updateStudentStatus(id: string, status: string) {
+  const { error } = await supabase
+    .from('students')
+    .update({ status })
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
+  return true;
+}
+
 export async function updateStudent(id: string, formData: FormData) {
   const name = formData.get('name') as string;
   const nickname = formData.get('nickname') as string;
@@ -684,12 +694,37 @@ export async function cancelBooking(scheduleSlotId: string, studentId: string) {
 }
 
 export async function deleteClass(id: string) {
-  const { error } = await supabase
+  const supabaseServer = await createClient();
+
+  // 1. Dapatkan semua jadwal yang terkait dengan kelas ini
+  const { data: slots } = await supabaseServer
+    .from('schedule_slots')
+    .select('id')
+    .eq('class_id', id);
+
+  if (slots && slots.length > 0) {
+    const slotIds = slots.map((s) => s.id);
+    
+    // 2. Hapus semua data booking siswa di jadwal tersebut
+    await supabaseServer
+      .from('schedule_student')
+      .delete()
+      .in('schedule_slot_id', slotIds);
+      
+    // 3. Hapus jadwal (slots) itu sendiri
+    await supabaseServer
+      .from('schedule_slots')
+      .delete()
+      .eq('class_id', id);
+  }
+
+  // 4. Hapus kelas
+  const { error } = await supabaseServer
     .from('classes')
     .delete()
     .eq('id', id);
 
-  if (error) throw new Error("Gagal menghapus kelas. Pastikan tidak ada jadwal yang menggunakan kelas ini.");
+  if (error) throw new Error("Gagal menghapus kelas. " + error.message);
   return true;
 }
 
@@ -779,4 +814,62 @@ export async function resetAllDatabaseData() {
   // Labels are global and NOT deleted during reset
 
   return { success: true };
+}
+
+export async function getRecentActivities() {
+  const supabaseServer = await createClient();
+  const { data: { user } } = await supabaseServer.auth.getUser();
+  if (!user) return [];
+
+  const { data: profile } = await supabaseServer
+    .from('users')
+    .select('role, branch_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile) return [];
+
+  let query = supabaseServer
+    .from('schedule_student')
+    .select(`
+      created_at,
+      student:students(name, status),
+      slot:schedule_slots(
+        date,
+        time,
+        class:classes(name),
+        branch:branches(name)
+      )
+    `)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  // If branch admin, filter by their branch via slot.branch_id
+  if (profile.role !== 'SUPERADMIN' && profile.branch_id) {
+    // We filter through slot's branch_id
+    query = supabaseServer
+      .from('schedule_student')
+      .select(`
+        created_at,
+        student:students(name, status),
+        slot:schedule_slots!inner(
+          date,
+          time,
+          branch_id,
+          class:classes(name),
+          branch:branches(name)
+        )
+      `)
+      .eq('slot.branch_id', profile.branch_id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('Error fetching activities:', error);
+    return [];
+  }
+
+  return data || [];
 }

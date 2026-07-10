@@ -7,9 +7,10 @@ interface MasterClientWrapperProps {
   classes: any[];
   labels: any[];
   activeBranchName?: string | null;
+  role?: string | null;
 }
 
-export function MasterClientWrapper({ classes, labels, activeBranchName }: MasterClientWrapperProps) {
+export function MasterClientWrapper({ classes, labels, activeBranchName, role }: MasterClientWrapperProps) {
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
@@ -37,12 +38,12 @@ export function MasterClientWrapper({ classes, labels, activeBranchName }: Maste
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Kolom Kiri: Ruang Kelas */}
         <div>
-          <ClassManager classes={classes} />
+          <ClassManager classes={classes} role={role} />
         </div>
 
         {/* Kolom Kanan: Label Warna */}
         <div>
-          <LabelManager labels={labels} />
+          <LabelManager labels={labels} role={role} />
         </div>
       </div>
     </div>
