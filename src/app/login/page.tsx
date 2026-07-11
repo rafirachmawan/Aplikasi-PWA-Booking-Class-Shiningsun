@@ -1,71 +1,106 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 import { LoginForm } from "@/components/features/auth/LoginForm";
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-slate-900 overflow-hidden font-sans">
       {/* Left Panel - Branding (hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-brand-600 flex-col justify-between p-12 overflow-hidden">
-        {/* Decorative circles */}
-        <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-brand-500/30 blur-3xl" />
-        <div className="absolute bottom-10 right-10 w-56 h-56 rounded-full bg-brand-700/40 blur-2xl" />
-        <div className="absolute top-1/2 left-1/3 w-40 h-40 rounded-full bg-white/5 blur-xl" />
+      <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-12 overflow-hidden bg-[#0A0F1C]">
+        
+        {/* Animated Mesh Gradient Background */}
+        <div className="absolute inset-0 w-full h-full">
+          <div className="absolute -top-1/4 -left-1/4 w-[80%] h-[80%] rounded-full bg-brand-600/30 blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '8s' }} />
+          <div className="absolute top-1/4 -right-1/4 w-[70%] h-[70%] rounded-full bg-blue-500/20 blur-[100px] mix-blend-screen animate-pulse" style={{ animationDuration: '12s' }} />
+          <div className="absolute -bottom-1/4 left-1/4 w-[90%] h-[90%] rounded-full bg-indigo-500/20 blur-[130px] mix-blend-screen animate-pulse" style={{ animationDuration: '10s' }} />
+        </div>
+        
+        {/* Abstract Grid Overlay */}
+        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
         {/* Top - Logo & Brand */}
-        <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
+        <div className="relative z-10 animate-in fade-in slide-in-from-top-8 duration-700">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl">
+              <Image src="/logo.png" alt="Logo" width={36} height={36} className="object-contain" priority />
             </div>
-            <span className="text-2xl font-bold text-white tracking-tight">ShiningSun</span>
+            <span className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 tracking-tight">
+              ShiningSun
+            </span>
           </div>
         </div>
 
         {/* Center - Tagline */}
-        <div className="relative z-10 space-y-4">
-          <h1 className="text-4xl font-bold text-white leading-tight">
-            Sistem Penjadwalan
-            <br />
-            <span className="text-brand-200">Cerdas & Mudah</span>
+        <div className="relative z-10 space-y-6 animate-in fade-in slide-in-from-left-8 duration-1000 delay-300">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-sm font-medium">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
+            </span>
+            Platform Manajemen Modern
+          </div>
+          <h1 className="text-6xl font-bold text-white leading-[1.1] tracking-tight">
+            Sistem Penjadwalan <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-blue-400 to-indigo-400">
+              Cerdas & Elegan
+            </span>
           </h1>
-          <p className="text-brand-100/80 text-lg max-w-md">
-            Kelola jadwal kelas, data siswa, dan booking sesi dalam satu platform yang terintegrasi.
+          <p className="text-slate-300/80 text-xl max-w-lg leading-relaxed font-light">
+            Solusi komprehensif untuk mengelola jadwal kelas, data siswa, dan booking sesi cabang secara real-time.
           </p>
         </div>
 
-        {/* Bottom - Footer */}
-        <div className="relative z-10">
-          <p className="text-white/70 text-sm">&copy; 2026 ShiningSun. All rights reserved.</p>
+        {/* Bottom - Footer / Testimonial Style */}
+        <div className="relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex -space-x-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className={`w-10 h-10 rounded-full bg-slate-800 border-2 border-[#0A0F1C] flex items-center justify-center text-xs text-white/50 shadow-sm z-[${4-i}]`}>
+                  {i}
+                </div>
+              ))}
+              <div className="w-10 h-10 rounded-full bg-brand-600 border-2 border-[#0A0F1C] flex items-center justify-center text-xs font-bold text-white shadow-sm z-0">
+                +99
+              </div>
+            </div>
+            <p className="text-sm text-slate-400 font-medium">Dipercaya oleh seluruh admin cabang</p>
+          </div>
+          <p className="text-white/40 text-sm font-medium">&copy; 2026 ShiningSun. All rights reserved.</p>
         </div>
       </div>
 
-      {/* Right Panel - Login Form */}
-      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16 bg-slate-50 dark:bg-slate-900 relative">
+      {/* Right Panel - Login Form Container */}
+      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-20 bg-white dark:bg-[#0B1120] relative z-10 lg:rounded-l-[40px] shadow-[-20px_0_40px_-15px_rgba(0,0,0,0.3)]">
+        
         {/* Mobile Header Decoration */}
-        <div className="lg:hidden absolute top-0 left-0 right-0 h-64 bg-brand-600 rounded-b-[40px] -z-0">
-          <div className="absolute -top-20 -left-20 w-48 h-48 rounded-full bg-brand-500/30 blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-32 h-32 rounded-full bg-brand-700/40 blur-2xl" />
+        <div className="lg:hidden absolute top-0 left-0 right-0 h-[40vh] bg-[#0A0F1C] rounded-b-[40px] -z-10 overflow-hidden shadow-lg">
+          {/* Animated Mesh for Mobile */}
+          <div className="absolute -top-1/4 -left-1/4 w-[150%] h-[150%] rounded-full bg-brand-600/40 blur-[70px] mix-blend-screen animate-pulse" style={{ animationDuration: '8s' }} />
+          <div className="absolute top-1/4 -right-1/4 w-[120%] h-[120%] rounded-full bg-blue-500/30 blur-[60px] mix-blend-screen animate-pulse" style={{ animationDuration: '12s' }} />
+          {/* Grid Overlay */}
+          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-30 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
         </div>
 
-        <div className="mx-auto w-full max-w-[440px] relative z-10 mt-10 lg:mt-0">
+        <div className="mx-auto w-full max-w-[420px] relative z-10 mt-16 lg:mt-0">
+          
           {/* Mobile Logo & Welcome (hidden on desktop) */}
-          <div className="flex flex-col items-center mb-8 lg:hidden text-center -mt-20">
-            <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-sm border border-white/30 mb-5">
-              <Image src="/logo.png" alt="ShiningSun Logo" width={40} height={40} className="object-contain" priority />
+          <div className="flex flex-col items-center mb-10 lg:hidden text-center -mt-24">
+            <div className="h-20 w-20 bg-white/10 backdrop-blur-xl rounded-[24px] flex items-center justify-center shadow-2xl border border-white/20 mb-6">
+              <Image src="/logo.png" alt="ShiningSun Logo" width={48} height={48} className="object-contain" priority />
             </div>
-            <h2 className="text-3xl font-bold text-white">ShiningSun</h2>
-            <p className="mt-2 text-brand-100 text-sm max-w-xs">Sistem penjadwalan cerdas & mudah untuk cabang Anda</p>
+            <h2 className="text-3xl font-extrabold text-white tracking-tight drop-shadow-md">ShiningSun</h2>
+            <p className="mt-3 text-brand-100/90 text-sm font-medium max-w-[240px]">Sistem cerdas untuk manajemen cabang Anda</p>
           </div>
 
           {/* Desktop heading */}
-          <div className="hidden lg:block mb-8">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Selamat Datang</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Masuk ke sistem manajemen cabang Anda</p>
+          <div className="hidden lg:block mb-10 animate-in fade-in slide-in-from-right-8 duration-700 delay-200">
+            <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Selamat Datang</h2>
+            <p className="mt-2 text-base text-slate-500 dark:text-slate-400">Silakan masuk ke akun manajemen Anda</p>
           </div>
 
-          <div className="bg-white px-6 py-8 sm:py-10 shadow-xl shadow-slate-200/40 sm:rounded-3xl sm:px-10 dark:bg-slate-800 ring-1 ring-slate-900/5 dark:ring-slate-700/50 dark:shadow-none rounded-3xl">
+          <div className="animate-in fade-in slide-in-from-bottom-8 lg:slide-in-from-right-8 duration-700 delay-300">
             <LoginForm />
           </div>
+          
         </div>
       </div>
     </div>

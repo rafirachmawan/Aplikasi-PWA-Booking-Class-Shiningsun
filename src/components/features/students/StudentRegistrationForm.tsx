@@ -387,6 +387,7 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                     <input
                       type="text"
                       id="name"
+                      autoComplete="off"
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -403,6 +404,7 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                     <input
                       type="text"
                       id="nickname"
+                      autoComplete="off"
                       value={nickname}
                       onChange={(e) => setNickname(e.target.value)}
                       className="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm"
@@ -458,6 +460,7 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                     <input
                       type="tel"
                       id="phone"
+                      autoComplete="off"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       className="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm"
@@ -473,6 +476,7 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                     <input
                       type="text"
                       id="school"
+                      autoComplete="off"
                       value={school}
                       onChange={(e) => setSchool(e.target.value)}
                       className="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm"

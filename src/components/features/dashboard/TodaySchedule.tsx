@@ -1,4 +1,4 @@
-﻿import { Icons } from "@/components/ui/icons";
+import { Icons } from "@/components/ui/icons";
 
 const FIXED_TIMES = [
   { time: "08:00", range: "08 - 09" },
@@ -66,11 +66,11 @@ export function TodaySchedule({ slots }: { slots: any[] }) {
                                 return (
                                   <span
                                     key={b.student_id}
-                                    className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded text-slate-700 dark:text-slate-200 truncate max-w-[140px]"
-                                    style={{ backgroundColor: `${hex}20`, borderLeft: `2px solid ${hex}` }}
+                                    className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded text-slate-900 dark:text-slate-100 truncate max-w-[140px]"
+                                    style={{ backgroundColor: `${hex}CC`, borderLeft: `4px solid ${hex}` }}
                                   >
-                                    {b.student?.status === 'CG' && <span className="text-amber-600 dark:text-amber-500 font-bold mr-0.5">(CG)</span>}
-                                    {b.student?.name}
+                                    {b.student?.status === 'CG' && <span className="text-amber-800 dark:text-amber-300 font-extrabold mr-0.5">(CG)</span>}
+                                    {b.student?.nickname || b.student?.name}
                                   </span>
                                 );
                               })}

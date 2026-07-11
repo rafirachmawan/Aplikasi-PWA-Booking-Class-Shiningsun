@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
-import { autoBookStudentToClass, bookStudentManual, removeStudentBooking } from "@/lib/actions";
+import { autoBookStudentToClass, bookStudentManual, removeStudentBooking, bulkRemoveStudentBookings, copyScheduleToNextMonth, moveStudentBooking } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface SchedulingClientWrapperProps {
@@ -64,6 +64,71 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
     }
   };
   
+  // Edit Booking Modal State
+  const [editModal, setEditModal] = useState({ isOpen: false, slotId: '', date: '', time: '', classId: '', label: '' });
+  const [isEditing, setIsEditing] = useState(false);
+  
+  const handleEditBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editModal.slotId || !studentId) return;
+    setIsEditing(true);
+    try {
+      await moveStudentBooking(studentId, editModal.slotId, editModal.classId, editModal.date, editModal.time);
+      setEditModal({ ...editModal, isOpen: false });
+      showAlert('success', 'Jadwal berhasil diperbarui.');
+      router.refresh();
+    } catch (error: any) {
+      showAlert('error', error.message);
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  // Bulk Action Modal States
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState<{isOpen: boolean, studentSchedules: any[]}>({isOpen: false, studentSchedules: []});
+  const [copyConfirm, setCopyConfirm] = useState(false);
+
+  // Bulk Actions Execution
+  const executeBulkDelete = async () => {
+    if (!studentId || bulkDeleteConfirm.studentSchedules.length === 0) return;
+    
+    setIsSubmitting(true);
+    setBulkDeleteConfirm({ isOpen: false, studentSchedules: [] });
+    try {
+      const slotIds = bulkDeleteConfirm.studentSchedules.map(s => s.id);
+      await bulkRemoveStudentBookings(studentId, slotIds);
+      showAlert('success', 'Semua jadwal di bulan ini berhasil dihapus.');
+      router.refresh();
+    } catch (error: any) {
+      showAlert('error', error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const executeCopyToNextMonth = async () => {
+    if (!studentId) return;
+    
+    setIsSubmitting(true);
+    setCopyConfirm(false);
+    try {
+      const res = await copyScheduleToNextMonth(studentId, currentYear, currentMonth);
+      if (res.totalBooked === 0) {
+        showAlert('error', "Gagal! Semua sesi untuk bulan depan sudah penuh atau siswa sudah terdaftar.");
+      } else if (res.failedDates.length > 0) {
+        const datesFormatted = res.failedDates.map((d: string) => new Date(d).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})).join(', ');
+        showAlert('warning', `Berhasil menyalin ${res.totalBooked} sesi. Namun ada jadwal yang gagal karena penuh pada: ${datesFormatted}.`);
+      } else {
+        showAlert('success', `Berhasil menyalin jadwal. Total ${res.totalBooked} sesi didaftarkan untuk bulan depan.`);
+      }
+      router.refresh();
+    } catch (error: any) {
+      showAlert('error', error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Auto Mode State
   const [autoSchedules, setAutoSchedules] = useState([{ startDate: new Date().toISOString().split('T')[0], time: "08:00", classId: "" }]);
 
@@ -75,6 +140,19 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
   const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   
   const timeSlots = ["08:00", "09:00", "11:00", "13:00", "15:00", "16:00"];
+
+  const getRemainingSlots = (dateStr: string, time: string, classId: string) => {
+    if (!dateStr || !classId) return null;
+    const cls = classes.find(c => c.id === classId);
+    const maxQuota = cls?.max_quota || 4;
+    const slot = schedules.find(s => 
+      s.date.split('T')[0] === dateStr && 
+      s.time.substring(0, 5) === time && 
+      s.class_id === classId
+    );
+    if (!slot) return maxQuota;
+    return maxQuota - (slot.bookings ? slot.bookings.length : 0);
+  };
 
   const handleAutoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,18 +168,27 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
     setIsSubmitting(true);
     try {
       let totalBooked = 0;
+      let allFailedDates: string[] = [];
       for (const schedule of autoSchedules) {
-        const bookedCount = await autoBookStudentToClass(
+        const res = await autoBookStudentToClass(
           studentId, 
           schedule.classId, 
           schedule.startDate,
           schedule.time
         );
-        totalBooked += bookedCount;
+        totalBooked += res.bookedCount;
+        if (res.failedDates.length > 0) {
+          allFailedDates.push(...res.failedDates);
+        }
       }
       
       if (totalBooked === 0) {
-        showAlert('warning', "Tidak ada jadwal baru yang ditambahkan (Siswa sudah terdaftar di sesi tersebut, atau kelas sudah penuh).");
+        showAlert('error', "Gagal! Semua kelas di tanggal tersebut sudah penuh atau siswa sudah terdaftar.");
+      } else if (allFailedDates.length > 0) {
+        const datesFormatted = allFailedDates.map(d => new Date(d).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})).join(', ');
+        showAlert('warning', `Berhasil mendaftarkan ${totalBooked} sesi. Namun ada jadwal yang gagal karena penuh pada: ${datesFormatted}.`);
+        setStudentId("");
+        setAutoSchedules([{ startDate: new Date().toISOString().split('T')[0], time: "08:00", classId: "" }]);
       } else {
         showAlert('success', `Berhasil! Siswa telah didaftarkan ke total ${totalBooked} sesi kelas baru.`);
         setStudentId("");
@@ -295,33 +382,58 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
                 }
                 
                 return (
-                  <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-                    {studentSchedules.map(slot => {
-                      const dateObj = new Date(slot.date);
-                      const hari = isNaN(dateObj.getTime()) ? "" : ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][dateObj.getDay()];
-                      const tgl = isNaN(dateObj.getTime()) ? "" : dateObj.getDate();
-                      const jadwalLabel = `${hari}, ${tgl} ${monthNames[currentMonth - 1]} | ${slot.time.substring(0,5)} | ${slot.class?.name}`;
-                      
-                      return (
-                        <div key={slot.id} className="group inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-brand-200 dark:border-brand-500/30 shadow-sm hover:border-red-300 dark:hover:border-red-500/30 transition-colors">
-                          <Icons.calendar className="w-3 h-3 text-brand-500" />
-                          <span>{hari}, {tgl} {monthNames[currentMonth - 1]}</span>
-                          <span className="text-slate-300 mx-0.5">|</span>
-                          <span className="text-brand-600 dark:text-brand-400">{slot.time.substring(0,5)}</span>
-                          <span className="text-slate-300 mx-0.5">|</span>
-                          <span className="font-semibold">{slot.class?.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteConfirm({isOpen: true, slotId: slot.id, studentId: studentId, label: jadwalLabel})}
-                            className="ml-1 p-1 rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors opacity-50 group-hover:opacity-100"
-                            title="Hapus jadwal ini"
-                          >
-                            <Icons.close className="w-3 h-3" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <>
+                    <div className="flex flex-wrap gap-3 mb-4">
+                      <button type="button" onClick={() => setCopyConfirm(true)} className="px-4 py-2 text-xs font-bold bg-brand-600 text-white rounded-lg hover:bg-brand-700 shadow-sm transition-colors flex items-center gap-2">
+                        <Icons.calendar className="w-4 h-4" /> Gunakan jadwal untuk bulan depan
+                      </button>
+                      <button type="button" onClick={() => setBulkDeleteConfirm({isOpen: true, studentSchedules})} className="px-4 py-2 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-sm transition-colors flex items-center gap-2">
+                        <Icons.trash className="w-4 h-4" /> Hapus semua
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                      {studentSchedules.map(slot => {
+                        const dateObj = new Date(slot.date);
+                        const hari = isNaN(dateObj.getTime()) ? "" : ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][dateObj.getDay()];
+                        const tgl = isNaN(dateObj.getTime()) ? "" : dateObj.getDate();
+                        const jadwalLabel = `${hari}, ${tgl} ${monthNames[currentMonth - 1]} | ${slot.time.substring(0,5)} | ${slot.class?.name}`;
+                        
+                        return (
+                          <div key={slot.id} className="group inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 rounded-lg text-[11px] font-medium bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-brand-200 dark:border-brand-500/30 shadow-sm hover:border-brand-400 dark:hover:border-brand-500/60 transition-colors">
+                            <Icons.calendar className="w-3 h-3 text-brand-500" />
+                            <span>{hari}, {tgl} {monthNames[currentMonth - 1]}</span>
+                            <span className="text-slate-300 mx-0.5">|</span>
+                            <span className="text-brand-600 dark:text-brand-400">{slot.time.substring(0,5)}</span>
+                            <span className="text-slate-300 mx-0.5">|</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold">{slot.class?.name}</span>
+                              <span className="text-[9px] bg-slate-100 dark:bg-slate-700/50 px-1.5 py-0.5 rounded font-medium text-slate-500 dark:text-slate-400">
+                                Sisa: {(slot.class?.max_quota || 4) - (slot.bookings?.length || 0)}
+                              </span>
+                            </div>
+                            <div className="ml-2 flex items-center gap-1.5 border-l border-slate-200 dark:border-slate-700 pl-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setEditModal({isOpen: true, slotId: slot.id, date: slot.date, time: slot.time, classId: slot.class_id, label: jadwalLabel})}
+                                className="p-1 rounded bg-brand-50 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-500/40 transition-colors"
+                                title="Edit jadwal ini"
+                              >
+                                <Icons.edit className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteConfirm({isOpen: true, slotId: slot.id, studentId: studentId, label: jadwalLabel})}
+                                className="p-1 rounded bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/40 transition-colors"
+                                title="Hapus jadwal ini"
+                              >
+                                <Icons.close className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
                 );
               })()}
             </div>
@@ -356,7 +468,13 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
                       
                       <div className="flex-1 min-w-[120px]">
                         <div className="flex items-center justify-between mb-1.5 px-1">
-                          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Jam Sesi</label>
+                          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            Jam Sesi
+                            {schedule.classId && schedule.startDate && schedule.time && (() => {
+                              const r = getRemainingSlots(schedule.startDate, schedule.time, schedule.classId);
+                              return r !== null ? <span className="text-brand-600 dark:text-brand-400 font-bold ml-1 normal-case">(Sisa {r})</span> : null;
+                            })()}
+                          </label>
                         </div>
                         <div className="relative">
                           <select
@@ -364,9 +482,19 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
                             onChange={(e) => updateAutoSchedule(index, 'time', e.target.value)}
                             className="appearance-none block w-full rounded-xl border-slate-200 bg-white pl-4 pr-10 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
                           >
-                            {timeSlots.map(t => (
-                              <option key={t} value={t}>{t} - {String(parseInt(t) + 1).padStart(2, '0')}:00 WIB</option>
-                            ))}
+                            {timeSlots.map(t => {
+                              const rem = schedule.classId ? getRemainingSlots(schedule.startDate, t, schedule.classId) : null;
+                              const isFull = rem !== null && rem <= 0;
+                              const labelText = rem !== null 
+                                ? (isFull ? `${t}-${String(parseInt(t) + 1).padStart(2, '0')}:00 (Penuh)` : `${t}-${String(parseInt(t) + 1).padStart(2, '0')}:00 (Sisa ${rem})`)
+                                : `${t}-${String(parseInt(t) + 1).padStart(2, '0')}:00`;
+                                
+                              return (
+                                <option key={t} value={t} disabled={isFull}>
+                                  {labelText}
+                                </option>
+                              );
+                            })}
                           </select>
                           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                             <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -388,9 +516,15 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
                             className="appearance-none block w-full rounded-xl border-slate-200 bg-white pl-4 pr-10 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
                           >
                             <option value="" disabled>-- Pilih Tipe Kelas --</option>
-                            {classes.map(c => (
-                              <option key={c.id} value={c.id}>{c.name} (Max: {c.max_quota})</option>
-                            ))}
+                            {classes.map(c => {
+                              const rem = schedule.startDate && schedule.time ? getRemainingSlots(schedule.startDate, schedule.time, c.id) : null;
+                              const labelText = rem !== null 
+                                ? `${c.name} (Sisa ${rem}/${c.max_quota})`
+                                : `${c.name} (Max: ${c.max_quota})`;
+                              return (
+                                <option key={c.id} value={c.id} disabled={rem !== null && rem <= 0}>{labelText}</option>
+                              );
+                            })}
                           </select>
                           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                             <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -466,7 +600,13 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Pilih Jam</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Pilih Jam
+                    {manualClassId && manualDate && manualTime && (() => {
+                      const r = getRemainingSlots(manualDate, manualTime, manualClassId);
+                      return r !== null ? <span className="text-brand-600 dark:text-brand-400 font-bold ml-1">(Sisa {r})</span> : null;
+                    })()}
+                  </label>
                   <div className="relative">
                     <select
                       required
@@ -475,9 +615,19 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
                       className="appearance-none block w-full rounded-xl border-slate-200 bg-white pl-4 pr-10 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
                     >
                       <option value="" disabled>-- Pilih Jam --</option>
-                      {timeSlots.map(t => (
-                        <option key={t} value={t}>{t} - {String(parseInt(t) + 1).padStart(2, '0')}:00 WIB</option>
-                      ))}
+                      {timeSlots.map(t => {
+                        const rem = manualClassId ? getRemainingSlots(manualDate, t, manualClassId) : null;
+                        const isFull = rem !== null && rem <= 0;
+                        const labelText = rem !== null 
+                          ? (isFull ? `${t}-${String(parseInt(t) + 1).padStart(2, '0')}:00 (Penuh)` : `${t}-${String(parseInt(t) + 1).padStart(2, '0')}:00 (Sisa ${rem})`)
+                          : `${t}-${String(parseInt(t) + 1).padStart(2, '0')}:00`;
+                          
+                        return (
+                          <option key={t} value={t} disabled={isFull}>
+                            {labelText}
+                          </option>
+                        );
+                      })}
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                       <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -496,9 +646,15 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
                       className="appearance-none block w-full rounded-xl border-slate-200 bg-white pl-4 pr-10 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
                     >
                       <option value="" disabled>-- Pilih Tipe Kelas --</option>
-                      {classes.map(c => (
-                        <option key={c.id} value={c.id}>{c.name} (Max: {c.max_quota})</option>
-                      ))}
+                      {classes.map(c => {
+                        const rem = manualDate && manualTime ? getRemainingSlots(manualDate, manualTime, c.id) : null;
+                        const labelText = rem !== null 
+                          ? `${c.name} (Sisa ${rem}/${c.max_quota})`
+                          : `${c.name} (Max: ${c.max_quota})`;
+                        return (
+                          <option key={c.id} value={c.id} disabled={rem !== null && rem <= 0}>{labelText}</option>
+                        );
+                      })}
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                       <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -571,6 +727,95 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
       </div>
     )}
 
+    {/* Edit Booking Modal */}
+    {editModal.isOpen && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800 flex flex-col">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-900">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span className="p-1.5 bg-brand-50 dark:bg-brand-500/10 rounded-lg text-brand-600 dark:text-brand-400">
+                <Icons.edit className="w-5 h-5" />
+              </span>
+              Edit Jadwal
+            </h3>
+            <button onClick={() => setEditModal({...editModal, isOpen: false})} className="text-slate-400 hover:text-slate-500 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              <Icons.close className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <form onSubmit={handleEditBooking} className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="mb-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+              <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Jadwal Lama</p>
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{editModal.label}</p>
+            </div>
+            
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Pilih Tanggal Baru</label>
+              <input type="date" required value={editModal.date} onChange={(e) => setEditModal({...editModal, date: e.target.value})} className="block w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white" />
+            </div>
+            
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Pilih Jam Sesi Baru
+                {editModal.classId && editModal.date && editModal.time && (() => {
+                  const r = getRemainingSlots(editModal.date, editModal.time, editModal.classId);
+                  return r !== null ? <span className="text-brand-600 dark:text-brand-400 font-bold ml-1">(Sisa {r})</span> : null;
+                })()}
+              </label>
+              <div className="relative">
+                <select required value={editModal.time} onChange={(e) => setEditModal({...editModal, time: e.target.value})} className="appearance-none block w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer">
+                  <option value="" disabled>-- Pilih Jam --</option>
+                  {timeSlots.map(t => {
+                    const rem = editModal.classId ? getRemainingSlots(editModal.date, t, editModal.classId) : null;
+                    const isFull = rem !== null && rem <= 0;
+                    const labelText = rem !== null 
+                      ? (isFull ? `${t}-${String(parseInt(t) + 1).padStart(2, '0')}:00 (Penuh)` : `${t}-${String(parseInt(t) + 1).padStart(2, '0')}:00 (Sisa ${rem})`)
+                      : `${t}-${String(parseInt(t) + 1).padStart(2, '0')}:00`;
+                      
+                    return (
+                      <option key={t} value={t} disabled={isFull}>
+                        {labelText}
+                      </option>
+                    );
+                  })}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                  <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Pilih Kelas Baru</label>
+              <div className="relative">
+                <select required value={editModal.classId} onChange={(e) => setEditModal({...editModal, classId: e.target.value})} className="appearance-none block w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer">
+                  <option value="" disabled>-- Pilih Tipe Kelas --</option>
+                  {classes.map(c => {
+                    const rem = editModal.date && editModal.time ? getRemainingSlots(editModal.date, editModal.time, c.id) : null;
+                    const labelText = rem !== null 
+                      ? `${c.name} (Sisa ${rem}/${c.max_quota})`
+                      : `${c.name} (Max: ${c.max_quota})`;
+                    return (
+                      <option key={c.id} value={c.id} disabled={rem !== null && rem <= 0}>{labelText}</option>
+                    );
+                  })}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                  <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </div>
+            </div>
+            
+            <div className="pt-2">
+              <button type="submit" disabled={isEditing || !editModal.date || !editModal.time || !editModal.classId} className="w-full flex justify-center py-2.5 px-4 rounded-xl shadow-sm text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50">
+                {isEditing ? "Menyimpan..." : "Simpan Perubahan"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+
     {/* Delete Booking Confirmation Modal */}
     {deleteConfirm.isOpen && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -604,6 +849,75 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
               className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
             >
               {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    {/* Bulk Delete Booking Confirmation Modal */}
+    {bulkDeleteConfirm.isOpen && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
+          <div className="p-6 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/10 mb-4">
+              <Icons.trash className="h-7 w-7 text-red-600 dark:text-red-500" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+              Hapus Semua Jadwal?
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
+              Apakah Anda yakin ingin menghapus semua ({bulkDeleteConfirm.studentSchedules.length}) jadwal di bulan ini untuk siswa ini?
+            </p>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 flex gap-3">
+            <button
+              onClick={() => setBulkDeleteConfirm({isOpen: false, studentSchedules: []})}
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm border border-slate-200 dark:border-slate-700 disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              onClick={executeBulkDelete}
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+            >
+              {isSubmitting ? 'Menghapus...' : 'Ya, Hapus Semua'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Copy To Next Month Modal */}
+    {copyConfirm && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
+          <div className="p-6 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-500/10 mb-4">
+              <Icons.calendar className="h-7 w-7 text-brand-600 dark:text-brand-500" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+              Salin Jadwal ke Bulan Depan?
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
+              Apakah Anda yakin ingin menyalin pola jadwal bulan ini ke bulan depan?
+            </p>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 flex gap-3">
+            <button
+              onClick={() => setCopyConfirm(false)}
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm border border-slate-200 dark:border-slate-700 disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              onClick={executeCopyToNextMonth}
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 rounded-xl hover:bg-brand-700 transition-colors shadow-sm disabled:opacity-50"
+            >
+              {isSubmitting ? 'Memproses...' : 'Ya, Salin'}
             </button>
           </div>
         </div>

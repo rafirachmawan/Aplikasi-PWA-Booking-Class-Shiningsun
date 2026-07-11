@@ -272,7 +272,7 @@ export function Sidebar({
         
         <nav className="flex flex-1 flex-col p-4 space-y-1 overflow-y-auto">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block px-3 mt-2">Menu</label>
-          {navigation.map((item) => {
+          {[...navigation, ...(role === 'SUPERADMIN' ? [{ name: "Kelola Akun", href: "/accounts", icon: Icons.settings }] : [])].map((item) => {
             const isActive = pathname.startsWith(item.href);
             return (
               <Link

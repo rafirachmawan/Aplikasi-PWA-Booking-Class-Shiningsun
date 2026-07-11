@@ -197,22 +197,22 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                               key={b.student_id} 
                               className={`flex justify-between items-center text-xs p-2 rounded-md border-l-4 ${!b.student?.label ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600' : ''}`}
                               style={b.student?.label ? {
-                                backgroundColor: `${b.student.label.hex_color}20`,
+                                backgroundColor: `${b.student.label.hex_color}CC`,
                                 borderLeftColor: b.student.label.hex_color
                               } : {}}
                             >
-                              <span className="text-slate-800 dark:text-slate-200 font-semibold truncate max-w-[200px] flex items-center gap-2">
+                              <span className="text-slate-900 dark:text-slate-100 font-extrabold truncate max-w-[200px] flex items-center gap-2">
                                 {b.student?.label && (
                                   <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: b.student.label.hex_color }}></span>
                                 )}
                                 <span>
                                   {b.student?.status === 'CG' && <strong className="text-amber-600 dark:text-amber-500 mr-1">(CG)</strong>}
-                                  {b.student?.name}
+                                  {b.student?.nickname || b.student?.name}
                                 </span>
                               </span>
                               <button 
                                 onClick={async () => {
-                                  if (confirm(`Keluarkan ${b.student?.name} dari kelas ini?`)) {
+                                  if (confirm(`Keluarkan ${b.student?.nickname || b.student?.name} dari kelas ini?`)) {
                                     const { cancelBooking } = await import('@/lib/actions');
                                     await cancelBooking(slot.id, b.student_id);
                                     onSuccess(); // refresh

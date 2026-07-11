@@ -268,15 +268,15 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
                                     return (
                                       <div
                                         key={b.student_id}
-                                        className="px-1.5 py-0.5 text-[9px] lg:text-[10px] font-medium rounded text-slate-700 dark:text-slate-200 truncate leading-tight"
+                                        className="px-1.5 py-0.5 text-[9px] lg:text-[10px] font-bold rounded text-slate-900 dark:text-slate-100 truncate leading-tight"
                                         style={{
-                                          backgroundColor: `${hexColor}15`,
-                                          borderLeft: `2px solid ${hexColor}`
+                                          backgroundColor: `${hexColor}CC`,
+                                          borderLeft: `4px solid ${hexColor}`
                                         }}
-                                        title={`${b.student?.status === 'CG' ? '(CG) ' : ''}${b.student?.name}`}
+                                        title={`${b.student?.status === 'CG' ? '(CG) ' : ''}${b.student?.nickname || b.student?.name}`}
                                       >
-                                        {b.student?.status === 'CG' && <span className="text-amber-600 dark:text-amber-500 font-bold mr-0.5">(CG)</span>}
-                                        {b.student?.name}
+                                        {b.student?.status === 'CG' && <span className="text-amber-800 dark:text-amber-300 font-extrabold mr-0.5">(CG)</span>}
+                                        {b.student?.nickname || b.student?.name}
                                       </div>
                                     );
                                   })

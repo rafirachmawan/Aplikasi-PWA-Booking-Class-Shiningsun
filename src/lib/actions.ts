@@ -297,6 +297,7 @@ export async function autoBookStudentToClass(
   if (datesToBook.length === 0) throw new Error("Tidak ada hari tersebut dalam rentang 1 bulan dari tanggal mulai.");
 
   let bookedCount = 0;
+  const failedDates: string[] = [];
 
   // 2. Loop setiap tanggal, cari slot, jika tidak ada buat baru
   for (const dateStr of datesToBook) {
@@ -349,10 +350,13 @@ export async function autoBookStudentToClass(
         .insert({ student_id: studentId, schedule_slot_id: slotId });
       
       if (!bookErr) bookedCount++;
+      else failedDates.push(dateStr);
+    } else {
+      failedDates.push(dateStr);
     }
   }
   
-  return bookedCount;
+  return { bookedCount, failedDates };
 }
 
 export async function bookStudentManual(
@@ -423,6 +427,85 @@ export async function removeStudentBooking(scheduleSlotId: string, studentId: st
   return true;
 }
 
+export async function bulkRemoveStudentBookings(studentId: string, scheduleSlotIds: string[]) {
+  if (scheduleSlotIds.length === 0) return true;
+  const { error } = await supabase
+    .from('schedule_student')
+    .delete()
+    .eq('student_id', studentId)
+    .in('schedule_slot_id', scheduleSlotIds);
+
+  if (error) throw new Error("Gagal menghapus jadwal massal: " + error.message);
+  return true;
+}
+
+export async function copyScheduleToNextMonth(studentId: string, currentYear: number, currentMonth: number) {
+  const schedules = await getMonthlySchedules(currentYear, currentMonth);
+  const studentSchedules = schedules.filter(s => s.bookings?.some((b: any) => b.student_id === studentId));
+  
+  if (studentSchedules.length === 0) return { totalBooked: 0, failedDates: [] };
+  
+  const patterns = new Set<string>();
+  const uniquePatterns: any[] = [];
+  
+  studentSchedules.forEach(slot => {
+    const d = new Date(slot.date);
+    const dayOfWeek = d.getDay();
+    const key = `${dayOfWeek}-${slot.time}-${slot.class_id}`;
+    if (!patterns.has(key)) {
+      patterns.add(key);
+      uniquePatterns.push({ dayOfWeek, time: slot.time, classId: slot.class_id });
+    }
+  });
+
+  let nextYear = currentYear;
+  let nextMonth = currentMonth + 1;
+  if (nextMonth > 12) {
+    nextMonth = 1;
+    nextYear++;
+  }
+
+  let totalBooked = 0;
+  const failedDates: string[] = [];
+
+  for (const pattern of uniquePatterns) {
+    let firstDate = new Date(nextYear, nextMonth - 1, 1);
+    while (firstDate.getDay() !== pattern.dayOfWeek) {
+      firstDate.setDate(firstDate.getDate() + 1);
+    }
+    
+    const y = firstDate.getFullYear();
+    const m = String(firstDate.getMonth() + 1).padStart(2, '0');
+    const d = String(firstDate.getDate()).padStart(2, '0');
+    const startDateStr = `${y}-${m}-${d}`;
+    
+    const res = await autoBookStudentToClass(studentId, pattern.classId, startDateStr, pattern.time);
+    totalBooked += res.bookedCount;
+    if (res.failedDates.length > 0) {
+      failedDates.push(...res.failedDates);
+    }
+  }
+  
+  return { totalBooked, failedDates };
+}
+
+export async function moveStudentBooking(
+  studentId: string, 
+  oldSlotId: string, 
+  newClassId: string, 
+  newDateStr: string, 
+  newTime: string
+) {
+  await removeStudentBooking(oldSlotId, studentId);
+  try {
+    await bookStudentManual(studentId, newClassId, newDateStr, newTime);
+  } catch (err: any) {
+    // If it fails to book the new one, we should ideally rollback, but simple approach is to throw error
+    throw new Error(err.message);
+  }
+  return true;
+}
+
 export async function getMonthlySchedules(year: number, month: number) {
   const branchId = await getBranchId();
   if (!branchId) return [];
@@ -438,7 +521,7 @@ export async function getMonthlySchedules(year: number, month: number) {
       class:classes(name, max_quota),
       bookings:schedule_student(
         student_id,
-        student:students(name, status, label:labels(hex_color))
+        student:students(name, nickname, status, label:labels(hex_color))
       )
     `)
     .gte('date', startDate)
@@ -753,7 +836,7 @@ export async function getTodaySchedules() {
       class:classes(name, max_quota),
       bookings:schedule_student(
         student_id,
-        student:students(name, status, label:labels(hex_color))
+        student:students(name, nickname, status, label:labels(hex_color))
       )
     `)
     .eq('date', today)
@@ -860,3 +943,51 @@ export async function getRecentActivities() {
 
   return data || [];
 }
+
+// =========================================
+// ACCOUNT MANAGEMENT ACTIONS (SUPERADMIN)
+// =========================================
+
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+
+function getServiceSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY tidak dikonfigurasi di file .env.local');
+  }
+  return createSupabaseClient(supabaseUrl, supabaseServiceKey);
+}
+
+export async function getAllUsers() {
+  const role = await getCurrentUserRole();
+  if (role !== 'SUPERADMIN') throw new Error('Akses ditolak');
+  
+  const { data, error } = await supabase
+    .from('users')
+    .select('*, branch:branches(name)')
+    .order('created_at', { ascending: false });
+    
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function changeUserPassword(userId: string, newPassword: string) {
+  const role = await getCurrentUserRole();
+  if (role !== 'SUPERADMIN') throw new Error('Akses ditolak');
+  
+  if (!newPassword || newPassword.length < 3) {
+    throw new Error('Password baru minimal 3 karakter.');
+  }
+
+  const serviceClient = getServiceSupabase();
+  
+  // Update password di Supabase Auth
+  const { error: authError } = await serviceClient.auth.admin.updateUserById(userId, {
+    password: newPassword
+  });
+  
+  if (authError) throw new Error("Gagal mengganti password di server: " + authError.message);
+  return true;
+}
+
