@@ -88,7 +88,7 @@ export default function LoginPage() {
               <Image src="/logo.png" alt="ShiningSun Logo" width={48} height={48} className="object-contain" priority />
             </div>
             <h2 className="text-3xl font-extrabold text-white tracking-tight drop-shadow-md">ShiningSun</h2>
-            <p className="mt-3 text-brand-100/90 text-sm font-medium max-w-[240px]">Sistem cerdas untuk manajemen cabang Anda</p>
+            <p className="mt-3 text-brand-100/90 text-sm font-medium max-w-[300px]">Sistem Penjadwalan Cerdas & Elegan</p>
           </div>
 
           {/* Desktop heading */}

@@ -141,6 +141,24 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
   
   const timeSlots = ["08:00", "09:00", "11:00", "13:00", "15:00", "16:00"];
 
+  useEffect(() => {
+    setIsSubmitting(false);
+  }, [currentMonth, currentYear]);
+
+  const handleMonthChange = (offset: number) => {
+    setIsSubmitting(true);
+    let newMonth = currentMonth + offset;
+    let newYear = currentYear;
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear++;
+    } else if (newMonth < 1) {
+      newMonth = 12;
+      newYear--;
+    }
+    router.push(`?month=${newMonth}&year=${newYear}`);
+  };
+
   const getRemainingSlots = (dateStr: string, time: string, classId: string) => {
     if (!dateStr || !classId) return null;
     const cls = classes.find(c => c.id === classId);
@@ -273,6 +291,27 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
       </div>
 
       <div className="p-6">
+        {/* Month Navigator */}
+        <div className="mb-6 flex items-center justify-between bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <button 
+            type="button"
+            onClick={() => handleMonthChange(-1)}
+            className="p-2 sm:px-4 sm:py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors flex items-center gap-2 text-sm font-medium"
+          >
+            <Icons.chevronLeft className="w-5 h-5" /> <span className="hidden sm:inline">Bulan Sebelumnya</span>
+          </button>
+          <div className="font-bold text-base sm:text-lg text-slate-800 dark:text-slate-200 text-center px-2">
+            {monthNames[currentMonth - 1]} {currentYear}
+          </div>
+          <button 
+            type="button"
+            onClick={() => handleMonthChange(1)}
+            className="p-2 sm:px-4 sm:py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors flex items-center gap-2 text-sm font-medium"
+          >
+            <span className="hidden sm:inline">Bulan Berikutnya</span> <Icons.chevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
         {/* Global Student Selector */}
         <div className="mb-8 p-4 bg-brand-50 dark:bg-brand-500/10 rounded-xl border border-brand-100 dark:border-brand-500/20">
           <label className="block text-sm font-semibold text-brand-900 dark:text-brand-100 mb-2">
@@ -560,7 +599,7 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
               </button>
               
               <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-                Sistem akan secara otomatis membuatkan jadwal selama 1 bulan mulai dari setiap Tanggal yang Anda pilih pada baris di atas.
+                Sistem akan secara otomatis membuatkan jadwal hingga akhir bulan berdasarkan Tanggal yang Anda pilih pada baris di atas.
               </p>
             </div>
 

@@ -264,18 +264,23 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
                                   <div className="text-center py-0.5 text-[9px] text-slate-300 dark:text-slate-600 italic">&mdash;</div>
                                 ) : (
                                   slot.bookings.map((b: any) => {
+                                    const isCG = b.student?.status === 'CG';
                                     const hexColor = b.student?.label?.hex_color || '#94a3b8';
                                     return (
                                       <div
                                         key={b.student_id}
-                                        className="px-1.5 py-0.5 text-[9px] lg:text-[10px] font-bold rounded text-slate-900 dark:text-slate-100 truncate leading-tight"
-                                        style={{
+                                        className={`px-1.5 py-0.5 text-[9px] lg:text-[10px] font-bold rounded truncate leading-tight ${
+                                          isCG 
+                                            ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700' 
+                                            : 'text-slate-900 dark:text-slate-100'
+                                        }`}
+                                        style={isCG ? { borderLeft: '4px solid #cbd5e1' } : {
                                           backgroundColor: `${hexColor}CC`,
                                           borderLeft: `4px solid ${hexColor}`
                                         }}
-                                        title={`${b.student?.status === 'CG' ? '(CG) ' : ''}${b.student?.nickname || b.student?.name}`}
+                                        title={`${isCG ? '(CG) ' : ''}${b.student?.nickname || b.student?.name}`}
                                       >
-                                        {b.student?.status === 'CG' && <span className="text-amber-800 dark:text-amber-300 font-extrabold mr-0.5">(CG)</span>}
+                                        {isCG && <span className="text-slate-500 dark:text-slate-400 font-extrabold mr-0.5">(CG)</span>}
                                         {b.student?.nickname || b.student?.name}
                                       </div>
                                     );

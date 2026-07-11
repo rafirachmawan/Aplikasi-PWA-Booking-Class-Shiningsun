@@ -276,16 +276,15 @@ export async function autoBookStudentToClass(
 ) {
   const branchId = await getBranchId();
   
-  // 1. Hitung range 1 bulan dari startDate
+  // 1. Hitung range sampai akhir bulan dari startDate
   const startDate = new Date(startDateStr);
-  const endDate = new Date(startDateStr);
-  endDate.setMonth(endDate.getMonth() + 1); // Tambah 1 bulan
+  const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0); // Hari terakhir bulan tersebut
   
   const dayOfWeek = startDate.getDay();
   const datesToBook: string[] = [];
   const currentDate = new Date(startDate);
   
-  while (currentDate < endDate) {
+  while (currentDate <= endDate) {
     if (currentDate.getDay() === dayOfWeek) {
       // YYYY-MM-DD
       const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
