@@ -1,5 +1,5 @@
 import { Icons } from "@/components/ui/icons";
-import { getDashboardStats, getTodaySchedules, getCurrentUserRole, getBranches, getBranchId } from "@/lib/actions";
+import { getDashboardStats, getTodaySchedules, getCurrentUserRole, getBranches, getBranchId, getClasses } from "@/lib/actions";
 import { TodaySchedule } from "@/components/features/dashboard/TodaySchedule";
 import { QuickAccessLinks } from "@/components/features/dashboard/QuickAccessLinks";
 import { BranchSelector } from "@/components/features/auth/BranchSelector";
@@ -20,9 +20,10 @@ export default async function DashboardPage() {
   // Only fetch data if a branch is selected (or if not superadmin)
   let statsData = { reguler: 0, cg: 0, classes: 0 };
   let todaySlots: any[] = [];
+  let classes: any[] = [];
   
   if (hasBranchSelected || !isSuperadmin) {
-    [statsData, todaySlots] = await Promise.all([getDashboardStats(), getTodaySchedules()]);
+    [statsData, todaySlots, classes] = await Promise.all([getDashboardStats(), getTodaySchedules(), getClasses()]);
   }
 
   const stats = [
@@ -113,7 +114,7 @@ export default async function DashboardPage() {
                   {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 </div>
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
-                  Selamat {new Date().getHours() < 12 ? 'Pagi' : new Date().getHours() < 15 ? 'Siang' : new Date().getHours() < 18 ? 'Sore' : 'Malam'}, ShiningSun!
+                  Hallo, ShiningSun!
                 </h2>
                 <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
                   Ini adalah ringkasan sistem pendaftaran dan penjadwalan hari ini. Semoga aktivitas berjalan lancar.
@@ -140,7 +141,7 @@ export default async function DashboardPage() {
           </div>
 
           <div className="mt-8">
-            <TodaySchedule slots={todaySlots} />
+            <TodaySchedule slots={todaySlots} classes={classes} />
           </div>
 
           <div className="mt-8">

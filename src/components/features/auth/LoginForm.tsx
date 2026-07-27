@@ -18,6 +18,7 @@ export function LoginForm() {
   const [errorMsg, setErrorMsg] = useState("");
   const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,7 +30,7 @@ export function LoginForm() {
     const passwordVal = formData.get("password") as string;
 
     try {
-      await login(emailVal, passwordVal);
+      await login(emailVal, passwordVal, rememberMe);
       // login action will redirect on success, so we just wait
     } catch (error: any) {
       setErrorMsg(error.message || "Gagal masuk. Periksa kembali email dan password Anda.");
@@ -134,6 +135,22 @@ export function LoginForm() {
                   )}
                 </button>
               </div>
+            </div>
+
+            {/* Remember Me Checkbox */}
+            <div className="flex items-center">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  name="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-brand-500 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800"
+                />
+                <span className="text-sm text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                  Ingat Saya
+                </span>
+              </label>
             </div>
           </div>
 

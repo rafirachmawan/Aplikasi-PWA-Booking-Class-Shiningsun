@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { Icons } from "@/components/ui/icons";
 
 const FIXED_TIMES = [
@@ -9,26 +12,53 @@ const FIXED_TIMES = [
   { time: "16:00", range: "16 - 17" },
 ];
 
-export function TodaySchedule({ slots }: { slots: any[] }) {
+export function TodaySchedule({ slots, classes = [] }: { slots: any[], classes?: any[] }) {
+  const [selectedClass, setSelectedClass] = useState<string>("ALL");
+
   const today = new Date().toLocaleDateString("id-ID", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
 
+  const uniqueClasses = classes.length > 0
+    ? classes.map(c => c.name).sort()
+    : Array.from(new Set(slots.map(s => s.class.name))).sort();
+  
+  const activeSlots = slots.filter(s => s.bookings && s.bookings.length > 0);
+  
+  const filteredSlots = selectedClass === "ALL" 
+    ? activeSlots 
+    : activeSlots.filter(s => s.class.name === selectedClass);
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
-        <div className="rounded-xl p-2.5 bg-brand-50 dark:bg-brand-500/10">
-          <Icons.calendar className="h-5 w-5 text-brand-600 dark:text-brand-400" />
+      <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl p-2.5 bg-brand-50 dark:bg-brand-500/10">
+            <Icons.calendar className="h-5 w-5 text-brand-600 dark:text-brand-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Jadwal Hari Ini</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{today}</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Jadwal Hari Ini</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{today}</p>
-        </div>
+        
+        {uniqueClasses.length > 0 && (
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            className="text-sm border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-lg px-3 py-1.5 focus:ring-brand-500 focus:border-brand-500 dark:text-white outline-none"
+          >
+            <option value="ALL">Semua Kelas</option>
+            {uniqueClasses.map((className: any) => (
+              <option key={className} value={className}>{className}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="divide-y divide-slate-100 dark:divide-slate-800">
         {FIXED_TIMES.map(({ time, range }) => {
-          const slotsAtTime = slots.filter(s => s.time.startsWith(time));
+          const slotsAtTime = filteredSlots.filter(s => s.time.startsWith(time));
 
           return (
             <div key={time} className="flex">

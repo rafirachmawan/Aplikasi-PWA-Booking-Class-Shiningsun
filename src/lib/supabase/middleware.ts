@@ -21,13 +21,27 @@ export async function updateSession(request: NextRequest) {
             return request.cookies.getAll()
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+            const rememberMe = request.cookies.get('remember_me')?.value !== 'false';
+            
+            cookiesToSet.forEach(({ name, value, options }) => {
+              if (!rememberMe) {
+                delete options.maxAge;
+                delete options.expires;
+              }
+              request.cookies.set(name, value)
+            })
+            
             supabaseResponse = NextResponse.next({
               request,
             })
-            cookiesToSet.forEach(({ name, value, options }) =>
+            
+            cookiesToSet.forEach(({ name, value, options }) => {
+              if (!rememberMe) {
+                delete options.maxAge;
+                delete options.expires;
+              }
               supabaseResponse.cookies.set(name, value, options)
-            )
+            })
           },
         },
       }

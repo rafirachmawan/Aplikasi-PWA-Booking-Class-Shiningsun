@@ -4,7 +4,11 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string, rememberMe: boolean = true) {
+  const cookieStore = await cookies();
+  // Store remember_me preference
+  cookieStore.set('remember_me', rememberMe ? 'true' : 'false', { path: '/' });
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -17,7 +21,6 @@ export async function login(email: string, password: string) {
   }
 
   // Clear any stale branch selection so superadmin starts fresh
-  const cookieStore = await cookies();
   cookieStore.delete('superadmin_branch_id');
 
   // Redirect to dashboard on success
