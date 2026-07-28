@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { login } from "@/lib/authActions";
 import { Icons } from "@/components/ui/icons";
 import { InstallPWAButton } from "@/components/features/auth/InstallPWAButton";
@@ -19,15 +19,35 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const selectRef = useRef<HTMLSelectElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
+  // Fix iOS Safari form restoration bug:
+  // Safari sometimes restores <select> to a previously chosen value after
+  // a page reload WITHOUT firing the onChange event, so React state stays ""
+  // while the dropdown visually shows an account. We detect & sync this on mount.
+  useEffect(() => {
+    const sel = selectRef.current;
+    if (sel && sel.value !== "") {
+      setEmail(sel.value);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMsg("");
 
+    // Prioritize reading from the actual DOM input (handles iOS Safari state sync issues)
+    const emailVal = emailInputRef.current?.value?.trim() || email.trim();
     const formData = new FormData(e.currentTarget);
-    const emailVal = formData.get("email") as string;
     const passwordVal = formData.get("password") as string;
+
+    if (!emailVal) {
+      setErrorMsg("Alamat email tidak boleh kosong. Silakan pilih akun atau isi email secara manual.");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       await login(emailVal, passwordVal, rememberMe);
@@ -59,7 +79,22 @@ export function LoginForm() {
               <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500"></div>
               <div className="relative bg-slate-50 dark:bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500">
                 <select
-                  onChange={(e) => setEmail(e.target.value)}
+                  ref={selectRef}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEmail(val);
+                    // Manually update the email input for iOS Safari compatibility
+                    if (emailInputRef.current) {
+                      // Use nativeInputValueSetter to trigger React's synthetic event
+                      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+                      if (nativeSetter) {
+                        nativeSetter.call(emailInputRef.current, val);
+                        emailInputRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+                      } else {
+                        emailInputRef.current.value = val;
+                      }
+                    }
+                  }}
                   value={email}
                   className="block w-full appearance-none bg-transparent px-5 py-4 text-sm text-slate-900 dark:text-white focus:outline-none cursor-pointer"
                 >
@@ -80,10 +115,14 @@ export function LoginForm() {
               <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500"></div>
               <div className="relative bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900">
                 <input
+                  ref={emailInputRef}
                   id="email"
                   name="email"
                   type="email"
                   autoComplete="email"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
