@@ -730,6 +730,16 @@ export async function updateStudentStatus(id: string, status: string) {
   return true;
 }
 
+export async function updateStudentLabel(id: string, labelId: string | null) {
+  const { error } = await supabase
+    .from('students')
+    .update({ label_id: labelId || null })
+    .eq('id', id);
+
+  if (error) throw new Error("Gagal meng-update level siswa: " + error.message);
+  return true;
+}
+
 export async function updateStudent(id: string, formData: FormData) {
   const name = formData.get('name') as string;
   const nickname = formData.get('nickname') as string;

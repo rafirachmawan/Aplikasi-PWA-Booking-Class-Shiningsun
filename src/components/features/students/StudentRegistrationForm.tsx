@@ -20,56 +20,80 @@ interface StudentRegistrationFormProps {
 
 function parseIndonesianDate(dateStr: string) {
   if (!dateStr) return "";
-  
+
   const months: Record<string, string> = {
-    'januari': '01', 'jan': '01',
-    'februari': '02', 'feb': '02',
-    'maret': '03', 'mar': '03',
-    'april': '04', 'apr': '04',
-    'mei': '05',
-    'juni': '06', 'jun': '06',
-    'juli': '07', 'jul': '07',
-    'agustus': '08', 'agu': '08', 'agus': '08',
-    'september': '09', 'sep': '09',
-    'oktober': '10', 'okt': '10',
-    'november': '11', 'nov': '11',
-    'desember': '12', 'des': '12'
+    januari: "01",
+    jan: "01",
+    februari: "02",
+    feb: "02",
+    maret: "03",
+    mar: "03",
+    april: "04",
+    apr: "04",
+    mei: "05",
+    juni: "06",
+    jun: "06",
+    juli: "07",
+    jul: "07",
+    agustus: "08",
+    agu: "08",
+    agus: "08",
+    september: "09",
+    sep: "09",
+    oktober: "10",
+    okt: "10",
+    november: "11",
+    nov: "11",
+    desember: "12",
+    des: "12",
   };
 
-  const parts = dateStr.toLowerCase().replace(/,/g, '').split(/\s+/);
-  let day = "", month = "", year = "";
+  const parts = dateStr.toLowerCase().replace(/,/g, "").split(/\s+/);
+  let day = "",
+    month = "",
+    year = "";
   for (const part of parts) {
-    if (!isNaN(parseInt(part)) && part.length <= 2) day = part.padStart(2, '0');
+    if (!isNaN(parseInt(part)) && part.length <= 2) day = part.padStart(2, "0");
     else if (!isNaN(parseInt(part)) && part.length === 4) year = part;
     else if (months[part]) month = months[part];
   }
-  
+
   if (day && month && year) {
     return `${year}-${month}-${day}`;
   }
   return "";
 }
 
-export function StudentRegistrationForm({ onClose, labels, onSuccess, initialData }: StudentRegistrationFormProps) {
+export function StudentRegistrationForm({
+  onClose,
+  labels,
+  onSuccess,
+  initialData,
+}: StudentRegistrationFormProps) {
   const [name, setName] = useState(initialData ? initialData.name : "");
   const [nickname, setNickname] = useState(initialData?.nickname || "");
   const [phone, setPhone] = useState(initialData?.phone || "");
   const [address, setAddress] = useState(initialData?.address || "");
   const [school, setSchool] = useState(initialData?.school || "");
   const [registrationDate, setRegistrationDate] = useState(
-    initialData?.registration_date || new Date().toISOString().split('T')[0]
+    initialData?.registration_date || new Date().toISOString().split("T")[0],
   );
   const [dob, setDob] = useState(initialData ? initialData.date_of_birth : "");
   const [status, setStatus] = useState(initialData ? initialData.status : "CG");
-  const [labelId, setLabelId] = useState(initialData?.label_id ? initialData.label_id : "");
-  
+  const [labelId, setLabelId] = useState(
+    initialData?.label_id ? initialData.label_id : "",
+  );
+
   const [isLevelOpen, setIsLevelOpen] = useState(false);
   const [showWaAutofill, setShowWaAutofill] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsLevelOpen(false);
       }
     }
@@ -88,18 +112,18 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
       setCalculatedAge("");
       return;
     }
-    
+
     const birthDate = new Date(dob);
     const today = new Date();
-    
+
     let years = today.getFullYear() - birthDate.getFullYear();
     let months = today.getMonth() - birthDate.getMonth();
-    
+
     if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
       years--;
       months += 12;
     }
-    
+
     if (today.getDate() < birthDate.getDate()) {
       months--;
       if (months < 0) {
@@ -117,7 +141,7 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
       const formData = new FormData();
       formData.append("name", name);
@@ -128,22 +152,22 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
       formData.append("registration_date", registrationDate);
       formData.append("date_of_birth", dob);
       formData.append("status", status);
-      
+
       // If status is CG, we set label_id to empty/null to clear previous label
       if (status === "REGISTERED" && labelId) {
         formData.append("label_id", labelId);
       } else {
         formData.append("label_id", "");
       }
-      
+
       if (initialData) {
-        const { updateStudent } = await import('@/lib/actions');
+        const { updateStudent } = await import("@/lib/actions");
         await updateStudent(initialData.id, formData);
       } else {
-        const { createStudent } = await import('@/lib/actions');
+        const { createStudent } = await import("@/lib/actions");
         await createStudent(formData);
       }
-      
+
       onSuccess();
       onClose();
     } catch (error) {
@@ -182,7 +206,7 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
 
     // No hp
     const phoneMatch = text.match(/No(?:[\s\.]*)?hp\s*:\s*(.+)/i);
-    if (phoneMatch) setPhone(phoneMatch[1].trim().replace(/[^0-9\+\-]/g, ''));
+    if (phoneMatch) setPhone(phoneMatch[1].trim().replace(/[^0-9\+\-]/g, ""));
 
     // Alamat
     const addressMatch = text.match(/Alamat\s*:\s*(.+)/i);
@@ -196,17 +220,16 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
   return (
     <>
       {isSubmitting && <LoadingSpinner usePortal={true} />}
-      
+
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
+      <div
+        className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
-      
+
       {/* Modal Container */}
       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none">
         <div className="w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-lg bg-white dark:bg-slate-900 sm:rounded-2xl shadow-2xl pointer-events-auto flex flex-col animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-10 sm:zoom-in-95 duration-300">
-          
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-900 sm:rounded-t-2xl">
             <div>
@@ -217,17 +240,16 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                 {initialData ? "Edit Data Siswa" : "Pendaftaran Siswa Baru"}
               </h3>
             </div>
-            <button 
+            <button
               onClick={onClose}
               className="text-slate-400 hover:text-slate-500 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               <Icons.close className="w-5 h-5" />
             </button>
           </div>
-          
+
           {/* Form Body - Scrollable */}
           <div className="p-6 overflow-y-auto flex-1 space-y-6">
-            
             {/* WhatsApp Auto-Fill Panel */}
             {!initialData && (
               <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
@@ -237,16 +259,32 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                   className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 transition-colors"
                 >
                   <span className="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.817 9.817 0 0 0 12.04 2zm0 1.63c4.56 0 8.27 3.71 8.27 8.28 0 2.21-.58 4.31-1.68 6.13l-.37.59 1.1 4.02-4.11-1.08-.57.34a8.196 8.196 0 0 1-4.64 1.41c-4.56 0-8.27-3.71-8.27-8.28 0-2.21.58-4.31 1.68-6.13l.37-.59-1.1-4.02 4.11 1.08.57-.34a8.196 8.196 0 0 1 4.64-1.41zm-1.89 3.26c-.22 0-.46.08-.66.3-.2.22-.76.74-.76 1.81 0 1.07.78 2.11.89 2.26.11.15 1.53 2.34 3.71 3.28.52.22.92.36 1.24.46.52.16 1 .14 1.37.09.42-.06 1.28-.52 1.46-1.03.18-.51.18-.94.13-1.03-.05-.09-.18-.15-.38-.25-.2-.1-1.19-.59-1.37-.66-.18-.07-.31-.1-.44.1-.13.2-.49.62-.6 1-.11.13-.22.15-.42.05-.2-.1-.85-.31-1.62-1-.6-.53-1.01-1.19-1.12-1.39-.11-.2-.01-.31.09-.41.09-.09.2-.22.3-.33.1-.11.13-.2.2-.33.07-.13.03-.25-.02-.35-.05-.1-.44-1.07-.61-1.47-.16-.39-.33-.34-.46-.34z"/>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-5 h-5 text-emerald-500"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.817 9.817 0 0 0 12.04 2zm0 1.63c4.56 0 8.27 3.71 8.27 8.28 0 2.21-.58 4.31-1.68 6.13l-.37.59 1.1 4.02-4.11-1.08-.57.34a8.196 8.196 0 0 1-4.64 1.41c-4.56 0-8.27-3.71-8.27-8.28 0-2.21.58-4.31 1.68-6.13l.37-.59-1.1-4.02 4.11 1.08.57-.34a8.196 8.196 0 0 1 4.64-1.41zm-1.89 3.26c-.22 0-.46.08-.66.3-.2.22-.76.74-.76 1.81 0 1.07.78 2.11.89 2.26.11.15 1.53 2.34 3.71 3.28.52.22.92.36 1.24.46.52.16 1 .14 1.37.09.42-.06 1.28-.52 1.46-1.03.18-.51.18-.94.13-1.03-.05-.09-.18-.15-.38-.25-.2-.1-1.19-.59-1.37-.66-.18-.07-.31-.1-.44.1-.13.2-.49.62-.6 1-.11.13-.22.15-.42.05-.2-.1-.85-.31-1.62-1-.6-.53-1.01-1.19-1.12-1.39-.11-.2-.01-.31.09-.41.09-.09.2-.22.3-.33.1-.11.13-.2.2-.33.07-.13.03-.25-.02-.35-.05-.1-.44-1.07-.61-1.47-.16-.39-.33-.34-.46-.34z" />
                     </svg>
                     Autofill / Isi Otomatis WA
                   </span>
-                  <svg className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${showWaAutofill ? 'rotate-185' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                  <svg
+                    className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${showWaAutofill ? "rotate-185" : ""}`}
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
-                <div className={`transition-all duration-300 ${showWaAutofill ? 'max-h-40 opacity-100 p-4 border-t border-slate-200 dark:border-slate-800' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+                <div
+                  className={`transition-all duration-300 ${showWaAutofill ? "max-h-40 opacity-100 p-4 border-t border-slate-200 dark:border-slate-800" : "max-h-0 opacity-0 pointer-events-none"}`}
+                >
                   <textarea
                     rows={3}
                     onChange={handlePasteWA}
@@ -257,16 +295,24 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
               </div>
             )}
 
-            <form id="student-form" onSubmit={handleSubmit} className="space-y-5">
-              
+            <form
+              id="student-form"
+              onSubmit={handleSubmit}
+              className="space-y-5"
+            >
               {/* Section 1: Data Akademik / Pendaftaran */}
               <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 space-y-4">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Informasi Pendaftaran</h4>
-                
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Informasi Pendaftaran
+                </h4>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Tanggal Pendaftaran */}
                   <div>
-                    <label htmlFor="registrationDate" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    <label
+                      htmlFor="registrationDate"
+                      className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                    >
                       Tanggal Pendaftaran
                     </label>
                     <input
@@ -289,8 +335,8 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                         type="button"
                         onClick={() => setStatus("CG")}
                         className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl border transition-all ${
-                          status === "CG" 
-                            ? "border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 ring-1 ring-amber-500" 
+                          status === "CG"
+                            ? "border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 ring-1 ring-amber-500"
                             : "border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900"
                         }`}
                       >
@@ -300,8 +346,8 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                         type="button"
                         onClick={() => setStatus("REGISTERED")}
                         className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl border transition-all ${
-                          status === "REGISTERED" 
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 ring-1 ring-emerald-500" 
+                          status === "REGISTERED"
+                            ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 ring-1 ring-emerald-500"
                             : "border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900"
                         }`}
                       >
@@ -324,16 +370,28 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                         className="flex items-center justify-between w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-slate-900 dark:text-white text-left text-sm cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                       >
                         <span className="truncate text-slate-700 dark:text-slate-300 font-medium">
-                          {labelId === "" 
-                            ? "-- Pilih Level --" 
+                          {labelId === ""
+                            ? "-- Pilih Level --"
                             : (() => {
-                                const selectedLabel = labels.find(l => l.id === labelId);
-                                return selectedLabel ? `${selectedLabel.main_level} - ${selectedLabel.sub_level}` : "-- Pilih Level --";
-                              })()
-                          }
+                                const selectedLabel = labels.find(
+                                  (l) => l.id === labelId,
+                                );
+                                return selectedLabel
+                                  ? `${selectedLabel.main_level} - ${selectedLabel.sub_level}`
+                                  : "-- Pilih Level --";
+                              })()}
                         </span>
-                        <svg className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${isLevelOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                        <svg
+                          className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${isLevelOpen ? "rotate-180" : ""}`}
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                       </button>
 
@@ -346,7 +404,9 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                               setIsLevelOpen(false);
                             }}
                             className={`w-full px-4 py-2 text-xs text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
-                              labelId === "" ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300"
+                              labelId === ""
+                                ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20"
+                                : "text-slate-700 dark:text-slate-300"
                             }`}
                           >
                             -- Pilih Level --
@@ -360,10 +420,15 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                                 setIsLevelOpen(false);
                               }}
                               className={`w-full px-4 py-2 text-xs text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 ${
-                                labelId === lbl.id ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300"
+                                labelId === lbl.id
+                                  ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20"
+                                  : "text-slate-700 dark:text-slate-300"
                               }`}
                             >
-                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: lbl.hex_color }}></span>
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: lbl.hex_color }}
+                              ></span>
                               {lbl.main_level} - {lbl.sub_level}
                             </button>
                           ))}
@@ -376,12 +441,17 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
 
               {/* Section 2: Data Anak */}
               <div className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl space-y-4 shadow-sm bg-white dark:bg-slate-900/20">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Identitas Anak</h4>
-                
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Identitas Anak
+                </h4>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Nama Lengkap */}
                   <div>
-                    <label htmlFor="name" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    <label
+                      htmlFor="name"
+                      className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                    >
                       Nama Lengkap Anak
                     </label>
                     <input
@@ -398,7 +468,10 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
 
                   {/* Nama Panggilan */}
                   <div>
-                    <label htmlFor="nickname" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    <label
+                      htmlFor="nickname"
+                      className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                    >
                       Nama Panggilan
                     </label>
                     <input
@@ -416,7 +489,10 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Tanggal Lahir */}
                   <div>
-                    <label htmlFor="dob" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    <label
+                      htmlFor="dob"
+                      className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                    >
                       Tanggal Lahir
                     </label>
                     <input
@@ -440,7 +516,9 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                           ⏳ {calculatedAge}
                         </span>
                       ) : (
-                        <span className="text-slate-400 dark:text-slate-500 italic">Pilih tanggal lahir</span>
+                        <span className="text-slate-400 dark:text-slate-500 italic">
+                          Pilih tanggal lahir
+                        </span>
                       )}
                     </div>
                   </div>
@@ -449,12 +527,17 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
 
               {/* Section 3: Kontak & Alamat */}
               <div className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl space-y-4 shadow-sm bg-white dark:bg-slate-900/20">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Kontak & Alamat</h4>
-                
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Kontak & Alamat
+                </h4>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* No HP */}
                   <div>
-                    <label htmlFor="phone" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    <label
+                      htmlFor="phone"
+                      className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                    >
                       No. HP (WhatsApp Orang Tua)
                     </label>
                     <input
@@ -470,7 +553,10 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
 
                   {/* Sekolah */}
                   <div>
-                    <label htmlFor="school" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    <label
+                      htmlFor="school"
+                      className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                    >
                       Sekolah Asal (TK / PAUD)
                     </label>
                     <input
@@ -487,7 +573,10 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
 
                 {/* Alamat */}
                 <div>
-                  <label htmlFor="address" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                  <label
+                    htmlFor="address"
+                    className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                  >
                     Alamat Domisili
                   </label>
                   <textarea
@@ -500,10 +589,9 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
                   />
                 </div>
               </div>
-
             </form>
           </div>
-          
+
           {/* Footer */}
           <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 sm:rounded-b-2xl shrink-0">
             <button
@@ -514,14 +602,32 @@ export function StudentRegistrationForm({ onClose, labels, onSuccess, initialDat
             >
               {isSubmitting ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Menyimpan...
                 </>
+              ) : initialData ? (
+                "Simpan Perubahan"
               ) : (
-                initialData ? "Simpan Perubahan" : "Simpan & Daftarkan Siswa"
+                "Simpan & Daftarkan Siswa"
               )}
             </button>
           </div>

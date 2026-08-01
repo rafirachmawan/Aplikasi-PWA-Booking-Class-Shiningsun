@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Icons } from "@/components/ui/icons";
 import { createScheduleSlot, bookStudentToSlot, toggleSlotLock } from "@/lib/actions";
+import { ChangeLabelModal } from "@/components/features/students/ChangeLabelModal";
 
 interface ScheduleManagerDrawerProps {
   onClose: () => void;
@@ -26,6 +27,17 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
   // State untuk modal konfirmasi lock
   const [lockConfirm, setLockConfirm] = useState<{ slotId: string; currentStatus: boolean; className: string; time: string } | null>(null);
   const [isLocking, setIsLocking] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<any>(null);
+  const [labelsList, setLabelsList] = useState<any[]>([]);
+
+  const handleStudentClick = async (student: any) => {
+    setEditingStudent(student);
+    if (labelsList.length === 0) {
+      const { getLabels } = await import("@/lib/actions");
+      const lbls = await getLabels();
+      setLabelsList(lbls);
+    }
+  };
 
   const handleToggleLock = async (slotId: string, currentStatus: boolean, className: string, time: string) => {
     // Kalau mau LOCK (currentStatus = false → mau jadi true), tampilkan konfirmasi
@@ -210,19 +222,29 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                                   {b.student?.nickname || b.student?.name}
                                 </span>
                               </span>
-                              <button 
-                                onClick={async () => {
-                                  if (confirm(`Keluarkan ${b.student?.nickname || b.student?.name} dari kelas ini?`)) {
-                                    const { cancelBooking } = await import('@/lib/actions');
-                                    await cancelBooking(slot.id, b.student_id);
-                                    onSuccess(); // refresh
-                                  }
-                                }}
-                                className="text-red-500 hover:bg-white dark:hover:bg-slate-800 p-1.5 rounded-md transition-colors shadow-sm"
-                                title="Keluarkan"
-                              >
-                                <Icons.close className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStudentClick({ ...b.student, id: b.student_id })}
+                                  className="text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 p-1.5 rounded-md hover:bg-white/80 dark:hover:bg-slate-800 transition-colors shadow-xs"
+                                  title="Ganti Level Siswa"
+                                >
+                                  <Icons.edit className="w-3.5 h-3.5" />
+                                </button>
+                                <button 
+                                  onClick={async () => {
+                                    if (confirm(`Keluarkan ${b.student?.nickname || b.student?.name} dari kelas ini?`)) {
+                                      const { cancelBooking } = await import('@/lib/actions');
+                                      await cancelBooking(slot.id, b.student_id);
+                                      onSuccess(); // refresh
+                                    }
+                                  }}
+                                  className="text-red-500 hover:bg-white dark:hover:bg-slate-800 p-1.5 rounded-md transition-colors shadow-sm"
+                                  title="Keluarkan"
+                                >
+                                  <Icons.close className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -243,6 +265,14 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
             </div>
         </div>
       </div>
+
+      <ChangeLabelModal
+        isOpen={!!editingStudent}
+        onClose={() => setEditingStudent(null)}
+        student={editingStudent}
+        labels={labelsList}
+        onSuccess={() => onSuccess()}
+      />
     </>
   );
 }

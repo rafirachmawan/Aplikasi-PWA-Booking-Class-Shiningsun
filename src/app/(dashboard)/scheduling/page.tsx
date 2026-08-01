@@ -31,10 +31,10 @@ export default async function SchedulingPage({ searchParams }: { searchParams: P
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
 
         <div className="relative z-10">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap items-center gap-x-2">
+          <h2 className="text-xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-snug flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span>Penjadwalan Siswa</span>
             {activeBranchName && (
-              <span className="text-brand-100 font-normal text-lg sm:text-xl lg:text-2xl whitespace-nowrap">
+              <span className="text-brand-100 font-normal text-base sm:text-xl lg:text-2xl">
                 ({activeBranchName})
               </span>
             )}
