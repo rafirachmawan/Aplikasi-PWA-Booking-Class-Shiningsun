@@ -6,9 +6,11 @@ import { Icons } from "@/components/ui/icons";
 const FIXED_TIMES = [
   { time: "08:00", range: "08 - 09" },
   { time: "09:00", range: "09 - 10" },
+  { time: "10:00", range: "10 - 11" },
   { time: "11:00", range: "11 - 12" },
   { time: "13:00", range: "13 - 14" },
   { time: "14:00", range: "14 - 15" },
+  { time: "15:00", range: "15 - 16" },
   { time: "16:00", range: "16 - 17" },
 ];
 
