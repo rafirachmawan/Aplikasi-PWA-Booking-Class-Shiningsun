@@ -318,71 +318,113 @@ export function SchedulingClientWrapper({ students, classes, schedules, currentM
             Langkah 1: Pilih Siswa
           </label>
           
-          {/* Custom Searchable Dropdown */}
+          {/* Custom Searchable Input Dropdown */}
           <div className="relative" ref={studentDropdownRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsOpenStudentDropdown(!isOpenStudentDropdown);
-                setStudentSearchQuery("");
-              }}
-              className="flex items-center justify-between w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-white text-left text-sm cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-            >
-              <span className="truncate text-slate-700 dark:text-slate-300 font-medium">
-                {selectedStudent 
-                  ? `${selectedStudent.name} (${selectedStudent.status === 'REGISTERED' ? 'Reguler' : selectedStudent.status === 'CG' ? 'CG' : 'Nonaktif'})` 
-                  : "-- Cari dan Pilih Siswa --"
+            <div className="relative flex items-center">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+                <Icons.search className="h-4 w-4" />
+              </div>
+              
+              <input
+                type="text"
+                placeholder="-- Cari dan Pilih Siswa --"
+                value={
+                  isOpenStudentDropdown 
+                    ? studentSearchQuery 
+                    : selectedStudent 
+                      ? selectedStudent.name 
+                      : ""
                 }
-              </span>
-              <svg className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${isOpenStudentDropdown ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
-              </svg>
-            </button>
+                onFocus={() => {
+                  setIsOpenStudentDropdown(true);
+                  setStudentSearchQuery("");
+                }}
+                onChange={(e) => {
+                  setStudentSearchQuery(e.target.value);
+                  if (!isOpenStudentDropdown) setIsOpenStudentDropdown(true);
+                }}
+                className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-10 pr-24 py-3 text-slate-900 dark:text-white text-sm font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all cursor-pointer"
+              />
+
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center gap-2">
+                {selectedStudent && (
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${
+                    selectedStudent.status === 'REGISTERED' 
+                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' 
+                      : selectedStudent.status === 'CG' 
+                        ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                  }`}>
+                    {selectedStudent.status === 'REGISTERED' ? 'Reguler' : selectedStudent.status === 'CG' ? 'CG' : 'Nonaktif'}
+                  </span>
+                )}
+
+                {selectedStudent ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setStudentId("");
+                      setStudentSearchQuery("");
+                      setIsOpenStudentDropdown(false);
+                    }}
+                    className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded-md transition-colors"
+                    title="Hapus pilihan"
+                  >
+                    <Icons.close className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOpenStudentDropdown(!isOpenStudentDropdown);
+                      if (!isOpenStudentDropdown) setStudentSearchQuery("");
+                    }}
+                    className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    <svg className={`h-4 w-4 transition-transform duration-200 ${isOpenStudentDropdown ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
 
             {isOpenStudentDropdown && (
               <div className="absolute z-50 mt-1.5 w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-2 animate-in fade-in slide-in-from-top-1 duration-100">
-                {/* Search Input */}
-                <div className="relative mb-2">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Icons.search className="h-4 w-4 text-slate-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Cari nama siswa..."
-                    value={studentSearchQuery}
-                    onChange={(e) => setStudentSearchQuery(e.target.value)}
-                    className="block w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 pl-9 pr-3 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                  />
-                </div>
-
-                {/* Options List (Max 5 items before scrolling) */}
-                <div className="max-h-[190px] overflow-y-auto space-y-0.5">
+                {/* Options List */}
+                <div className="max-h-[220px] overflow-y-auto space-y-0.5">
                   {filteredStudents.length === 0 ? (
-                    <div className="px-3 py-2 text-xs text-slate-400 italic text-center">
+                    <div className="px-3 py-3 text-xs text-slate-400 italic text-center">
                       Siswa tidak ditemukan
                     </div>
                   ) : (
                     filteredStudents.map((s) => {
                       const isInactive = s.status === 'INACTIVE';
+                      const isSelected = studentId === s.id;
                       return (
                         <button
                           key={s.id}
                           type="button"
                           disabled={isInactive}
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
                             if (!isInactive) {
                               setStudentId(s.id);
+                              setStudentSearchQuery(s.name);
                               setIsOpenStudentDropdown(false);
                             }
                           }}
-                          className={`w-full px-3 py-2 text-xs text-left rounded-lg transition-colors flex items-center justify-between ${
+                          className={`w-full px-3 py-2.5 text-xs text-left rounded-lg transition-colors flex items-center justify-between ${
                             isInactive 
                               ? "opacity-60 cursor-not-allowed bg-slate-50 dark:bg-slate-800/30" 
-                              : "hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer " + (studentId === s.id ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300")
+                              : "hover:bg-brand-50/70 dark:hover:bg-brand-950/40 cursor-pointer " + (isSelected ? "font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/30" : "text-slate-700 dark:text-slate-300")
                           }`}
                         >
                           <div className="truncate pr-2 flex flex-col">
-                            <span className={isInactive ? "text-slate-500 dark:text-slate-400" : ""}>{s.name}</span>
+                            <span className={`font-medium ${isSelected ? "text-brand-700 dark:text-brand-300 font-semibold" : isInactive ? "text-slate-500 dark:text-slate-400" : ""}`}>
+                              {s.name}
+                            </span>
                             {isInactive && (
                               <span className="text-[9px] text-red-500 dark:text-red-400 font-medium mt-0.5">
                                 *Siswa nonaktif

@@ -820,13 +820,11 @@ export async function deleteLabel(id: string) {
   return true;
 }
 
-export async function getTodaySchedules() {
+export async function getSchedulesByDate(dateStr: string) {
   const branchId = await getBranchId();
   
   // Jika belum pilih cabang, return kosong
   if (!branchId) return [];
-  
-  const today = new Date().toLocaleDateString('sv-SE');
 
   let query = supabase
     .from('schedule_slots')
@@ -838,7 +836,7 @@ export async function getTodaySchedules() {
         student:students(name, nickname, status, label:labels(hex_color))
       )
     `)
-    .eq('date', today)
+    .eq('date', dateStr)
     .order('time', { ascending: true });
 
   if (branchId !== 'ALL') {
@@ -847,10 +845,15 @@ export async function getTodaySchedules() {
 
   const { data, error } = await query;
   if (error) {
-    console.error("Error fetching today schedules:", error);
+    console.error("Error fetching schedules by date:", error);
     return [];
   }
   return data || [];
+}
+
+export async function getTodaySchedules() {
+  const today = new Date().toLocaleDateString('sv-SE');
+  return getSchedulesByDate(today);
 }
 
 export async function resetAllDatabaseData() {
