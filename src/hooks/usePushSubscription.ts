@@ -23,13 +23,11 @@ async function getSWRegistration(): Promise<ServiceWorkerRegistration | null> {
     let reg = await navigator.serviceWorker.getRegistration();
 
     if (!reg) {
-      // Manually register sw.js if not yet registered by Next.js/Serwist
       reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
     }
 
     if (reg) return reg;
 
-    // Race with a 3-second timeout so it never hangs indefinitely
     const readyReg = await Promise.race([
       navigator.serviceWorker.ready,
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
@@ -70,10 +68,9 @@ export function usePushSubscription() {
     });
   }, []);
 
-  const subscribeToPush = useCallback(async () => {
+  const subscribeToPush = useCallback(async (): Promise<{ success: boolean; message: string }> => {
     if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) {
-      alert("Browser Anda tidak mendukung Web Push Notification.");
-      return false;
+      return { success: false, message: "Browser Anda tidak mendukung Web Push Notification." };
     }
 
     setIsLoading(true);
@@ -84,11 +81,13 @@ export function usePushSubscription() {
       setPermission(result);
 
       if (result !== "granted") {
-        alert("Izin notifikasi ditolak oleh browser. Silakan izinkan notifikasi di pengaturan browser Anda.");
-        return false;
+        return {
+          success: false,
+          message: "Izin notifikasi ditolak oleh browser. Silakan izinkan notifikasi di pengaturan browser Anda.",
+        };
       }
 
-      // 2. Fetch VAPID public key (with fallback API call)
+      // 2. Fetch VAPID public key
       let vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidPublicKey) {
         try {
@@ -101,15 +100,13 @@ export function usePushSubscription() {
       }
 
       if (!vapidPublicKey) {
-        alert("Gagal mendapatkan Kunci VAPID Notifikasi. Silakan muat ulang halaman.");
-        return false;
+        return { success: false, message: "Gagal mendapatkan Kunci VAPID Notifikasi. Silakan muat ulang halaman." };
       }
 
       // 3. Get Service Worker Registration
       const reg = await getSWRegistration();
       if (!reg) {
-        alert("Service Worker belum aktif. Pastikan aplikasi berjalan via PWA / HTTPS.");
-        return false;
+        return { success: false, message: "Service Worker belum aktif. Pastikan aplikasi berjalan via PWA / HTTPS." };
       }
 
       // 4. Subscribe with PushManager
@@ -133,15 +130,56 @@ export function usePushSubscription() {
       const resData = await res.json().catch(() => ({}));
       if (res.ok) {
         setIsSubscribed(true);
-        alert("Notifikasi PWA berhasil diaktifkan! Anda akan menerima update jadwal pukul 05:00 WIB.");
-        return true;
+        return {
+          success: true,
+          message: "Notifikasi PWA berhasil diaktifkan! Perangkat ini akan menerima update jadwal pukul 05:00 WIB.",
+        };
       } else {
         throw new Error(resData.error || "Server gagal menyimpan pendaftaran notifikasi");
       }
     } catch (err: any) {
       console.error("Error subscribing to push notifications:", err);
-      alert(`Gagal mengaktifkan notifikasi: ${err.message || "Terjadi kesalahan"}`);
-      return false;
+      return {
+        success: false,
+        message: err.message || "Gagal mengaktifkan notifikasi.",
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const unsubscribeFromPush = useCallback(async (): Promise<{ success: boolean; message: string }> => {
+    setIsLoading(true);
+
+    try {
+      const reg = await getSWRegistration();
+      if (reg) {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await fetch("/api/push/unsubscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ endpoint: sub.endpoint }),
+          });
+          await sub.unsubscribe();
+        }
+      }
+
+      if ("clearAppBadge" in navigator) {
+        (navigator as any).clearAppBadge().catch(() => {});
+      }
+
+      setIsSubscribed(false);
+      return {
+        success: true,
+        message: "Notifikasi PWA telah berhasil dinonaktifkan dari perangkat ini.",
+      };
+    } catch (err: any) {
+      console.error("Error unsubscribing:", err);
+      return {
+        success: false,
+        message: err.message || "Gagal menonaktifkan notifikasi.",
+      };
     } finally {
       setIsLoading(false);
     }
@@ -152,5 +190,6 @@ export function usePushSubscription() {
     isSubscribed,
     isLoading,
     subscribeToPush,
+    unsubscribeFromPush,
   };
 }
