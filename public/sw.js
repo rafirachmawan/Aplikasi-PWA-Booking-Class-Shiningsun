@@ -1,30 +1,15 @@
-/// <reference lib="webworker" />
+// PWA Service Worker for ShiningSun Penjadwalan
 
-import { defaultCache } from "@serwist/next/worker";
-import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist } from "serwist";
-
-// Declare global types for Serwist Service Worker
-declare global {
-  interface WorkerGlobalScope extends SerwistGlobalConfig {
-    __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
-  }
-}
-
-declare const self: ServiceWorkerGlobalScope & WorkerGlobalScope;
-
-const serwist = new Serwist({
-  precacheEntries: self.__SW_MANIFEST,
-  skipWaiting: true,
-  clientsClaim: true,
-  navigationPreload: true,
-  runtimeCaching: defaultCache,
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
 });
 
-serwist.addEventListeners();
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
 
 // Handle Background Web Push Event (05:00 AM WIB Automated Notification & Badging)
-self.addEventListener("push", (event: PushEvent) => {
+self.addEventListener("push", (event) => {
   if (!event.data) return;
 
   try {
@@ -32,7 +17,7 @@ self.addEventListener("push", (event: PushEvent) => {
     const title = payload.title || "ShiningSun Penjadwalan";
     const badgeCount = typeof payload.badgeCount === "number" ? payload.badgeCount : 0;
 
-    const options: NotificationOptions = {
+    const options = {
       body: payload.body || "Ada pembaruan jadwal hari ini.",
       icon: "/icon.png",
       badge: "/icon.png",
@@ -42,7 +27,7 @@ self.addEventListener("push", (event: PushEvent) => {
 
     // Update PWA App Icon Badge on device Home Screen (Android / Windows / iOS 16.4+)
     if ("setAppBadge" in self.navigator) {
-      (self.navigator as any).setAppBadge(badgeCount).catch(console.error);
+      self.navigator.setAppBadge(badgeCount).catch(console.error);
     }
 
     event.waitUntil(self.registration.showNotification(title, options));
@@ -52,7 +37,7 @@ self.addEventListener("push", (event: PushEvent) => {
 });
 
 // Handle Notification Click (Focus app window or open /dashboard)
-self.addEventListener("notificationclick", (event: NotificationEvent) => {
+self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const targetUrl = event.notification?.data?.url || "/dashboard";
 

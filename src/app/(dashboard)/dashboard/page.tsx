@@ -4,6 +4,7 @@ import { TodaySchedule } from "@/components/features/dashboard/TodaySchedule";
 import { QuickAccessLinks } from "@/components/features/dashboard/QuickAccessLinks";
 import { BranchSelector } from "@/components/features/auth/BranchSelector";
 import { DashboardStatsPanel } from "@/components/features/dashboard/DashboardStatsPanel";
+import { NotificationPermissionBanner } from "@/components/features/notifications/NotificationPermissionBanner";
 
 export const dynamic = 'force-dynamic';
 
@@ -150,6 +151,7 @@ export default async function DashboardPage() {
           </div>
 
           <div className="mt-8">
+            <NotificationPermissionBanner />
             <TodaySchedule slots={todaySlots} classes={classes} />
           </div>
 
