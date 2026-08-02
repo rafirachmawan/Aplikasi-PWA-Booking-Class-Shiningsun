@@ -3,6 +3,7 @@ import { getDashboardStats, getTodaySchedules, getCurrentUserRole, getBranches, 
 import { TodaySchedule } from "@/components/features/dashboard/TodaySchedule";
 import { QuickAccessLinks } from "@/components/features/dashboard/QuickAccessLinks";
 import { BranchSelector } from "@/components/features/auth/BranchSelector";
+import { DashboardStatsPanel } from "@/components/features/dashboard/DashboardStatsPanel";
 
 export const dynamic = 'force-dynamic';
 
@@ -33,9 +34,9 @@ export default async function DashboardPage() {
   }
 
   const stats = [
-    { name: 'Siswa Aktif', value: statsData.reguler.toString(), icon: Icons.users, change: 'Data Asli', changeType: 'neutral', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10', hoverBg: 'group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20' },
-    { name: 'Coba Gratis', value: statsData.cg.toString(), icon: Icons.sun, change: 'Data Asli', changeType: 'neutral', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10', hoverBg: 'group-hover:bg-amber-100 dark:group-hover:bg-amber-500/20' },
-    { name: 'Tipe Kelas', value: statsData.classes.toString(), icon: Icons.calendar, change: 'Tersedia', changeType: 'positive', color: 'text-brand-600 dark:text-brand-400', bg: 'bg-brand-50 dark:bg-brand-500/10', hoverBg: 'group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20' },
+    { name: 'Siswa Aktif', value: statsData.reguler.toString(), iconName: 'users', statusFilter: 'REGISTERED' as const },
+    { name: 'Coba Gratis', value: statsData.cg.toString(), iconName: 'sun', statusFilter: 'CG' as const },
+    { name: 'Tipe Kelas', value: statsData.classes.toString(), iconName: 'calendar', statusFilter: 'CLASSES' as const },
   ];
 
   // Get selected branch name for display
@@ -144,32 +145,8 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            {/* Glassmorphic Elevated Stats Cards */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-6 sm:mt-10 relative z-10">
-              {stats.map((item) => {
-                const IconComponent = item.icon;
-                return (
-                  <div
-                    key={item.name}
-                    className="group rounded-2xl bg-white/15 border border-white/20 p-2.5 sm:p-5 backdrop-blur-xl shadow-inner hover:bg-white/25 hover:border-white/30 transition-all duration-300 flex flex-col justify-between min-w-0"
-                  >
-                    <div className="flex items-center justify-between gap-0.5 mb-1.5">
-                      <dt className="text-[8.5px] sm:text-xs font-bold text-white/95 uppercase tracking-tight leading-tight">
-                        {item.name}
-                      </dt>
-                      <div className="p-1 sm:p-1.5 rounded-lg bg-white/20 text-white shadow-xs shrink-0 group-hover:scale-110 transition-transform">
-                        <IconComponent className="h-3 w-3 sm:h-4 sm:w-4" />
-                      </div>
-                    </div>
-                    <dd className="flex items-baseline justify-between mt-1">
-                      <span className="text-xl sm:text-4xl font-extrabold text-white tracking-tight drop-shadow-sm">
-                        {item.value}
-                      </span>
-                    </dd>
-                  </div>
-                );
-              })}
-            </div>
+            {/* Glassmorphic Elevated Stats Cards - inside hero */}
+            <DashboardStatsPanel stats={stats} />
           </div>
 
           <div className="mt-8">

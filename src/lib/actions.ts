@@ -866,6 +866,138 @@ export async function getTodaySchedules() {
   return getSchedulesByDate(today);
 }
 
+export async function getStudentsByStatusWithSchedules(status: 'REGISTERED' | 'CG') {
+  const branchId = await getBranchId();
+  if (!branchId) return [];
+
+  // 1. Fetch students by status
+  let studentQuery = supabase
+    .from('students')
+    .select('id, name, nickname, status, label:labels(main_level, sub_level, hex_color)')
+    .eq('status', status)
+    .order('name', { ascending: true });
+  if (branchId !== 'ALL') studentQuery = studentQuery.eq('branch_id', branchId);
+  const { data: students, error: sErr } = await studentQuery;
+  if (sErr || !students) return [];
+
+  // 2. Get current month date range
+  const now = new Date();
+  const startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  // 3. Fetch schedule bookings for these students in current month
+  const studentIds = students.map(s => s.id);
+  if (studentIds.length === 0) return [];
+
+  let schedQuery = supabase
+    .from('schedule_student')
+    .select(`
+      student_id,
+      slot:schedule_slots!inner(
+        date, time,
+        class:classes(name)
+      )
+    `)
+    .in('student_id', studentIds)
+    .gte('slot.date', startDate)
+    .lte('slot.date', endDate);
+
+  const { data: bookings } = await schedQuery;
+
+  // 4. Group bookings by student_id
+  const bookingMap: Record<string, any[]> = {};
+  if (bookings) {
+    for (const b of bookings) {
+      if (!b.slot) continue;
+      if (!bookingMap[b.student_id]) bookingMap[b.student_id] = [];
+      bookingMap[b.student_id].push(b.slot);
+    }
+  }
+
+  // 5. Merge and sort by Label (main_level, sub_level), then Name
+  const getLabelStr = (s: any) => {
+    const lbl = Array.isArray(s.label) ? s.label[0] : s.label;
+    if (!lbl) return 'ZZZ';
+    return `${lbl.main_level || ''} ${lbl.sub_level || ''}`.trim();
+  };
+
+  return students
+    .map(s => ({
+      ...s,
+      label: Array.isArray(s.label) ? s.label[0] : s.label,
+      schedules: (bookingMap[s.id] || []).sort((a: any, b: any) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return a.time.localeCompare(b.time);
+      }),
+    }))
+    .sort((a, b) => {
+      const labelA = getLabelStr(a);
+      const labelB = getLabelStr(b);
+      
+      if (labelA !== labelB) {
+        return labelA.localeCompare(labelB, undefined, { numeric: true, sensitivity: 'base' });
+      }
+      
+      const nameA = a.nickname || a.name || '';
+      const nameB = b.nickname || b.name || '';
+      return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+}
+
+export async function getClassesWithSchedules() {
+  const branchId = await getBranchId();
+  if (!branchId) return [];
+
+  // 1. Fetch classes
+  let classQuery = supabase.from('classes').select('*, branch:branches(name)').order('name', { ascending: true });
+  if (branchId !== 'ALL') classQuery = classQuery.eq('branch_id', branchId);
+  const { data: classes, error: cErr } = await classQuery;
+  if (cErr || !classes) return [];
+
+  // 2. Get current month date range
+  const now = new Date();
+  const startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  const classIds = classes.map(c => c.id);
+  if (classIds.length === 0) return [];
+
+  // 3. Fetch schedule slots with student bookings
+  let slotQuery = supabase
+    .from('schedule_slots')
+    .select(`
+      id, class_id, date, time, is_locked,
+      bookings:schedule_student(
+        student_id,
+        student:students(name, nickname, status, label:labels(hex_color))
+      )
+    `)
+    .in('class_id', classIds)
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: true })
+    .order('time', { ascending: true });
+
+  const { data: slots } = await slotQuery;
+
+  // 4. Group slots by class_id
+  const slotMap: Record<string, any[]> = {};
+  if (slots) {
+    for (const s of slots) {
+      if (!slotMap[s.class_id]) slotMap[s.class_id] = [];
+      slotMap[s.class_id].push(s);
+    }
+  }
+
+  // 5. Merge
+  return classes.map(c => ({
+    ...c,
+    schedules: slotMap[c.id] || [],
+  }));
+}
+
 export async function resetAllDatabaseData() {
   const role = await getCurrentUserRole();
   if (role !== 'SUPERADMIN') {
