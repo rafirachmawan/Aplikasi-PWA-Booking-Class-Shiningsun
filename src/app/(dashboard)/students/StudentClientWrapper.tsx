@@ -6,6 +6,7 @@ import { Icons } from "@/components/ui/icons";
 import { StudentRegistrationForm } from "@/components/features/students/StudentRegistrationForm";
 import { deleteStudent, updateStudentStatus } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { formatNumericDate } from "@/lib/dateUtils";
 
 export function StudentClientWrapper({ initialStudents, labels, activeBranchName }: { initialStudents: any[], labels: any[], activeBranchName?: string | null }) {
   const router = useRouter();
@@ -447,11 +448,11 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                         )}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500 dark:text-slate-400">
-                        <div>{new Date(person.date_of_birth).toLocaleDateString('id-ID')}</div>
+                        <div>{formatNumericDate(person.date_of_birth)}</div>
                         <div className="text-xs text-slate-400 font-semibold">{ageText}</div>
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500 dark:text-slate-400">
-                        {new Date(person.registration_date).toLocaleDateString('id-ID')}
+                        {formatNumericDate(person.registration_date)}
                       </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 space-x-3">
                         <button 
@@ -541,11 +542,11 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                 <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 mb-4 relative z-10 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
                   <div>
                     <span className="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Tgl Lahir</span>
-                    <span className="block font-medium text-slate-700 dark:text-slate-300">{new Date(person.date_of_birth).toLocaleDateString('id-ID')}</span>
+                    <span className="block font-medium text-slate-700 dark:text-slate-300">{formatNumericDate(person.date_of_birth)}</span>
                   </div>
                   <div>
                     <span className="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Tgl Masuk</span>
-                    <span className="block font-medium text-slate-700 dark:text-slate-300">{new Date(person.registration_date).toLocaleDateString('id-ID')}</span>
+                    <span className="block font-medium text-slate-700 dark:text-slate-300">{formatNumericDate(person.registration_date)}</span>
                   </div>
                 </div>
 

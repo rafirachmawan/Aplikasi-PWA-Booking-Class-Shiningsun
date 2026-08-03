@@ -5,6 +5,7 @@ import { Icons } from "@/components/ui/icons";
 import { getSchedulesByDate } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ChangeLabelModal } from "@/components/features/students/ChangeLabelModal";
+import { formatFullIndonesianDate as formatIndonesianDate } from "@/lib/dateUtils";
 
 const FIXED_TIMES = [
   { time: "08:00", range: "08 - 09" },
@@ -23,18 +24,6 @@ function getTodayStr() {
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
-}
-
-function formatIndonesianDate(dateStr: string) {
-  const parts = dateStr.split("-");
-  if (parts.length !== 3) return dateStr;
-  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-  return d.toLocaleDateString("id-ID", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
 }
 
 export function TodaySchedule({

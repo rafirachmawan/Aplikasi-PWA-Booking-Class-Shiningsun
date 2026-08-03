@@ -13,6 +13,7 @@ import {
 } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ChangeLabelModal } from "@/components/features/students/ChangeLabelModal";
+import { formatShortDate } from "@/lib/dateUtils";
 
 interface SchedulingClientWrapperProps {
   students: any[];
@@ -182,12 +183,7 @@ export function SchedulingClientWrapper({
         );
       } else if (res.failedDates.length > 0) {
         const datesFormatted = res.failedDates
-          .map((d: string) =>
-            new Date(d).toLocaleDateString("id-ID", {
-              day: "numeric",
-              month: "short",
-            }),
-          )
+          .map((d: string) => formatShortDate(d))
           .join(", ");
         showAlert(
           "warning",
@@ -320,12 +316,7 @@ export function SchedulingClientWrapper({
         );
       } else if (allFailedDates.length > 0) {
         const datesFormatted = allFailedDates
-          .map((d) =>
-            new Date(d).toLocaleDateString("id-ID", {
-              day: "numeric",
-              month: "short",
-            }),
-          )
+          .map((d) => formatShortDate(d))
           .join(", ");
         showAlert(
           "warning",

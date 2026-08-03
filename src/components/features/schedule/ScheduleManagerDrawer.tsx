@@ -5,6 +5,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Icons } from "@/components/ui/icons";
 import { createScheduleSlot, bookStudentToSlot, toggleSlotLock } from "@/lib/actions";
 import { ChangeLabelModal } from "@/components/features/students/ChangeLabelModal";
+import { formatFullIndonesianDate } from "@/lib/dateUtils";
 
 interface ScheduleManagerDrawerProps {
   onClose: () => void;
@@ -17,12 +18,7 @@ interface ScheduleManagerDrawerProps {
 }
 
 export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students, onSuccess, existingSlots, defaultClassId = "" }: ScheduleManagerDrawerProps) {
-  const formattedDate = new Date(selectedDate).toLocaleDateString("id-ID", {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  });
+  const formattedDate = formatFullIndonesianDate(selectedDate);
 
   // State untuk modal konfirmasi lock
   const [lockConfirm, setLockConfirm] = useState<{ slotId: string; currentStatus: boolean; className: string; time: string } | null>(null);

@@ -5,6 +5,7 @@ import { QuickAccessLinks } from "@/components/features/dashboard/QuickAccessLin
 import { BranchSelector } from "@/components/features/auth/BranchSelector";
 import { DashboardStatsPanel } from "@/components/features/dashboard/DashboardStatsPanel";
 import { NotificationPermissionBanner } from "@/components/features/notifications/NotificationPermissionBanner";
+import { formatFullIndonesianDate } from "@/lib/dateUtils";
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,7 @@ export default async function DashboardPage() {
   }
 
   // Only fetch data if a branch is selected (or if not superadmin)
-  let statsData = { reguler: 0, cg: 0, classes: 0 };
+  let statsData = { reguler: 0, cg: 0, cgUpcoming: 0, cgPassed: 0, classes: 0 };
   let todaySlots: any[] = [];
   let classes: any[] = [];
   let activeBranchName: string | null = null;
@@ -36,7 +37,13 @@ export default async function DashboardPage() {
 
   const stats = [
     { name: 'Siswa Aktif', value: statsData.reguler.toString(), iconName: 'users', statusFilter: 'REGISTERED' as const },
-    { name: 'Coba Gratis', value: statsData.cg.toString(), iconName: 'sun', statusFilter: 'CG' as const },
+    { 
+      name: 'Coba Gratis', 
+      value: statsData.cg.toString(), 
+      subValue: `${statsData.cgUpcoming} belum terlewat`,
+      iconName: 'sun', 
+      statusFilter: 'CG' as const 
+    },
     { name: 'Tipe Kelas', value: statsData.classes.toString(), iconName: 'calendar', statusFilter: 'CLASSES' as const },
   ];
 
@@ -120,7 +127,7 @@ export default async function DashboardPage() {
                 <div className="flex flex-wrap items-center gap-2 mb-4">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white/95 text-xs font-semibold backdrop-blur-md shadow-xs">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    {formatFullIndonesianDate(new Date())}
                   </div>
                   {activeBranchName && (
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-300/30 text-amber-100 text-xs font-bold backdrop-blur-md shadow-xs">

@@ -3,6 +3,7 @@
 import { supabase } from "./supabase";
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { getTodayISO } from './dateUtils';
 
 export async function syncUserIdentity() {
   const supabaseServer = await createClient();
@@ -137,7 +138,7 @@ export async function getDashboardStats() {
     const branchId = await getBranchId();
     
     // Jika belum pilih cabang, return 0
-    if (!branchId) return { reguler: 0, cg: 0, classes: 0 };
+    if (!branchId) return { reguler: 0, cg: 0, cgUpcoming: 0, cgPassed: 0, classes: 0 };
     
     // 1. Hitung Siswa Aktif (Reguler)
     let regulerQuery = supabase
@@ -150,10 +151,53 @@ export async function getDashboardStats() {
     // 2. Hitung Siswa Coba Gratis (CG)
     let cgQuery = supabase
       .from('students')
-      .select('*', { count: 'exact', head: true })
+      .select('id')
       .eq('status', 'CG');
     if (branchId !== 'ALL') cgQuery = cgQuery.eq('branch_id', branchId);
-    const { count: cgCount } = await cgQuery;
+    const { data: cgStudents } = await cgQuery;
+
+    const cgCount = cgStudents?.length || 0;
+    let cgUpcoming = 0;
+    let cgPassed = 0;
+
+    if (cgStudents && cgStudents.length > 0) {
+      const today = getTodayISO();
+      const studentIds = cgStudents.map(s => s.id);
+
+      const now = new Date();
+      const startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+      const { data: bookings } = await supabase
+        .from('schedule_student')
+        .select(`
+          student_id,
+          slot:schedule_slots!inner(date)
+        `)
+        .in('student_id', studentIds)
+        .gte('slot.date', startDate)
+        .lte('slot.date', endDate);
+
+      const bookingMap: Record<string, string[]> = {};
+      if (bookings) {
+        for (const b of bookings) {
+          if (!b.slot) continue;
+          if (!bookingMap[b.student_id]) bookingMap[b.student_id] = [];
+          // @ts-ignore
+          bookingMap[b.student_id].push(b.slot.date);
+        }
+      }
+
+      for (const s of cgStudents) {
+        const dates = bookingMap[s.id] || [];
+        if (dates.length === 0 || dates.some(d => d >= today)) {
+          cgUpcoming++;
+        } else {
+          cgPassed++;
+        }
+      }
+    }
 
     // 3. Hitung Kelas
     let classQuery = supabase
@@ -164,12 +208,14 @@ export async function getDashboardStats() {
 
     return {
       reguler: regulerCount || 0,
-      cg: cgCount || 0,
+      cg: cgCount,
+      cgUpcoming,
+      cgPassed,
       classes: classCount || 0,
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
-    return { reguler: 0, cg: 0, classes: 0 };
+    return { reguler: 0, cg: 0, cgUpcoming: 0, cgPassed: 0, classes: 0 };
   }
 }
 
@@ -862,7 +908,7 @@ export async function getSchedulesByDate(dateStr: string) {
 }
 
 export async function getTodaySchedules() {
-  const today = new Date().toLocaleDateString('sv-SE');
+  const today = getTodayISO();
   return getSchedulesByDate(today);
 }
 
