@@ -51,7 +51,14 @@ export async function updateSession(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
 
-    // Protect Dashboard routes
+    // Redirect root / to /dashboard if logged in, or /login if not logged in
+    if (request.nextUrl.pathname === '/') {
+      const url = request.nextUrl.clone()
+      url.pathname = user ? '/dashboard' : '/login'
+      return NextResponse.redirect(url)
+    }
+
+    // Protect Dashboard and private routes
     if (
       !user &&
       !request.nextUrl.pathname.startsWith('/login')

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Icons } from "@/components/ui/icons";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 
 interface Label {
   id: string;
@@ -315,13 +316,11 @@ export function StudentRegistrationForm({
                     >
                       Tanggal Pendaftaran
                     </label>
-                    <input
-                      type="date"
+                    <DatePickerInput
                       id="registrationDate"
                       required
                       value={registrationDate}
                       onChange={(e) => setRegistrationDate(e.target.value)}
-                      className="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm"
                     />
                   </div>
 
@@ -495,13 +494,11 @@ export function StudentRegistrationForm({
                     >
                       Tanggal Lahir
                     </label>
-                    <input
-                      type="date"
+                    <DatePickerInput
                       id="dob"
                       required
                       value={dob}
                       onChange={(e) => setDob(e.target.value)}
-                      className="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm"
                     />
                   </div>
 

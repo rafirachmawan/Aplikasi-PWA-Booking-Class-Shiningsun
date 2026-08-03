@@ -14,6 +14,7 @@ import {
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ChangeLabelModal } from "@/components/features/students/ChangeLabelModal";
 import { formatShortDate } from "@/lib/dateUtils";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 
 interface SchedulingClientWrapperProps {
   students: any[];
@@ -820,8 +821,7 @@ export function SchedulingClientWrapper({
                               </span>
                             )}
                           </div>
-                          <input
-                            type="date"
+                          <DatePickerInput
                             required
                             value={schedule.startDate}
                             onChange={(e) =>
@@ -831,7 +831,6 @@ export function SchedulingClientWrapper({
                                 e.target.value,
                               )
                             }
-                            className="block w-full rounded-xl border-slate-200 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
                           />
                         </div>
 
@@ -1051,12 +1050,10 @@ export function SchedulingClientWrapper({
                         </div>
                       );
                     })()}
-                    <input
+                    <DatePickerInput
                       required
-                      type="date"
                       value={manualDate}
                       onChange={(e) => setManualDate(e.target.value)}
-                      className="block w-full rounded-xl border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
                     />
                   </div>
                   <div>
@@ -1313,14 +1310,12 @@ export function SchedulingClientWrapper({
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Pilih Tanggal Baru
                 </label>
-                <input
-                  type="date"
+                <DatePickerInput
                   required
                   value={editModal.date}
                   onChange={(e) =>
                     setEditModal({ ...editModal, date: e.target.value })
                   }
-                  className="block w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
                 />
               </div>
 

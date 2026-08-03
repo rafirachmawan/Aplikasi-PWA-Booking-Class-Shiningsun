@@ -18,7 +18,7 @@ export function LoginForm() {
   const [errorMsg, setErrorMsg] = useState("");
   const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const selectRef = useRef<HTMLSelectElement>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
 

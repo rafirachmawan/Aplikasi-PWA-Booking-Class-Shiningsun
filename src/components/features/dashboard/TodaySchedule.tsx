@@ -5,7 +5,7 @@ import { Icons } from "@/components/ui/icons";
 import { getSchedulesByDate } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ChangeLabelModal } from "@/components/features/students/ChangeLabelModal";
-import { formatFullIndonesianDate as formatIndonesianDate } from "@/lib/dateUtils";
+import { formatFullIndonesianDate as formatIndonesianDate, formatNumericDate } from "@/lib/dateUtils";
 
 const FIXED_TIMES = [
   { time: "08:00", range: "08 - 09" },
@@ -155,14 +155,20 @@ export function TodaySchedule({
                 <Icons.chevronLeft className="h-4 w-4" />
               </button>
 
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) =>
-                  e.target.value && handleDateChange(e.target.value)
-                }
-                className="text-xs font-semibold text-slate-700 dark:text-slate-200 bg-transparent px-2 py-0.5 border-none outline-none cursor-pointer text-center sm:text-left [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 dark:[&::-webkit-calendar-picker-indicator]:invert"
-              />
+              <div className="relative inline-flex items-center mx-1">
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 px-2 py-0.5 text-center flex items-center gap-1.5 pointer-events-none">
+                  {formatNumericDate(selectedDate)}
+                  <Icons.calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                </span>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) =>
+                    e.target.value && handleDateChange(e.target.value)
+                  }
+                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                />
+              </div>
 
               <button
                 type="button"
