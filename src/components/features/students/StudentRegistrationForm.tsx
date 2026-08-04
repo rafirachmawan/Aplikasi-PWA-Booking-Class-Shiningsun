@@ -22,7 +22,24 @@ interface StudentRegistrationFormProps {
 
 function parseIndonesianDate(dateStr: string) {
   if (!dateStr) return "";
+  const cleaned = dateStr.trim();
+  if (!cleaned) return "";
 
+  // 1. Direct YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) {
+    return cleaned;
+  }
+
+  // 2. Numeric DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+  const numMatch = cleaned.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+  if (numMatch) {
+    const day = numMatch[1].padStart(2, "0");
+    const month = numMatch[2].padStart(2, "0");
+    const year = numMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  // 3. Textual dates e.g. "Senin, 15 Januari 2024" or "15 Jan 2024"
   const months: Record<string, string> = {
     januari: "01",
     jan: "01",
@@ -42,6 +59,7 @@ function parseIndonesianDate(dateStr: string) {
     agus: "08",
     september: "09",
     sep: "09",
+    sept: "09",
     oktober: "10",
     okt: "10",
     november: "11",
@@ -50,14 +68,29 @@ function parseIndonesianDate(dateStr: string) {
     des: "12",
   };
 
-  const parts = dateStr.toLowerCase().replace(/,/g, "").split(/\s+/);
+  const parts = cleaned
+    .toLowerCase()
+    .replace(/,/g, " ")
+    .replace(/[\/\-\.]/g, " ")
+    .split(/\s+/);
+
   let day = "",
     month = "",
     year = "";
+
   for (const part of parts) {
-    if (!isNaN(parseInt(part)) && part.length <= 2) day = part.padStart(2, "0");
-    else if (!isNaN(parseInt(part)) && part.length === 4) year = part;
-    else if (months[part]) month = months[part];
+    if (
+      !isNaN(parseInt(part)) &&
+      part.length <= 2 &&
+      parseInt(part) >= 1 &&
+      parseInt(part) <= 31
+    ) {
+      if (!day) day = part.padStart(2, "0");
+    } else if (!isNaN(parseInt(part)) && part.length === 4) {
+      year = part;
+    } else if (months[part]) {
+      month = months[part];
+    }
   }
 
   if (day && month && year) {
@@ -188,48 +221,103 @@ export function StudentRegistrationForm({
     const text = e.target.value;
     if (!text) return;
 
-    // Tanggal Pendaftaran
-    const tglDaftarMatch = text.match(/Tanggal Pendaftaran\s*:\s*(.+)/i);
-    if (tglDaftarMatch) {
-      const parsedDate = parseIndonesianDate(tglDaftarMatch[1].trim());
-      if (parsedDate) setRegistrationDate(parsedDate);
+    // Detect status from header text (Form Coba Gratis/Trial vs Reguler)
+    const textLower = text.toLowerCase();
+    if (
+      textLower.includes("coba gratis") ||
+      textLower.includes("trial") ||
+      textLower.includes("cg")
+    ) {
+      setStatus("CG");
+    } else if (
+      textLower.includes("reguler") ||
+      textLower.includes("regular")
+    ) {
+      setStatus("REGISTERED");
     }
 
-    // Nama Lengkap anak
-    const nameMatch = text.match(/Nama Lengkap(?: anak)?\s*:\s*(.+)/i);
-    if (nameMatch) setName(nameMatch[1].trim());
+    // Process line by line, removing WhatsApp formatting marks like asterisks and underscores
+    const lines = text.split("\n").map((l) => l.replace(/[\*\_]/g, "").trim());
 
-    // Nama panggilan
-    const nicknameMatch = text.match(/Nama panggilan\s*:\s*(.+)/i);
-    if (nicknameMatch) setNickname(nicknameMatch[1].trim());
+    for (const line of lines) {
+      if (!line || !line.includes(":")) continue;
 
-    // Tanggal lahir anak
-    const dobMatch = text.match(/Tanggal lahir(?: anak)?\s*:\s*(.+)/i);
-    if (dobMatch) {
-      const parsedDate = parseIndonesianDate(dobMatch[1].trim());
-      if (parsedDate) setDob(parsedDate);
-    }
+      const colonIdx = line.indexOf(":");
+      const key = line.substring(0, colonIdx).trim().toLowerCase();
+      const val = line.substring(colonIdx + 1).trim();
 
-    // No hp
-    const phoneMatch = text.match(/No(?:[\s\.]*)?hp\s*:\s*(.+)/i);
-    if (phoneMatch) setPhone(phoneMatch[1].trim().replace(/[^0-9\+\-]/g, ""));
+      if (!val) continue;
 
-    // Alamat
-    const addressMatch = text.match(/Alamat\s*:\s*(.+)/i);
-    if (addressMatch) setAddress(addressMatch[1].trim());
-
-    // Sekolah
-    const schoolMatch = text.match(/Sekolah\s*:\s*(.+)/i);
-    if (schoolMatch) setSchool(schoolMatch[1].trim());
-
-    // Jenis Kelamin
-    const genderMatch = text.match(/(?:Jenis kelamin|JK|Gender)\s*:\s*(.+)/i);
-    if (genderMatch) {
-      const val = genderMatch[1].trim().toLowerCase();
-      if (val.includes("perempuan") || val.includes("wanita") || val === "p") {
-        setGender("Perempuan");
-      } else if (val.includes("laki") || val.includes("pria") || val === "l") {
-        setGender("Laki-laki");
+      // 1. Hari & Tanggal / Tanggal Pendaftaran
+      if (
+        key.includes("hari") ||
+        key.includes("pendaftaran") ||
+        (key.includes("tanggal") && !key.includes("lahir"))
+      ) {
+        const parsedDate = parseIndonesianDate(val);
+        if (parsedDate) setRegistrationDate(parsedDate);
+      }
+      // 2. Nama Lengkap anak
+      else if (
+        key.includes("nama lengkap") ||
+        (key.startsWith("nama") && !key.includes("panggilan"))
+      ) {
+        setName(val);
+      }
+      // 3. Nama panggilan
+      else if (key.includes("panggilan")) {
+        setNickname(val);
+      }
+      // 4. Tanggal lahir anak
+      else if (
+        key.includes("lahir") ||
+        key.includes("dob") ||
+        key.includes("tgl lahir")
+      ) {
+        const parsedDate = parseIndonesianDate(val);
+        if (parsedDate) setDob(parsedDate);
+      }
+      // 5. Jenis Kelamin
+      else if (
+        key.includes("kelamin") ||
+        key.includes("gender") ||
+        key === "jk"
+      ) {
+        const vLower = val.toLowerCase();
+        if (
+          vLower.includes("perempuan") ||
+          vLower.includes("wanita") ||
+          vLower === "p" ||
+          vLower.includes("female")
+        ) {
+          setGender("Perempuan");
+        } else if (
+          vLower.includes("laki") ||
+          vLower.includes("pria") ||
+          vLower === "l" ||
+          vLower.includes("male")
+        ) {
+          setGender("Laki-laki");
+        }
+      }
+      // 6. No HP
+      else if (
+        key.includes("hp") ||
+        key.includes("wa") ||
+        key.includes("telepon") ||
+        key.includes("tlp") ||
+        key.includes("phone")
+      ) {
+        const cleanPhone = val.replace(/[^0-9\+]/g, "");
+        if (cleanPhone) setPhone(cleanPhone);
+      }
+      // 7. Alamat
+      else if (key.includes("alamat")) {
+        setAddress(val);
+      }
+      // 8. Sekolah
+      else if (key.includes("sekolah")) {
+        setSchool(val);
       }
     }
   };
@@ -300,12 +388,12 @@ export function StudentRegistrationForm({
                   </svg>
                 </button>
                 <div
-                  className={`transition-all duration-300 ${showWaAutofill ? "max-h-40 opacity-100 p-4 border-t border-slate-200 dark:border-slate-800" : "max-h-0 opacity-0 pointer-events-none"}`}
+                  className={`transition-all duration-300 ${showWaAutofill ? "max-h-[600px] opacity-100 p-4 border-t border-slate-200 dark:border-slate-800" : "max-h-0 opacity-0 pointer-events-none overflow-hidden"}`}
                 >
                   <textarea
-                    rows={3}
+                    rows={8}
                     onChange={handlePasteWA}
-                    className="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 text-xs placeholder:text-slate-400"
+                    className="block w-full min-h-[180px] rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 text-xs sm:text-sm placeholder:text-slate-400 font-mono leading-relaxed"
                     placeholder="Tempel (paste) format teks pendaftaran dari WhatsApp di sini..."
                   />
                 </div>
