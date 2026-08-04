@@ -1182,7 +1182,7 @@ function getServiceSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY tidak dikonfigurasi di file .env.local');
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY belum diisi di file .env.local. Ambil key service_role dari Dashboard Supabase -> Project Settings -> API.');
   }
   return createSupabaseClient(supabaseUrl, supabaseServiceKey);
 }
@@ -1204,8 +1204,8 @@ export async function changeUserPassword(userId: string, newPassword: string) {
   const role = await getCurrentUserRole();
   if (role !== 'SUPERADMIN') throw new Error('Akses ditolak');
   
-  if (!newPassword || newPassword.length < 3) {
-    throw new Error('Password baru minimal 3 karakter.');
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error('Password baru minimal 6 karakter.');
   }
 
   const serviceClient = getServiceSupabase();

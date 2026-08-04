@@ -153,13 +153,13 @@ export function AccountsClientWrapper({ initialUsers }: { initialUsers: User[] }
                 <input
                   type="text"
                   required
-                  minLength={3}
+                  minLength={6}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Masukkan password baru..."
                   className="w-full rounded-xl border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
                 />
-                <p className="text-xs text-slate-500 mt-2">Minimal 3 karakter.</p>
+                <p className="text-xs text-slate-500 mt-2">Minimal 6 karakter.</p>
               </div>
 
               {errorMsg && (
