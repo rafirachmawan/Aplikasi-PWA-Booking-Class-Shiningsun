@@ -278,6 +278,7 @@ export async function getStudents() {
 export async function createStudent(formData: FormData) {
   const name = formData.get('name') as string;
   const nickname = formData.get('nickname') as string;
+  const gender = formData.get('gender') as string;
   const date_of_birth = formData.get('date_of_birth') as string;
   const phone = formData.get('phone') as string;
   const address = formData.get('address') as string;
@@ -286,27 +287,44 @@ export async function createStudent(formData: FormData) {
   const label_id = formData.get('label_id') as string;
   const registration_date = formData.get('registration_date') as string || new Date().toISOString().split('T')[0];
 
-  const { error } = await supabase
+  const insertPayload: any = {
+    branch_id: await getBranchId(),
+    name,
+    nickname,
+    date_of_birth,
+    phone,
+    address,
+    school,
+    status,
+    label_id: label_id ? label_id : null,
+    registration_date,
+  };
+
+  if (gender) {
+    insertPayload.gender = gender;
+  }
+
+  let { error } = await supabase
     .from('students')
-    .insert({
-      branch_id: await getBranchId(),
-      name,
-      nickname,
-      date_of_birth,
-      phone,
-      address,
-      school,
-      status,
-      label_id: label_id ? label_id : null,
-      registration_date,
-    });
+    .insert(insertPayload);
+
+  // Fallback jika kolom gender belum ada di database Supabase
+  if (error && (
+    (error.message && error.message.toLowerCase().includes('gender')) ||
+    (error.details && error.details.toLowerCase().includes('gender')) ||
+    error.code === 'PGRST204' ||
+    error.code === '42703'
+  )) {
+    delete insertPayload.gender;
+    const retry = await supabase.from('students').insert(insertPayload);
+    error = retry.error;
+  }
 
   if (error) {
     console.error("Error creating student:", error);
     throw new Error(error.message);
   }
 
-  // Next.js will need to revalidate the path in the calling component if needed
   return true;
 }
 
@@ -789,6 +807,7 @@ export async function updateStudentLabel(id: string, labelId: string | null) {
 export async function updateStudent(id: string, formData: FormData) {
   const name = formData.get('name') as string;
   const nickname = formData.get('nickname') as string;
+  const gender = formData.get('gender') as string;
   const date_of_birth = formData.get('date_of_birth') as string;
   const phone = formData.get('phone') as string;
   const address = formData.get('address') as string;
@@ -807,15 +826,34 @@ export async function updateStudent(id: string, formData: FormData) {
     status,
     label_id: label_id ? label_id : null,
   };
+
+  if (gender) {
+    updatePayload.gender = gender;
+  }
   
   if (registration_date) {
     updatePayload.registration_date = registration_date;
   }
 
-  const { error } = await supabase
+  let { error } = await supabase
     .from('students')
     .update(updatePayload)
     .eq('id', id);
+
+  // Fallback jika kolom gender belum ada di database Supabase
+  if (error && (
+    (error.message && error.message.toLowerCase().includes('gender')) ||
+    (error.details && error.details.toLowerCase().includes('gender')) ||
+    error.code === 'PGRST204' ||
+    error.code === '42703'
+  )) {
+    delete updatePayload.gender;
+    const retry = await supabase
+      .from('students')
+      .update(updatePayload)
+      .eq('id', id);
+    error = retry.error;
+  }
 
   if (error) throw new Error(error.message);
   return true;
@@ -919,7 +957,7 @@ export async function getStudentsByStatusWithSchedules(status: 'REGISTERED' | 'C
   // 1. Fetch students by status
   let studentQuery = supabase
     .from('students')
-    .select('id, name, nickname, status, label:labels(main_level, sub_level, hex_color)')
+    .select('id, name, nickname, gender, status, label:labels(main_level, sub_level, hex_color)')
     .eq('status', status)
     .order('name', { ascending: true });
   if (branchId !== 'ALL') studentQuery = studentQuery.eq('branch_id', branchId);

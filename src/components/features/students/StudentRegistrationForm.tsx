@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Icons } from "@/components/ui/icons";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { DatePickerInput } from "@/components/ui/DatePickerInput";
@@ -81,6 +82,9 @@ export function StudentRegistrationForm({
   );
   const [dob, setDob] = useState(initialData ? initialData.date_of_birth : "");
   const [status, setStatus] = useState(initialData ? initialData.status : "CG");
+  const [gender, setGender] = useState(
+    initialData?.gender || ""
+  );
   const [labelId, setLabelId] = useState(
     initialData?.label_id ? initialData.label_id : "",
   );
@@ -153,6 +157,7 @@ export function StudentRegistrationForm({
       formData.append("registration_date", registrationDate);
       formData.append("date_of_birth", dob);
       formData.append("status", status);
+      formData.append("gender", gender);
 
       // If status is CG, we set label_id to empty/null to clear previous label
       if (status === "REGISTERED" && labelId) {
@@ -171,8 +176,8 @@ export function StudentRegistrationForm({
 
       onSuccess();
       onClose();
-    } catch (error) {
-      alert("Gagal menyimpan data siswa. Silakan coba lagi.");
+    } catch (error: any) {
+      alert(`Gagal menyimpan data siswa: ${error?.message || "Silakan coba lagi."}`);
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -216,21 +221,32 @@ export function StudentRegistrationForm({
     // Sekolah
     const schoolMatch = text.match(/Sekolah\s*:\s*(.+)/i);
     if (schoolMatch) setSchool(schoolMatch[1].trim());
+
+    // Jenis Kelamin
+    const genderMatch = text.match(/(?:Jenis kelamin|JK|Gender)\s*:\s*(.+)/i);
+    if (genderMatch) {
+      const val = genderMatch[1].trim().toLowerCase();
+      if (val.includes("perempuan") || val.includes("wanita") || val === "p") {
+        setGender("Perempuan");
+      } else if (val.includes("laki") || val.includes("pria") || val === "l") {
+        setGender("Laki-laki");
+      }
+    }
   };
 
-  return (
+  return createPortal(
     <>
       {isSubmitting && <LoadingSpinner usePortal={true} />}
 
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
       {/* Modal Container */}
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none">
-        <div className="w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-lg bg-white dark:bg-slate-900 sm:rounded-2xl shadow-2xl pointer-events-auto flex flex-col animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-10 sm:zoom-in-95 duration-300">
+      <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none">
+        <div className="w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-2xl bg-white dark:bg-slate-900 sm:rounded-2xl shadow-2xl pointer-events-auto flex flex-col animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-10 sm:zoom-in-95 duration-300">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-900 sm:rounded-t-2xl">
             <div>
@@ -486,38 +502,58 @@ export function StudentRegistrationForm({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Tanggal Lahir */}
+                  {/* Jenis Kelamin */}
                   <div>
-                    <label
-                      htmlFor="dob"
-                      className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
-                    >
-                      Tanggal Lahir
+                    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                      Jenis Kelamin
                     </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setGender(gender === "Laki-laki" ? "" : "Laki-laki")}
+                        className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                          gender === "Laki-laki"
+                            ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 ring-1 ring-blue-500"
+                            : "border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900"
+                        }`}
+                      >
+                        <span>👦</span> Laki-laki
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGender(gender === "Perempuan" ? "" : "Perempuan")}
+                        className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                          gender === "Perempuan"
+                            ? "border-pink-500 bg-pink-50 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400 ring-1 ring-pink-500"
+                            : "border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900"
+                        }`}
+                      >
+                        <span>👧</span> Perempuan
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tanggal Lahir & Kalkulasi Usia */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label
+                        htmlFor="dob"
+                        className="block text-xs font-semibold text-slate-500 dark:text-slate-400"
+                      >
+                        Tanggal Lahir
+                      </label>
+                      {calculatedAge && (
+                        <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                          ⏳ {calculatedAge}
+                        </span>
+                      )}
+                    </div>
                     <DatePickerInput
                       id="dob"
                       required
                       value={dob}
                       onChange={(e) => setDob(e.target.value)}
                     />
-                  </div>
-
-                  {/* Kalkulator Usia */}
-                  <div className="flex flex-col justify-end">
-                    <label className="block text-xs font-semibold text-slate-400 dark:text-slate-500 mb-1">
-                      Kalkulasi Usia
-                    </label>
-                    <div className="h-9 flex items-center px-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                      {calculatedAge ? (
-                        <span className="flex items-center gap-1">
-                          ⏳ {calculatedAge}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 dark:text-slate-500 italic">
-                          Pilih tanggal lahir
-                        </span>
-                      )}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -591,45 +627,56 @@ export function StudentRegistrationForm({
 
           {/* Footer */}
           <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 sm:rounded-b-2xl shrink-0">
-            <button
-              type="submit"
-              form="student-form"
-              disabled={isSubmitting}
-              className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSubmitting ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Menyimpan...
-                </>
-              ) : initialData ? (
-                "Simpan Perubahan"
-              ) : (
-                "Simpan & Daftarkan Siswa"
-              )}
-            </button>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="w-full sm:w-auto flex justify-center items-center py-2.5 px-5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                form="student-form"
+                disabled={isSubmitting}
+                className="w-full sm:w-auto flex justify-center items-center py-2.5 px-6 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSubmitting ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Menyimpan...
+                  </>
+                ) : initialData ? (
+                  "Simpan Perubahan"
+                ) : (
+                  "Simpan & Daftarkan Siswa"
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }

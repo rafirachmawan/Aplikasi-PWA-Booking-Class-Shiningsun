@@ -54,6 +54,7 @@ CREATE TABLE students (
     label_id UUID REFERENCES labels(id) ON DELETE RESTRICT,
     name VARCHAR(150) NOT NULL,
     nickname VARCHAR(100),
+    gender VARCHAR(20),
     date_of_birth DATE NOT NULL,
     phone VARCHAR(20),
     address TEXT,

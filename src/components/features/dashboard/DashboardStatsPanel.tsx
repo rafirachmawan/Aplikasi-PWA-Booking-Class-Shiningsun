@@ -221,12 +221,21 @@ export function DashboardStatsPanel({
             />
           </div>
 
-          {/* Student Name & Level Badge */}
+          {/* Student Name, Gender & Level Badge */}
           <div className="flex-1 min-w-0 py-0.5">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs sm:text-sm font-bold text-slate-800 leading-snug">
                 {student.nickname || student.name}
               </span>
+              {student.gender === 'Perempuan' ? (
+                <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-200/60 shrink-0">
+                  👧 P
+                </span>
+              ) : student.gender === 'Laki-laki' ? (
+                <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200/60 shrink-0">
+                  👦 L
+                </span>
+              ) : null}
               {student.label && (
                 <span
                   className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded text-white shadow-2xs shrink-0"
