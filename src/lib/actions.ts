@@ -165,7 +165,8 @@ export async function getActiveBranchName() {
 }
 
 export async function getBranches() {
-  const { data, error } = await supabase
+  const supabaseServer = await createClient();
+  const { data, error } = await supabaseServer
     .from('branches')
     .select('*')
     .eq('is_active', true)
@@ -180,13 +181,14 @@ export async function getBranches() {
 
 export async function getDashboardStats() {
   try {
+    const supabaseServer = await createClient();
     const branchId = await getBranchId();
     
     // Jika belum pilih cabang, return 0
     if (!branchId) return { reguler: 0, cg: 0, cgUpcoming: 0, cgPassed: 0, classes: 0 };
     
     // 1. Hitung Siswa Aktif (Reguler)
-    let regulerQuery = supabase
+    let regulerQuery = supabaseServer
       .from('students')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'REGISTERED');
@@ -194,7 +196,7 @@ export async function getDashboardStats() {
     const { count: regulerCount } = await regulerQuery;
 
     // 2. Hitung Siswa Coba Gratis (CG)
-    let cgQuery = supabase
+    let cgQuery = supabaseServer
       .from('students')
       .select('id')
       .eq('status', 'CG');
@@ -214,7 +216,7 @@ export async function getDashboardStats() {
       const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
       const endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
-      const { data: bookings } = await supabase
+      const { data: bookings } = await supabaseServer
         .from('schedule_student')
         .select(`
           student_id,
@@ -245,7 +247,7 @@ export async function getDashboardStats() {
     }
 
     // 3. Hitung Kelas
-    let classQuery = supabase
+    let classQuery = supabaseServer
       .from('classes')
       .select('*', { count: 'exact', head: true });
     if (branchId !== 'ALL') classQuery = classQuery.eq('branch_id', branchId);
@@ -265,10 +267,11 @@ export async function getDashboardStats() {
 }
 
 export async function getClasses() {
+  const supabaseServer = await createClient();
   const branchId = await getBranchId();
   if (!branchId) return [];
   
-  let query = supabase.from('classes').select('*, branch:branches(name)');
+  let query = supabaseServer.from('classes').select('*, branch:branches(name)');
   
   if (branchId !== 'ALL') {
     query = query.eq('branch_id', branchId);
@@ -284,8 +287,8 @@ export async function getClasses() {
 }
 
 export async function getLabels() {
-  // Labels are global — shared across all branches
-  const { data, error } = await supabase
+  const supabaseServer = await createClient();
+  const { data, error } = await supabaseServer
     .from('labels')
     .select('*')
     .order('main_level')
@@ -299,10 +302,11 @@ export async function getLabels() {
 }
 
 export async function getStudents() {
+  const supabaseServer = await createClient();
   const branchId = await getBranchId();
   if (!branchId) return [];
   
-  let query = supabase
+  let query = supabaseServer
     .from('students')
     .select('*, label:labels(main_level, sub_level, hex_color)')
     .order('created_at', { ascending: false });
