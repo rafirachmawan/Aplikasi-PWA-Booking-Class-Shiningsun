@@ -6,67 +6,84 @@ import { cookies } from 'next/headers';
 import { getTodayISO } from './dateUtils';
 
 export async function syncUserIdentity() {
-  const supabaseServer = await createClient();
-  const { data: { user } } = await supabaseServer.auth.getUser();
-  if (!user || !user.email) return;
+  try {
+    const supabaseServer = await createClient();
+    const { data: { user } } = await supabaseServer.auth.getUser();
+    if (!user || !user.email) return;
 
-  // Cek apakah user id ini sudah terdaftar di public.users
-  const { data: existingUser } = await supabaseServer
-    .from('users')
-    .select('id')
-    .eq('id', user.id)
-    .single();
+    // Cek apakah user id ini sudah terdaftar di public.users
+    const { data: existingUser } = await supabaseServer
+      .from('users')
+      .select('id')
+      .eq('id', user.id)
+      .single();
 
-  if (!existingUser) {
-    // Hapus data lama yang mungkin memiliki email sama tapi ID salah (akibat salah SQL/buat ulang auth)
-    await supabaseServer.from('users').delete().eq('email', user.email);
+    if (!existingUser) {
+      // Hapus data lama yang mungkin memiliki email sama tapi ID salah (akibat salah SQL/buat ulang auth)
+      await supabaseServer.from('users').delete().eq('email', user.email);
 
-    let role = 'BRANCH_ADMIN';
-    let branchId = null;
+      let role = 'BRANCH_ADMIN';
+      let branchId = null;
 
-    if (user.email.includes('superadmin') || user.email.includes('pusat')) {
-      role = 'SUPERADMIN';
-    } else {
-      // Deteksi cabang dari nama email (misal: ngunut@... -> Ngunut)
-      const prefix = user.email.split('@')[0];
-      const { data: branches } = await supabaseServer
-        .from('branches')
-        .select('id, name');
-        
-      if (branches) {
-        const matched = branches.find(b => b.name.toLowerCase().includes(prefix.toLowerCase()));
-        if (matched) branchId = matched.id;
+      if (user.email.includes('superadmin') || user.email.includes('pusat')) {
+        role = 'SUPERADMIN';
+      } else {
+        // Deteksi cabang dari nama email (misal: ngunut@... -> Ngunut)
+        const prefix = user.email.split('@')[0];
+        const { data: branches } = await supabaseServer
+          .from('branches')
+          .select('id, name');
+          
+        if (branches) {
+          const matched = branches.find(b => b.name.toLowerCase().includes(prefix.toLowerCase()));
+          if (matched) branchId = matched.id;
+        }
+      }
+
+      // Insert otomatis identitas baru yang nyambung dengan ID Auth asli
+      const { error: insertError } = await supabaseServer.from('users').insert({
+        id: user.id,
+        email: user.email,
+        name: role === 'SUPERADMIN' ? 'Superadmin Utama' : `Admin ${user.email.split('@')[0]}`,
+        role: role,
+        branch_id: branchId,
+        password: 'auth_managed'
+      });
+      
+      if (insertError) {
+        console.error("Auto-sync failed:", insertError.message);
       }
     }
-
-    // Insert otomatis identitas baru yang nyambung dengan ID Auth asli
-    const { error: insertError } = await supabaseServer.from('users').insert({
-      id: user.id,
-      email: user.email,
-      name: role === 'SUPERADMIN' ? 'Superadmin Utama' : `Admin ${user.email.split('@')[0]}`,
-      role: role,
-      branch_id: branchId,
-      password: 'auth_managed'
-    });
-    
-    if (insertError) {
-      console.error("Auto-sync failed:", insertError.message);
-    }
+  } catch (err) {
+    console.error("syncUserIdentity exception:", err);
   }
 }
 
 export async function getCurrentUserRole() {
-  const supabaseServer = await createClient();
-  const { data: { user } } = await supabaseServer.auth.getUser();
-  if (!user) return null;
-  
-  const { data: profile } = await supabaseServer
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
+  try {
+    const supabaseServer = await createClient();
+    const { data: { user } } = await supabaseServer.auth.getUser();
+    if (!user) return null;
     
-  return profile?.role || null;
+    let { data: profile } = await supabaseServer
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+      
+    if (!profile && user.email) {
+      const { data: profileByEmail } = await supabaseServer
+        .from('users')
+        .select('role')
+        .eq('email', user.email)
+        .single();
+      profile = profileByEmail;
+    }
+      
+    return profile?.role || (user.email?.includes('superadmin') ? 'SUPERADMIN' : 'BRANCH_ADMIN');
+  } catch (err) {
+    return 'BRANCH_ADMIN';
+  }
 }
 
 export async function setSuperadminBranch(branchId: string) {
@@ -80,29 +97,57 @@ export async function clearSuperadminBranch() {
 }
 
 export async function getBranchId() {
-  const supabaseServer = await createClient();
-  const { data: { user } } = await supabaseServer.auth.getUser();
-  
-  if (!user) {
-    return '11111111-1111-1111-1111-111111111111';
-  }
-
-  const { data: profile } = await supabaseServer
-    .from('users')
-    .select('branch_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role === 'SUPERADMIN') {
-    const cookieStore = await cookies();
-    const selectedBranch = cookieStore.get('superadmin_branch_id')?.value;
-    if (selectedBranch) {
-      return selectedBranch;
+  try {
+    const supabaseServer = await createClient();
+    const { data: { user } } = await supabaseServer.auth.getUser();
+    
+    if (!user) {
+      return '11111111-1111-1111-1111-111111111111';
     }
-    return ''; // Default kosong agar superadmin harus pilih cabang dulu
-  }
 
-  return profile?.branch_id || 'ALL'; // Fallback aman jika branch_id kosong
+    let { data: profile } = await supabaseServer
+      .from('users')
+      .select('branch_id, role, email')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile && user.email) {
+      const { data: profileByEmail } = await supabaseServer
+        .from('users')
+        .select('branch_id, role, email')
+        .eq('email', user.email)
+        .single();
+      profile = profileByEmail;
+    }
+
+    const userRole = profile?.role || (user.email?.includes('superadmin') ? 'SUPERADMIN' : 'BRANCH_ADMIN');
+
+    if (userRole === 'SUPERADMIN') {
+      const cookieStore = await cookies();
+      const selectedBranch = cookieStore.get('superadmin_branch_id')?.value;
+      if (selectedBranch) {
+        return selectedBranch;
+      }
+      return ''; // Default kosong agar superadmin harus pilih cabang dulu
+    }
+
+    if (profile?.branch_id) {
+      return profile.branch_id;
+    }
+
+    if (user.email) {
+      const prefix = user.email.split('@')[0];
+      const { data: branches } = await supabaseServer.from('branches').select('id, name');
+      if (branches) {
+        const matched = branches.find(b => b.name.toLowerCase().includes(prefix.toLowerCase()));
+        if (matched) return matched.id;
+      }
+    }
+
+    return 'ALL';
+  } catch (err) {
+    return 'ALL';
+  }
 }
 
 export async function getActiveBranchName() {

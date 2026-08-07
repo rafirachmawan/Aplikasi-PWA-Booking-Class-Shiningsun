@@ -1,7 +1,7 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { SidebarProvider } from "@/lib/SidebarContext";
-import { getCurrentUserRole, getBranches, getBranchId } from "@/lib/actions";
+import { getCurrentUserRole, getBranches, getBranchId, syncUserIdentity } from "@/lib/actions";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +11,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  await syncUserIdentity();
   const role = await getCurrentUserRole();
   const currentBranchId = await getBranchId();
   let branches = [];

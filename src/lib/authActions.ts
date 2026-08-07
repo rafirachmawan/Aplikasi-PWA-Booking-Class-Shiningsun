@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { syncUserIdentity } from '@/lib/actions';
 
 export async function login(email: string, password: string, rememberMe: boolean = true) {
   const cookieStore = await cookies();
@@ -26,6 +27,13 @@ export async function login(email: string, password: string, rememberMe: boolean
 
   // Clear any stale branch selection so superadmin starts fresh
   cookieStore.delete('superadmin_branch_id');
+
+  // Ensure public.users profile exists and matches auth ID
+  try {
+    await syncUserIdentity();
+  } catch (err) {
+    console.error("syncUserIdentity failed during login:", err);
+  }
 
   return { success: true };
 }
