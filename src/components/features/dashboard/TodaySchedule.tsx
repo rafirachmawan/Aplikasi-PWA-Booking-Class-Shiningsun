@@ -33,14 +33,14 @@ export function TodaySchedule({
   slots: any[];
   classes?: any[];
 }) {
-  const todayStr = getTodayStr();
-  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const [selectedDate, setSelectedDate] = useState<string>(() => getTodayStr());
   const [currentSlots, setCurrentSlots] = useState<any[]>(initialSlots);
   const [selectedClass, setSelectedClass] = useState<string>("ALL");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [editingStudent, setEditingStudent] = useState<any>(null);
   const [labelsList, setLabelsList] = useState<any[]>([]);
 
+  const todayStr = getTodayStr();
   const isToday = selectedDate === todayStr;
 
   const handleStudentClick = async (student: any) => {

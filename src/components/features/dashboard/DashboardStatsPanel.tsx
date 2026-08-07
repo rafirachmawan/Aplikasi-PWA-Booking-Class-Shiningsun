@@ -43,10 +43,10 @@ export function DashboardStatsCards({
             type="button"
             onClick={() => onCardClick(item)}
             disabled={!isClickable}
-            className={`group rounded-2xl bg-white/15 border p-2.5 sm:p-5 backdrop-blur-xl shadow-inner transition-all duration-300 flex flex-col justify-between min-w-0 text-left ${
+            className={`group rounded-2xl bg-slate-900/30 border p-2.5 sm:p-5 backdrop-blur-md shadow-md transition-all duration-200 flex flex-col justify-between min-w-0 text-left ${
               isActive
-                ? "bg-white/30 border-white/40 ring-2 ring-white/50 scale-[1.02]"
-                : "border-white/20 hover:bg-white/25 hover:border-white/30"
+                ? "bg-white/30 border-white/60 ring-2 ring-white/50 scale-[1.02]"
+                : "border-white/25 hover:bg-white/25 active:scale-95 active:bg-white/30"
             } ${isClickable ? "cursor-pointer" : "cursor-default"}`}
           >
             <div className="flex items-center justify-between gap-0.5 mb-1 flex-wrap">

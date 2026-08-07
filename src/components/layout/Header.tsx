@@ -35,28 +35,25 @@ export function Header({ role, branchName }: HeaderProps) {
       {isLoggingOut && <LoadingSpinner usePortal={true} />}
       <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/80 backdrop-blur-md px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8 transition-colors">
       <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6 justify-between lg:justify-end">
-        <form className="relative flex flex-1 items-center lg:hidden" action="#" method="GET">
-          <label htmlFor="search-field" className="sr-only">
-            Search
-          </label>
+        <div className="flex flex-1 items-center lg:hidden gap-2">
           {/* Mobile hamburger menu */}
           <button 
             type="button" 
-            className="-m-2.5 p-2.5 text-slate-700 dark:text-slate-200 lg:hidden"
+            className="-m-2.5 p-2.5 text-slate-700 dark:text-slate-200 lg:hidden cursor-pointer active:opacity-70"
             onClick={toggle}
           >
             <span className="sr-only">Buka sidebar</span>
             <Icons.menu className="h-6 w-6" aria-hidden="true" />
           </button>
           
-          <div className="flex items-center gap-2 lg:hidden ml-3">
+          <div className="flex items-center gap-2 lg:hidden ml-1">
              <svg className="w-4 h-4 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
              </svg>
              <span className="text-brand-600 font-bold text-sm sm:text-base truncate max-w-[160px] sm:max-w-[220px]">{branchName || 'ShiningSun'}</span>
           </div>
-        </form>
+        </div>
 
         <div className="flex items-center gap-x-3 lg:gap-x-6 w-full justify-end">
           {branchName && (

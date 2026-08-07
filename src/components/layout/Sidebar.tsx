@@ -238,8 +238,8 @@ export function Sidebar({
 
       {/* Sidebar Content */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 lg:shadow-sm
-        ${isOpen ? "translate-x-0" : "-translate-x-full"}
+        fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 lg:shadow-sm lg:pointer-events-auto lg:visible
+        ${isOpen ? "translate-x-0 pointer-events-auto visible" : "-translate-x-full pointer-events-none invisible"}
       `}>
         <div className="flex h-16 shrink-0 items-center justify-between px-6 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3">
