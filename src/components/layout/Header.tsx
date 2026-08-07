@@ -37,14 +37,14 @@ export function Header({ role, branchName }: HeaderProps) {
       <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6 justify-between lg:justify-end">
         <div className="flex flex-1 items-center lg:hidden gap-2">
           {/* Mobile hamburger menu */}
-          <button 
-            type="button" 
-            className="-m-2.5 p-2.5 text-slate-700 dark:text-slate-200 lg:hidden cursor-pointer active:opacity-70"
+          <label 
+            htmlFor="sidebar-drawer-toggle" 
+            className="-m-2.5 p-2.5 text-slate-700 dark:text-slate-200 lg:hidden cursor-pointer active:opacity-70 flex items-center justify-center"
             onClick={toggle}
           >
             <span className="sr-only">Buka sidebar</span>
             <Icons.menu className="h-6 w-6" aria-hidden="true" />
-          </button>
+          </label>
           
           <div className="flex items-center gap-2 lg:hidden ml-1">
              <svg className="w-4 h-4 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

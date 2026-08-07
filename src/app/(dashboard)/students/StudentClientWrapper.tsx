@@ -291,224 +291,75 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
         </div>
 
         {/* Grid Filters: Level & Gender Dropdowns */}
+        {/* Grid Filters: Level & Gender Dropdowns */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Custom Level Dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              type="button"
-              onClick={() => setIsLevelOpen(!isLevelOpen)}
-              className="flex items-center justify-between w-full rounded-lg border-0 py-2.5 pl-10 pr-3 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white text-left cursor-pointer"
+          {/* Native Level Dropdown */}
+          <div className="relative">
+            <select
+              value={selectedLabelId}
+              onChange={(e) => setSelectedLabelId(e.target.value)}
+              className="appearance-none block w-full rounded-lg border-0 py-2.5 pl-10 pr-10 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 focus:ring-2 focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white font-medium cursor-pointer truncate"
             >
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                <Icons.settings className="h-5 w-5 text-slate-400" aria-hidden="true" />
-              </span>
-              <span className="truncate text-slate-700 dark:text-slate-300 font-medium">
-                {selectedLabelId === "" 
-                  ? "✨ Semua Level / Tingkat" 
-                  : (() => {
-                      const selectedLabel = labels.find(l => l.id === selectedLabelId);
-                      return selectedLabel ? `${selectedLabel.main_level} - ${selectedLabel.sub_level}` : "✨ Semua Level / Tingkat";
-                    })()
-                }
-              </span>
-              <svg className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${isLevelOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <option value="">✨ Semua Level / Tingkat</option>
+              {labels.map((label) => (
+                <option key={label.id} value={label.id}>
+                  {label.main_level} - {label.sub_level}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <Icons.settings className="h-5 w-5 text-slate-400" aria-hidden="true" />
+            </div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+              <svg className="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
               </svg>
-            </button>
-
-            {isLevelOpen && (
-              <div className="absolute z-50 mt-1.5 w-full rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg max-h-[195px] overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1 duration-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedLabelId("");
-                    setIsLevelOpen(false);
-                  }}
-                  className={`w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 ${
-                    selectedLabelId === "" ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300"
-                  }`}
-                >
-                  ✨ Semua Level / Tingkat
-                </button>
-                {labels.map((label) => (
-                  <button
-                    key={label.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedLabelId(label.id);
-                      setIsLevelOpen(false);
-                    }}
-                    className={`w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 ${
-                      selectedLabelId === label.id ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300"
-                    }`}
-                  >
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: label.hex_color }}></span>
-                    {label.main_level} - {label.sub_level}
-                  </button>
-                ))}
-              </div>
-            )}
+            </div>
           </div>
 
-          {/* Custom Gender Dropdown */}
-          <div className="relative" ref={genderDropdownRef}>
-            <button
-              type="button"
-              onClick={() => setIsGenderOpen(!isGenderOpen)}
-              className="flex items-center justify-between w-full rounded-lg border-0 py-2.5 pl-10 pr-3 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white text-left cursor-pointer"
+          {/* Native Gender Dropdown */}
+          <div className="relative">
+            <select
+              value={selectedGender}
+              onChange={(e) => setSelectedGender(e.target.value)}
+              className="appearance-none block w-full rounded-lg border-0 py-2.5 pl-10 pr-10 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 focus:ring-2 focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white font-medium cursor-pointer truncate"
             >
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                <Icons.users className="h-5 w-5 text-slate-400" aria-hidden="true" />
-              </span>
-              <span className="truncate text-slate-700 dark:text-slate-300 font-medium">
-                {selectedGender === "" 
-                  ? "👥 Semua Jenis Kelamin" 
-                  : selectedGender === "Laki-laki" 
-                    ? "👦 Laki-laki" 
-                    : selectedGender === "Perempuan" 
-                      ? "👧 Perempuan" 
-                      : "❓ Belum Ada (Kosong)"}
-              </span>
-              <svg className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${isGenderOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <option value="">👥 Semua Jenis Kelamin</option>
+              <option value="Laki-laki">👦 Laki-laki</option>
+              <option value="Perempuan">👧 Perempuan</option>
+              <option value="unset">❓ Belum Ada (Kosong)</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <Icons.users className="h-5 w-5 text-slate-400" aria-hidden="true" />
+            </div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+              <svg className="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
               </svg>
-            </button>
-
-            {isGenderOpen && (
-              <div className="absolute z-50 mt-1.5 w-full rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg max-h-[195px] overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1 duration-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedGender("");
-                    setIsGenderOpen(false);
-                  }}
-                  className={`w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 ${
-                    selectedGender === "" ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300"
-                  }`}
-                >
-                  👥 Semua Jenis Kelamin
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedGender("Laki-laki");
-                    setIsGenderOpen(false);
-                  }}
-                  className={`w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 ${
-                    selectedGender === "Laki-laki" ? "font-bold text-blue-600 bg-blue-50/50 dark:bg-blue-950/20" : "text-slate-700 dark:text-slate-300"
-                  }`}
-                >
-                  👦 Laki-laki
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedGender("Perempuan");
-                    setIsGenderOpen(false);
-                  }}
-                  className={`w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 ${
-                    selectedGender === "Perempuan" ? "font-bold text-pink-600 bg-pink-50/50 dark:bg-pink-950/20" : "text-slate-700 dark:text-slate-300"
-                  }`}
-                >
-                  👧 Perempuan
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedGender("unset");
-                    setIsGenderOpen(false);
-                  }}
-                  className={`w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 ${
-                    selectedGender === "unset" ? "font-bold text-amber-600 bg-amber-50/50 dark:bg-amber-950/20" : "text-slate-700 dark:text-slate-300"
-                  }`}
-                >
-                  ❓ Belum Ada (Kosong)
-                </button>
-              </div>
-            )}
+            </div>
           </div>
         </div>
 
-        {/* Status Dropdown */}
-        <div className="relative" ref={statusDropdownRef}>
-          <button
-            type="button"
-            onClick={() => setIsStatusOpen(!isStatusOpen)}
-            className="flex items-center justify-between w-full rounded-lg border-0 py-2.5 pl-10 pr-3 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white text-left cursor-pointer"
+        {/* Native Status Dropdown */}
+        <div className="relative">
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+            className="appearance-none block w-full rounded-lg border-0 py-2.5 pl-10 pr-10 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 focus:ring-2 focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white font-medium cursor-pointer truncate"
           >
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-              <Icons.filter className="h-5 w-5 text-slate-400" aria-hidden="true" />
-            </span>
-            <span className="truncate text-slate-700 dark:text-slate-300 font-medium">
-              {activeTab === "all" 
-                ? `📋 Semua Siswa (${allCount})`
-                : activeTab === "reguler" 
-                  ? `✅ Reguler (${regulerCount})`
-                  : activeTab === "cg" 
-                    ? `🆓 Coba Gratis (${cgCount})`
-                    : `🚫 Nonaktif (${inactiveCount})`}
-            </span>
-            <svg className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${isStatusOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <option value="all">📋 Semua Siswa ({allCount})</option>
+            <option value="reguler">✅ Reguler ({regulerCount})</option>
+            <option value="cg">🆓 Coba Gratis ({cgCount})</option>
+            <option value="inactive">🚫 Nonaktif ({inactiveCount})</option>
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            <Icons.filter className="h-5 w-5 text-slate-400" aria-hidden="true" />
+          </div>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg className="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
             </svg>
-          </button>
-
-          {isStatusOpen && (
-            <div className="absolute z-50 mt-1.5 w-full rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg max-h-[195px] overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1 duration-100">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab("all");
-                  setIsStatusOpen(false);
-                }}
-                className={`w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-between ${
-                  activeTab === "all" ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20" : "text-slate-700 dark:text-slate-300"
-                }`}
-              >
-                <span className="flex items-center gap-2">📋 Semua Siswa</span>
-                <span className="rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2 text-xs font-semibold text-slate-600 dark:text-slate-400">{allCount}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab("reguler");
-                  setIsStatusOpen(false);
-                }}
-                className={`w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-between ${
-                  activeTab === "reguler" ? "font-bold text-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20" : "text-slate-700 dark:text-slate-300"
-                }`}
-              >
-                <span className="flex items-center gap-2">✅ Reguler</span>
-                <span className="rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2 text-xs font-semibold text-slate-600 dark:text-slate-400">{regulerCount}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab("cg");
-                  setIsStatusOpen(false);
-                }}
-                className={`w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-between ${
-                  activeTab === "cg" ? "font-bold text-amber-600 bg-amber-50/50 dark:bg-amber-950/20" : "text-slate-700 dark:text-slate-300"
-                }`}
-              >
-                <span className="flex items-center gap-2">🆓 Coba Gratis (CG)</span>
-                <span className="rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2 text-xs font-semibold text-slate-600 dark:text-slate-400">{cgCount}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab("inactive");
-                  setIsStatusOpen(false);
-                }}
-                className={`w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-between ${
-                  activeTab === "inactive" ? "font-bold text-red-600 bg-red-50/50 dark:bg-red-950/20" : "text-slate-700 dark:text-slate-300"
-                }`}
-              >
-                <span className="flex items-center gap-2">🚫 Nonaktif</span>
-                <span className="rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 px-2 text-xs font-semibold text-slate-600 dark:text-slate-400">{inactiveCount}</span>
-              </button>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 

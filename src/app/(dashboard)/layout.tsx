@@ -49,6 +49,9 @@ export default async function DashboardLayout({
   return (
     <SidebarProvider>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        {/* Native HTML checkbox for CSS-only sidebar toggle fallback */}
+        <input type="checkbox" id="sidebar-drawer-toggle" className="peer/sidebar hidden" />
+
         <Sidebar 
           userName={userName} 
           branchName={branchName} 

@@ -25,15 +25,10 @@ export function QuickAccessLinks() {
       {isNavigating && <LoadingSpinner usePortal={true} />}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {quickActions.map((action) => (
-          <Link
+          <a
             key={action.name}
             href={action.href}
-            onClick={() => {
-              if (pathname !== action.href) {
-                setIsNavigating(true);
-              }
-            }}
-            className={`relative flex items-center space-x-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1 ${action.borderHover} group`}
+            className={`relative flex items-center space-x-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-all duration-300 hover:shadow-md active:scale-98 ${action.borderHover} group cursor-pointer`}
           >
             <div className={`flex-shrink-0 rounded-xl p-3 ${action.bg} transition-transform duration-300 group-hover:scale-110`}>
               <action.icon className={`h-5 w-5 ${action.color}`} aria-hidden="true" />
@@ -46,7 +41,7 @@ export function QuickAccessLinks() {
                 {action.description}
               </p>
             </div>
-          </Link>
+          </a>
         ))}
       </div>
     </>
