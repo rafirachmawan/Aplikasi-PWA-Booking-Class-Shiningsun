@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createBrowserClient } from "@supabase/ssr";
 import { login } from "@/lib/authActions";
 import { InstallPWAButton } from "@/components/features/auth/InstallPWAButton";
 
@@ -44,13 +45,34 @@ export function LoginForm() {
     }
 
     try {
-      const res = await login(emailVal, passwordVal, rememberMe);
-      if (res && !res.success) {
-        setErrorMsg(res.error || "Gagal masuk. Periksa kembali email dan password Anda.");
-        setIsSubmitting(false);
-        return;
+      // Set remember_me cookie directly on client
+      document.cookie = `remember_me=${rememberMe ? 'true' : 'false'}; path=/; ${rememberMe ? 'max-age=31536000;' : ''} SameSite=Lax`;
+      
+      // Clear stale superadmin branch selection cookie
+      document.cookie = `superadmin_branch_id=; path=/; max-age=0; SameSite=Lax`;
+
+      // Perform client-side login directly on mobile browser to set cookies in document.cookie
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: emailVal,
+        password: passwordVal,
+      });
+
+      if (error) {
+        // Fallback to Server Action login if client login encountered an error
+        const res = await login(emailVal, passwordVal, rememberMe);
+        if (res && !res.success) {
+          setErrorMsg(res.error || error.message || "Gagal masuk. Periksa kembali email dan password Anda.");
+          setIsSubmitting(false);
+          return;
+        }
       }
-      // Hard redirect to ensure mobile browsers commit cookies to storage and send them to /dashboard
+
+      // Hard redirect to dashboard
       window.location.href = "/dashboard";
     } catch (error: any) {
       setErrorMsg(error.message || "Gagal masuk. Periksa kembali email dan password Anda.");
