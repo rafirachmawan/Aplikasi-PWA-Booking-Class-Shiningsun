@@ -44,6 +44,20 @@ export function LoginForm() {
       return;
     }
 
+    const formatAuthError = (msg: string) => {
+      if (!msg) return "Gagal masuk. Periksa kembali email dan password Anda.";
+      if (msg.includes("Invalid login credentials")) {
+        return "Email atau Password yang Anda masukkan salah. Silakan periksa kembali.";
+      }
+      if (msg.includes("Email not confirmed")) {
+        return "Email akun ini belum dikonfirmasi di Supabase.";
+      }
+      if (msg.includes("too many requests") || msg.includes("Rate limit")) {
+        return "Terlalu banyak percobaan login. Silakan tunggu beberapa saat.";
+      }
+      return msg;
+    };
+
     try {
       // Set remember_me cookie directly on client
       document.cookie = `remember_me=${rememberMe ? 'true' : 'false'}; path=/; ${rememberMe ? 'max-age=31536000;' : ''} SameSite=Lax`;
@@ -66,7 +80,7 @@ export function LoginForm() {
         // Fallback to Server Action login if client login encountered an error
         const res = await login(emailVal, passwordVal, rememberMe);
         if (res && !res.success) {
-          setErrorMsg(res.error || error.message || "Gagal masuk. Periksa kembali email dan password Anda.");
+          setErrorMsg(formatAuthError(res.error || error.message));
           setIsSubmitting(false);
           return;
         }
@@ -75,7 +89,7 @@ export function LoginForm() {
       // Hard redirect to dashboard
       window.location.href = "/dashboard";
     } catch (error: any) {
-      setErrorMsg(error.message || "Gagal masuk. Periksa kembali email dan password Anda.");
+      setErrorMsg(formatAuthError(error.message));
       setIsSubmitting(false);
     }
   };
@@ -172,6 +186,30 @@ export function LoginForm() {
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
               </div>
+            </div>
+
+            {/* Quick Account Pill Buttons for instant mobile tap */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-full mb-0.5">Atau ketuk akun cepat:</span>
+              {[
+                { name: "Superadmin", email: "superadmin@shiningsun.com" },
+                { name: "Cabang Ngunut", email: "ngunut@shiningsun.com" },
+                { name: "Cabang Balesono", email: "balesono@shiningsun.com" },
+                { name: "Cabang Gragalan", email: "gragalan@shiningsun.com" }
+              ].map((acc, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setEmail(acc.email)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                    email === acc.email
+                      ? "bg-brand-600 text-white shadow-md shadow-brand-500/30 scale-105"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                  }`}
+                >
+                  {acc.name}
+                </button>
+              ))}
             </div>
 
             {/* Email Input */}
