@@ -71,7 +71,8 @@ export async function updateSession(request: NextRequest) {
     if (
       !user &&
       !request.nextUrl.pathname.startsWith('/login') &&
-      !request.nextUrl.pathname.startsWith('/login-basic')
+      !request.nextUrl.pathname.startsWith('/login-basic') &&
+      !request.nextUrl.pathname.startsWith('/api/clear-cache')
     ) {
       return redirectWithCookies('/login')
     }

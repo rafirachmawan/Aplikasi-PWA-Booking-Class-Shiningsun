@@ -2,7 +2,7 @@
 
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist } from "serwist";
+import { Serwist, NetworkFirst, ExpirationPlugin } from "serwist";
 
 // Declare global types for Serwist Service Worker
 declare global {
@@ -13,12 +13,32 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope & WorkerGlobalScope;
 
+// Override: force NetworkFirst for JS bundles to prevent stale cache on mobile
+const customCache = defaultCache.map((entry: any) => {
+  // Override CacheFirst JS bundles → NetworkFirst
+  if (entry.matcher instanceof RegExp && entry.matcher.source.includes('_next') && entry.matcher.source.includes('js')) {
+    return {
+      ...entry,
+      handler: new NetworkFirst({
+        cacheName: "next-js-assets-nf",
+        plugins: [new ExpirationPlugin({
+          maxEntries: 64,
+          maxAgeSeconds: 24 * 60 * 60, // 1 day max
+          maxAgeFrom: "last-used" as const,
+        })],
+        networkTimeoutSeconds: 10,
+      }),
+    };
+  }
+  return entry;
+});
+
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  runtimeCaching: customCache,
 });
 
 serwist.addEventListeners();
