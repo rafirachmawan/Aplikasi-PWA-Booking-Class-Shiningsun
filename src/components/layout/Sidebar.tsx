@@ -82,11 +82,27 @@ export function Sidebar({
     window.location.href = "/dashboard";
   };
 
-  // Close sidebar on route change on mobile
-  useEffect(() => {
-    close();
-    setIsNavigating(false);
-  }, [pathname, close]);
+  const handleForceClearCache = async (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    setIsNavigating(true);
+    try {
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.unregister();
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      const cleanPath = window.location.pathname;
+      window.location.href = `${cleanPath}?refresh=${Date.now()}`;
+    }
+  };
 
   return (
     <>
@@ -318,14 +334,14 @@ export function Sidebar({
             </div>
           )}
 
-          {/* PWA Update Button */}
-          <div className="px-4 pb-2">
+          {/* PWA Update & Clear Cache Button */}
+          <div className="px-4 pb-2 space-y-1">
             {updateAvailable ? (
               <button
                 type="button"
                 onClick={applyUpdate}
                 disabled={isUpdating}
-                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600 transition-all duration-200 shadow-sm animate-in fade-in slide-in-from-bottom-2"
+                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600 transition-all duration-200 shadow-sm animate-in fade-in slide-in-from-bottom-2 min-h-[44px]"
               >
                 {isUpdating ? (
                   <>
@@ -350,19 +366,17 @@ export function Sidebar({
             ) : (
               <button
                 type="button"
-                onClick={async () => {
-                  const reg = await navigator.serviceWorker?.getRegistration();
-                  await reg?.update();
-                }}
-                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-400 transition-all duration-200"
+                onClick={handleForceClearCache}
+                onTouchEnd={handleForceClearCache}
+                className="group flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-all duration-200 min-h-[44px]"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 2v6h-6"/>
                   <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
                   <path d="M3 22v-6h6"/>
                   <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
                 </svg>
-                Cek Update Aplikasi
+                <span>Bersihkan Cache & Perbarui Versi</span>
               </button>
             )}
           </div>
