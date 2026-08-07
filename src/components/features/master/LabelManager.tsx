@@ -63,9 +63,12 @@ export function LabelManager({ labels, role }: { labels: any[], role?: string | 
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [submitError, setSubmitError] = useState("");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError("");
     try {
       const formData = new FormData();
       formData.append("main_level", mainLevel);
@@ -77,8 +80,8 @@ export function LabelManager({ labels, role }: { labels: any[], role?: string | 
       setMainLevel("");
       setSubLevel("");
       router.refresh();
-    } catch (error) {
-      alert("Gagal menyimpan label.");
+    } catch (error: any) {
+      setSubmitError(error?.message || "Gagal menyimpan label.");
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -178,6 +181,11 @@ export function LabelManager({ labels, role }: { labels: any[], role?: string | 
       
       {isAdding && (
         <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 animate-in slide-in-from-top-2">
+          {submitError && (
+            <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-xs font-semibold text-red-600 dark:text-red-300">
+              ⚠️ {submitError}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

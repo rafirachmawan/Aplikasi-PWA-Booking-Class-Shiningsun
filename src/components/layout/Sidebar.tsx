@@ -82,26 +82,10 @@ export function Sidebar({
     window.location.href = "/dashboard";
   };
 
-  const handleForceClearCache = async (e: React.MouseEvent | React.TouchEvent) => {
+  const handleForceClearCache = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsNavigating(true);
-    try {
-      if ("caches" in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map((k) => caches.delete(k)));
-      }
-      if ("serviceWorker" in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (const reg of registrations) {
-          await reg.unregister();
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      const cleanPath = window.location.pathname;
-      window.location.href = `${cleanPath}?refresh=${Date.now()}`;
-    }
+    window.location.href = "/api/clear-cache";
   };
 
   return (
@@ -364,10 +348,8 @@ export function Sidebar({
                 )}
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={handleForceClearCache}
-                onTouchEnd={handleForceClearCache}
+              <a
+                href="/api/clear-cache"
                 className="group flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-all duration-200 min-h-[44px]"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -377,7 +359,7 @@ export function Sidebar({
                   <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
                 </svg>
                 <span>Bersihkan Cache & Perbarui Versi</span>
-              </button>
+              </a>
             )}
           </div>
 
