@@ -80,6 +80,32 @@ export function LoginForm() {
     }
   };
 
+  const handleResetPWA = async () => {
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let registration of registrations) {
+          await registration.unregister();
+        }
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        for (let key of keys) {
+          await caches.delete(key);
+        }
+      }
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+      alert("Cache PWA dan sesi berhasil dibersihkan. Halaman akan dimuat ulang.");
+      window.location.reload();
+    } catch (err) {
+      window.location.reload();
+    }
+  };
+
   return (
     <div className="relative">
       <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-2xl rounded-[32px] p-6 sm:p-10 shadow-2xl shadow-brand-500/5 ring-1 ring-slate-900/5 dark:ring-white/10">
@@ -90,7 +116,7 @@ export function LoginForm() {
               <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              {errorMsg}
+              <span>{errorMsg}</span>
             </div>
           )}
 
@@ -231,8 +257,15 @@ export function LoginForm() {
             </button>
           </div>
 
-          <div className="pt-2">
+          <div className="pt-2 flex flex-col gap-2">
             <InstallPWAButton />
+            <button
+              type="button"
+              onClick={handleResetPWA}
+              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline text-center transition-colors py-1"
+            >
+              Terjadi masalah di HP ini? Klik untuk Reset Cache Aplikasi
+            </button>
           </div>
         </form>
       </div>
