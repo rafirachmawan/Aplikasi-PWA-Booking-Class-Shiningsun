@@ -35,6 +35,7 @@ export function ChangeLabelModal({
 }: ChangeLabelModalProps) {
   const [selectedLabelId, setSelectedLabelId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalError, setModalError] = useState("");
 
   useEffect(() => {
     if (student) {
@@ -47,12 +48,13 @@ export function ChangeLabelModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setModalError("");
     try {
       await updateStudentLabel(student.id, selectedLabelId || null);
       onSuccess();
       onClose();
     } catch (error: any) {
-      alert("Gagal mengubah level siswa: " + (error?.message || error));
+      setModalError("Gagal mengubah level siswa: " + (error?.message || "Terjadi kesalahan."));
     } finally {
       setIsSubmitting(false);
     }
@@ -83,8 +85,9 @@ export function ChangeLabelModal({
               </h3>
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-500 p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              className="text-slate-400 hover:text-slate-500 p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <Icons.close className="w-4 h-4" />
             </button>
@@ -92,6 +95,12 @@ export function ChangeLabelModal({
 
           {/* Body */}
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
+            {modalError && (
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-xs font-semibold text-red-600 dark:text-red-300">
+                ⚠️ {modalError}
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                 Siswa
@@ -114,7 +123,7 @@ export function ChangeLabelModal({
                 <button
                   type="button"
                   onClick={() => setSelectedLabelId("")}
-                  className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-medium border transition-all ${
+                  className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-medium border transition-all min-h-[44px] ${
                     selectedLabelId === ""
                       ? "border-brand-500 bg-brand-50/70 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300 font-bold ring-1 ring-brand-500"
                       : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -136,7 +145,7 @@ export function ChangeLabelModal({
                       key={lbl.id}
                       type="button"
                       onClick={() => setSelectedLabelId(lbl.id)}
-                      className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-medium border transition-all ${
+                      className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-medium border transition-all min-h-[44px] ${
                         isSelected
                           ? "border-brand-500 bg-brand-50/70 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300 font-bold ring-1 ring-brand-500"
                           : "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -166,14 +175,14 @@ export function ChangeLabelModal({
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="flex-1 py-2.5 px-4 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                className="flex-1 py-3 px-4 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[44px]"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-700 transition-colors shadow-sm disabled:opacity-50"
+                className="flex-1 py-3 px-4 text-xs font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-700 transition-colors shadow-sm disabled:opacity-50 min-h-[44px]"
               >
                 Simpan Level
               </button>

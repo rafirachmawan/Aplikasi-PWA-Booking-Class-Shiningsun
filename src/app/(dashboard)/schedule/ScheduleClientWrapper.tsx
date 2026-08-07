@@ -332,7 +332,7 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
           
           <div className="flex flex-col gap-1.5 flex-1 sm:flex-none order-1 sm:order-2">
             <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1">Bulan</label>
-            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 justify-center h-[42px]">
+            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 justify-center h-[44px]">
               {(() => {
                 const prevM = currentMonth === 1 ? 12 : currentMonth - 1;
                 const prevY = currentMonth === 1 ? currentYear - 1 : currentYear;
@@ -340,11 +340,23 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
                 const nextY = currentMonth === 12 ? currentYear + 1 : currentYear;
                 return (
                   <>
-                    <a href={`/schedule?month=${prevM}&year=${prevY}`} className="text-slate-400 hover:text-brand-600 transition-colors p-1 flex items-center justify-center cursor-pointer font-bold" title="Bulan Sebelumnya">&larr;</a>
-                    <span className="font-semibold text-slate-900 dark:text-white text-sm whitespace-nowrap min-w-[70px] text-center">
+                    <a
+                      href={`/schedule?month=${prevM}&year=${prevY}`}
+                      className="min-w-[44px] h-[36px] flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 transition-all font-bold text-base cursor-pointer"
+                      title="Bulan Sebelumnya"
+                    >
+                      &larr;
+                    </a>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm whitespace-nowrap px-2 text-center select-none">
                       {MONTH_NAMES[currentMonth - 1].substring(0, 3)} {currentYear}
                     </span>
-                    <a href={`/schedule?month=${nextM}&year=${nextY}`} className="text-slate-400 hover:text-brand-600 transition-colors p-1 flex items-center justify-center cursor-pointer font-bold" title="Bulan Berikutnya">&rarr;</a>
+                    <a
+                      href={`/schedule?month=${nextM}&year=${nextY}`}
+                      className="min-w-[44px] h-[36px] flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 transition-all font-bold text-base cursor-pointer"
+                      title="Bulan Berikutnya"
+                    >
+                      &rarr;
+                    </a>
                   </>
                 );
               })()}
@@ -353,22 +365,24 @@ export function ScheduleClientWrapper({ schedules, classes, students, currentMon
 
           <div className="flex flex-col gap-1.5 flex-1 sm:flex-none order-2 sm:order-3">
             <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1">Minggu Ke</label>
-            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 justify-center h-[42px]">
+            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 justify-center h-[44px]">
               <button
+                type="button"
                 onClick={() => setWeekIndex(i => Math.max(0, i - 1))}
                 disabled={weekIndex === 0}
-                className="text-slate-400 hover:text-brand-600 disabled:opacity-30 transition-colors p-1"
+                className="min-w-[44px] h-[36px] flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-base cursor-pointer"
                 title="Minggu Sebelumnya"
               >
                 &larr;
               </button>
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap min-w-[40px] text-center">
+              <span className="text-sm font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap px-2 text-center select-none">
                 {weekIndex + 1} / {weeks.length}
               </span>
               <button
+                type="button"
                 onClick={() => setWeekIndex(i => Math.min(weeks.length - 1, i + 1))}
                 disabled={weekIndex >= weeks.length - 1}
-                className="text-slate-400 hover:text-brand-600 disabled:opacity-30 transition-colors p-1"
+                className="min-w-[44px] h-[36px] flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-base cursor-pointer"
                 title="Minggu Berikutnya"
               >
                 &rarr;

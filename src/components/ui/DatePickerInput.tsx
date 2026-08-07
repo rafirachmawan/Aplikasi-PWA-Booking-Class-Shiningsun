@@ -28,7 +28,7 @@ export function DatePickerInput({
 
   return (
     <div className={`relative inline-flex items-center w-full ${className}`}>
-      <div className="flex items-center justify-between w-full pointer-events-none px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm text-sm">
+      <div className="flex items-center justify-between w-full pointer-events-none px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm text-sm min-h-[44px]">
         <span className={value ? "font-semibold text-slate-800 dark:text-slate-100" : "text-slate-400"}>
           {displayFormatted}
         </span>
@@ -42,7 +42,8 @@ export function DatePickerInput({
         disabled={disabled}
         value={value}
         onChange={onChange}
-        className="absolute inset-0 opacity-0 w-full h-full cursor-pointer disabled:cursor-not-allowed"
+        className="absolute inset-0 opacity-0 w-full h-full cursor-pointer disabled:cursor-not-allowed z-10 touch-manipulation"
+        style={{ WebkitTapHighlightColor: "transparent" }}
       />
     </div>
   );

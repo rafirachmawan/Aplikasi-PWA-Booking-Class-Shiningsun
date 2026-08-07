@@ -126,8 +126,10 @@ export function StudentRegistrationForm({
   const [showWaAutofill, setShowWaAutofill] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [formError, setFormError] = useState("");
+
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
@@ -136,8 +138,10 @@ export function StudentRegistrationForm({
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, []);
 
@@ -210,7 +214,7 @@ export function StudentRegistrationForm({
       onSuccess();
       onClose();
     } catch (error: any) {
-      alert(`Gagal menyimpan data siswa: ${error?.message || "Silakan coba lagi."}`);
+      setFormError(`Gagal menyimpan data siswa: ${error?.message || "Silakan coba lagi."}`);
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -355,6 +359,11 @@ export function StudentRegistrationForm({
 
           {/* Form Body - Scrollable */}
           <div className="p-6 overflow-y-auto flex-1 space-y-6">
+            {formError && (
+              <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-xs font-semibold text-red-600 dark:text-red-300 animate-in fade-in duration-200">
+                ⚠️ {formError}
+              </div>
+            )}
             {/* WhatsApp Auto-Fill Panel */}
             {!initialData && (
               <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">

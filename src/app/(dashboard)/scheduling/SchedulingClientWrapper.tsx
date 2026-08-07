@@ -56,7 +56,7 @@ export function SchedulingClientWrapper({
 
   // Click outside for student dropdown
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (
         studentDropdownRef.current &&
         !studentDropdownRef.current.contains(event.target as Node)
@@ -65,8 +65,10 @@ export function SchedulingClientWrapper({
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, []);
 
@@ -431,27 +433,35 @@ export function SchedulingClientWrapper({
 
         <div className="p-6">
           {/* Month Navigator */}
-          <div className="mb-6 flex items-center justify-between bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-            <button
-              type="button"
-              onClick={() => handleMonthChange(-1)}
-              className="p-2 sm:px-4 sm:py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors flex items-center gap-2 text-sm font-medium"
-            >
-              <Icons.chevronLeft className="w-5 h-5" />{" "}
-              <span className="hidden sm:inline">Bulan Sebelumnya</span>
-            </button>
-            <div className="font-bold text-base sm:text-lg text-slate-800 dark:text-slate-200 text-center px-2">
-              {monthNames[currentMonth - 1]} {currentYear}
-            </div>
-            <button
-              type="button"
-              onClick={() => handleMonthChange(1)}
-              className="p-2 sm:px-4 sm:py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors flex items-center gap-2 text-sm font-medium"
-            >
-              <span className="hidden sm:inline">Bulan Berikutnya</span>{" "}
-              <Icons.chevronRight className="w-5 h-5" />
-            </button>
-          </div>
+          {(() => {
+            const prevM = currentMonth === 1 ? 12 : currentMonth - 1;
+            const prevY = currentMonth === 1 ? currentYear - 1 : currentYear;
+            const nextM = currentMonth === 12 ? 1 : currentMonth + 1;
+            const nextY = currentMonth === 12 ? currentYear + 1 : currentYear;
+            return (
+              <div className="mb-6 flex items-center justify-between bg-white dark:bg-slate-900 p-2 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <a
+                  href={`/scheduling?month=${prevM}&year=${prevY}`}
+                  className="px-3 py-2.5 sm:px-4 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all flex items-center gap-2 text-sm font-medium min-h-[44px] min-w-[44px] justify-center active:bg-slate-200 dark:active:bg-slate-700 cursor-pointer"
+                  title="Bulan Sebelumnya"
+                >
+                  <Icons.chevronLeft className="w-5 h-5 shrink-0" />
+                  <span className="hidden sm:inline">Bulan Sebelumnya</span>
+                </a>
+                <div className="font-bold text-base sm:text-lg text-slate-800 dark:text-slate-200 text-center px-2 select-none">
+                  {monthNames[currentMonth - 1]} {currentYear}
+                </div>
+                <a
+                  href={`/scheduling?month=${nextM}&year=${nextY}`}
+                  className="px-3 py-2.5 sm:px-4 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all flex items-center gap-2 text-sm font-medium min-h-[44px] min-w-[44px] justify-center active:bg-slate-200 dark:active:bg-slate-700 cursor-pointer"
+                  title="Bulan Berikutnya"
+                >
+                  <span className="hidden sm:inline">Bulan Berikutnya</span>
+                  <Icons.chevronRight className="w-5 h-5 shrink-0" />
+                </a>
+              </div>
+            );
+          })()}
 
           {/* Global Student Selector */}
           <div className="mb-8 p-4 bg-brand-50 dark:bg-brand-500/10 rounded-xl border border-brand-100 dark:border-brand-500/20">
@@ -484,10 +494,10 @@ export function SchedulingClientWrapper({
                     setStudentSearchQuery(e.target.value);
                     if (!isOpenStudentDropdown) setIsOpenStudentDropdown(true);
                   }}
-                  className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-10 pr-24 py-3 text-slate-900 dark:text-white text-sm font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all cursor-pointer"
+                  className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-10 pr-24 py-3 text-slate-900 dark:text-white text-sm font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all cursor-pointer min-h-[48px]"
                 />
 
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center gap-2">
+                <div className="absolute inset-y-0 right-0 pr-2 flex items-center gap-1">
                   {selectedStudent && (
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${
@@ -515,7 +525,7 @@ export function SchedulingClientWrapper({
                         setStudentSearchQuery("");
                         setIsOpenStudentDropdown(false);
                       }}
-                      className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded-md transition-colors"
+                      className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded-md transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
                       title="Hapus pilihan"
                     >
                       <Icons.close className="h-4 w-4" />
@@ -527,7 +537,7 @@ export function SchedulingClientWrapper({
                         setIsOpenStudentDropdown(!isOpenStudentDropdown);
                         if (!isOpenStudentDropdown) setStudentSearchQuery("");
                       }}
-                      className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 min-h-[40px] min-w-[40px] flex items-center justify-center"
                     >
                       <svg
                         className={`h-4 w-4 transition-transform duration-200 ${isOpenStudentDropdown ? "rotate-180" : ""}`}
@@ -549,7 +559,7 @@ export function SchedulingClientWrapper({
               {isOpenStudentDropdown && (
                 <div className="absolute z-50 mt-1.5 w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-2 animate-in fade-in slide-in-from-top-1 duration-100">
                   {/* Options List */}
-                  <div className="max-h-[220px] overflow-y-auto space-y-0.5">
+                  <div className="max-h-[220px] overflow-y-auto space-y-1">
                     {filteredStudents.length === 0 ? (
                       <div className="px-3 py-3 text-xs text-slate-400 italic text-center">
                         Siswa tidak ditemukan
@@ -563,7 +573,6 @@ export function SchedulingClientWrapper({
                             key={s.id}
                             type="button"
                             disabled={isInactive}
-                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => {
                               if (!isInactive) {
                                 setStudentId(s.id);
@@ -571,10 +580,10 @@ export function SchedulingClientWrapper({
                                 setIsOpenStudentDropdown(false);
                               }
                             }}
-                            className={`w-full px-3 py-2.5 text-xs text-left rounded-lg transition-colors flex items-center justify-between ${
+                            className={`w-full px-3 py-2.5 text-xs text-left rounded-lg transition-colors flex items-center justify-between min-h-[44px] ${
                               isInactive
                                 ? "opacity-60 cursor-not-allowed bg-slate-50 dark:bg-slate-800/30"
-                                : "hover:bg-brand-50/70 dark:hover:bg-brand-950/40 cursor-pointer " +
+                                : "hover:bg-brand-50/70 dark:hover:bg-brand-950/40 active:bg-brand-100 dark:active:bg-brand-900/60 cursor-pointer " +
                                   (isSelected
                                     ? "font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/30"
                                     : "text-slate-700 dark:text-slate-300")

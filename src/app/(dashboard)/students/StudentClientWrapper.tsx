@@ -25,7 +25,7 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
   const statusDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsLevelOpen(false);
       }
@@ -37,8 +37,10 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, []);
   
@@ -583,8 +585,9 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
 
                 <div className="flex gap-2 relative z-10 border-t border-slate-100 dark:border-slate-800 pt-3 flex-wrap">
                   <button 
+                    type="button"
                     onClick={() => handleToggleActive(person.id, person.name, person.status)}
-                    className={`flex-1 py-2 px-2 text-xs font-semibold rounded-lg transition-colors text-center ring-1 ${
+                    className={`flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg transition-colors text-center ring-1 min-h-[44px] flex items-center justify-center ${
                       person.status === 'INACTIVE' 
                         ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ring-emerald-200/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 dark:ring-emerald-900/30'
                         : 'bg-slate-50 text-slate-700 hover:bg-slate-100 ring-slate-200/50 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:ring-slate-700'
@@ -593,17 +596,19 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                     {person.status === 'INACTIVE' ? 'Aktifkan' : 'Nonaktifkan'}
                   </button>
                   <button 
+                    type="button"
                     onClick={() => {
                       setEditingStudent(person);
                       setIsModalOpen(true);
                     }}
-                    className="flex-1 py-2 px-2 text-xs font-semibold rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20 transition-colors text-center ring-1 ring-brand-200/50 dark:ring-brand-900/30"
+                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20 transition-colors text-center ring-1 ring-brand-200/50 dark:ring-brand-900/30 min-h-[44px] flex items-center justify-center"
                   >
                     Edit
                   </button>
                   <button 
+                    type="button"
                     onClick={() => handleDelete(person.id, person.name)}
-                    className="flex-1 py-2 px-2 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors text-center ring-1 ring-red-200/50 dark:ring-red-900/30"
+                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors text-center ring-1 ring-red-200/50 dark:ring-red-900/30 min-h-[44px] flex items-center justify-center"
                   >
                     Hapus
                   </button>
