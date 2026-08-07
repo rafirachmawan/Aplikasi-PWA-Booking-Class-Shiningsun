@@ -80,30 +80,57 @@ export function LoginForm() {
     }
   };
 
+  const [resetMsg, setResetMsg] = useState("");
+
   const handleResetPWA = async () => {
+    setIsSubmitting(true);
+    setResetMsg("Membersihkan cache dan memori HP...");
+
+    // 1. Unregister Service Workers
     try {
-      if ('serviceWorker' in navigator) {
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
-        for (let registration of registrations) {
-          await registration.unregister();
+        for (const registration of registrations) {
+          await registration.unregister().catch(() => {});
         }
       }
-      if ('caches' in window) {
+    } catch (e) {}
+
+    // 2. Clear Cache Storage
+    try {
+      if (typeof window !== 'undefined' && 'caches' in window) {
         const keys = await caches.keys();
-        for (let key of keys) {
-          await caches.delete(key);
+        for (const key of keys) {
+          await caches.delete(key).catch(() => {});
         }
       }
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c
-          .replace(/^ +/, "")
-          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-      });
-      alert("Cache PWA dan sesi berhasil dibersihkan. Halaman akan dimuat ulang.");
-      window.location.reload();
-    } catch (err) {
-      window.location.reload();
-    }
+    } catch (e) {}
+
+    // 3. Clear LocalStorage & SessionStorage
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+    } catch (e) {}
+
+    // 4. Clear Cookies
+    try {
+      if (typeof document !== 'undefined') {
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/");
+        });
+      }
+    } catch (e) {}
+
+    setResetMsg("Cache berhasil dibersihkan! Memuat ulang...");
+
+    // 5. Hard reload using window.location.href with cache-buster
+    setTimeout(() => {
+      window.location.href = window.location.pathname + "?reset=" + Date.now();
+    }, 400);
   };
 
   return (
@@ -259,10 +286,16 @@ export function LoginForm() {
 
           <div className="pt-2 flex flex-col gap-2">
             <InstallPWAButton />
+            {resetMsg && (
+              <p className="text-xs text-center text-brand-600 dark:text-brand-400 font-medium animate-pulse py-1">
+                {resetMsg}
+              </p>
+            )}
             <button
               type="button"
               onClick={handleResetPWA}
-              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline text-center transition-colors py-1"
+              disabled={isSubmitting}
+              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline text-center transition-colors py-1 disabled:opacity-50"
             >
               Terjadi masalah di HP ini? Klik untuk Reset Cache Aplikasi
             </button>
