@@ -51,11 +51,20 @@ export async function updateSession(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
 
+    // Helper function to create redirect response preserving cookies set during getUser()
+    const redirectWithCookies = (pathname: string) => {
+      const url = request.nextUrl.clone()
+      url.pathname = pathname
+      const response = NextResponse.redirect(url)
+      supabaseResponse.cookies.getAll().forEach((c) => {
+        response.cookies.set(c.name, c.value, c)
+      })
+      return response
+    }
+
     // Redirect root / to /dashboard if logged in, or /login if not logged in
     if (request.nextUrl.pathname === '/') {
-      const url = request.nextUrl.clone()
-      url.pathname = user ? '/dashboard' : '/login'
-      return NextResponse.redirect(url)
+      return redirectWithCookies(user ? '/dashboard' : '/login')
     }
 
     // Protect Dashboard and private routes
@@ -63,16 +72,12 @@ export async function updateSession(request: NextRequest) {
       !user &&
       !request.nextUrl.pathname.startsWith('/login')
     ) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      return NextResponse.redirect(url)
+      return redirectWithCookies('/login')
     }
 
     // Redirect to dashboard if logged in and trying to access /login
     if (user && request.nextUrl.pathname.startsWith('/login')) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
-      return NextResponse.redirect(url)
+      return redirectWithCookies('/dashboard')
     }
 
     return supabaseResponse

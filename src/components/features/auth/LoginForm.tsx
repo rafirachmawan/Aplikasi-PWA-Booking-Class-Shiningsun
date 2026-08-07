@@ -1,47 +1,35 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { login } from "@/lib/authActions";
-import { Icons } from "@/components/ui/icons";
 import { InstallPWAButton } from "@/components/features/auth/InstallPWAButton";
 
 const QUICK_ACCOUNTS = [
   { label: "Pilih Akun Cepat...", email: "" },
-  { label: "Superadmin", email: "superadmin@shiningsun.com" },
-  { label: "Cabang Ngunut", email: "ngunut@shiningsun.com" },
-  { label: "Cabang Balesono", email: "balesono@shiningsun.com" },
-  { label: "Cabang Gragalan", email: "gragalan@shiningsun.com" }
+  { label: "Superadmin — superadmin@shiningsun.com", email: "superadmin@shiningsun.com" },
+  { label: "Cabang Ngunut — ngunut@shiningsun.com", email: "ngunut@shiningsun.com" },
+  { label: "Cabang Balesono — balesono@shiningsun.com", email: "balesono@shiningsun.com" },
+  { label: "Cabang Gragalan — gragalan@shiningsun.com", email: "gragalan@shiningsun.com" }
 ];
 
 export function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const selectRef = useRef<HTMLSelectElement>(null);
-  const emailInputRef = useRef<HTMLInputElement>(null);
 
-  // Fix iOS Safari form restoration bug:
-  // Safari sometimes restores <select> to a previously chosen value after
-  // a page reload WITHOUT firing the onChange event, so React state stays ""
-  // while the dropdown visually shows an account. We detect & sync this on mount.
-  useEffect(() => {
-    const sel = selectRef.current;
-    if (sel && sel.value !== "") {
-      setEmail(sel.value);
-    }
-  }, []);
+  // Compute selected quick account value (defaults to "" if manual email typed)
+  const selectedQuickAccount = QUICK_ACCOUNTS.some(acc => acc.email === email && acc.email !== "") ? email : "";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMsg("");
 
-    // Prioritize reading from the actual DOM input (handles iOS Safari state sync issues)
-    const emailVal = emailInputRef.current?.value?.trim() || email.trim();
-    const formData = new FormData(e.currentTarget);
-    const passwordVal = formData.get("password") as string;
+    const emailVal = email.trim();
+    const passwordVal = password;
 
     if (!emailVal) {
       setErrorMsg("Alamat email tidak boleh kosong. Silakan pilih akun atau isi email secara manual.");
@@ -49,9 +37,15 @@ export function LoginForm() {
       return;
     }
 
+    if (!passwordVal) {
+      setErrorMsg("Kata sandi tidak boleh kosong.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await login(emailVal, passwordVal, rememberMe);
-      // login action will redirect on success, so we just wait
+      // login action will redirect on success
     } catch (error: any) {
       setErrorMsg(error.message || "Gagal masuk. Periksa kembali email dan password Anda.");
       setIsSubmitting(false);
@@ -60,7 +54,6 @@ export function LoginForm() {
 
   return (
     <div className="relative">
-      {/* Optional: Subtle backdrop blur container for dark mode to give glassmorphism feel */}
       <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-2xl rounded-[32px] p-6 sm:p-10 shadow-2xl shadow-brand-500/5 ring-1 ring-slate-900/5 dark:ring-white/10">
         
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -79,27 +72,17 @@ export function LoginForm() {
               <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500"></div>
               <div className="relative bg-slate-50 dark:bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500">
                 <select
-                  ref={selectRef}
+                  value={selectedQuickAccount}
                   onChange={(e) => {
                     const val = e.target.value;
-                    setEmail(val);
-                    // Manually update the email input for iOS Safari compatibility
-                    if (emailInputRef.current) {
-                      // Use nativeInputValueSetter to trigger React's synthetic event
-                      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-                      if (nativeSetter) {
-                        nativeSetter.call(emailInputRef.current, val);
-                        emailInputRef.current.dispatchEvent(new Event('input', { bubbles: true }));
-                      } else {
-                        emailInputRef.current.value = val;
-                      }
+                    if (val) {
+                      setEmail(val);
                     }
                   }}
-                  value={email}
-                  className="block w-full appearance-none bg-transparent px-5 py-4 text-sm text-slate-900 dark:text-white focus:outline-none cursor-pointer"
+                  className="block w-full appearance-none bg-transparent px-5 py-4 text-sm text-slate-900 dark:text-white focus:outline-none cursor-pointer truncate pr-10"
                 >
                   {QUICK_ACCOUNTS.map((acc, idx) => (
-                    <option key={idx} value={acc.email} className="bg-white dark:bg-slate-900">
+                    <option key={idx} value={acc.email} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
                       {acc.label}
                     </option>
                   ))}
@@ -115,7 +98,6 @@ export function LoginForm() {
               <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500"></div>
               <div className="relative bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900">
                 <input
-                  ref={emailInputRef}
                   id="email"
                   name="email"
                   type="email"
@@ -148,6 +130,8 @@ export function LoginForm() {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="peer block w-full bg-transparent pl-5 pr-12 pt-6 pb-2 text-sm text-slate-900 dark:text-white focus:outline-none placeholder-transparent"
                   placeholder="••••••••"
                 />
