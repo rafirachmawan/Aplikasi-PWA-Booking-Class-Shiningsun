@@ -10,7 +10,7 @@ const inter = Inter({
 import type { Viewport } from "next";
 
 export const viewport: Viewport = {
-  themeColor: "#2563eb",
+  themeColor: "#0A0F1C",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     title: "ShiningSun",
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     capable: true,
   },
 };

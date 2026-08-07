@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Aplikasi Penjadwalan dan Booking Kelas ShiningSun',
     start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#2563eb',
+    background_color: '#0A0F1C',
+    theme_color: '#0A0F1C',
     icons: [
       {
         src: '/logo.png',

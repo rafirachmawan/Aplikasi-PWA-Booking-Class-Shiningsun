@@ -6,11 +6,11 @@ import { login } from "@/lib/authActions";
 import { InstallPWAButton } from "@/components/features/auth/InstallPWAButton";
 
 const QUICK_ACCOUNTS = [
-  { label: "Pilih Akun Cepat...", email: "" },
-  { label: "Superadmin — superadmin@shiningsun.com", email: "superadmin@shiningsun.com" },
-  { label: "Cabang Ngunut — ngunut@shiningsun.com", email: "ngunut@shiningsun.com" },
-  { label: "Cabang Balesono — balesono@shiningsun.com", email: "balesono@shiningsun.com" },
-  { label: "Cabang Gragalan — gragalan@shiningsun.com", email: "gragalan@shiningsun.com" }
+  { label: "-- Pilih Akun Cepat --", email: "" },
+  { label: "Superadmin", email: "superadmin@shiningsun.com" },
+  { label: "Cabang Ngunut", email: "ngunut@shiningsun.com" },
+  { label: "Cabang Balesono", email: "balesono@shiningsun.com" },
+  { label: "Cabang Gragalan", email: "gragalan@shiningsun.com" }
 ];
 
 export function LoginForm() {
@@ -149,73 +149,67 @@ export function LoginForm() {
 
   return (
     <div className="relative">
-      <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-2xl rounded-[32px] p-6 sm:p-10 shadow-2xl shadow-brand-500/5 ring-1 ring-slate-900/5 dark:ring-white/10">
+      <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl p-5 sm:p-8 shadow-2xl shadow-brand-500/5 ring-1 ring-slate-900/5 dark:ring-white/10">
         
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Error Message */}
           {errorMsg && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 p-4 rounded-2xl text-sm font-medium flex gap-3 animate-in fade-in zoom-in-95">
-              <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 p-3.5 rounded-2xl text-[13px] font-medium flex gap-2.5 animate-in fade-in zoom-in-95">
+              <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <span>{errorMsg}</span>
             </div>
           )}
 
-          <div className="space-y-5">
+          <div className="space-y-4">
             {/* Quick Account Dropdown */}
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500 pointer-events-none"></div>
-              <div className="relative bg-slate-50 dark:bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500">
-                <select
-                  value={selectedQuickAccount}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val) {
-                      setEmail(val);
-                    }
-                  }}
-                  className="block w-full appearance-none bg-transparent px-5 py-4 text-sm text-slate-900 dark:text-white focus:outline-none cursor-pointer truncate pr-10"
-                >
-                  {QUICK_ACCOUNTS.map((acc, idx) => (
-                    <option key={idx} value={acc.email} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                      {acc.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            <div>
+              <label 
+                htmlFor="quick-account-select" 
+                className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5"
+              >
+                Pilih Akun Cepat
+              </label>
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-20 transition duration-500 pointer-events-none"></div>
+                <div className="relative flex items-center bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/60 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900 min-h-[48px]">
+                  <div className="pl-3.5 pr-1 text-slate-400 dark:text-slate-500 shrink-0 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </div>
+                  <select
+                    id="quick-account-select"
+                    value={selectedQuickAccount}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val) {
+                        setEmail(val);
+                      }
+                    }}
+                    className="block w-full appearance-none bg-transparent py-3 pl-2 pr-10 text-sm font-medium text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer truncate"
+                  >
+                    {QUICK_ACCOUNTS.map((acc, idx) => (
+                      <option key={idx} value={acc.email} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white py-2">
+                        {acc.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Quick Account Pill Buttons for instant mobile tap */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-full mb-0.5">Atau ketuk akun cepat:</span>
-              {[
-                { name: "Superadmin", email: "superadmin@shiningsun.com" },
-                { name: "Cabang Ngunut", email: "ngunut@shiningsun.com" },
-                { name: "Cabang Balesono", email: "balesono@shiningsun.com" },
-                { name: "Cabang Gragalan", email: "gragalan@shiningsun.com" }
-              ].map((acc, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setEmail(acc.email)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                    email === acc.email
-                      ? "bg-brand-600 text-white shadow-md shadow-brand-500/30 scale-105"
-                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                  }`}
-                >
-                  {acc.name}
-                </button>
-              ))}
-            </div>
-
             {/* Email Input */}
             <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500 pointer-events-none"></div>
-              <div className="relative bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-15 transition duration-500 pointer-events-none"></div>
+              <div className="relative bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900">
                 <input
                   id="email"
                   name="email"
@@ -227,12 +221,12 @@ export function LoginForm() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="peer block w-full bg-transparent px-5 pt-6 pb-2 text-sm text-slate-900 dark:text-white focus:outline-none placeholder-transparent"
+                  className="peer block w-full bg-transparent px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white focus:outline-none placeholder-transparent"
                   placeholder="admin@shiningsun.com"
                 />
                 <label 
                   htmlFor="email" 
-                  className="absolute left-5 top-2 text-slate-400 text-xs font-medium transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-4 peer-focus:text-xs peer-focus:top-2 peer-focus:text-brand-500 dark:peer-focus:text-brand-400 pointer-events-none"
+                  className="absolute left-4 top-1.5 text-slate-400 text-[11px] font-medium transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3.5 peer-focus:text-[11px] peer-focus:top-1.5 peer-focus:text-brand-500 dark:peer-focus:text-brand-400 pointer-events-none"
                 >
                   Alamat Email
                 </label>
@@ -241,8 +235,8 @@ export function LoginForm() {
 
             {/* Password Input */}
             <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500 pointer-events-none"></div>
-              <div className="relative bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-15 transition duration-500 pointer-events-none"></div>
+              <div className="relative bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900">
                 <input
                   id="password"
                   name="password"
@@ -251,19 +245,19 @@ export function LoginForm() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="peer block w-full bg-transparent pl-5 pr-12 pt-6 pb-2 text-sm text-slate-900 dark:text-white focus:outline-none placeholder-transparent"
+                  className="peer block w-full bg-transparent pl-4 pr-12 pt-5 pb-2 text-sm text-slate-900 dark:text-white focus:outline-none placeholder-transparent"
                   placeholder="••••••••"
                 />
                 <label 
                   htmlFor="password" 
-                  className="absolute left-5 top-2 text-slate-400 text-xs font-medium transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-4 peer-focus:text-xs peer-focus:top-2 peer-focus:text-brand-500 dark:peer-focus:text-brand-400 pointer-events-none"
+                  className="absolute left-4 top-1.5 text-slate-400 text-[11px] font-medium transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3.5 peer-focus:text-[11px] peer-focus:top-1.5 peer-focus:text-brand-500 dark:peer-focus:text-brand-400 pointer-events-none"
                 >
                   Password
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 transition-colors rounded-xl"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 transition-colors rounded-lg min-h-[40px] min-w-[40px] flex items-center justify-center"
                 >
                   {showPassword ? (
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -281,7 +275,7 @@ export function LoginForm() {
 
             {/* Remember Me Checkbox */}
             <div className="flex items-center">
-              <label className="flex items-center gap-2 cursor-pointer group">
+              <label className="flex items-center gap-2.5 cursor-pointer group">
                 <input 
                   type="checkbox" 
                   name="rememberMe"
@@ -296,36 +290,36 @@ export function LoginForm() {
             </div>
           </div>
 
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="relative w-full group overflow-hidden rounded-2xl bg-brand-600 px-4 py-4 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0"
-            >
-              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-brand-400 via-brand-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-              <span className="relative flex items-center justify-center gap-2">
-                {isSubmitting ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Memproses...
-                  </>
-                ) : (
-                  <>
-                    Masuk ke Dashboard
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-1 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                  </>
-                )}
-              </span>
-            </button>
-          </div>
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="relative w-full group overflow-hidden rounded-xl bg-brand-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 min-h-[48px]"
+          >
+            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-brand-400 via-brand-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+            <span className="relative flex items-center justify-center gap-2">
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  Masuk ke Dashboard
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-1 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </>
+              )}
+            </span>
+          </button>
 
-          <div className="pt-2 flex flex-col gap-2">
+          {/* Footer: Install PWA + Reset Cache */}
+          <div className="flex flex-col items-center gap-2 pt-1">
             <InstallPWAButton />
             {resetMsg && (
-              <p className="text-xs text-center text-brand-600 dark:text-brand-400 font-medium animate-pulse py-1">
+              <p className="text-xs text-center text-brand-600 dark:text-brand-400 font-medium animate-pulse py-0.5">
                 {resetMsg}
               </p>
             )}
@@ -333,7 +327,7 @@ export function LoginForm() {
               type="button"
               onClick={handleResetPWA}
               disabled={isSubmitting}
-              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline text-center transition-colors py-1 disabled:opacity-50"
+              className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline text-center transition-colors py-1 disabled:opacity-50"
             >
               Terjadi masalah di HP ini? Klik untuk Reset Cache Aplikasi
             </button>

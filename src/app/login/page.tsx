@@ -80,19 +80,19 @@ export default function LoginPage() {
           <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-30 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
         </div>
 
-        <div className="mx-auto w-full max-w-[420px] relative z-10 mt-16 lg:mt-0">
+        <div className="mx-auto w-full max-w-[400px] relative z-10 mt-10 lg:mt-0">
           
           {/* Mobile Logo & Welcome (hidden on desktop) */}
-          <div className="flex flex-col items-center mb-10 lg:hidden text-center -mt-24">
-            <div className="h-20 w-20 bg-white/10 backdrop-blur-xl rounded-[24px] flex items-center justify-center shadow-2xl border border-white/20 mb-6">
-              <Image src="/logo.png" alt="ShiningSun Logo" width={48} height={48} className="object-contain" priority />
+          <div className="flex flex-col items-center mb-8 lg:hidden text-center -mt-20">
+            <div className="h-16 w-16 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-2xl border border-white/20 mb-4">
+              <Image src="/logo.png" alt="ShiningSun Logo" width={40} height={40} className="object-contain" priority />
             </div>
-            <h2 className="text-3xl font-extrabold text-white tracking-tight drop-shadow-md">ShiningSun</h2>
-            <p className="mt-3 text-brand-100/90 text-sm font-medium max-w-[300px]">Sistem Penjadwalan Cerdas & Elegan</p>
+            <h2 className="text-2xl font-extrabold text-white tracking-tight drop-shadow-md">ShiningSun</h2>
+            <p className="mt-2 text-brand-100/90 text-sm font-medium max-w-[280px]">Sistem Penjadwalan Cerdas & Elegan</p>
           </div>
 
           {/* Desktop heading */}
-          <div className="hidden lg:block mb-10 animate-in fade-in slide-in-from-right-8 duration-700 delay-200">
+          <div className="hidden lg:block mb-8 animate-in fade-in slide-in-from-right-8 duration-700 delay-200">
             <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Selamat Datang</h2>
             <p className="mt-2 text-base text-slate-500 dark:text-slate-400">Silakan masuk ke akun manajemen Anda</p>
           </div>
@@ -113,8 +113,8 @@ export default function LoginPage() {
             </div>
           </noscript>
           
-          <div style={{ textAlign: 'center', marginTop: '12px' }}>
-            <a href="/login-basic" style={{ fontSize: '11px', color: '#94a3b8', textDecoration: 'underline' }}>
+          <div className="text-center mt-3">
+            <a href="/login-basic" className="text-[11px] text-slate-400 hover:text-slate-500 underline transition-colors">
               Tidak bisa login? Coba halaman Login Kompatibel
             </a>
           </div>
