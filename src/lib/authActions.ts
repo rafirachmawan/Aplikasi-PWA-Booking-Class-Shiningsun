@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 
 export async function login(email: string, password: string, rememberMe: boolean = true) {
@@ -22,14 +21,13 @@ export async function login(email: string, password: string, rememberMe: boolean
   });
 
   if (error) {
-    throw new Error(error.message);
+    return { success: false, error: error.message };
   }
 
   // Clear any stale branch selection so superadmin starts fresh
   cookieStore.delete('superadmin_branch_id');
 
-  // Redirect to dashboard on success
-  redirect('/dashboard');
+  return { success: true };
 }
 
 export async function logout() {
@@ -41,5 +39,5 @@ export async function logout() {
   cookieStore.delete('remember_me');
   
   await supabase.auth.signOut();
-  redirect('/login');
+  return { success: true };
 }

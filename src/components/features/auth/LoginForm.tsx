@@ -44,8 +44,14 @@ export function LoginForm() {
     }
 
     try {
-      await login(emailVal, passwordVal, rememberMe);
-      // login action will redirect on success
+      const res = await login(emailVal, passwordVal, rememberMe);
+      if (res && !res.success) {
+        setErrorMsg(res.error || "Gagal masuk. Periksa kembali email dan password Anda.");
+        setIsSubmitting(false);
+        return;
+      }
+      // Hard redirect to ensure mobile browsers commit cookies to storage and send them to /dashboard
+      window.location.href = "/dashboard";
     } catch (error: any) {
       setErrorMsg(error.message || "Gagal masuk. Periksa kembali email dan password Anda.");
       setIsSubmitting(false);

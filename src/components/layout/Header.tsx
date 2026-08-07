@@ -22,6 +22,7 @@ export function Header({ role, branchName }: HeaderProps) {
     try {
       const { logout } = await import('@/lib/authActions');
       await logout();
+      window.location.href = "/login";
     } catch (error) {
       console.error("Logout failed", error);
       setIsLoggingOut(false);
