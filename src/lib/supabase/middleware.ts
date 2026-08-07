@@ -70,13 +70,14 @@ export async function updateSession(request: NextRequest) {
     // Protect Dashboard and private routes
     if (
       !user &&
-      !request.nextUrl.pathname.startsWith('/login')
+      !request.nextUrl.pathname.startsWith('/login') &&
+      !request.nextUrl.pathname.startsWith('/login-basic')
     ) {
       return redirectWithCookies('/login')
     }
 
     // Redirect to dashboard if logged in and trying to access /login
-    if (user && request.nextUrl.pathname.startsWith('/login')) {
+    if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/login-basic'))) {
       return redirectWithCookies('/dashboard')
     }
 

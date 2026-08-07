@@ -100,6 +100,24 @@ export default function LoginPage() {
           <div className="animate-in fade-in slide-in-from-bottom-8 lg:slide-in-from-right-8 duration-700 delay-300">
             <LoginForm />
           </div>
+
+          {/* Fallback for devices where JavaScript/React doesn't work */}
+          <noscript>
+            <div style={{ textAlign: 'center', marginTop: '16px', padding: '12px', background: '#fef3c7', borderRadius: '12px', border: '1px solid #fde68a' }}>
+              <p style={{ fontSize: '13px', color: '#92400e', fontWeight: 600, margin: '0 0 8px 0' }}>
+                JavaScript tidak aktif di browser ini.
+              </p>
+              <a href="/login-basic" style={{ fontSize: '14px', color: '#d97706', fontWeight: 700, textDecoration: 'underline' }}>
+                Klik di sini untuk Login Kompatibel
+              </a>
+            </div>
+          </noscript>
+          
+          <div style={{ textAlign: 'center', marginTop: '12px' }}>
+            <a href="/login-basic" style={{ fontSize: '11px', color: '#94a3b8', textDecoration: 'underline' }}>
+              Tidak bisa login? Coba halaman Login Kompatibel
+            </a>
+          </div>
           
         </div>
       </div>
