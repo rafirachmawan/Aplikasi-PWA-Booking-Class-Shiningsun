@@ -301,6 +301,79 @@ export async function getLabels() {
   return data;
 }
 
+const DAYS_INDONESIAN = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+const DAY_ORDER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
+
+export async function getStudentScheduleMap(studentIds: string[]): Promise<Record<string, string>> {
+  if (!studentIds || studentIds.length === 0) return {};
+  try {
+    const supabaseServer = await createClient();
+
+    // Query bookings for these students
+    const { data: bookings } = await supabaseServer
+      .from('schedule_student')
+      .select(`
+        student_id,
+        slot:schedule_slots!inner(
+          date, time
+        )
+      `)
+      .in('student_id', studentIds);
+
+    const scheduleMap: Record<string, string> = {};
+
+    if (bookings && bookings.length > 0) {
+      const studentSlotsMap: Record<string, Map<string, string>> = {};
+
+      for (const b of bookings) {
+        const slot = Array.isArray(b.slot) ? b.slot[0] : b.slot;
+        if (!slot || !(slot as any).date) continue;
+        const sId = b.student_id;
+        if (!studentSlotsMap[sId]) {
+          studentSlotsMap[sId] = new Map();
+        }
+
+        const slotDate = (slot as any).date as string;
+        const slotTime = (slot as any).time as string;
+
+        const parts = slotDate.split('-');
+        if (parts.length === 3) {
+          const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          const dayName = DAYS_INDONESIAN[d.getDay()];
+          const timeStr = slotTime ? slotTime.substring(0, 5) : '';
+          if (!studentSlotsMap[sId].has(dayName)) {
+            studentSlotsMap[sId].set(dayName, timeStr);
+          }
+        }
+      }
+
+      for (const [sId, map] of Object.entries(studentSlotsMap)) {
+        const sortedDays = Array.from(map.keys()).sort(
+          (a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b)
+        );
+        if (sortedDays.length === 0) continue;
+
+        // Clean day summary: "Senin, Rabu, Jumat" or "Senin & Rabu"
+        let daysText = "";
+        if (sortedDays.length === 1) {
+          daysText = sortedDays[0];
+        } else if (sortedDays.length === 2) {
+          daysText = `${sortedDays[0]} & ${sortedDays[1]}`;
+        } else {
+          daysText = sortedDays.join(", ");
+        }
+
+        scheduleMap[sId] = daysText;
+      }
+    }
+
+    return scheduleMap;
+  } catch (err) {
+    console.warn("Notice fetching schedule map:", err);
+    return {};
+  }
+}
+
 export async function getStudents() {
   const supabaseServer = await createClient();
   const branchId = await getBranchId();
@@ -321,7 +394,17 @@ export async function getStudents() {
     console.error("Error fetching students:", error);
     return [];
   }
-  return data;
+
+  if (data && data.length > 0) {
+    const studentIds = data.map(s => s.id);
+    const scheduleMap = await getStudentScheduleMap(studentIds);
+    return data.map(s => ({
+      ...s,
+      schedule: scheduleMap[s.id] || null,
+    }));
+  }
+
+  return data || [];
 }
 
 export async function createStudent(formData: FormData) {
@@ -1267,4 +1350,355 @@ export async function changeUserPassword(userId: string, newPassword: string) {
   if (authError) throw new Error("Gagal mengganti password di server: " + authError.message);
   return true;
 }
+
+// =========================================
+// LEMBAR KERJA SISWA & PORTAL ORANG TUA ACTIONS
+// =========================================
+
+export async function getWorksheetsByBranch() {
+  try {
+    const branchId = await getBranchId();
+    if (!branchId) return [];
+
+    const supabaseServer = await createClient();
+    let query = supabaseServer
+      .from('student_worksheets')
+      .select(`
+        *,
+        student:students(id, name, nickname, status, label:labels(main_level, sub_level, hex_color))
+      `)
+      .order('worksheet_date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (branchId !== 'ALL') {
+      query = query.eq('branch_id', branchId);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.warn("Notice fetching worksheets (Pastikan SQL Migration sudah dijalankan):", error.message || error);
+      return [];
+    }
+
+    if (data && data.length > 0) {
+      const studentIds = Array.from(new Set(data.map(w => w.student_id).filter(Boolean)));
+      const scheduleMap = await getStudentScheduleMap(studentIds);
+      return data.map(w => {
+        if (w.student) {
+          return {
+            ...w,
+            student: {
+              ...w.student,
+              schedule: scheduleMap[w.student_id] || null,
+            }
+          };
+        }
+        return w;
+      });
+    }
+
+    return data || [];
+  } catch (err: any) {
+    console.warn("Exception fetching worksheets:", err?.message || err);
+    return [];
+  }
+}
+
+export async function getWorksheetsByStudent(studentId: string) {
+  try {
+    const supabaseServer = await createClient();
+    const { data, error } = await supabaseServer
+      .from('student_worksheets')
+      .select('*')
+      .eq('student_id', studentId)
+      .order('worksheet_date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn("Notice fetching student worksheets:", error.message || error);
+      return [];
+    }
+    return data || [];
+  } catch (err: any) {
+    console.warn("Exception fetching student worksheets:", err?.message || err);
+    return [];
+  }
+}
+
+export async function createWorksheet(formData: FormData) {
+  const student_id = formData.get('student_id') as string;
+  const title = formData.get('title') as string;
+  const description = formData.get('description') as string || '';
+  const worksheet_date = formData.get('worksheet_date') as string || getTodayISO();
+  const gdrive_link = formData.get('gdrive_link') as string || '';
+  const materi = formData.get('materi') as string || '';
+  const kegiatan = formData.get('kegiatan') as string || '';
+  const hasil_belajar = formData.get('hasil_belajar') as string || '';
+  const catatan_guru = formData.get('catatan_guru') as string || '';
+  const ttd_guru = formData.get('ttd_guru') as string || '';
+  const bulan_ke = formData.get('bulan_ke') ? parseInt(formData.get('bulan_ke') as string, 10) : null;
+
+  if (!student_id || !title) {
+    throw new Error("Siswa dan Judul Lembar Kerja wajib diisi.");
+  }
+
+  const branchId = await getBranchId();
+  const supabaseServer = await createClient();
+
+  const { error } = await supabaseServer
+    .from('student_worksheets')
+    .insert({
+      student_id,
+      branch_id: branchId === 'ALL' ? null : branchId,
+      title,
+      description,
+      worksheet_date,
+      gdrive_link,
+      materi,
+      kegiatan,
+      hasil_belajar,
+      catatan_guru,
+      ttd_guru,
+      bulan_ke,
+    });
+
+  if (error) {
+    if (error.code === '42P01' || error.message.includes('relation "public.student_worksheets" does not exist')) {
+      throw new Error("Tabel 'student_worksheets' belum dibuat di Supabase. Silakan jalankan SQL di Supabase SQL Editor.");
+    }
+    if (error.message.includes("schema cache") || error.message.includes("Could not find the")) {
+      throw new Error("Kolom baru belum ditambahkan di database Supabase! Silakan eksekusi query migrasi di file 'supabase/student_worksheets.sql' pada Supabase SQL Editor.");
+    }
+    throw new Error(error.message);
+  }
+
+  return true;
+}
+
+export async function updateWorksheet(id: string, formData: FormData) {
+  const title = formData.get('title') as string;
+  const description = formData.get('description') as string || '';
+  const worksheet_date = formData.get('worksheet_date') as string;
+  const gdrive_link = formData.get('gdrive_link') as string || '';
+  const materi = formData.get('materi') as string || '';
+  const kegiatan = formData.get('kegiatan') as string || '';
+  const hasil_belajar = formData.get('hasil_belajar') as string || '';
+  const catatan_guru = formData.get('catatan_guru') as string || '';
+  const ttd_guru = formData.get('ttd_guru') as string || '';
+  const bulan_ke = formData.get('bulan_ke') ? parseInt(formData.get('bulan_ke') as string, 10) : null;
+
+  if (!title) {
+    throw new Error("Judul Lembar Kerja wajib diisi.");
+  }
+
+  const supabaseServer = await createClient();
+  const updatePayload: any = {
+    title,
+    description,
+    gdrive_link,
+    materi,
+    kegiatan,
+    hasil_belajar,
+    catatan_guru,
+    ttd_guru,
+    bulan_ke,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (worksheet_date) {
+    updatePayload.worksheet_date = worksheet_date;
+  }
+
+  const { error } = await supabaseServer
+    .from('student_worksheets')
+    .update(updatePayload)
+    .eq('id', id);
+
+  if (error) {
+    if (error.message.includes("schema cache") || error.message.includes("Could not find the")) {
+      throw new Error("Kolom baru belum ditambahkan di database Supabase! Silakan eksekusi query migrasi di file 'supabase/student_worksheets.sql' pada Supabase SQL Editor.");
+    }
+    throw new Error(error.message);
+  }
+
+  return true;
+}
+
+export async function deleteWorksheet(id: string) {
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer
+    .from('student_worksheets')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error("Error deleting worksheet:", error);
+    throw new Error("Gagal menghapus lembar kerja: " + error.message);
+  }
+
+  return true;
+}
+
+export async function updateStudentAccessPin(studentId: string, newPin: string) {
+  if (!newPin || newPin.trim().length < 4) {
+    throw new Error("PIN Akses minimal 4 karakter.");
+  }
+
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer
+    .from('students')
+    .update({ access_pin: newPin.trim() })
+    .eq('id', studentId);
+
+  if (error) {
+    console.error("Error updating access pin:", error);
+    throw new Error("Gagal mengubah PIN Akses: " + error.message);
+  }
+
+  return true;
+}
+
+export async function verifyParentAccess(studentNameOrSearch: string, pin: string) {
+  if (!studentNameOrSearch || !pin) {
+    throw new Error("Nama Siswa dan PIN Akses wajib diisi.");
+  }
+
+  const cleanSearch = studentNameOrSearch.trim().toLowerCase();
+  const cleanPin = pin.trim();
+
+  const supabaseServer = await createClient();
+  
+  // Search student by name or nickname
+  const { data: students, error } = await supabaseServer
+    .from('students')
+    .select(`
+      id, name, nickname, gender, date_of_birth, status, registration_date, access_pin,
+      branch:branches(name),
+      label:labels(main_level, sub_level, hex_color)
+    `);
+
+  if (error || !students || students.length === 0) {
+    throw new Error("Data siswa tidak ditemukan. Mohon periksa kembali nama yang dimasukkan.");
+  }
+
+  // Filter student matching search and pin
+  const matchedStudent = students.find(s => {
+    const nameMatch = s.name.toLowerCase().includes(cleanSearch) || 
+                      (s.nickname && s.nickname.toLowerCase().includes(cleanSearch)) ||
+                      s.id === cleanSearch;
+    const pinMatch = (s.access_pin || '123456') === cleanPin;
+    return nameMatch && pinMatch;
+  });
+
+  if (!matchedStudent) {
+    throw new Error("Nama siswa atau PIN Akses salah. Silakan coba lagi.");
+  }
+
+  // Set session cookie for Parent Portal (valid for 7 days)
+  const cookieStore = await cookies();
+  cookieStore.set('parent_student_id', matchedStudent.id, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    sameSite: 'lax',
+  });
+
+  // Exclude access_pin from returned student object
+  const { access_pin, ...safeStudent } = matchedStudent;
+  return safeStudent;
+}
+
+export async function getParentSessionStudent() {
+  const cookieStore = await cookies();
+  const studentId = cookieStore.get('parent_student_id')?.value;
+  if (!studentId) return null;
+
+  const supabaseServer = await createClient();
+  const { data: student, error } = await supabaseServer
+    .from('students')
+    .select(`
+      id, name, nickname, gender, date_of_birth, status, registration_date,
+      branch:branches(name),
+      label:labels(main_level, sub_level, hex_color)
+    `)
+    .eq('id', studentId)
+    .single();
+
+  if (error || !student) return null;
+  const scheduleMap = await getStudentScheduleMap([student.id]);
+  return {
+    ...student,
+    schedule: scheduleMap[student.id] || null,
+  };
+}
+
+export async function clearParentSession() {
+  const cookieStore = await cookies();
+  cookieStore.delete('parent_student_id');
+  return true;
+}
+
+export async function getStudentUpcomingSchedule(studentId: string) {
+  const supabaseServer = await createClient();
+  const today = getTodayISO();
+
+  const { data: bookings, error } = await supabaseServer
+    .from('schedule_student')
+    .select(`
+      slot:schedule_slots!inner(
+        id, date, time, is_locked,
+        class:classes(name, max_quota)
+      )
+    `)
+    .eq('student_id', studentId)
+    .gte('slot.date', today)
+    .order('slot(date)', { ascending: true })
+    .order('slot(time)', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching upcoming student schedule:", error);
+    return [];
+  }
+
+  return (bookings || [])
+    .map(b => b.slot)
+    .filter(Boolean)
+    // Sort properly by date & time
+    .sort((a: any, b: any) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return a.time.localeCompare(b.time);
+    });
+}
+
+export async function getStudentScheduleHistory(studentId: string) {
+  const supabaseServer = await createClient();
+  const today = getTodayISO();
+
+  const { data: bookings, error } = await supabaseServer
+    .from('schedule_student')
+    .select(`
+      slot:schedule_slots!inner(
+        id, date, time, is_locked,
+        class:classes(name)
+      )
+    `)
+    .eq('student_id', studentId)
+    .lt('slot.date', today)
+    .order('slot(date)', { ascending: false })
+    .order('slot(time)', { ascending: false })
+    .limit(30);
+
+  if (error) {
+    console.error("Error fetching student schedule history:", error);
+    return [];
+  }
+
+  return (bookings || [])
+    .map(b => b.slot)
+    .filter(Boolean)
+    .sort((a: any, b: any) => {
+      if (a.date !== b.date) return b.date.localeCompare(a.date);
+      return b.time.localeCompare(a.time);
+    });
+}
+
 

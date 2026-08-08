@@ -308,12 +308,40 @@ export function LoginForm() {
                 </>
               ) : (
                 <>
-                  Masuk ke Dashboard
+                  Masuk ke Dashboard Admin
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-1 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                 </>
               )}
             </span>
           </button>
+
+          {/* Separator */}
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200/80 dark:border-slate-800"></div>
+            </div>
+            <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
+              <span className="bg-white dark:bg-slate-900 px-3 text-slate-400 font-bold">Akses Orang Tua / Siswa</span>
+            </div>
+          </div>
+
+          {/* Parent / Student Portal Card */}
+          <a
+            href="/portal-ortu"
+            className="w-full flex items-center gap-3.5 p-3.5 rounded-2xl bg-brand-50/80 dark:bg-brand-950/30 border border-brand-200/80 dark:border-brand-900/60 hover:bg-brand-100/60 dark:hover:bg-brand-900/40 text-slate-800 dark:text-white transition-all group shadow-xs"
+          >
+            <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center text-lg shadow-sm shrink-0 font-bold group-hover:scale-105 transition-transform">
+              👨‍👩‍👧
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <h4 className="text-xs font-extrabold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                Portal Orang Tua & Siswa
+              </h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                Cek Jadwal Kelas & Lembar Kerja Siswa
+              </p>
+            </div>
+          </a>
 
           {/* Footer: Install PWA + Reset Cache */}
           <div className="flex flex-col items-center gap-2 pt-1">

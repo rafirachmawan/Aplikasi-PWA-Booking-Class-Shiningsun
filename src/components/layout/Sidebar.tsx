@@ -15,6 +15,7 @@ const navigation = [
   { name: "Jadwal Kelas", href: "/schedule", icon: Icons.calendar },
   { name: "Penjadwalan Siswa", href: "/scheduling", icon: Icons.users },
   { name: "Kelola Siswa", href: "/students", icon: Icons.users },
+  { name: "Lembar Kerja", href: "/worksheets", icon: Icons.edit },
   { name: "Master Data", href: "/master", icon: Icons.settings },
 ];
 
@@ -35,11 +36,17 @@ export function Sidebar({
   const [isResetting, setIsResetting] = useState(false);
   const { updateAvailable, isUpdating, applyUpdate } = usePWAUpdate();
 
-  // Modal state: 'closed' | 'confirm' | 'password' | 'success' | 'error'
+  // Reset Modal state: 'closed' | 'confirm' | 'password' | 'success' | 'error'
   const [resetModal, setResetModal] = useState<'closed' | 'confirm' | 'password' | 'success' | 'error'>('closed');
   const [resetPassword, setResetPassword] = useState("");
   const [resetError, setResetError] = useState("");
   const passwordInputRef = useRef<HTMLInputElement>(null);
+
+  // Worksheet Lock Modal State
+  const [showWorksheetLockModal, setShowWorksheetLockModal] = useState(false);
+  const [worksheetPassword, setWorksheetPassword] = useState("");
+  const [worksheetError, setWorksheetError] = useState("");
+  const worksheetPassInputRef = useRef<HTMLInputElement>(null);
 
   const openResetModal = () => {
     setResetModal('confirm');
@@ -82,15 +89,94 @@ export function Sidebar({
     window.location.href = "/dashboard";
   };
 
-  const handleForceClearCache = (e: React.MouseEvent) => {
+  // Nav click protection for Lembar Kerja
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href === "/worksheets") {
+      const isUnlocked = typeof window !== "undefined" && sessionStorage.getItem("worksheets_unlocked") === "true";
+      if (!isUnlocked) {
+        e.preventDefault();
+        setShowWorksheetLockModal(true);
+        setWorksheetPassword("");
+        setWorksheetError("");
+        setTimeout(() => worksheetPassInputRef.current?.focus(), 100);
+        return;
+      }
+    }
+  };
+
+  const handleUnlockWorksheet = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsNavigating(true);
-    window.location.href = "/api/clear-cache";
+    if (worksheetPassword === "123") {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("worksheets_unlocked", "true");
+      }
+      setShowWorksheetLockModal(false);
+      window.location.href = "/worksheets";
+    } else {
+      setWorksheetError("Password salah! Hubungi pihak developer.");
+    }
   };
 
   return (
     <>
       {(isNavigating || isResetting) && <LoadingSpinner usePortal={true} />}
+
+      {/* Worksheet Lock Protection Modal */}
+      {showWorksheetLockModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setShowWorksheetLockModal(false)}
+          />
+          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 text-2xl shadow-sm">
+              🔒
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              Akses Lembar Kerja Dikunci
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+              Fitur ini masih dalam tahap prarilis. Masukkan password untuk membuka akses modul ini.
+            </p>
+
+            <form onSubmit={handleUnlockWorksheet} className="mt-5 space-y-4">
+              <div>
+                <input
+                  ref={worksheetPassInputRef}
+                  type="password"
+                  required
+                  value={worksheetPassword}
+                  onChange={(e) => {
+                    setWorksheetPassword(e.target.value);
+                    setWorksheetError("");
+                  }}
+                  placeholder="Masukkan password..."
+                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent font-medium"
+                />
+                {worksheetError && (
+                  <p className="text-xs text-red-500 font-semibold mt-2 animate-in fade-in">{worksheetError}</p>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowWorksheetLockModal(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors shadow-sm"
+                >
+                  Buka Akses
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Reset Modal Overlay */}
       {resetModal !== 'closed' && (
@@ -279,6 +365,7 @@ export function Sidebar({
               <a
                 key={item.name}
                 href={item.href}
+                onClick={(e) => handleNavClick(e, item.href)}
                 className={`
                   group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 cursor-pointer
                   ${
@@ -295,7 +382,12 @@ export function Sidebar({
                       : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300"
                   }`}
                 />
-                {item.name}
+                <span className="flex-1">{item.name}</span>
+                {item.href === "/worksheets" && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-300/40">
+                    🔒
+                  </span>
+                )}
               </a>
             );
           })}

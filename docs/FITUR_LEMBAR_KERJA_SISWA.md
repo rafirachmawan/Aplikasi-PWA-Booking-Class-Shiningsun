@@ -30,6 +30,7 @@ Kekhawatiran utama client adalah **aplikasi jebol / melebihi limit berbayar** sa
    - Guru/Admin dapat mencatat laporan perkembangan, materi pembelajaran, tanggal pelaksanaan, serta melampirkan **Link Google Drive** file lembar kerja/tugas siswa.
 2. **Portal Orang Tua (Parent Portal)**:
    - Orang tua siswa dapat mengakses dan melihat daftar lembar kerja serta laporan perkembangan anak mereka dari HP masing-masing.
+   - Orang tua juga dapat melihat **Jadwal Kelas Anak** — baik jadwal mendatang (upcoming) maupun riwayat kehadiran yang sudah berlalu.
 3. **Efisiensi & Skalabilitas**:
    - **0 Bytes File Storage di Supabase**: File lembar kerja fisik (PDF/Foto) di-host sepenuhnya di Google Drive sekolah.
    - **0 Bytes Bandwidth Egress**: Vercel & Supabase hanya memproses data teks/JSON singkat.
@@ -96,6 +97,49 @@ ALTER TABLE public.students ADD COLUMN IF NOT EXISTS access_pin VARCHAR(10) DEFA
 
 ---
 
+## 📅 5b. Query Jadwal Anak untuk Portal Orang Tua
+
+Data jadwal anak sudah tersedia di tabel `schedule_slots` + pivot `schedule_student`. Tidak perlu tabel baru — cukup query JOIN untuk menampilkan jadwal berdasarkan `student_id`.
+
+### Query SQL (Jadwal Mendatang & Riwayat):
+
+```sql
+-- Mengambil jadwal mendatang (upcoming) untuk seorang siswa
+SELECT
+    ss.id AS slot_id,
+    ss.date,
+    ss.time,
+    c.name AS class_name,
+    c.max_quota,
+    ss.is_locked
+FROM public.schedule_student pivot
+JOIN public.schedule_slots ss ON ss.id = pivot.schedule_slot_id
+JOIN public.classes c ON c.id = ss.class_id
+WHERE pivot.student_id = '<STUDENT_UUID>'
+  AND ss.date >= CURRENT_DATE
+  AND ss.is_locked = FALSE
+ORDER BY ss.date ASC, ss.time ASC;
+
+-- Mengambil riwayat jadwal yang sudah berlalu
+SELECT
+    ss.date,
+    ss.time,
+    c.name AS class_name
+FROM public.schedule_student pivot
+JOIN public.schedule_slots ss ON ss.id = pivot.schedule_slot_id
+JOIN public.classes c ON c.id = ss.class_id
+WHERE pivot.student_id = '<STUDENT_UUID>'
+  AND ss.date < CURRENT_DATE
+ORDER BY ss.date DESC, ss.time DESC
+LIMIT 30; -- Batasi riwayat 30 sesi terakhir agar ringan
+```
+
+### ⚡ Catatan Performa:
+* Query ini memanfaatkan index `idx_schedule_lookup` yang sudah ada di `schedule_slots(branch_id, date, class_id)`.
+* Tidak menambah beban storage maupun bandwidth — data sudah ada, hanya perlu di-expose ke route Portal Orang Tua.
+
+---
+
 ## 🔗 6. Integrasi Helper Link Google Drive
 
 Untuk memastikan link Google Drive nyaman digunakan oleh orang tua, sistem akan menyediakan fungsi konversi otomatis dari URL pratinjau menjadi link unduhan langsung:
@@ -132,8 +176,12 @@ export function getGDriveDirectLink(url: string): string {
 * **`src/app/portal-ortu/page.tsx`**: Halaman login PIN Orang Tua.
 * **`src/app/portal-ortu/dashboard/page.tsx`**: Tampilan khusus orang tua berisi:
   - Informasi Ringkas Siswa & Level
+  - **📅 Jadwal Kelas Anak** — Tab/Section yang menampilkan:
+    - **Jadwal Mendatang**: Daftar sesi kelas yang akan datang (tanggal, jam, nama kelas), ditampilkan sebagai kartu/list dengan badge warna.
+    - **Riwayat Kehadiran**: Log 30 sesi terakhir yang sudah dilewati, sebagai referensi orang tua.
   - Daftar Lembar Kerja & Laporan Hasil Belajar
   - Tombol langsung untuk `[ 📄 Unduh / Lihat Lembar Kerja di Google Drive ]`
+* **`src/components/features/portal/StudentScheduleCard.tsx`**: Komponen kartu jadwal yang menampilkan upcoming schedule & riwayat dengan tampilan responsif.
 
 ---
 
@@ -141,10 +189,12 @@ export function getGDriveDirectLink(url: string): string {
 
 - [ ] **Langkah 1**: Eksekusi script SQL tabel `student_worksheets` & `access_pin` di Supabase SQL Editor.
 - [ ] **Langkah 2**: Tambahkan *Server Actions* CRUD di `src/lib/actions.ts` (`getWorksheetsByStudent`, `createWorksheet`, `deleteWorksheet`).
-- [ ] **Langkah 3**: Buat antarmuka input Lembar Kerja di Dashboard Admin/Guru.
-- [ ] **Langkah 4**: Buat halaman Portal Orang Tua (`/portal-ortu`) dengan verifikasi PIN.
-- [ ] **Langkah 5**: Integrasikan parser link Google Drive untuk kenyamanan buka/unduh file di HP orang tua.
-- [ ] **Langkah 6**: Pengujian akhir pada perangkat iOS & Android untuk memastikan daya tanggap dan tampilan yang rapi.
+- [ ] **Langkah 3**: Tambahkan *Server Action* query jadwal siswa: `getStudentUpcomingSchedule` & `getStudentScheduleHistory`.
+- [ ] **Langkah 4**: Buat antarmuka input Lembar Kerja di Dashboard Admin/Guru.
+- [ ] **Langkah 5**: Buat halaman Portal Orang Tua (`/portal-ortu`) dengan verifikasi PIN.
+- [ ] **Langkah 6**: Buat komponen `StudentScheduleCard.tsx` — tampilkan jadwal mendatang & riwayat di dashboard orang tua.
+- [ ] **Langkah 7**: Integrasikan parser link Google Drive untuk kenyamanan buka/unduh file di HP orang tua.
+- [ ] **Langkah 8**: Pengujian akhir pada perangkat iOS & Android untuk memastikan daya tanggap dan tampilan yang rapi.
 
 ---
 *Dokumen ini dibuat otomatis sebagai panduan resmi pengembangan fitur Lembar Kerja Siswa pada PWA ShiningSun Penjadwalan.*

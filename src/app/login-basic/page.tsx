@@ -223,8 +223,33 @@ export default async function LoginBasicPage({
           </button>
         </form>
 
+        {/* Link to Parent Portal */}
+        <div style={{ textAlign: 'center', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+          <a
+            href="/portal-ortu"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              width: '100%',
+              padding: '12px',
+              borderRadius: '12px',
+              fontSize: '13px',
+              fontWeight: 700,
+              color: '#047857',
+              background: '#ecfdf5',
+              border: '1px solid #a7f3d0',
+              textDecoration: 'none',
+              boxSizing: 'border-box',
+            }}
+          >
+            👨‍👩‍👧 Portal Orang Tua & Siswa
+          </a>
+        </div>
+
         {/* Link back to main login */}
-        <div style={{ textAlign: 'center', marginTop: '16px' }}>
+        <div style={{ textAlign: 'center', marginTop: '12px' }}>
           <a
             href="/login"
             style={{

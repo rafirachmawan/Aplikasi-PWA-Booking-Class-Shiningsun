@@ -72,6 +72,8 @@ export async function updateSession(request: NextRequest) {
       !user &&
       !request.nextUrl.pathname.startsWith('/login') &&
       !request.nextUrl.pathname.startsWith('/login-basic') &&
+      !request.nextUrl.pathname.startsWith('/portal-ortu') &&
+      !request.nextUrl.pathname.startsWith('/rapor') &&
       !request.nextUrl.pathname.startsWith('/api/clear-cache')
     ) {
       return redirectWithCookies('/login')
