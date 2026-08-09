@@ -50,6 +50,23 @@ export function StudentWorksheetTable({
       (el as HTMLElement).style.setProperty("display", "none", "important");
     });
 
+    // Store original element dimensions to prevent clipping on mobile screens
+    const origWidth = cardEl.style.width;
+    const origMinWidth = cardEl.style.minWidth;
+    const origMaxWidth = cardEl.style.maxWidth;
+
+    const scrollContainers = cardEl.querySelectorAll(".overflow-x-auto");
+    const origOverflows: string[] = [];
+    scrollContainers.forEach((sc, i) => {
+      origOverflows[i] = (sc as HTMLElement).style.overflow;
+      (sc as HTMLElement).style.setProperty("overflow", "visible", "important");
+    });
+
+    // Expand element to standard printable desktop width (850px)
+    cardEl.style.setProperty("width", "850px", "important");
+    cardEl.style.setProperty("min-width", "850px", "important");
+    cardEl.style.setProperty("max-width", "none", "important");
+
     try {
       setIsDownloadingPdf(true);
 
@@ -72,11 +89,12 @@ export function StudentWorksheetTable({
       }
 
       // Brief delay for reflow
-      await new Promise((r) => setTimeout(r, 150));
+      await new Promise((r) => setTimeout(r, 200));
 
       const dataUrl = await (window as any).htmlToImage.toPng(cardEl, {
         backgroundColor: "#ffffff",
         pixelRatio: 2,
+        width: 850,
       });
 
       const { jsPDF } = (window as any).jspdf;
@@ -112,6 +130,15 @@ export function StudentWorksheetTable({
       console.error("Failed to generate PDF:", error);
       alert("Gagal mendownload PDF. Silakan coba lagi.");
     } finally {
+      // Restore card element dimensions & scroll container states
+      cardEl.style.width = origWidth;
+      cardEl.style.minWidth = origMinWidth;
+      cardEl.style.maxWidth = origMaxWidth;
+
+      scrollContainers.forEach((sc, i) => {
+        (sc as HTMLElement).style.overflow = origOverflows[i] || "";
+      });
+
       // Restore action elements
       actionElements.forEach((el) => {
         (el as HTMLElement).style.removeProperty("display");

@@ -1439,7 +1439,7 @@ export async function createWorksheet(formData: FormData) {
   const bulan_ke = formData.get('bulan_ke') ? parseInt(formData.get('bulan_ke') as string, 10) : null;
 
   if (!student_id || !title) {
-    throw new Error("Siswa dan Judul Lembar Kerja wajib diisi.");
+    throw new Error("Siswa dan Judul Lembar Perkembangan wajib diisi.");
   }
 
   const branchId = await getBranchId();
@@ -1488,7 +1488,7 @@ export async function updateWorksheet(id: string, formData: FormData) {
   const bulan_ke = formData.get('bulan_ke') ? parseInt(formData.get('bulan_ke') as string, 10) : null;
 
   if (!title) {
-    throw new Error("Judul Lembar Kerja wajib diisi.");
+    throw new Error("Judul Lembar Perkembangan wajib diisi.");
   }
 
   const supabaseServer = await createClient();
@@ -1533,7 +1533,7 @@ export async function deleteWorksheet(id: string) {
 
   if (error) {
     console.error("Error deleting worksheet:", error);
-    throw new Error("Gagal menghapus lembar kerja: " + error.message);
+    throw new Error("Gagal menghapus lembar perkembangan: " + error.message);
   }
 
   return true;

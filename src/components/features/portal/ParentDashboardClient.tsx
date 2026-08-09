@@ -153,7 +153,7 @@ export function ParentDashboardClient({
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            <span>📄 Rapor & Lembar Kerja</span>
+            <span>📄 Rapor & Lembar Perkembangan</span>
             <span className={`px-2 py-0.5 rounded-full text-[11px] ${activeTab === "worksheets" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
               {worksheets.length}
             </span>

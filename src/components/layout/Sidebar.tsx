@@ -15,7 +15,7 @@ const navigation = [
   { name: "Jadwal Kelas", href: "/schedule", icon: Icons.calendar },
   { name: "Penjadwalan Siswa", href: "/scheduling", icon: Icons.users },
   { name: "Kelola Siswa", href: "/students", icon: Icons.users },
-  { name: "Lembar Kerja", href: "/worksheets", icon: Icons.edit },
+  { name: "Lembar Perkembangan", href: "/worksheets", icon: Icons.edit },
   { name: "Master Data", href: "/master", icon: Icons.settings },
 ];
 
@@ -133,7 +133,7 @@ export function Sidebar({
               🔒
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Akses Lembar Kerja Dikunci
+              Akses Lembar Perkembangan Dikunci
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
               Fitur ini masih dalam tahap prarilis. Masukkan password untuk membuka akses modul ini.

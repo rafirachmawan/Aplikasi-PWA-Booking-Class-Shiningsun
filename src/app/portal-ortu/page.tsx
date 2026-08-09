@@ -90,7 +90,7 @@ export default function ParentLoginPage() {
           </h1>
 
           <p className="text-slate-300/80 text-lg max-w-lg leading-relaxed font-light">
-            Akses informasi jadwal mendatang, riwayat sesi kelas, dan unduh laporan lembar kerja evaluasi anak Anda secara real-time.
+            Akses informasi jadwal mendatang, riwayat sesi kelas, dan unduh laporan lembar perkembangan evaluasi anak Anda secara real-time.
           </p>
 
           {/* Detailed Feature Cards on Left Panel */}
@@ -102,7 +102,7 @@ export default function ParentLoginPage() {
             </div>
             <div className="p-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 space-y-1">
               <div className="text-xl">📄</div>
-              <h4 className="text-xs font-bold text-white">Lembar Kerja</h4>
+              <h4 className="text-xs font-bold text-white">Lembar Perkembangan</h4>
               <p className="text-[11px] text-slate-400">Modul & catatan guru via Drive</p>
             </div>
             <div className="p-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 space-y-1">
@@ -292,7 +292,7 @@ export default function ParentLoginPage() {
               </div>
               <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50">
                 <span className="text-base block mb-0.5">📄</span>
-                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">Lembar Kerja</span>
+                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">Lembar Perkembangan</span>
               </div>
               <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50">
                 <span className="text-base block mb-0.5">🔑</span>

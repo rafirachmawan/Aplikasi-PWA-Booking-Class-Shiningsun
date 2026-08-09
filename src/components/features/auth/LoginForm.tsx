@@ -338,7 +338,7 @@ export function LoginForm() {
                 Portal Orang Tua & Siswa
               </h4>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                Cek Jadwal Kelas & Lembar Kerja Siswa
+                Cek Jadwal Kelas & Lembar Perkembangan Siswa
               </p>
             </div>
           </a>

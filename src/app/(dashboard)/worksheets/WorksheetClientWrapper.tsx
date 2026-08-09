@@ -214,10 +214,10 @@ export function WorksheetClientWrapper({
           </div>
           <div>
             <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              Modul Lembar Kerja Dikunci
+              Modul Lembar Perkembangan Dikunci
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-              Fitur Lembar Kerja Siswa ini masih dalam tahap prarilis. Silakan masukkan password akses untuk membuka modul ini.
+              Fitur Lembar Perkembangan Siswa ini masih dalam tahap prarilis. Silakan masukkan password akses untuk membuka modul ini.
             </p>
           </div>
 
@@ -243,7 +243,7 @@ export function WorksheetClientWrapper({
               type="submit"
               className="w-full py-3.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-md transition-all active:scale-95"
             >
-              Buka Akses Lembar Kerja
+              Buka Akses Lembar Perkembangan
             </button>
           </form>
         </div>
@@ -423,7 +423,7 @@ export function WorksheetClientWrapper({
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap items-center gap-x-2">
-              <span>Lembar Kerja Siswa</span>
+              <span>Lembar Perkembangan Siswa</span>
               {activeBranchName && (
                 <span className="text-brand-100 font-normal text-lg sm:text-xl lg:text-2xl whitespace-nowrap">
                   ({activeBranchName})
@@ -442,7 +442,7 @@ export function WorksheetClientWrapper({
             style={{ color: '#1d4ed8', backgroundColor: 'white' }}
           >
             <Icons.add className="-ml-0.5 h-5 w-5" />
-            Tambah Lembar Kerja
+            Tambah Lembar Perkembangan
           </button>
         </div>
       </div>
@@ -565,7 +565,7 @@ export function WorksheetClientWrapper({
             </div>
             <h3 className="text-base font-bold text-slate-800 dark:text-white">Belum Ada Lembar Perkembangan Siswa</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-              Klik tombol &quot;Tambah Lembar Kerja&quot; untuk mulai mencatat evaluasi perkembangan siswa.
+              Klik tombol &quot;Tambah Lembar Perkembangan&quot; untuk mulai mencatat evaluasi perkembangan siswa.
             </p>
           </div>
         ) : (

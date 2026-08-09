@@ -166,7 +166,7 @@ export function WorksheetFormModal({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setErrorMsg(err.message || "Gagal menyimpan lembar kerja.");
+      setErrorMsg(err.message || "Gagal menyimpan lembar perkembangan.");
     } finally {
       setIsSubmitting(false);
     }
@@ -604,20 +604,6 @@ export function WorksheetFormModal({
                 </p>
               ) : null}
             </div>
-
-            {/* Catatan Tambahan */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Catatan Tambahan (Internal)
-              </label>
-              <textarea
-                rows={2}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Catatan internal guru, tidak terlihat orang tua..."
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none placeholder:text-slate-400"
-              />
-            </div>
           </div>
 
           {/* Submit Actions */}
@@ -635,7 +621,7 @@ export function WorksheetFormModal({
               disabled={isSubmitting}
               className="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 active:scale-[0.99] transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
             >
-              {isSubmitting ? "Memproses..." : (isEditing ? "✓ Simpan Perubahan" : "✓ Simpan Lembar Kerja")}
+              {isSubmitting ? "Memproses..." : (isEditing ? "✓ Simpan Perubahan" : "✓ Simpan Lembar Perkembangan")}
             </button>
           </div>
         </form>
