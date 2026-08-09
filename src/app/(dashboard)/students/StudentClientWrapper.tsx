@@ -276,31 +276,30 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
         </div>
       </div>
       
-      {/* Toolbar / Search / Tabs */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm space-y-4">
+      {/* Toolbar / Search / Filters */}
+      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-2xs space-y-3.5">
         {/* Search */}
         <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <Icons.search className="h-5 w-5 text-slate-400" aria-hidden="true" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+            <Icons.search className="h-4 w-4 text-slate-400" aria-hidden="true" />
           </div>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full rounded-lg border-0 py-2 pl-10 pr-3 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white"
+            className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all h-[44px]"
             placeholder="Cari nama siswa..."
           />
         </div>
 
-        {/* Grid Filters: Level & Gender Dropdowns */}
-        {/* Grid Filters: Level & Gender Dropdowns */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Native Level Dropdown */}
+        {/* Grid Filters: Level, Gender & Status Dropdowns */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Level Dropdown */}
           <div className="relative">
             <select
               value={selectedLabelId}
               onChange={(e) => setSelectedLabelId(e.target.value)}
-              className="appearance-none block w-full rounded-lg border-0 py-2.5 pl-10 pr-10 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 focus:ring-2 focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white font-medium cursor-pointer truncate"
+              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
             >
               <option value="">✨ Semua Level / Tingkat</option>
               {labels.map((label) => (
@@ -309,58 +308,58 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                 </option>
               ))}
             </select>
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <Icons.settings className="h-5 w-5 text-slate-400" aria-hidden="true" />
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+              <Icons.settings className="h-4 w-4 text-brand-500" aria-hidden="true" />
             </div>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-              <svg className="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+              <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           </div>
 
-          {/* Native Gender Dropdown */}
+          {/* Gender Dropdown */}
           <div className="relative">
             <select
               value={selectedGender}
               onChange={(e) => setSelectedGender(e.target.value)}
-              className="appearance-none block w-full rounded-lg border-0 py-2.5 pl-10 pr-10 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 focus:ring-2 focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white font-medium cursor-pointer truncate"
+              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
             >
               <option value="">👥 Semua Jenis Kelamin</option>
               <option value="Laki-laki">👦 Laki-laki</option>
               <option value="Perempuan">👧 Perempuan</option>
               <option value="unset">❓ Belum Ada (Kosong)</option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <Icons.users className="h-5 w-5 text-slate-400" aria-hidden="true" />
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+              <Icons.users className="h-4 w-4 text-brand-500" aria-hidden="true" />
             </div>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-              <svg className="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+              <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           </div>
-        </div>
 
-        {/* Native Status Dropdown */}
-        <div className="relative">
-          <select
-            value={activeTab}
-            onChange={(e) => setActiveTab(e.target.value)}
-            className="appearance-none block w-full rounded-lg border-0 py-2.5 pl-10 pr-10 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 focus:ring-2 focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white font-medium cursor-pointer truncate"
-          >
-            <option value="all">📋 Semua Siswa ({allCount})</option>
-            <option value="reguler">✅ Reguler ({regulerCount})</option>
-            <option value="cg">🆓 Coba Gratis ({cgCount})</option>
-            <option value="inactive">🚫 Nonaktif ({inactiveCount})</option>
-          </select>
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <Icons.filter className="h-5 w-5 text-slate-400" aria-hidden="true" />
-          </div>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-            <svg className="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
-            </svg>
+          {/* Status Dropdown */}
+          <div className="relative">
+            <select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value)}
+              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
+            >
+              <option value="all">📋 Semua Siswa ({allCount})</option>
+              <option value="reguler">✅ Reguler ({regulerCount})</option>
+              <option value="cg">🆓 Coba Gratis ({cgCount})</option>
+              <option value="inactive">🚫 Nonaktif ({inactiveCount})</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+              <Icons.filter className="h-4 w-4 text-brand-500" aria-hidden="true" />
+            </div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+              <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
         </div>
       </div>

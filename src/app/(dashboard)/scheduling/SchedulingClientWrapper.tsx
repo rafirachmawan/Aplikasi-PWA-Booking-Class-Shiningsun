@@ -37,7 +37,8 @@ export function SchedulingClientWrapper({
   const [studentId, setStudentId] = useState("");
 
   // Change Label Modal state
-  const [editingStudentForLabel, setEditingStudentForLabel] = useState<any>(null);
+  const [editingStudentForLabel, setEditingStudentForLabel] =
+    useState<any>(null);
   const [labelsList, setLabelsList] = useState<any[]>([]);
 
   const handleOpenChangeLabel = async (student: any) => {
@@ -635,13 +636,18 @@ export function SchedulingClientWrapper({
                   {selectedStudent.label ? (
                     <span
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs"
-                      style={{ borderLeft: `3px solid ${selectedStudent.label.hex_color}` }}
+                      style={{
+                        borderLeft: `3px solid ${selectedStudent.label.hex_color}`,
+                      }}
                     >
                       <span
                         className="w-2 h-2 rounded-full shrink-0"
-                        style={{ backgroundColor: selectedStudent.label.hex_color }}
+                        style={{
+                          backgroundColor: selectedStudent.label.hex_color,
+                        }}
                       />
-                      {selectedStudent.label.main_level} - {selectedStudent.label.sub_level}
+                      {selectedStudent.label.main_level} -{" "}
+                      {selectedStudent.label.sub_level}
                     </span>
                   ) : (
                     <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800">
@@ -817,15 +823,15 @@ export function SchedulingClientWrapper({
                     return (
                       <div
                         key={index}
-                        className="flex flex-wrap md:flex-nowrap items-center gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800"
+                        className="grid grid-cols-1 md:grid-cols-12 gap-3.5 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs items-end"
                       >
-                        <div className="flex-1 min-w-[150px]">
+                        <div className="md:col-span-4">
                           <div className="flex items-center justify-between mb-1.5 px-1">
-                            <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                              Tanggal
+                            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                              📅 Tanggal
                             </label>
                             {hari && (
-                              <span className="text-[10px] font-bold text-brand-700 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/30 px-2 py-0.5 rounded shadow-sm">
+                              <span className="text-[10px] font-extrabold text-brand-700 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/30 px-2 py-0.5 rounded-md shadow-xs">
                                 {hari}
                               </span>
                             )}
@@ -843,10 +849,10 @@ export function SchedulingClientWrapper({
                           />
                         </div>
 
-                        <div className="flex-1 min-w-[120px]">
+                        <div className="md:col-span-4">
                           <div className="flex items-center justify-between mb-1.5 px-1">
-                            <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                              Jam Sesi
+                            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                              🕒 Jam Sesi
                               {schedule.classId &&
                                 schedule.startDate &&
                                 schedule.time &&
@@ -857,7 +863,7 @@ export function SchedulingClientWrapper({
                                     schedule.classId,
                                   );
                                   return r !== null ? (
-                                    <span className="text-brand-600 dark:text-brand-400 font-bold ml-1 normal-case">
+                                    <span className="text-brand-600 dark:text-brand-400 font-extrabold ml-1 normal-case">
                                       (Sisa {r})
                                     </span>
                                   ) : null;
@@ -874,7 +880,7 @@ export function SchedulingClientWrapper({
                                   e.target.value,
                                 )
                               }
-                              className="appearance-none block w-full rounded-xl border-slate-200 bg-white pl-4 pr-10 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
+                              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
                             >
                               {timeSlots.map((t) => {
                                 const rem = schedule.classId
@@ -885,12 +891,13 @@ export function SchedulingClientWrapper({
                                     )
                                   : null;
                                 const isFull = rem !== null && rem <= 0;
+                                const endHour = String(parseInt(t.split(":")[0], 10) + 1).padStart(2, "0");
                                 const labelText =
                                   rem !== null
                                     ? isFull
-                                      ? `${t}-${String(parseInt(t) + 1).padStart(2, "0")}:00 (Penuh)`
-                                      : `${t}-${String(parseInt(t) + 1).padStart(2, "0")}:00 (Sisa ${rem})`
-                                    : `${t}-${String(parseInt(t) + 1).padStart(2, "0")}:00`;
+                                      ? `${t} - ${endHour}:00 (Penuh)`
+                                      : `${t} - ${endHour}:00 (Sisa ${rem})`
+                                    : `${t} - ${endHour}:00`;
 
                                 return (
                                   <option key={t} value={t} disabled={isFull}>
@@ -917,10 +924,10 @@ export function SchedulingClientWrapper({
                           </div>
                         </div>
 
-                        <div className="flex-[2] min-w-[150px]">
+                        <div className={autoSchedules.length > 1 ? "md:col-span-3" : "md:col-span-4"}>
                           <div className="flex items-center justify-between mb-1.5 px-1">
-                            <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                              Tipe Kelas
+                            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                              🏫 Tipe Kelas
                             </label>
                           </div>
                           <div className="relative">
@@ -934,7 +941,7 @@ export function SchedulingClientWrapper({
                                   e.target.value,
                                 )
                               }
-                              className="appearance-none block w-full rounded-xl border-slate-200 bg-white pl-4 pr-10 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
+                              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
                             >
                               <option value="" disabled>
                                 -- Pilih Tipe Kelas --
@@ -982,12 +989,12 @@ export function SchedulingClientWrapper({
                         </div>
 
                         {autoSchedules.length > 1 && (
-                          <div className="self-end pb-1.5">
+                          <div className="md:col-span-1 flex justify-end md:justify-center pb-1">
                             <button
                               type="button"
                               onClick={() => removeAutoScheduleRow(index)}
-                              className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-full transition-colors"
-                              title="Hapus Jadwal"
+                              className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-colors border border-red-100 dark:border-red-900/30 cursor-pointer"
+                              title="Hapus Baris"
                             >
                               <Icons.close className="w-4 h-4" />
                             </button>
@@ -1025,10 +1032,9 @@ export function SchedulingClientWrapper({
               onSubmit={handleManualSubmit}
               className="space-y-6 animate-in slide-in-from-right-4"
             >
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                  <Icons.calendar className="w-4 h-4" /> Langkah 2: Pilih Sesi
-                  Manual
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+                  <Icons.calendar className="w-4 h-4 text-brand-500" /> Langkah 2: Pilih Sesi Manual
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1047,12 +1053,12 @@ export function SchedulingClientWrapper({
                             "Sabtu",
                           ][d.getDay()];
                       return (
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                            Tanggal
+                        <div className="flex items-center justify-between mb-1.5 px-1">
+                          <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            📅 Tanggal
                           </label>
                           {manualHari && (
-                            <span className="text-[11px] font-bold text-brand-700 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/30 px-2.5 py-0.5 rounded-md shadow-sm">
+                            <span className="text-[10px] font-extrabold text-brand-700 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/30 px-2 py-0.5 rounded-md shadow-xs">
                               {manualHari}
                             </span>
                           )}
@@ -1066,8 +1072,8 @@ export function SchedulingClientWrapper({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Pilih Jam
+                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 px-1">
+                      🕒 Pilih Jam
                       {manualClassId &&
                         manualDate &&
                         manualTime &&
@@ -1078,7 +1084,7 @@ export function SchedulingClientWrapper({
                             manualClassId,
                           );
                           return r !== null ? (
-                            <span className="text-brand-600 dark:text-brand-400 font-bold ml-1">
+                            <span className="text-brand-600 dark:text-brand-400 font-extrabold ml-1 normal-case">
                               (Sisa {r})
                             </span>
                           ) : null;
@@ -1089,7 +1095,7 @@ export function SchedulingClientWrapper({
                         required
                         value={manualTime}
                         onChange={(e) => setManualTime(e.target.value)}
-                        className="appearance-none block w-full rounded-xl border-slate-200 bg-white pl-4 pr-10 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
+                        className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
                       >
                         <option value="" disabled>
                           -- Pilih Jam --
@@ -1099,12 +1105,13 @@ export function SchedulingClientWrapper({
                             ? getRemainingSlots(manualDate, t, manualClassId)
                             : null;
                           const isFull = rem !== null && rem <= 0;
+                          const endHour = String(parseInt(t.split(":")[0], 10) + 1).padStart(2, "0");
                           const labelText =
                             rem !== null
                               ? isFull
-                                ? `${t}-${String(parseInt(t) + 1).padStart(2, "0")}:00 (Penuh)`
-                                : `${t}-${String(parseInt(t) + 1).padStart(2, "0")}:00 (Sisa ${rem})`
-                              : `${t}-${String(parseInt(t) + 1).padStart(2, "0")}:00`;
+                                ? `${t} - ${endHour}:00 (Penuh)`
+                                : `${t} - ${endHour}:00 (Sisa ${rem})`
+                              : `${t} - ${endHour}:00`;
 
                           return (
                             <option key={t} value={t} disabled={isFull}>
@@ -1131,15 +1138,15 @@ export function SchedulingClientWrapper({
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Pilih Kelas
+                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 px-1">
+                      🏫 Pilih Kelas
                     </label>
                     <div className="relative">
                       <select
                         required
                         value={manualClassId}
                         onChange={(e) => setManualClassId(e.target.value)}
-                        className="appearance-none block w-full rounded-xl border-slate-200 bg-white pl-4 pr-10 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
+                        className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
                       >
                         <option value="" disabled>
                           -- Pilih Tipe Kelas --
