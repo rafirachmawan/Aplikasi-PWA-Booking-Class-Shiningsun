@@ -1365,10 +1365,10 @@ export async function getWorksheetsByBranch() {
       .from('student_worksheets')
       .select(`
         *,
-        student:students(id, name, nickname, status, label:labels(main_level, sub_level, hex_color))
+        student:students(id, name, nickname, status, access_pin, label:labels(main_level, sub_level, hex_color))
       `)
-      .order('worksheet_date', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('worksheet_date', { ascending: true })
+      .order('created_at', { ascending: true });
 
     if (branchId !== 'ALL') {
       query = query.eq('branch_id', branchId);
@@ -1411,8 +1411,8 @@ export async function getWorksheetsByStudent(studentId: string) {
       .from('student_worksheets')
       .select('*')
       .eq('student_id', studentId)
-      .order('worksheet_date', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('worksheet_date', { ascending: true })
+      .order('created_at', { ascending: true });
 
     if (error) {
       console.warn("Notice fetching student worksheets:", error.message || error);

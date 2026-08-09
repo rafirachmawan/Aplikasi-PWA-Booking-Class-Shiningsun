@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { WorksheetFormModal } from "@/components/features/worksheets/WorksheetFormModal";
@@ -29,6 +29,42 @@ export function WorksheetClientWrapper({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorksheet, setEditingWorksheet] = useState<any>(null);
 
+  // Custom dropdown state for Student Filter (always opens downwards)
+  const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
+  const [studentDropdownFilter, setStudentDropdownFilter] = useState("");
+  const studentDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (
+        studentDropdownRef.current &&
+        !studentDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsStudentDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, []);
+
+  const selectedStudentObj = useMemo(() => {
+    return students.find((s) => s.id === selectedStudentId);
+  }, [students, selectedStudentId]);
+
+  const filteredDropdownStudents = useMemo(() => {
+    if (!studentDropdownFilter.trim()) return students;
+    const query = studentDropdownFilter.toLowerCase();
+    return students.filter(
+      (s) =>
+        s.name.toLowerCase().includes(query) ||
+        (s.nickname && s.nickname.toLowerCase().includes(query))
+    );
+  }, [students, studentDropdownFilter]);
+
   // Delete confirm modal state
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -48,7 +84,27 @@ export function WorksheetClientWrapper({
   // PIN modal state
   const [pinModalStudent, setPinModalStudent] = useState<any>(null);
   const [newPin, setNewPin] = useState("");
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinCopiedWa, setPinCopiedWa] = useState(false);
   const [pinMsg, setPinMsg] = useState({ error: "", success: "" });
+
+  const handleCopyWaInfo = () => {
+    if (!pinModalStudent) return;
+    const studentName = pinModalStudent.name;
+    const currentPin = pinModalStudent.access_pin || "123456";
+    const portalUrl = typeof window !== "undefined" ? `${window.location.origin}/portal-ortu` : "https://app.shiningsun.id/portal-ortu";
+
+    const text = `Halo Bapak/Ibu, berikut informasi akses Portal Mandiri Orang Tua ShiningSun untuk siswa *${studentName}*:\n\n🌐 Link Portal: ${portalUrl}\n👤 Nama Siswa: ${studentName}\n🔑 PIN Akses: ${currentPin}\n\nSilakan gunakan Nama & PIN di atas untuk memantau laporan perkembangan dan jadwal kelas anak. Terima kasih!`;
+
+    navigator.clipboard.writeText(text);
+    setPinCopiedWa(true);
+    setTimeout(() => setPinCopiedWa(false), 3000);
+  };
+
+  const handleGenerateRandomPin = () => {
+    const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
+    setNewPin(randomPin);
+  };
 
   // Filter worksheets
   const filteredWorksheets = useMemo(() => {
@@ -179,6 +235,7 @@ export function WorksheetClientWrapper({
     setIsProcessing(true);
     try {
       await updateStudentAccessPin(pinModalStudent.id, newPin);
+      pinModalStudent.access_pin = newPin.trim();
       setPinMsg({ error: "", success: "PIN Akses Orang Tua berhasil diperbarui!" });
       setTimeout(() => {
         setPinModalStudent(null);
@@ -239,57 +296,133 @@ export function WorksheetClientWrapper({
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setPinModalStudent(null)}
           />
-          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                Kelola PIN Portal Orang Tua
-              </h3>
+          <div className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 animate-in zoom-in-95 duration-200 space-y-5">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shrink-0 border border-amber-200 dark:border-amber-800/50">
+                  🔑
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">
+                    PIN Portal Orang Tua
+                  </h3>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                    Siswa: <span className="text-brand-600 dark:text-brand-400 font-bold">{pinModalStudent.name}</span>
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={() => setPinModalStudent(null)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <Icons.close className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              Siswa: <strong className="text-slate-800 dark:text-slate-200">{pinModalStudent.name}</strong>
-            </p>
-
-            {pinMsg.error && (
-              <p className="text-xs text-red-500 mb-3 bg-red-50 p-2 rounded-lg">{pinMsg.error}</p>
-            )}
-            {pinMsg.success && (
-              <p className="text-xs text-emerald-600 mb-3 bg-emerald-50 p-2 rounded-lg">{pinMsg.success}</p>
-            )}
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                PIN Akses Baru (Min. 4 Angka/Huruf)
-              </label>
-              <input
-                type="text"
-                value={newPin}
-                onChange={(e) => setNewPin(e.target.value)}
-                placeholder="Misal: 123456"
-                className="w-full px-3 py-2 border rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
-              />
+            {/* Current Active PIN Card */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                    PIN Aktif Saat Ini
+                  </span>
+                  <span className="font-mono text-2xl font-black text-slate-900 dark:text-white tracking-widest block mt-0.5">
+                    {pinModalStudent.access_pin || "123456"}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyWaInfo}
+                  className="px-3 py-2 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/50 transition-all flex items-center gap-1.5 shadow-xs active:scale-95 cursor-pointer"
+                >
+                  <span>{pinCopiedWa ? "✅ Info Tersalin!" : "📋 Salin Info WA"}</span>
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                Digunakan Orang Tua untuk masuk ke portal <strong className="text-slate-700 dark:text-slate-300">/portal-ortu</strong> menggunakan Nama Siswa.
+              </p>
             </div>
 
-            <div className="flex gap-2 mt-5">
+            {/* Feedback Messages */}
+            {pinMsg.error && (
+              <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 p-3 rounded-xl border border-red-200 dark:border-red-800 font-semibold animate-in fade-in">
+                ⚠️ {pinMsg.error}
+              </div>
+            )}
+            {pinMsg.success && (
+              <div className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 font-semibold animate-in fade-in">
+                ✅ {pinMsg.success}
+              </div>
+            )}
+
+            {/* Form Input New PIN */}
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                Ubah PIN Akses Baru
+              </label>
+
+              <div className="relative flex items-center">
+                <input
+                  type={showPinModal ? "text" : "password"}
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value)}
+                  placeholder="Misal: 123456"
+                  className="w-full px-4 py-2.5 pr-10 border rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-base font-bold tracking-widest border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPinModal(!showPinModal)}
+                  className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1"
+                  title={showPinModal ? "Sembunyikan PIN" : "Tampilkan PIN"}
+                >
+                  {showPinModal ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+
+              {/* Quick Generator Buttons */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleGenerateRandomPin}
+                  className="flex-1 py-1.5 px-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <span>🎲 Generate PIN Acak</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewPin("123456")}
+                  className="py-1.5 px-3 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                >
+                  🔄 Reset Default (123456)
+                </button>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setPinModalStudent(null)}
-                className="flex-1 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                className="flex-1 py-2.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={handleUpdatePin}
-                className="flex-1 py-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700"
+                className="flex-1 py-2.5 text-xs font-bold rounded-xl bg-brand-600 text-white hover:bg-brand-700 shadow-md transition-all active:scale-95 cursor-pointer"
               >
-                Simpan PIN
+                Simpan PIN Baru
               </button>
             </div>
           </div>
@@ -345,23 +478,94 @@ export function WorksheetClientWrapper({
             />
           </div>
 
-          {/* Student Select Filter */}
-          <div className="relative">
-            <select
-              value={selectedStudentId}
-              onChange={(e) => setSelectedStudentId(e.target.value)}
-              className="appearance-none block w-full rounded-xl border-0 py-2.5 pl-10 pr-10 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 focus:ring-2 focus:ring-brand-600 sm:text-sm dark:bg-slate-800 dark:ring-slate-700 dark:text-white font-medium cursor-pointer truncate"
+          {/* Custom Student Select Filter (Opens Downward Always) */}
+          <div className="relative" ref={studentDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsStudentDropdownOpen(!isStudentDropdownOpen)}
+              className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2.5 pl-10 pr-3.5 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-brand-600 focus:outline-none shadow-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/80 cursor-pointer"
             >
-              <option value="">✨ Semua Siswa ({students.length})</option>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  👤 {s.name} {s.nickname ? `(${s.nickname})` : ''}
-                </option>
-              ))}
-            </select>
+              <span className="truncate">
+                {selectedStudentObj
+                  ? `👤 ${selectedStudentObj.name} ${selectedStudentObj.nickname ? `(${selectedStudentObj.nickname})` : ""}`
+                  : `✨ Semua Siswa (${students.length})`}
+              </span>
+              <Icons.chevronDown
+                className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                  isStudentDropdownOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <Icons.users className="h-5 w-5 text-slate-400" />
             </div>
+
+            {/* Dropdown Menu (Always Opens Downwards) */}
+            {isStudentDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 animate-in fade-in slide-in-from-top-2 duration-150 space-y-1.5">
+                {/* Quick Search inside dropdown */}
+                {students.length > 5 && (
+                  <div className="p-1">
+                    <input
+                      type="text"
+                      value={studentDropdownFilter}
+                      onChange={(e) => setStudentDropdownFilter(e.target.value)}
+                      placeholder="🔍 Cari nama siswa..."
+                      className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                )}
+
+                <div className="max-h-64 overflow-y-auto space-y-0.5 pr-1 custom-scrollbar">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedStudentId("");
+                      setIsStudentDropdownOpen(false);
+                      setStudentDropdownFilter("");
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                      selectedStudentId === ""
+                        ? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 font-bold"
+                        : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    <span>✨ Semua Siswa ({students.length})</span>
+                    {selectedStudentId === "" && <span>✓</span>}
+                  </button>
+
+                  {filteredDropdownStudents.length === 0 ? (
+                    <div className="py-3 text-center text-xs text-slate-400 italic">
+                      Tidak ada siswa yang cocok.
+                    </div>
+                  ) : (
+                    filteredDropdownStudents.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedStudentId(s.id);
+                          setIsStudentDropdownOpen(false);
+                          setStudentDropdownFilter("");
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors flex items-center justify-between cursor-pointer ${
+                          selectedStudentId === s.id
+                            ? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 font-bold"
+                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium"
+                        }`}
+                      >
+                        <span className="truncate">
+                          👤 {s.name} {s.nickname ? `(${s.nickname})` : ""}
+                        </span>
+                        {selectedStudentId === s.id && <span className="font-bold">✓</span>}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -384,8 +588,8 @@ export function WorksheetClientWrapper({
               key={student.id}
               student={student}
               worksheets={studentWsList}
-              onAddRow={(studentId) => {
-                setEditingWorksheet({ student_id: studentId });
+              onAddRow={(studentId, bulanKe) => {
+                setEditingWorksheet({ student_id: studentId, bulan_ke: bulanKe });
                 setIsModalOpen(true);
               }}
               onEditRow={(ws) => {
