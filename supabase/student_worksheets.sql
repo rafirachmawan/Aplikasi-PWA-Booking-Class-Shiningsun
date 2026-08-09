@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.student_worksheets (
     kegiatan TEXT, -- Kegiatan yang dilakukan
     hasil_belajar TEXT, -- Hasil belajar siswa
     catatan_guru TEXT, -- Catatan khusus dari guru ke siswa/orang tua
+    catatan_ortu TEXT, -- Saran / masukan / tanggapan dari orang tua
     ttd_guru VARCHAR(100), -- Nama guru / tanda tangan digital
     bulan_ke INTEGER, -- Bulan ke berapa (1-12)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -33,5 +34,6 @@ ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS materi TEXT;
 ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS kegiatan TEXT;
 ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS hasil_belajar TEXT;
 ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS catatan_guru TEXT;
+ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS catatan_ortu TEXT;
 ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS ttd_guru VARCHAR(100);
 ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS bulan_ke INTEGER;

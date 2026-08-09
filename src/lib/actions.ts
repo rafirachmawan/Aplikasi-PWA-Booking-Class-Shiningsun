@@ -3,6 +3,7 @@
 import { supabase } from "./supabase";
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { revalidatePath } from 'next/cache';
 import { getTodayISO } from './dateUtils';
 
 export async function syncUserIdentity() {
@@ -1722,6 +1723,38 @@ export async function getStudentScheduleHistory(studentId: string) {
       if (a.date !== b.date) return b.date.localeCompare(a.date);
       return b.time.localeCompare(a.time);
     });
+}
+
+export async function updateParentFeedback(studentId: string, bulanKe: number | null, catatanOrtu: string | null) {
+  const supabaseServer = await createClient();
+  const valueToStore = (typeof catatanOrtu === 'string' && catatanOrtu.trim().length > 0) ? catatanOrtu.trim() : null;
+
+  let query = supabaseServer
+    .from('student_worksheets')
+    .update({
+      catatan_ortu: valueToStore,
+      updated_at: new Date().toISOString()
+    })
+    .eq('student_id', studentId);
+
+  if (bulanKe !== null && !isNaN(bulanKe)) {
+    query = query.eq('bulan_ke', bulanKe);
+  } else {
+    query = query.is('bulan_ke', null);
+  }
+
+  const { error } = await query;
+  if (error) {
+    console.error("Error updating parent feedback:", error);
+    if (error.message.includes("schema cache") || error.message.includes("Could not find the 'catatan_ortu'")) {
+      throw new Error("Kolom 'catatan_ortu' belum ditambahkan di Supabase! Silakan jalankan SQL migrasi di file 'supabase/student_worksheets.sql' pada Supabase SQL Editor.");
+    }
+    throw new Error(error.message);
+  }
+
+  revalidatePath('/worksheets');
+  revalidatePath('/portal-ortu/dashboard');
+  return true;
 }
 
 

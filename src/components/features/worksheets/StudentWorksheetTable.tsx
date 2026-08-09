@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Icons } from "@/components/ui/icons";
 import { formatShortDate } from "@/lib/dateUtils";
 import { getGDriveDirectLink, getGDrivePreviewLink } from "@/lib/gdriveUtils";
+import { updateParentFeedback } from "@/lib/actions";
 
 interface StudentWorksheetTableProps {
   student: any;
@@ -15,6 +16,50 @@ interface StudentWorksheetTableProps {
   onDeleteRow?: (worksheetId: string) => void;
   onDeleteSheet?: (studentId: string, bulanKe: number | null, studentName: string) => void;
   onSetPin?: (student: any) => void;
+}
+
+interface ParentFeedbackItem {
+  date: string;
+  text: string;
+}
+
+function parseParentFeedback(rawText: string | null | undefined, fallbackDate?: string): ParentFeedbackItem[] {
+  if (!rawText || !rawText.trim()) return [];
+  const trimmed = rawText.trim();
+
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((item) => ({
+            date: item.date || fallbackDate || formatShortDate(new Date()),
+            text: item.text || "",
+          }))
+          .filter((item) => item.text.trim() !== "");
+      }
+    } catch (e) {
+      // Fallback
+    }
+  }
+
+  // Multi-line or plain text format fallback
+  const lines = trimmed.split("\n").map((l) => l.trim()).filter(Boolean);
+  return lines.map((line) => {
+    let cleanLine = line.startsWith("-") || line.startsWith("•") ? line.substring(1).trim() : line;
+    const colonIdx = cleanLine.indexOf(":");
+    if (colonIdx > 0 && colonIdx < 25) {
+      const possibleDate = cleanLine.substring(0, colonIdx).trim();
+      const possibleText = cleanLine.substring(colonIdx + 1).trim();
+      if (possibleText) {
+        return { date: possibleDate, text: possibleText };
+      }
+    }
+    return {
+      date: fallbackDate || formatShortDate(new Date()),
+      text: cleanLine,
+    };
+  });
 }
 
 export function StudentWorksheetTable({
@@ -38,6 +83,59 @@ export function StudentWorksheetTable({
       note: w.catatan_guru,
       teacher: w.ttd_guru,
     }));
+
+  // Parent feedback list state
+  const rawParentFeedback = worksheets.find((w) => w.catatan_ortu?.trim())?.catatan_ortu || "";
+  const [feedbackList, setFeedbackList] = useState<ParentFeedbackItem[]>(() => parseParentFeedback(rawParentFeedback));
+  const [newInputText, setNewInputText] = useState("");
+  const [isEditingFeedback, setIsEditingFeedback] = useState(false);
+  const [isSavingFeedback, setIsSavingFeedback] = useState(false);
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+  const [itemToDeleteIndex, setItemToDeleteIndex] = useState<number | null>(null);
+
+  const handleAddFeedbackItem = async () => {
+    if (!newInputText.trim()) return;
+    const newItem: ParentFeedbackItem = {
+      date: formatShortDate(new Date()),
+      text: newInputText.trim(),
+    };
+    const updatedList = [...feedbackList, newItem];
+    const serialized = JSON.stringify(updatedList);
+
+    try {
+      setIsSavingFeedback(true);
+      await updateParentFeedback(student.id, latestMonth ?? null, serialized);
+      setFeedbackList(updatedList);
+      setNewInputText("");
+      setIsEditingFeedback(false);
+      setFeedbackSuccess(true);
+      setTimeout(() => setFeedbackSuccess(false), 3000);
+    } catch (err: any) {
+      alert("Gagal menyimpan saran/masukan: " + err.message);
+    } finally {
+      setIsSavingFeedback(false);
+    }
+  };
+
+  const handleConfirmDeleteFeedbackItem = async () => {
+    if (itemToDeleteIndex === null) return;
+    const indexToRemove = itemToDeleteIndex;
+    const updatedList = feedbackList.filter((_, idx) => idx !== indexToRemove);
+    const serialized = updatedList.length > 0 ? JSON.stringify(updatedList) : null;
+
+    try {
+      setIsSavingFeedback(true);
+      await updateParentFeedback(student.id, latestMonth ?? null, serialized);
+      setFeedbackList(updatedList);
+      setFeedbackSuccess(true);
+      setItemToDeleteIndex(null);
+      setTimeout(() => setFeedbackSuccess(false), 3000);
+    } catch (err: any) {
+      alert("Gagal menghapus masukan: " + err.message);
+    } finally {
+      setIsSavingFeedback(false);
+    }
+  };
 
   const handleDownloadPdf = async () => {
     if (isDownloadingPdf) return;
@@ -232,20 +330,21 @@ export function StudentWorksheetTable({
             </div>
           </div>
 
-          {/* Right Side: Catatan Guru Box (Matching Paper Sheet) */}
-          <div className="w-full lg:w-80 shrink-0">
-            <div className="h-full min-h-[90px] rounded-2xl border-2 border-sky-400 dark:border-sky-600 bg-sky-50/50 dark:bg-sky-950/20 p-3.5 flex flex-col justify-between">
+          {/* Right Side: Catatan Guru & Catatan/Saran Orang Tua Box */}
+          <div className="w-full lg:w-[380px] shrink-0 space-y-3">
+            {/* Catatan Guru Box */}
+            <div className="rounded-2xl border-2 border-sky-400 dark:border-sky-600 bg-sky-50/50 dark:bg-sky-950/20 p-3 flex flex-col justify-between">
               <div>
-                <span className="block text-[11px] font-extrabold uppercase tracking-wider text-sky-800 dark:text-sky-300 mb-1.5 flex items-center justify-between">
+                <span className="block text-[11px] font-extrabold uppercase tracking-wider text-sky-800 dark:text-sky-300 mb-1 flex items-center justify-between">
                   <span>Catatan Guru:</span>
                   <span className="text-[10px] font-bold text-sky-600">✍️ Evaluasi</span>
                 </span>
                 {teacherNotes.length > 0 ? (
-                  <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
+                  <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
                     {teacherNotes.slice(0, 2).map((tn, idx) => (
                       <div key={idx} className="text-xs text-slate-700 dark:text-slate-300 bg-white/80 dark:bg-slate-900/80 p-2 rounded-xl border border-sky-200/60 dark:border-sky-800/40">
                         <p className="leading-snug">{tn.note}</p>
-                        {tn.teacher && <span className="text-[10px] font-bold text-slate-400 block mt-1 text-right">— {tn.teacher}</span>}
+                        {tn.teacher && <span className="text-[10px] font-bold text-slate-400 block mt-0.5 text-right">— {tn.teacher}</span>}
                       </div>
                     ))}
                   </div>
@@ -253,6 +352,109 @@ export function StudentWorksheetTable({
                   <p className="text-xs text-slate-400 italic">Belum ada catatan khusus dari guru.</p>
                 )}
               </div>
+            </div>
+
+            {/* Catatan & Saran Orang Tua Box */}
+            <div className="rounded-2xl border-2 border-emerald-400 dark:border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 p-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
+                  <span>💬 Saran & Masukan Orang Tua</span>
+                </span>
+                {feedbackSuccess && (
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 animate-in fade-in">
+                    ✓ Tersimpan!
+                  </span>
+                )}
+              </div>
+
+              {/* Display items list */}
+              {feedbackList.length > 0 ? (
+                <div className="space-y-1.5 mb-2 max-h-36 overflow-y-auto pr-1">
+                  {feedbackList.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="text-xs text-slate-800 dark:text-slate-200 bg-white/90 dark:bg-slate-900/90 p-2 rounded-xl border border-emerald-200/80 dark:border-emerald-800/50 flex items-start justify-between gap-2"
+                    >
+                      <div className="flex items-start gap-1.5 flex-1 min-w-0">
+                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400 shrink-0 pt-0.5">-</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="inline-block text-[10px] font-extrabold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-300/60 dark:border-emerald-800/60 mr-1.5">
+                            {item.date}
+                          </span>
+                          <span className="leading-relaxed font-medium break-words">{item.text}</span>
+                        </div>
+                      </div>
+                      {isParentView && (
+                        <button
+                          type="button"
+                          onClick={() => setItemToDeleteIndex(idx)}
+                          disabled={isSavingFeedback}
+                          className="text-slate-400 hover:text-red-500 p-0.5 rounded transition-colors no-print-action shrink-0 cursor-pointer"
+                          title="Hapus masukan ini"
+                        >
+                          <Icons.close className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic mb-2">
+                  {isParentView ? "Belum ada saran/masukan dari Anda." : "Belum ada masukan dari orang tua."}
+                </p>
+              )}
+
+              {/* Parent input action */}
+              {isParentView && (
+                <div>
+                  {isEditingFeedback ? (
+                    <div className="space-y-2 pt-1 border-t border-emerald-200/60 dark:border-emerald-900/60 no-print-action">
+                      <div className="flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                        <span>Tambah Masukan Baru:</span>
+                        <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.5 rounded font-mono font-bold">
+                          {formatShortDate(new Date())}
+                        </span>
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={newInputText}
+                        onChange={(e) => setNewInputText(e.target.value)}
+                        placeholder="Tuliskan saran, masukan, atau tanggapan Anda..."
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none placeholder:text-slate-400"
+                      />
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingFeedback(false);
+                            setNewInputText("");
+                          }}
+                          disabled={isSavingFeedback}
+                          className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                        >
+                          Batal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleAddFeedbackItem}
+                          disabled={isSavingFeedback || !newInputText.trim()}
+                          className="px-3 py-1 rounded-lg text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        >
+                          {isSavingFeedback ? "Memproses..." : "✓ Simpan Masukan"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingFeedback(true)}
+                      className="no-print-action text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 bg-emerald-100/80 dark:bg-emerald-900/40 hover:bg-emerald-200/70 border border-emerald-300/60 dark:border-emerald-800/60 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>+ Tambah Saran / Masukan</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -448,6 +650,53 @@ export function StudentWorksheetTable({
           </tbody>
         </table>
       </div>
+
+      {/* Delete Confirmation Modal for Parent Feedback */}
+      {itemToDeleteIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200 no-print-action">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 dark:border-slate-800 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner">
+              🗑️
+            </div>
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-1.5">
+              Hapus Masukan?
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+              Apakah Anda yakin ingin menghapus masukan ini? Masukan yang dihapus tidak dapat dikembalikan.
+            </p>
+
+            {feedbackList[itemToDeleteIndex] && (
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 mb-5 text-left text-xs">
+                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 block mb-0.5">
+                  {feedbackList[itemToDeleteIndex].date}
+                </span>
+                <p className="text-slate-700 dark:text-slate-300 font-medium leading-snug">
+                  "{feedbackList[itemToDeleteIndex].text}"
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setItemToDeleteIndex(null)}
+                disabled={isSavingFeedback}
+                className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteFeedbackItem}
+                disabled={isSavingFeedback}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-600/20 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isSavingFeedback ? "Menghapus..." : "Ya, Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
