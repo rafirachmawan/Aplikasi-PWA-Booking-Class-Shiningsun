@@ -1539,6 +1539,29 @@ export async function deleteWorksheet(id: string) {
   return true;
 }
 
+export async function deleteWorksheetMonth(studentId: string, bulanKe: number | null) {
+  const supabaseServer = await createClient();
+  let query = supabaseServer
+    .from('student_worksheets')
+    .delete()
+    .eq('student_id', studentId);
+
+  if (bulanKe !== null && bulanKe !== undefined) {
+    query = query.eq('bulan_ke', bulanKe);
+  } else {
+    query = query.is('bulan_ke', null);
+  }
+
+  const { error } = await query;
+
+  if (error) {
+    console.error("Error deleting worksheet month:", error);
+    throw new Error("Gagal menghapus lembar perkembangan: " + error.message);
+  }
+
+  return true;
+}
+
 export async function updateStudentAccessPin(studentId: string, newPin: string) {
   if (!newPin || newPin.trim().length < 4) {
     throw new Error("PIN Akses minimal 4 karakter.");

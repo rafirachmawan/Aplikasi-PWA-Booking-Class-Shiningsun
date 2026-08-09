@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { WorksheetFormModal } from "@/components/features/worksheets/WorksheetFormModal";
 import { StudentWorksheetTable } from "@/components/features/worksheets/StudentWorksheetTable";
-import { deleteWorksheet, updateStudentAccessPin } from "@/lib/actions";
+import { deleteWorksheet, deleteWorksheetMonth, updateStudentAccessPin } from "@/lib/actions";
 import { formatNumericDate, formatShortDate } from "@/lib/dateUtils";
 import { getGDrivePreviewLink, getGDriveDirectLink } from "@/lib/gdriveUtils";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -66,8 +66,33 @@ export function WorksheetClientWrapper({
   }, [students, studentDropdownFilter]);
 
   // Delete confirm modal state
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: "row" | "sheet";
+    id?: string;
+    studentId?: string;
+    bulanKe?: number | null;
+    studentName?: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      if (deleteTarget.type === "sheet" && deleteTarget.studentId) {
+        await deleteWorksheetMonth(deleteTarget.studentId, deleteTarget.bulanKe ?? null);
+      } else if (deleteTarget.type === "row" && deleteTarget.id) {
+        await deleteWorksheet(deleteTarget.id);
+      }
+      setDeleteTarget(null);
+      router.refresh();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Gagal menghapus.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Protection state for direct URL access
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -87,6 +112,7 @@ export function WorksheetClientWrapper({
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinCopiedWa, setPinCopiedWa] = useState(false);
   const [pinMsg, setPinMsg] = useState({ error: "", success: "" });
+  const [isPinUpdating, setIsPinUpdating] = useState(false);
 
   const handleCopyWaInfo = () => {
     if (!pinModalStudent) return;
@@ -130,28 +156,37 @@ export function WorksheetClientWrapper({
     });
   }, [initialWorksheets, searchQuery, selectedStudentId]);
 
-  // Group worksheets by student_id
+  // Group worksheets by student_id + bulan_ke (each month = separate card/table)
   const groupedWorksheets = useMemo(() => {
-    const map = new Map<string, { student: any; worksheets: any[] }>();
+    const map = new Map<string, { student: any; bulanKe: number | null; worksheets: any[] }>();
 
     filteredWorksheets.forEach((w) => {
       const sId = w.student_id;
-      if (!map.has(sId)) {
+      const bk = w.bulan_ke ?? null;
+      const groupKey = `${sId}_${bk ?? 'none'}`;
+
+      if (!map.has(groupKey)) {
         const studentObj = w.student || students.find((s) => s.id === sId) || { id: sId, name: w.student_name || "Siswa" };
-        map.set(sId, { student: studentObj, worksheets: [] });
+        map.set(groupKey, { student: studentObj, bulanKe: bk, worksheets: [] });
       }
-      map.get(sId)!.worksheets.push(w);
+      map.get(groupKey)!.worksheets.push(w);
     });
 
     // If specific student selected in filter and has 0 filtered worksheets, still render their empty table
-    if (selectedStudentId && !map.has(selectedStudentId)) {
+    if (selectedStudentId && !Array.from(map.values()).some(g => g.student.id === selectedStudentId)) {
       const studentObj = students.find((s) => s.id === selectedStudentId);
       if (studentObj) {
-        map.set(selectedStudentId, { student: studentObj, worksheets: [] });
+        map.set(`${selectedStudentId}_none`, { student: studentObj, bulanKe: null, worksheets: [] });
       }
     }
 
-    return Array.from(map.values());
+    // Sort: by student name, then by bulan_ke ascending
+    return Array.from(map.values()).sort((a, b) => {
+      const nameA = a.student?.name || "";
+      const nameB = b.student?.name || "";
+      if (nameA !== nameB) return nameA.localeCompare(nameB);
+      return (a.bulanKe ?? 0) - (b.bulanKe ?? 0);
+    });
   }, [filteredWorksheets, selectedStudentId, students]);
 
   const handleUnlockPage = (e: React.FormEvent) => {
@@ -216,23 +251,10 @@ export function WorksheetClientWrapper({
     );
   }
 
-  const handleDelete = async (id: string) => {
-    setIsProcessing(true);
-    try {
-      await deleteWorksheet(id);
-      setDeletingId(null);
-      router.refresh();
-    } catch (err: any) {
-      alert(err.message || "Gagal menghapus lembar kerja.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const handleUpdatePin = async () => {
     if (!pinModalStudent || !newPin) return;
     setPinMsg({ error: "", success: "" });
-    setIsProcessing(true);
+    setIsPinUpdating(true);
     try {
       await updateStudentAccessPin(pinModalStudent.id, newPin);
       pinModalStudent.access_pin = newPin.trim();
@@ -246,48 +268,12 @@ export function WorksheetClientWrapper({
     } catch (err: any) {
       setPinMsg({ error: err.message || "Gagal mengubah PIN.", success: "" });
     } finally {
-      setIsProcessing(false);
+      setIsPinUpdating(false);
     }
   };
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {isProcessing && <LoadingSpinner usePortal={true} />}
-
-      {/* Delete Confirmation Modal */}
-      {deletingId && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
-            onClick={() => setDeletingId(null)}
-          />
-          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-              <Icons.trash className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Hapus Lembar Kerja?</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-              Data lembar kerja ini akan dihapus dari sistem.
-            </p>
-            <div className="flex gap-3 mt-6">
-              <button
-                type="button"
-                onClick={() => setDeletingId(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDelete(deletingId)}
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
-              >
-                Ya, Hapus
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Access PIN Manager Modal */}
       {pinModalStudent && (
@@ -583,20 +569,28 @@ export function WorksheetClientWrapper({
             </p>
           </div>
         ) : (
-          groupedWorksheets.map(({ student, worksheets: studentWsList }) => (
+          groupedWorksheets.map(({ student, bulanKe, worksheets: studentWsList }) => (
             <StudentWorksheetTable
-              key={student.id}
+              key={`${student.id}_${bulanKe ?? 'none'}`}
               student={student}
               worksheets={studentWsList}
-              onAddRow={(studentId, bulanKe) => {
-                setEditingWorksheet({ student_id: studentId, bulan_ke: bulanKe });
+              onAddRow={(studentId, bk) => {
+                setEditingWorksheet({ student_id: studentId, bulan_ke: bk });
                 setIsModalOpen(true);
               }}
               onEditRow={(ws) => {
                 setEditingWorksheet(ws);
                 setIsModalOpen(true);
               }}
-              onDeleteRow={(wsId) => setDeletingId(wsId)}
+              onDeleteRow={(wsId) => setDeleteTarget({ type: "row", id: wsId })}
+              onDeleteSheet={(sId, bk, sName) =>
+                setDeleteTarget({
+                  type: "sheet",
+                  studentId: sId,
+                  bulanKe: bk,
+                  studentName: sName,
+                })
+              }
               onSetPin={(s) => {
                 setPinModalStudent(s);
                 setNewPin(s.access_pin || "123456");
@@ -621,6 +615,75 @@ export function WorksheetClientWrapper({
             router.refresh();
           }}
         />
+      )}
+
+      {/* Modern Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-4 animate-in zoom-in-95 duration-200">
+            {/* Red Warning Badge */}
+            <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-200/80 dark:border-red-900/50 flex items-center justify-center mx-auto shadow-inner">
+              <Icons.trash className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white leading-tight">
+                {deleteTarget.type === "sheet"
+                  ? "Hapus Lembar Perkembangan?"
+                  : "Hapus Baris Evaluasi?"}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                {deleteTarget.type === "sheet" ? (
+                  <>
+                    Apakah Anda yakin ingin menghapus{" "}
+                    <strong className="text-slate-800 dark:text-slate-200">
+                      Lembar Perkembangan {deleteTarget.bulanKe != null ? `Bulan ke-${deleteTarget.bulanKe}` : ""}
+                    </strong>{" "}
+                    untuk siswa{" "}
+                    <strong className="text-slate-800 dark:text-slate-200">
+                      {deleteTarget.studentName}
+                    </strong>
+                    ? Seluruh baris data evaluasi pada lembar ini akan dihapus secara permanen.
+                  </>
+                ) : (
+                  <>
+                    Apakah Anda yakin ingin menghapus baris evaluasi perkembangan ini? Data yang dihapus tidak dapat dikembalikan.
+                  </>
+                )}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:scale-95 transition-all shadow-md shadow-red-500/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <LoadingSpinner size="sm" />
+                    <span>Menghapus...</span>
+                  </>
+                ) : (
+                  <>
+                    <Icons.trash className="w-4 h-4" />
+                    <span>Ya, Hapus</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

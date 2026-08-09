@@ -13,6 +13,7 @@ interface StudentWorksheetTableProps {
   onAddRow?: (studentId: string, bulanKe?: number) => void;
   onEditRow?: (worksheet: any) => void;
   onDeleteRow?: (worksheetId: string) => void;
+  onDeleteSheet?: (studentId: string, bulanKe: number | null, studentName: string) => void;
   onSetPin?: (student: any) => void;
 }
 
@@ -23,6 +24,7 @@ export function StudentWorksheetTable({
   onAddRow,
   onEditRow,
   onDeleteRow,
+  onDeleteSheet,
   onSetPin,
 }: StudentWorksheetTableProps) {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
@@ -255,39 +257,53 @@ export function StudentWorksheetTable({
             </div>
           )}
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={handleDownloadPdf}
-              disabled={isDownloadingPdf}
-              className="flex-1 sm:flex-none justify-center px-3.5 py-2 rounded-xl text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
-              title="Download langsung file PDF lembar perkembangan siswa ini"
-            >
-              {isDownloadingPdf ? (
-                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" x2="12" y1="15" y2="3"/>
-                </svg>
-              )}
-              <span className="whitespace-nowrap">{isDownloadingPdf ? "Memproses PDF..." : "Download PDF"}</span>
-            </button>
-
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             {!isParentView && (
               <button
                 type="button"
                 onClick={() => onAddRow && onAddRow(student.id, latestMonth)}
-                className="flex-1 sm:flex-none justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
+                className="w-full sm:w-auto justify-center px-4 py-2.5 sm:py-2 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
               >
                 <Icons.add className="w-4 h-4 shrink-0" />
                 <span className="whitespace-nowrap">Tambah Baris Evaluasi</span>
               </button>
             )}
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={isDownloadingPdf}
+                className="flex-1 sm:w-auto justify-center px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 disabled:opacity-50 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
+                title="Download langsung file PDF lembar perkembangan siswa ini"
+              >
+                {isDownloadingPdf ? (
+                  <svg className="animate-spin h-3.5 w-3.5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" x2="12" y1="15" y2="3"/>
+                  </svg>
+                )}
+                <span className="whitespace-nowrap">{isDownloadingPdf ? "Memproses..." : "Download PDF"}</span>
+              </button>
+
+              {!isParentView && onDeleteSheet && (
+                <button
+                  type="button"
+                  onClick={() => onDeleteSheet(student.id, latestMonth ?? null, student.name || "Siswa")}
+                  className="flex-1 sm:w-auto justify-center px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/60 border border-red-200/80 dark:border-red-900/50 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
+                  title="Hapus Seluruh Lembar Perkembangan Ini"
+                >
+                  <Icons.trash className="w-3.5 h-3.5 shrink-0" />
+                  <span className="whitespace-nowrap">Hapus Lembar</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -356,33 +372,40 @@ export function StudentWorksheetTable({
 
                     {/* FILE / AKSI */}
                     <td className="py-3 px-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        {item.gdrive_link ? (
-                          <a
-                            href={getGDriveDirectLink(item.gdrive_link)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs"
-                            title="Unduh File GDrive"
-                          >
-                            📄
-                          </a>
-                        ) : null}
+                      <div className="flex items-center justify-center gap-1">
+                        {/* Slot 1: GDrive File Link */}
+                        <div className="w-7 h-7 flex items-center justify-center shrink-0">
+                          {item.gdrive_link ? (
+                            <a
+                              href={getGDriveDirectLink(item.gdrive_link)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-7 h-7 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs flex items-center justify-center text-xs"
+                              title="Unduh File GDrive"
+                            >
+                              📄
+                            </a>
+                          ) : (
+                            <span className="text-slate-300 dark:text-slate-700 text-xs font-mono">-</span>
+                          )}
+                        </div>
 
                         {!isParentView && (
                           <div className="flex items-center gap-1 no-print-action">
+                            {/* Slot 2: Edit Button */}
                             <button
                               type="button"
                               onClick={() => onEditRow && onEditRow(item)}
-                              className="p-1.5 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors"
+                              className="w-7 h-7 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
                               title="Edit Baris"
                             >
                               <Icons.edit className="w-3.5 h-3.5" />
                             </button>
+                            {/* Slot 3: Delete Button */}
                             <button
                               type="button"
                               onClick={() => onDeleteRow && onDeleteRow(item.id)}
-                              className="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors"
+                              className="w-7 h-7 rounded-lg text-slate-500 hover:text-red-600 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
                               title="Hapus Baris"
                             >
                               <Icons.trash className="w-3.5 h-3.5" />
