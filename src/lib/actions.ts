@@ -1488,8 +1488,9 @@ export async function getWorksheetsByBranch() {
       .select(
         `
         *,
-        student:students(id, name, nickname, status, access_pin, label:labels(main_level, sub_level, hex_color))
+        student:students(id, name, nickname, gender, date_of_birth, status, access_pin, label:labels(main_level, sub_level, hex_color))
       `,
+
       )
       .order("worksheet_date", { ascending: true })
       .order("created_at", { ascending: true });
@@ -1568,13 +1569,14 @@ export async function createWorksheet(formData: FormData) {
   const kegiatan = (formData.get("kegiatan") as string) || "";
   const hasil_belajar = (formData.get("hasil_belajar") as string) || "";
   const catatan_guru = (formData.get("catatan_guru") as string) || "";
+  const rekomendasi_rumah = (formData.get("rekomendasi_rumah") as string) || "";
   const ttd_guru = (formData.get("ttd_guru") as string) || "";
   const bulan_ke = formData.get("bulan_ke")
     ? parseInt(formData.get("bulan_ke") as string, 10)
     : null;
 
   if (!student_id || !title) {
-    throw new Error("Siswa dan Judul Lembar Perkembangan wajib diisi.");
+    throw new Error("Siswa dan Judul Laporan Perkembangan wajib diisi.");
   }
 
   const branchId = await getBranchId();
@@ -1591,6 +1593,7 @@ export async function createWorksheet(formData: FormData) {
     kegiatan,
     hasil_belajar,
     catatan_guru,
+    rekomendasi_rumah,
     ttd_guru,
     bulan_ke,
   });
@@ -1629,13 +1632,14 @@ export async function updateWorksheet(id: string, formData: FormData) {
   const kegiatan = (formData.get("kegiatan") as string) || "";
   const hasil_belajar = (formData.get("hasil_belajar") as string) || "";
   const catatan_guru = (formData.get("catatan_guru") as string) || "";
+  const rekomendasi_rumah = (formData.get("rekomendasi_rumah") as string) || "";
   const ttd_guru = (formData.get("ttd_guru") as string) || "";
   const bulan_ke = formData.get("bulan_ke")
     ? parseInt(formData.get("bulan_ke") as string, 10)
     : null;
 
   if (!title) {
-    throw new Error("Judul Lembar Perkembangan wajib diisi.");
+    throw new Error("Judul Laporan Perkembangan wajib diisi.");
   }
 
   const supabaseServer = await createClient();
@@ -1647,6 +1651,7 @@ export async function updateWorksheet(id: string, formData: FormData) {
     kegiatan,
     hasil_belajar,
     catatan_guru,
+    rekomendasi_rumah,
     ttd_guru,
     bulan_ke,
     updated_at: new Date().toISOString(),
@@ -1685,7 +1690,7 @@ export async function deleteWorksheet(id: string) {
 
   if (error) {
     console.error("Error deleting worksheet:", error);
-    throw new Error("Gagal menghapus lembar perkembangan: " + error.message);
+    throw new Error("Gagal menghapus laporan perkembangan: " + error.message);
   }
 
   return true;
@@ -1711,7 +1716,7 @@ export async function deleteWorksheetMonth(
 
   if (error) {
     console.error("Error deleting worksheet month:", error);
-    throw new Error("Gagal menghapus lembar perkembangan: " + error.message);
+    throw new Error("Gagal menghapus laporan perkembangan: " + error.message);
   }
 
   return true;
@@ -1938,3 +1943,259 @@ export async function updateParentFeedback(
   revalidatePath("/portal-ortu/dashboard");
   return true;
 }
+
+export async function updateSingleWorksheetParentFeedback(
+  worksheetId: string,
+  catatanOrtu: string | null,
+) {
+  const supabaseServer = await createClient();
+  const valueToStore =
+    typeof catatanOrtu === "string" && catatanOrtu.trim().length > 0
+      ? catatanOrtu.trim()
+      : null;
+
+  const { error } = await supabaseServer
+    .from("student_worksheets")
+    .update({
+      catatan_ortu: valueToStore,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", worksheetId);
+
+  if (error) {
+    console.error("Error updating single worksheet parent feedback:", error);
+    if (
+      error.message.includes("schema cache") ||
+      error.message.includes("Could not find the 'catatan_ortu'")
+    ) {
+      throw new Error(
+        "Kolom 'catatan_ortu' belum ditambahkan di Supabase! Silakan jalankan SQL migrasi di file 'supabase/student_worksheets.sql' pada Supabase SQL Editor.",
+      );
+    }
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/worksheets");
+  revalidatePath("/portal-ortu/dashboard");
+  return true;
+}
+
+// =========================================
+// TEACHERS (GURU / MISS) ACTIONS
+// =========================================
+
+export async function getTeachers() {
+  try {
+    const supabaseServer = await createClient();
+    const branchId = await getBranchId();
+    if (!branchId) return [];
+
+    let query = supabaseServer
+      .from("teachers")
+      .select("*")
+      .eq("is_active", true)
+      .order("name", { ascending: true });
+
+    if (branchId !== "ALL") {
+      query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.warn("Notice fetching teachers:", error.message);
+      return [];
+    }
+    return data || [];
+  } catch (err: any) {
+    console.warn("Exception fetching teachers:", err?.message || err);
+    return [];
+  }
+}
+
+export async function createTeacher(formData: FormData) {
+  const name = formData.get("name") as string;
+  if (!name || !name.trim()) {
+    throw new Error("Nama Guru wajib diisi.");
+  }
+
+  const branchId = await getBranchId();
+  const supabaseServer = await createClient();
+
+  const { error } = await supabaseServer.from("teachers").insert({
+    branch_id: branchId === "ALL" ? null : branchId,
+    name: name.trim(),
+    is_active: true,
+  });
+
+  if (error) {
+    console.error("Error creating teacher:", error);
+    throw new Error("Gagal menambah guru: " + error.message);
+  }
+
+  revalidatePath("/teachers");
+  revalidatePath("/worksheets");
+  revalidatePath("/master");
+  return true;
+}
+
+export async function updateTeacher(id: string, formData: FormData) {
+  const name = formData.get("name") as string;
+  if (!name || !name.trim()) {
+    throw new Error("Nama Guru wajib diisi.");
+  }
+
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer
+    .from("teachers")
+    .update({ name: name.trim() })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error updating teacher:", error);
+    throw new Error("Gagal memperbarui guru: " + error.message);
+  }
+
+  revalidatePath("/teachers");
+  revalidatePath("/worksheets");
+  revalidatePath("/master");
+  return true;
+}
+
+export async function deleteTeacher(id: string) {
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer
+    .from("teachers")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error deleting teacher:", error);
+    throw new Error("Gagal menghapus guru: " + error.message);
+  }
+
+  revalidatePath("/teachers");
+  revalidatePath("/worksheets");
+  revalidatePath("/master");
+  return true;
+}
+
+// =========================================
+// ASSESSMENT TEMPLATES ACTIONS
+// =========================================
+
+export async function getAssessmentTemplates() {
+  try {
+    const supabaseServer = await createClient();
+    const branchId = await getBranchId();
+    if (!branchId) return [];
+
+    let query = supabaseServer
+      .from("assessment_templates")
+      .select("*")
+      .eq("is_active", true)
+      .order("created_at", { ascending: true });
+
+    if (branchId !== "ALL") {
+      query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.warn("Notice fetching assessment templates:", error.message);
+      return [];
+    }
+    return data || [];
+  } catch (err: any) {
+    console.warn("Exception fetching assessment templates:", err?.message || err);
+    return [];
+  }
+}
+
+export async function createAssessmentTemplate(formData: FormData) {
+  const category = (formData.get("category") as string) || "kegiatan";
+  const title = formData.get("title") as string;
+  const materi = (formData.get("materi") as string) || "";
+  const kegiatan = (formData.get("kegiatan") as string) || "";
+  const hasil_belajar = (formData.get("hasil_belajar") as string) || "";
+
+  if (!title || !title.trim()) {
+    throw new Error("Judul / Isi Template wajib diisi.");
+  }
+
+  const branchId = await getBranchId();
+  const supabaseServer = await createClient();
+
+  const { error } = await supabaseServer.from("assessment_templates").insert({
+    branch_id: branchId === "ALL" ? null : branchId,
+    category: category,
+    title: title.trim(),
+    materi: materi.trim(),
+    kegiatan: kegiatan.trim(),
+    hasil_belajar: hasil_belajar.trim(),
+    is_active: true,
+  });
+
+  if (error) {
+    console.error("Error creating assessment template:", error);
+    throw new Error("Gagal membuat template: " + error.message);
+  }
+
+  revalidatePath("/templates");
+  revalidatePath("/worksheets");
+  revalidatePath("/master");
+  return true;
+}
+
+export async function updateAssessmentTemplate(id: string, formData: FormData) {
+  const category = (formData.get("category") as string) || "kegiatan";
+  const title = formData.get("title") as string;
+  const materi = (formData.get("materi") as string) || "";
+  const kegiatan = (formData.get("kegiatan") as string) || "";
+  const hasil_belajar = (formData.get("hasil_belajar") as string) || "";
+
+  if (!title || !title.trim()) {
+    throw new Error("Judul / Isi Template wajib diisi.");
+  }
+
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer
+    .from("assessment_templates")
+    .update({
+      category: category,
+      title: title.trim(),
+      materi: materi.trim(),
+      kegiatan: kegiatan.trim(),
+      hasil_belajar: hasil_belajar.trim(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error updating assessment template:", error);
+    throw new Error("Gagal memperbarui template: " + error.message);
+  }
+
+  revalidatePath("/templates");
+  revalidatePath("/worksheets");
+  revalidatePath("/master");
+  return true;
+}
+
+export async function deleteAssessmentTemplate(id: string) {
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer
+    .from("assessment_templates")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error deleting assessment template:", error);
+    throw new Error("Gagal menghapus template: " + error.message);
+  }
+
+  revalidatePath("/templates");
+  revalidatePath("/worksheets");
+  revalidatePath("/master");
+  return true;
+}
+
+

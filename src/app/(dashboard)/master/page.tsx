@@ -1,4 +1,4 @@
-import { getClasses, getLabels, getCurrentUserRole, getBranchId, getActiveBranchName } from "@/lib/actions";
+import { getClasses, getLabels, getTeachers, getAssessmentTemplates, getCurrentUserRole, getBranchId, getActiveBranchName } from "@/lib/actions";
 import { MasterClientWrapper } from "./MasterClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 
@@ -15,6 +15,18 @@ export default async function MasterDataPage() {
 
   const classes = await getClasses();
   const labels = await getLabels();
+  const teachers = await getTeachers();
+  const templates = await getAssessmentTemplates();
 
-  return <MasterClientWrapper classes={classes} labels={labels} activeBranchName={activeBranchName} role={role} />;
+  return (
+    <MasterClientWrapper
+      classes={classes}
+      labels={labels}
+      teachers={teachers}
+      templates={templates}
+      activeBranchName={activeBranchName}
+      role={role}
+    />
+  );
 }
+

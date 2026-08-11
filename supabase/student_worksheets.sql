@@ -34,6 +34,7 @@ ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS materi TEXT;
 ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS kegiatan TEXT;
 ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS hasil_belajar TEXT;
 ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS catatan_guru TEXT;
+ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS rekomendasi_rumah TEXT;
 ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS catatan_ortu TEXT;
 ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS ttd_guru VARCHAR(100);
 ALTER TABLE public.student_worksheets ADD COLUMN IF NOT EXISTS bulan_ke INTEGER;

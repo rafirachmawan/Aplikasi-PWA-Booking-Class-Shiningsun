@@ -153,7 +153,7 @@ export function ParentDashboardClient({
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            <span>📄 Rapor & Lembar Perkembangan</span>
+            <span>📄 Rapor & Laporan Perkembangan</span>
             <span className={`px-2 py-0.5 rounded-full text-[11px] ${activeTab === "worksheets" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
               {worksheets.length}
             </span>
@@ -181,7 +181,7 @@ export function ParentDashboardClient({
             <div className="flex items-center justify-between px-1">
               <div>
                 <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
-                  📄 Lembar Perkembangan & Evaluasi Siswa
+                  📄 Laporan Perkembangan & Evaluasi Siswa
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Laporan hasil belajar dan catatan perkembangan resmi dari guru.

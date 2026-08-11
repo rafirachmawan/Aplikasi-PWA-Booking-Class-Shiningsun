@@ -15,6 +15,8 @@ interface WorksheetClientWrapperProps {
   students: any[];
   labels: any[];
   activeBranchName?: string | null;
+  teachers?: any[];
+  templates?: any[];
 }
 
 export function WorksheetClientWrapper({
@@ -22,6 +24,8 @@ export function WorksheetClientWrapper({
   students,
   labels,
   activeBranchName,
+  teachers = [],
+  templates = [],
 }: WorksheetClientWrapperProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -166,9 +170,15 @@ export function WorksheetClientWrapper({
       const groupKey = `${sId}_${bk ?? 'none'}`;
 
       if (!map.has(groupKey)) {
-        const studentObj = w.student || students.find((s) => s.id === sId) || { id: sId, name: w.student_name || "Siswa" };
+        const fullStudent = students.find((s) => s.id === sId);
+        const studentObj = {
+          ...(fullStudent || {}),
+          ...(w.student || {}),
+          date_of_birth: w.student?.date_of_birth || fullStudent?.date_of_birth || null,
+        };
         map.set(groupKey, { student: studentObj, bulanKe: bk, worksheets: [] });
       }
+
       map.get(groupKey)!.worksheets.push(w);
     });
 
@@ -214,10 +224,10 @@ export function WorksheetClientWrapper({
           </div>
           <div>
             <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              Modul Lembar Perkembangan Dikunci
+              Modul Laporan Perkembangan Dikunci
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-              Fitur Lembar Perkembangan Siswa ini masih dalam tahap prarilis. Silakan masukkan password akses untuk membuka modul ini.
+              Fitur Laporan Perkembangan Siswa ini masih dalam tahap prarilis. Silakan masukkan password akses untuk membuka modul ini.
             </p>
           </div>
 
@@ -243,7 +253,7 @@ export function WorksheetClientWrapper({
               type="submit"
               className="w-full py-3.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-md transition-all active:scale-95"
             >
-              Buka Akses Lembar Perkembangan
+              Buka Akses Laporan Perkembangan
             </button>
           </form>
         </div>
@@ -423,7 +433,7 @@ export function WorksheetClientWrapper({
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap items-center gap-x-2">
-              <span>Lembar Perkembangan Siswa</span>
+              <span>Laporan Perkembangan Siswa</span>
               {activeBranchName && (
                 <span className="text-brand-100 font-normal text-lg sm:text-xl lg:text-2xl whitespace-nowrap">
                   ({activeBranchName})
@@ -442,7 +452,7 @@ export function WorksheetClientWrapper({
             style={{ color: '#1d4ed8', backgroundColor: 'white' }}
           >
             <Icons.add className="-ml-0.5 h-5 w-5" />
-            Tambah Lembar Perkembangan
+            Tambah Laporan Perkembangan
           </button>
         </div>
       </div>
@@ -563,9 +573,9 @@ export function WorksheetClientWrapper({
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400">
               <Icons.edit className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-800 dark:text-white">Belum Ada Lembar Perkembangan Siswa</h3>
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">Belum Ada Laporan Perkembangan Siswa</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-              Klik tombol &quot;Tambah Lembar Perkembangan&quot; untuk mulai mencatat evaluasi perkembangan siswa.
+              Klik tombol &quot;Tambah Laporan Perkembangan&quot; untuk mulai mencatat evaluasi perkembangan siswa.
             </p>
           </div>
         ) : (
@@ -604,6 +614,8 @@ export function WorksheetClientWrapper({
       {(isModalOpen || editingWorksheet) && (
         <WorksheetFormModal
           students={students}
+          teachers={teachers}
+          templates={templates}
           initialData={editingWorksheet}
           onClose={() => {
             setIsModalOpen(false);
@@ -629,7 +641,7 @@ export function WorksheetClientWrapper({
             <div className="space-y-1.5">
               <h3 className="text-lg font-extrabold text-slate-900 dark:text-white leading-tight">
                 {deleteTarget.type === "sheet"
-                  ? "Hapus Lembar Perkembangan?"
+                  ? "Hapus Laporan Perkembangan?"
                   : "Hapus Baris Evaluasi?"}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -637,13 +649,13 @@ export function WorksheetClientWrapper({
                   <>
                     Apakah Anda yakin ingin menghapus{" "}
                     <strong className="text-slate-800 dark:text-slate-200">
-                      Lembar Perkembangan {deleteTarget.bulanKe != null ? `Bulan ke-${deleteTarget.bulanKe}` : ""}
+                      Laporan Perkembangan {deleteTarget.bulanKe != null ? `Bulan ke-${deleteTarget.bulanKe}` : ""}
                     </strong>{" "}
                     untuk siswa{" "}
                     <strong className="text-slate-800 dark:text-slate-200">
                       {deleteTarget.studentName}
                     </strong>
-                    ? Seluruh baris data evaluasi pada lembar ini akan dihapus secara permanen.
+                    ? Seluruh baris data evaluasi pada laporan ini akan dihapus secara permanen.
                   </>
                 ) : (
                   <>

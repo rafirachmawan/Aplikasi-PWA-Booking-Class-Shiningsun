@@ -4,8 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import { Icons } from "@/components/ui/icons";
 import { formatShortDate } from "@/lib/dateUtils";
-import { getGDriveDirectLink, getGDrivePreviewLink } from "@/lib/gdriveUtils";
-import { updateParentFeedback } from "@/lib/actions";
+import { getGDriveDirectLink } from "@/lib/gdriveUtils";
+import { updateSingleWorksheetParentFeedback } from "@/lib/actions";
 
 interface StudentWorksheetTableProps {
   student: any;
@@ -21,6 +21,46 @@ interface StudentWorksheetTableProps {
 interface ParentFeedbackItem {
   date: string;
   text: string;
+}
+
+function calculateAge(dobStr?: string | null): string {
+  if (!dobStr) return "-";
+  const birthDate = new Date(dobStr);
+  if (isNaN(birthDate.getTime())) return "-";
+  const today = new Date();
+
+  let years = today.getFullYear() - birthDate.getFullYear();
+  let months = today.getMonth() - birthDate.getMonth();
+
+  if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
+    years--;
+    months += 12;
+  }
+  if (today.getDate() < birthDate.getDate()) {
+    months--;
+    if (months < 0) months += 12;
+  }
+
+  if (years < 0) return "-";
+  if (years === 0 && months === 0) return "Baru lahir";
+  if (years === 0) return `${months} Bulan`;
+  if (months === 0) return `${years} Tahun`;
+  return `${years} Thn ${months} Bln`;
+}
+
+function formatDateIndonesian(dateStr?: string | null): string {
+  if (!dateStr) return "-";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch (e) {
+    return dateStr;
+  }
 }
 
 function parseParentFeedback(rawText: string | null | undefined, fallbackDate?: string): ParentFeedbackItem[] {
@@ -43,7 +83,6 @@ function parseParentFeedback(rawText: string | null | undefined, fallbackDate?: 
     }
   }
 
-  // Multi-line or plain text format fallback
   const lines = trimmed.split("\n").map((l) => l.trim()).filter(Boolean);
   return lines.map((line) => {
     let cleanLine = line.startsWith("-") || line.startsWith("•") ? line.substring(1).trim() : line;
@@ -62,31 +101,21 @@ function parseParentFeedback(rawText: string | null | undefined, fallbackDate?: 
   });
 }
 
-export function StudentWorksheetTable({
-  student,
-  worksheets,
-  isParentView = false,
-  onAddRow,
+{/* Component untuk setiap sesi harian (Per Hari) */}
+function DailyWorksheetSessionItem({
+  item,
+  isParentView,
   onEditRow,
   onDeleteRow,
-  onDeleteSheet,
-  onSetPin,
-}: StudentWorksheetTableProps) {
-  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-
-  // Find latest bulan_ke or teacher note if available
-  const latestMonth = [...worksheets].reverse().find((w) => w.bulan_ke != null)?.bulan_ke;
-  const teacherNotes = worksheets
-    .filter((w) => w.catatan_guru && w.catatan_guru.trim() !== "")
-    .map((w) => ({
-      date: w.worksheet_date,
-      note: w.catatan_guru,
-      teacher: w.ttd_guru,
-    }));
-
-  // Parent feedback list state
-  const rawParentFeedback = worksheets.find((w) => w.catatan_ortu?.trim())?.catatan_ortu || "";
-  const [feedbackList, setFeedbackList] = useState<ParentFeedbackItem[]>(() => parseParentFeedback(rawParentFeedback));
+}: {
+  item: any;
+  isParentView: boolean;
+  onEditRow?: (item: any) => void;
+  onDeleteRow?: (id: string) => void;
+}) {
+  const [feedbackList, setFeedbackList] = useState<ParentFeedbackItem[]>(() =>
+    parseParentFeedback(item.catatan_ortu, formatShortDate(item.worksheet_date))
+  );
   const [newInputText, setNewInputText] = useState("");
   const [isEditingFeedback, setIsEditingFeedback] = useState(false);
   const [isSavingFeedback, setIsSavingFeedback] = useState(false);
@@ -104,7 +133,7 @@ export function StudentWorksheetTable({
 
     try {
       setIsSavingFeedback(true);
-      await updateParentFeedback(student.id, latestMonth ?? null, serialized);
+      await updateSingleWorksheetParentFeedback(item.id, serialized);
       setFeedbackList(updatedList);
       setNewInputText("");
       setIsEditingFeedback(false);
@@ -119,13 +148,12 @@ export function StudentWorksheetTable({
 
   const handleConfirmDeleteFeedbackItem = async () => {
     if (itemToDeleteIndex === null) return;
-    const indexToRemove = itemToDeleteIndex;
-    const updatedList = feedbackList.filter((_, idx) => idx !== indexToRemove);
+    const updatedList = feedbackList.filter((_, idx) => idx !== itemToDeleteIndex);
     const serialized = updatedList.length > 0 ? JSON.stringify(updatedList) : null;
 
     try {
       setIsSavingFeedback(true);
-      await updateParentFeedback(student.id, latestMonth ?? null, serialized);
+      await updateSingleWorksheetParentFeedback(item.id, serialized);
       setFeedbackList(updatedList);
       setFeedbackSuccess(true);
       setItemToDeleteIndex(null);
@@ -137,18 +165,328 @@ export function StudentWorksheetTable({
     }
   };
 
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm space-y-0">
+      {/* 1. Metadata Header Bar per Session */}
+      <div className="bg-slate-100/90 dark:bg-slate-800/90 px-4 py-3 border-b border-slate-200 dark:border-slate-800">
+        <div className="space-y-1.5 text-xs sm:text-sm font-medium">
+          <div className="grid grid-cols-[100px_auto_1fr] gap-x-1.5 items-baseline">
+            <span className="font-bold text-slate-600 dark:text-slate-400 uppercase text-[10px] sm:text-[11px] tracking-wider">
+              Hari/tgl
+            </span>
+            <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+            <span className="font-extrabold text-slate-900 dark:text-white">
+              {formatShortDate(item.worksheet_date)}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-[100px_auto_1fr] gap-x-1.5 items-baseline">
+            <span className="font-bold text-slate-600 dark:text-slate-400 uppercase text-[10px] sm:text-[11px] tracking-wider">
+              Materi
+            </span>
+            <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+            <span className="font-bold text-brand-600 dark:text-brand-400">
+              {item.materi || item.title || "-"}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-[100px_auto_1fr] gap-x-1.5 items-baseline">
+            <span className="font-bold text-slate-600 dark:text-slate-400 uppercase text-[10px] sm:text-[11px] tracking-wider">
+              Pembimbing
+            </span>
+            <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+            <span className="font-extrabold italic text-slate-900 dark:text-white">
+              {item.ttd_guru || "-"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+
+      {/* 2. 3-Column Table (Kegiatan | Hasil belajar | File aksi) */}
+      <div className="overflow-x-auto touch-pan-x">
+        <table className="w-full text-left border-collapse text-xs sm:text-sm">
+          <thead>
+            <tr className="bg-[#00A3E0] dark:bg-sky-700 text-white font-extrabold uppercase tracking-wider text-center border-b border-sky-600">
+              <th className="py-2.5 px-4 min-w-[140px] border-r border-sky-400/40 text-left">
+                Kegiatan
+              </th>
+              <th className="py-2.5 px-4 min-w-[180px] border-r border-sky-400/40 text-left">
+                Hasil belajar
+              </th>
+              <th className="py-2.5 px-3 w-28 min-w-[90px] text-center">
+                File aksi
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+              {/* Kegiatan */}
+              <td className="py-3.5 px-4 font-medium border-r border-slate-200 dark:border-slate-800 align-top">
+                {(item.kegiatan || "-").split("\n").filter(Boolean).map((line: string, i: number) => (
+                  <div key={i} className="flex items-start gap-1.5 leading-relaxed">
+                    <span className="text-sky-500 font-bold shrink-0 mt-0.5">-</span>
+                    <span>{line.replace(/^[-•]\s*/, "")}</span>
+                  </div>
+                ))}
+              </td>
+
+              {/* Hasil Belajar */}
+              <td className="py-3.5 px-4 font-medium border-r border-slate-200 dark:border-slate-800 align-top">
+                {((item.hasil_belajar || item.description || "-")).split("\n").filter(Boolean).map((line: string, i: number) => (
+                  <div key={i} className="flex items-start gap-1.5 leading-relaxed">
+                    <span className="text-sky-500 font-bold shrink-0 mt-0.5">-</span>
+                    <span>{line.replace(/^[-•]\s*/, "")}</span>
+                  </div>
+                ))}
+              </td>
+
+              {/* File Aksi */}
+              <td className="py-3.5 px-3 text-center align-top">
+                <div className="flex items-center justify-center gap-1.5">
+                  {item.gdrive_link ? (
+                    <a
+                      href={getGDriveDirectLink(item.gdrive_link)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-xs flex items-center justify-center text-sm font-bold cursor-pointer"
+                      title="Unduh / Lihat File GDrive"
+                    >
+                      📄
+                    </a>
+                  ) : (
+                    <span className="text-slate-300 dark:text-slate-700 text-xs font-mono">-</span>
+                  )}
+
+                  {!isParentView && (
+                    <div className="flex items-center gap-1 no-print-action">
+                      <button
+                        type="button"
+                        onClick={() => onEditRow && onEditRow(item)}
+                        className="w-7 h-7 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
+                        title="Edit Baris Evaluasi Ini"
+                      >
+                        <Icons.edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteRow && onDeleteRow(item.id)}
+                        className="w-7 h-7 rounded-lg text-slate-500 hover:text-red-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
+                        title="Hapus Baris Evaluasi Ini"
+                      >
+                        <Icons.trash className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Rekomendasi di Rumah Opsional jika ada */}
+      {item.rekomendasi_rumah && (
+        <div className="p-3 bg-amber-50/70 dark:bg-amber-950/30 border-t border-amber-100 dark:border-amber-900/40 text-xs">
+          <span className="font-extrabold text-amber-800 dark:text-amber-300 mr-2">
+            🏡 Rekomendasi di Rumah:
+          </span>
+          <span className="text-slate-700 dark:text-slate-300 font-medium">
+            {item.rekomendasi_rumah}
+          </span>
+        </div>
+      )}
+
+      {/* Catatan Guru Opsional jika ada */}
+      {item.catatan_guru && (
+        <div className="p-3 bg-sky-50/70 dark:bg-sky-950/30 border-t border-sky-100 dark:border-sky-900/40 text-xs">
+          <span className="font-extrabold text-sky-800 dark:text-sky-300 mr-2">
+            ✍️ Catatan Guru:
+          </span>
+          <span className="text-slate-700 dark:text-slate-300 font-medium">
+            {item.catatan_guru}
+          </span>
+        </div>
+      )}
+
+      {/* 3. SARAN ORANG TUA PER HARI (MATCHING SKETCH "Saran :" PER SESI) */}
+      <div className="p-3.5 sm:p-4 bg-emerald-50/40 dark:bg-emerald-950/20 border-t-2 border-emerald-300 dark:border-emerald-800/80">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+            <span>💬 SARAN :</span>
+            <span className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 lowercase">
+              (masukan / tanggapan orang tua)
+            </span>
+          </span>
+          {feedbackSuccess && (
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 animate-in fade-in">
+              ✓ Tersimpan!
+            </span>
+          )}
+        </div>
+
+        {/* List masukan/saran per hari */}
+        {feedbackList.length > 0 ? (
+          <div className="space-y-1.5 mb-2 max-h-36 overflow-y-auto pr-1">
+            {feedbackList.map((fb, idx) => (
+              <div
+                key={idx}
+                className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 bg-white/95 dark:bg-slate-900/95 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800/50 flex items-start justify-between gap-2 shadow-2xs"
+              >
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  <span className="font-extrabold text-emerald-600 dark:text-emerald-400 shrink-0 pt-0.5">•</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="inline-block text-[10px] font-extrabold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-300/60 dark:border-emerald-800/60 mr-2">
+                      {fb.date}
+                    </span>
+                    <span className="leading-relaxed font-medium break-words">{fb.text}</span>
+                  </div>
+                </div>
+                {isParentView && (
+                  <button
+                    type="button"
+                    onClick={() => setItemToDeleteIndex(idx)}
+                    disabled={isSavingFeedback}
+                    className="text-slate-400 hover:text-red-500 p-1 rounded transition-colors no-print-action shrink-0 cursor-pointer"
+                    title="Hapus masukan ini"
+                  >
+                    <Icons.close className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-slate-400 italic mb-2">
+            {isParentView ? "Belum ada saran/masukan untuk hari ini." : "Belum ada saran dari orang tua untuk hari ini."}
+          </p>
+        )}
+
+        {/* Parent input action for this day */}
+        {isParentView && (
+          <div>
+            {isEditingFeedback ? (
+              <div className="space-y-2 pt-2 border-t border-emerald-200/70 dark:border-emerald-900/70 no-print-action">
+                <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300 font-bold">
+                  <span>Tulis Saran / Masukan Hari Ini ({formatShortDate(item.worksheet_date)}):</span>
+                </div>
+                <textarea
+                  rows={2}
+                  value={newInputText}
+                  onChange={(e) => setNewInputText(e.target.value)}
+                  placeholder="Tuliskan saran atau masukan Anda untuk hari ini..."
+                  className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none placeholder:text-slate-400"
+                />
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingFeedback(false);
+                      setNewInputText("");
+                    }}
+                    disabled={isSavingFeedback}
+                    className="px-3 py-1 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddFeedbackItem}
+                    disabled={isSavingFeedback || !newInputText.trim()}
+                    className="px-3.5 py-1 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSavingFeedback ? "Memproses..." : "✓ Simpan Saran"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsEditingFeedback(true)}
+                className="no-print-action text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 bg-white/90 dark:bg-slate-900/90 hover:bg-emerald-100/80 border border-emerald-300 dark:border-emerald-800/60 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <span>+ Tambah Saran / Masukan</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Modal for Parent Feedback */}
+      {itemToDeleteIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200 no-print-action">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 dark:border-slate-800 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner">
+              🗑️
+            </div>
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-1.5">
+              Hapus Saran?
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+              Apakah Anda yakin ingin menghapus saran ini?
+            </p>
+
+            {feedbackList[itemToDeleteIndex] && (
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 mb-5 text-left text-xs">
+                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 block mb-0.5">
+                  {feedbackList[itemToDeleteIndex].date}
+                </span>
+                <p className="text-slate-700 dark:text-slate-300 font-medium leading-snug">
+                  "{feedbackList[itemToDeleteIndex].text}"
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setItemToDeleteIndex(null)}
+                disabled={isSavingFeedback}
+                className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteFeedbackItem}
+                disabled={isSavingFeedback}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-600/20 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isSavingFeedback ? "Menghapus..." : "Ya, Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function StudentWorksheetTable({
+  student,
+  worksheets,
+  isParentView = false,
+  onAddRow,
+  onEditRow,
+  onDeleteRow,
+  onDeleteSheet,
+  onSetPin,
+}: StudentWorksheetTableProps) {
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  const latestMonth = [...worksheets].reverse().find((w) => w.bulan_ke != null)?.bulan_ke;
+  const firstLetter = student?.name ? student.name.charAt(0).toUpperCase() : "S";
+
   const handleDownloadPdf = async () => {
     if (isDownloadingPdf) return;
     const cardEl = document.getElementById(`worksheet-card-${student?.id}`);
     if (!cardEl) return;
 
-    // Track elements to hide during PDF capture
     const actionElements = cardEl.querySelectorAll(".no-print-action");
     actionElements.forEach((el) => {
       (el as HTMLElement).style.setProperty("display", "none", "important");
     });
 
-    // Store original element dimensions to prevent clipping on mobile screens
     const origWidth = cardEl.style.width;
     const origMinWidth = cardEl.style.minWidth;
     const origMaxWidth = cardEl.style.maxWidth;
@@ -160,7 +498,6 @@ export function StudentWorksheetTable({
       (sc as HTMLElement).style.setProperty("overflow", "visible", "important");
     });
 
-    // Expand element to standard printable desktop width (850px)
     cardEl.style.setProperty("width", "850px", "important");
     cardEl.style.setProperty("min-width", "850px", "important");
     cardEl.style.setProperty("max-width", "none", "important");
@@ -168,7 +505,6 @@ export function StudentWorksheetTable({
     try {
       setIsDownloadingPdf(true);
 
-      // Load html-to-image dynamically if not present
       if (!(window as any).htmlToImage) {
         const script1 = document.createElement("script");
         script1.src =
@@ -177,7 +513,6 @@ export function StudentWorksheetTable({
         await new Promise((r) => (script1.onload = r));
       }
 
-      // Load jspdf dynamically if not present
       if (!(window as any).jspdf) {
         const script2 = document.createElement("script");
         script2.src =
@@ -186,7 +521,6 @@ export function StudentWorksheetTable({
         await new Promise((r) => (script2.onload = r));
       }
 
-      // Brief delay for reflow
       await new Promise((r) => setTimeout(r, 200));
 
       const dataUrl = await (window as any).htmlToImage.toPng(cardEl, {
@@ -223,12 +557,11 @@ export function StudentWorksheetTable({
       const safeFileName = (student?.name || "Siswa")
         .replace(/[^a-zA-Z0-9]/g, "_")
         .replace(/_+/g, "_");
-      pdf.save(`Lembar_Perkembangan_${safeFileName}.pdf`);
+      pdf.save(`Laporan_Perkembangan_${safeFileName}.pdf`);
     } catch (error) {
       console.error("Failed to generate PDF:", error);
       alert("Gagal mendownload PDF. Silakan coba lagi.");
     } finally {
-      // Restore card element dimensions & scroll container states
       cardEl.style.width = origWidth;
       cardEl.style.minWidth = origMinWidth;
       cardEl.style.maxWidth = origMaxWidth;
@@ -237,7 +570,6 @@ export function StudentWorksheetTable({
         (sc as HTMLElement).style.overflow = origOverflows[i] || "";
       });
 
-      // Restore action elements
       actionElements.forEach((el) => {
         (el as HTMLElement).style.removeProperty("display");
       });
@@ -248,7 +580,7 @@ export function StudentWorksheetTable({
   return (
     <div
       id={`worksheet-card-${student?.id}`}
-      className="single-printable-worksheet bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden mb-8 transition-all relative"
+      className="single-printable-worksheet bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden mb-8 transition-all relative font-sans"
     >
       <style jsx global>{`
         @media print {
@@ -283,420 +615,198 @@ export function StudentWorksheetTable({
         }
       `}</style>
 
-      {/* Paper Sheet Header (Logo + Info + Catatan Guru Box) */}
-      <div className="p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <div className="flex flex-col lg:flex-row gap-6 justify-between">
-          
-          {/* Left Side: Logo & Meta Info */}
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="relative w-12 h-12 shrink-0 bg-white rounded-xl p-1 shadow-xs border border-slate-100">
-                <Image
-                  src="/logo.png"
-                  alt="ShiningSun Logo"
-                  width={48}
-                  height={48}
-                  className="object-contain"
-                />
-              </div>
-              <div>
-                <h3 className="text-base sm:text-lg font-black tracking-tight uppercase text-slate-900 dark:text-white leading-tight">
-                  PERKEMBANGAN SISWA
-                </h3>
-                <p className="text-xs font-bold text-brand-600 dark:text-brand-400 tracking-wider">
-                  SHINING SUN
-                </p>
-              </div>
-            </div>
-
-            {/* Meta Info Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs text-slate-700 dark:text-slate-300 font-medium pt-1">
-              <div className="flex items-start">
-                <span className="w-20 shrink-0 font-bold text-slate-500 uppercase text-[11px] pt-0.5">NAMA</span>
-                <span className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">: {student?.name || "-"} {student?.nickname ? `(${student.nickname})` : ""}</span>
-              </div>
-              <div className="flex items-start">
-                <span className="w-20 shrink-0 font-bold text-slate-500 uppercase text-[11px] pt-0.5">LEVEL</span>
-                <span className="font-bold text-slate-900 dark:text-white text-sm">: {student?.label ? `${student.label.main_level} ${student.label.sub_level}` : "Tanpa Level"}</span>
-              </div>
-              <div className="flex items-start">
-                <span className="w-20 shrink-0 font-bold text-slate-500 uppercase text-[11px] pt-0.5">JADWAL</span>
-                <span className="font-bold text-slate-900 dark:text-white text-sm">: {student?.schedule || student?.branch?.name || "-"}</span>
-              </div>
-              <div className="flex items-start">
-                <span className="w-20 shrink-0 font-bold text-slate-500 uppercase text-[11px] pt-0.5">BULAN KE</span>
-                <span className="font-bold text-brand-600 dark:text-brand-400 text-sm">: {latestMonth ? `Bulan ke-${latestMonth}` : "-"}</span>
-              </div>
-            </div>
+      {/* ============================================================ */}
+      {/* 1. HEADER SECTION (MATCHING SKETCH IDENTITAS SISWA)          */}
+      {/* ============================================================ */}
+      <div className="p-5 sm:p-7 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        
+        {/* Top Header Row: PP (Photo Box) + Student Main Info */}
+        <div className="flex items-start gap-4 sm:gap-6">
+          {/* PP Box (Photo Profile Avatar) */}
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 border-2 border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-white shadow-md shrink-0 relative overflow-hidden">
+            <span className="text-2xl sm:text-3xl font-black tracking-widest">{firstLetter}</span>
+            <span className="text-[10px] font-extrabold tracking-wider bg-black/20 w-full text-center py-0.5 mt-1 uppercase">
+              PP
+            </span>
           </div>
 
-          {/* Right Side: Catatan Guru & Catatan/Saran Orang Tua Box */}
-          <div className="w-full lg:w-[380px] shrink-0 space-y-3">
-            {/* Catatan Guru Box */}
-            <div className="rounded-2xl border-2 border-sky-400 dark:border-sky-600 bg-sky-50/50 dark:bg-sky-950/20 p-3 flex flex-col justify-between">
-              <div>
-                <span className="block text-[11px] font-extrabold uppercase tracking-wider text-sky-800 dark:text-sky-300 mb-1 flex items-center justify-between">
-                  <span>Catatan Guru:</span>
-                  <span className="text-[10px] font-bold text-sky-600">✍️ Evaluasi</span>
-                </span>
-                {teacherNotes.length > 0 ? (
-                  <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
-                    {teacherNotes.slice(0, 2).map((tn, idx) => (
-                      <div key={idx} className="text-xs text-slate-700 dark:text-slate-300 bg-white/80 dark:bg-slate-900/80 p-2 rounded-xl border border-sky-200/60 dark:border-sky-800/40">
-                        <p className="leading-snug">{tn.note}</p>
-                        {tn.teacher && <span className="text-[10px] font-bold text-slate-400 block mt-0.5 text-right">— {tn.teacher}</span>}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-400 italic">Belum ada catatan khusus dari guru.</p>
-                )}
-              </div>
+          {/* Lines Next to PP */}
+          <div className="flex-1 space-y-1.5 text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-medium">
+            <div className="grid grid-cols-[105px_12px_1fr] items-baseline">
+              <span className="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] sm:text-xs tracking-wider">
+                Nama lengkap
+              </span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+              <span className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base leading-snug">
+                {student?.name || "-"}
+              </span>
             </div>
 
-            {/* Catatan & Saran Orang Tua Box */}
-            <div className="rounded-2xl border-2 border-emerald-400 dark:border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 p-3">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
-                  <span>💬 Saran & Masukan Orang Tua</span>
-                </span>
-                {feedbackSuccess && (
-                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 animate-in fade-in">
-                    ✓ Tersimpan!
-                  </span>
-                )}
-              </div>
+            <div className="grid grid-cols-[105px_12px_1fr] items-baseline">
+              <span className="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] sm:text-xs tracking-wider">
+                Nama panggilan
+              </span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">
+                {student?.nickname || "-"}
+              </span>
+            </div>
 
-              {/* Display items list */}
-              {feedbackList.length > 0 ? (
-                <div className="space-y-1.5 mb-2 max-h-36 overflow-y-auto pr-1">
-                  {feedbackList.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="text-xs text-slate-800 dark:text-slate-200 bg-white/90 dark:bg-slate-900/90 p-2 rounded-xl border border-emerald-200/80 dark:border-emerald-800/50 flex items-start justify-between gap-2"
-                    >
-                      <div className="flex items-start gap-1.5 flex-1 min-w-0">
-                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400 shrink-0 pt-0.5">-</span>
-                        <div className="flex-1 min-w-0">
-                          <span className="inline-block text-[10px] font-extrabold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-300/60 dark:border-emerald-800/60 mr-1.5">
-                            {item.date}
-                          </span>
-                          <span className="leading-relaxed font-medium break-words">{item.text}</span>
-                        </div>
-                      </div>
-                      {isParentView && (
-                        <button
-                          type="button"
-                          onClick={() => setItemToDeleteIndex(idx)}
-                          disabled={isSavingFeedback}
-                          className="text-slate-400 hover:text-red-500 p-0.5 rounded transition-colors no-print-action shrink-0 cursor-pointer"
-                          title="Hapus masukan ini"
-                        >
-                          <Icons.close className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400 italic mb-2">
-                  {isParentView ? "Belum ada saran/masukan dari Anda." : "Belum ada masukan dari orang tua."}
-                </p>
-              )}
+            <div className="grid grid-cols-[105px_12px_1fr] items-baseline">
+              <span className="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] sm:text-xs tracking-wider">
+                Tgl lahir
+              </span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">
+                {formatDateIndonesian(student?.date_of_birth)}
+              </span>
+            </div>
 
-              {/* Parent input action */}
-              {isParentView && (
-                <div>
-                  {isEditingFeedback ? (
-                    <div className="space-y-2 pt-1 border-t border-emerald-200/60 dark:border-emerald-900/60 no-print-action">
-                      <div className="flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
-                        <span>Tambah Masukan Baru:</span>
-                        <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.5 rounded font-mono font-bold">
-                          {formatShortDate(new Date())}
-                        </span>
-                      </div>
-                      <textarea
-                        rows={2}
-                        value={newInputText}
-                        onChange={(e) => setNewInputText(e.target.value)}
-                        placeholder="Tuliskan saran, masukan, atau tanggapan Anda..."
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none placeholder:text-slate-400"
-                      />
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsEditingFeedback(false);
-                            setNewInputText("");
-                          }}
-                          disabled={isSavingFeedback}
-                          className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
-                        >
-                          Batal
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleAddFeedbackItem}
-                          disabled={isSavingFeedback || !newInputText.trim()}
-                          className="px-3 py-1 rounded-lg text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                        >
-                          {isSavingFeedback ? "Memproses..." : "✓ Simpan Masukan"}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingFeedback(true)}
-                      className="no-print-action text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 bg-emerald-100/80 dark:bg-emerald-900/40 hover:bg-emerald-200/70 border border-emerald-300/60 dark:border-emerald-800/60 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>+ Tambah Saran / Masukan</span>
-                    </button>
-                  )}
-                </div>
-              )}
+            <div className="grid grid-cols-[105px_12px_1fr] items-baseline">
+              <span className="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] sm:text-xs tracking-wider">
+                Usia
+              </span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+              <span className="font-bold text-brand-600 dark:text-brand-400">
+                {calculateAge(student?.date_of_birth)}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Action toolbar for Admin & Parents */}
-        <div className="mt-4 pt-3 border-t border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print-action">
-          {!isParentView ? (
-            <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 px-3.5 py-2 rounded-xl text-xs shadow-xs">
-              <span className="font-semibold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
-                <span>🔑 PIN Ortu:</span>
-                <code className="bg-amber-100 dark:bg-amber-900/70 px-2 py-0.5 rounded-md font-mono font-extrabold text-amber-950 dark:text-amber-100 tracking-wider text-xs border border-amber-200/50">
-                  {student.access_pin || "123456"}
-                </code>
-              </span>
-              <span className="text-amber-300 dark:text-amber-700">|</span>
-              <button
-                type="button"
-                onClick={() => onSetPin && onSetPin(student)}
-                className="text-[11px] font-bold text-brand-700 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300 transition-colors flex items-center gap-1 hover:underline cursor-pointer"
-                title="Ubah PIN Akses Orang Tua"
-              >
-                <Icons.edit className="w-3 h-3" />
-                <span>Kelola PIN</span>
-              </button>
-            </div>
-          ) : (
-            <div className="text-xs text-slate-500 font-bold flex items-center gap-1.5">
-              <span>📄 Laporan Perkembangan Resmi</span>
-            </div>
+
+
+        {/* Divider Line (Divider Sesuai Sketsa Gambar) */}
+        <hr className="my-4 sm:my-5 border-slate-200 dark:border-slate-800" />
+
+        {/* Bottom Info Grid Below Divider Line */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-slate-800 dark:text-slate-200 font-medium">
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+            <span className="block text-[10px] font-bold text-slate-400 uppercase">Unit</span>
+            <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
+              {student?.branch?.name || "ShiningSun"}
+            </span>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+            <span className="block text-[10px] font-bold text-slate-400 uppercase">Jadwal</span>
+            <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
+              {student?.schedule || "-"}
+            </span>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+            <span className="block text-[10px] font-bold text-slate-400 uppercase">Level</span>
+            <span className="font-bold text-brand-600 dark:text-brand-400 text-xs sm:text-sm">
+              {student?.label ? `${student.label.main_level} ${student.label.sub_level}` : "Tanpa Level"}
+            </span>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+            <span className="block text-[10px] font-bold text-slate-400 uppercase">Status</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">
+              {student?.status === 'REGISTERED' ? 'Siswa Reguler' : student?.status === 'CG' ? 'Coba Gratis' : 'Nonaktif'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Toolbar for Admin & Parents */}
+      <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print-action">
+        {!isParentView ? (
+          <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-3 py-1.5 rounded-xl text-xs">
+            <span className="font-semibold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+              <span>🔑 PIN Ortu:</span>
+              <code className="bg-amber-100 dark:bg-amber-900/70 px-2 py-0.5 rounded-md font-mono font-extrabold text-amber-950 dark:text-amber-100 tracking-wider text-xs border border-amber-200/50">
+                {student.access_pin || "123456"}
+              </code>
+            </span>
+            <button
+              type="button"
+              onClick={() => onSetPin && onSetPin(student)}
+              className="text-[11px] font-bold text-brand-700 hover:text-brand-800 dark:text-brand-400 hover:underline cursor-pointer ml-1"
+              title="Ubah PIN Akses Orang Tua"
+            >
+              <Icons.edit className="w-3 h-3 inline mr-0.5" />
+              Kelola PIN
+            </button>
+          </div>
+        ) : (
+          <div className="text-xs text-slate-500 font-bold flex items-center gap-1.5">
+            <span>📄 Laporan Perkembangan Resmi Siswa</span>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+          {!isParentView && (
+            <button
+              type="button"
+              onClick={() => onAddRow && onAddRow(student.id, latestMonth)}
+              className="w-full sm:w-auto justify-center px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
+            >
+              <Icons.add className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Tambah Sesi / Evaluasi</span>
+            </button>
           )}
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            {!isParentView && (
-              <button
-                type="button"
-                onClick={() => onAddRow && onAddRow(student.id, latestMonth)}
-                className="w-full sm:w-auto justify-center px-4 py-2.5 sm:py-2 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
-              >
-                <Icons.add className="w-4 h-4 shrink-0" />
-                <span className="whitespace-nowrap">Tambah Baris Evaluasi</span>
-              </button>
-            )}
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={handleDownloadPdf}
-                disabled={isDownloadingPdf}
-                className="flex-1 sm:w-auto justify-center px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 disabled:opacity-50 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
-                title="Download langsung file PDF lembar perkembangan siswa ini"
-              >
-                {isDownloadingPdf ? (
-                  <svg className="animate-spin h-3.5 w-3.5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" x2="12" y1="15" y2="3"/>
-                  </svg>
-                )}
-                <span className="whitespace-nowrap">{isDownloadingPdf ? "Memproses..." : "Download PDF"}</span>
-              </button>
-
-              {!isParentView && onDeleteSheet && (
-                <button
-                  type="button"
-                  onClick={() => onDeleteSheet(student.id, latestMonth ?? null, student.name || "Siswa")}
-                  className="flex-1 sm:w-auto justify-center px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/60 border border-red-200/80 dark:border-red-900/50 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
-                  title="Hapus Seluruh Lembar Perkembangan Ini"
-                >
-                  <Icons.trash className="w-3.5 h-3.5 shrink-0" />
-                  <span className="whitespace-nowrap">Hapus Lembar</span>
-                </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              className="flex-1 sm:w-auto justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 disabled:opacity-50 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
+              title="Download langsung file PDF laporan perkembangan siswa ini"
+            >
+              {isDownloadingPdf ? (
+                <svg className="animate-spin h-3.5 w-3.5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" x2="12" y1="15" y2="3"/>
+                </svg>
               )}
-            </div>
+              <span className="whitespace-nowrap">{isDownloadingPdf ? "Memproses..." : "Download PDF"}</span>
+            </button>
+
+            {!isParentView && onDeleteSheet && (
+              <button
+                type="button"
+                onClick={() => onDeleteSheet(student.id, latestMonth ?? null, student.name || "Siswa")}
+                className="flex-1 sm:w-auto justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/60 border border-red-200 dark:border-red-900/50 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
+                title="Hapus Laporan Perkembangan Ini"
+              >
+                <Icons.trash className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">Hapus Laporan</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Table Document (Matching Paper Sheet) */}
-      <div className="overflow-x-auto touch-pan-x">
-        <table className="w-full min-w-[640px] text-left border-collapse text-xs">
-          {/* Table Header: Sky Blue background with white text like paper */}
-          <thead>
-            <tr className="bg-[#00A3E0] dark:bg-sky-700 text-white font-extrabold text-[11px] uppercase tracking-wider text-center border-b border-sky-600">
-              <th className="py-3 px-2 w-10 min-w-[36px] border-r border-sky-400/40">NO</th>
-              <th className="py-3 px-2 w-28 min-w-[100px] border-r border-sky-400/40 whitespace-nowrap">HARI / TANGGAL</th>
-              <th className="py-3 px-3 min-w-[130px] border-r border-sky-400/40">MATERI</th>
-              <th className="py-3 px-3 min-w-[150px] border-r border-sky-400/40">KEGIATAN</th>
-              <th className="py-3 px-3 min-w-[160px] border-r border-sky-400/40">HASIL BELAJAR</th>
-              <th className="py-3 px-2 w-24 min-w-[90px] border-r border-sky-400/40">TTD GURU</th>
-              <th className="py-3 px-2 w-24 min-w-[80px] text-center">FILE / AKSI</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-            {worksheets.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-10 text-center text-slate-400 italic bg-amber-50/20">
-                  Belum ada baris evaluasi perkembangan untuk siswa ini.
-                </td>
-              </tr>
-            ) : (
-              worksheets.map((item, index) => {
-                // Alternating row background: Row 1 yellow (#FFFF00 / soft yellow), Row 2 white
-                const isYellowRow = index % 2 === 0;
-                const rowBg = isYellowRow
-                  ? "bg-[#FFF999] dark:bg-amber-950/40 text-slate-900 dark:text-slate-100"
-                  : "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100";
-
-                return (
-                  <tr key={item.id} className={`${rowBg} transition-colors hover:opacity-95`}>
-                    {/* NO */}
-                    <td className="py-3 px-3 text-center font-bold border-r border-slate-200 dark:border-slate-800/80">
-                      {index + 1}
-                    </td>
-
-                    {/* HARI / TANGGAL */}
-                    <td className="py-3 px-3 text-center font-semibold border-r border-slate-200 dark:border-slate-800/80 whitespace-nowrap">
-                      {formatShortDate(item.worksheet_date)}
-                    </td>
-
-                    {/* MATERI */}
-                    <td className="py-3 px-4 font-semibold border-r border-slate-200 dark:border-slate-800/80 whitespace-pre-line">
-                      {item.materi || item.title || "-"}
-                    </td>
-
-                    {/* KEGIATAN */}
-                    <td className="py-3 px-4 font-medium border-r border-slate-200 dark:border-slate-800/80 whitespace-pre-line">
-                      {item.kegiatan || "-"}
-                    </td>
-
-                    {/* HASIL BELAJAR */}
-                    <td className="py-3 px-4 font-medium border-r border-slate-200 dark:border-slate-800/80 whitespace-pre-line">
-                      {item.hasil_belajar || item.description || "-"}
-                    </td>
-
-                    {/* TTD GURU */}
-                    <td className="py-3 px-3 text-center font-bold italic border-r border-slate-200 dark:border-slate-800/80">
-                      {item.ttd_guru || "-"}
-                    </td>
-
-                    {/* FILE / AKSI */}
-                    <td className="py-3 px-3 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        {/* Slot 1: GDrive File Link */}
-                        <div className="w-7 h-7 flex items-center justify-center shrink-0">
-                          {item.gdrive_link ? (
-                            <a
-                              href={getGDriveDirectLink(item.gdrive_link)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-7 h-7 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs flex items-center justify-center text-xs"
-                              title="Unduh File GDrive"
-                            >
-                              📄
-                            </a>
-                          ) : (
-                            <span className="text-slate-300 dark:text-slate-700 text-xs font-mono">-</span>
-                          )}
-                        </div>
-
-                        {!isParentView && (
-                          <div className="flex items-center gap-1 no-print-action">
-                            {/* Slot 2: Edit Button */}
-                            <button
-                              type="button"
-                              onClick={() => onEditRow && onEditRow(item)}
-                              className="w-7 h-7 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
-                              title="Edit Baris"
-                            >
-                              <Icons.edit className="w-3.5 h-3.5" />
-                            </button>
-                            {/* Slot 3: Delete Button */}
-                            <button
-                              type="button"
-                              onClick={() => onDeleteRow && onDeleteRow(item.id)}
-                              className="w-7 h-7 rounded-lg text-slate-500 hover:text-red-600 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
-                              title="Hapus Baris"
-                            >
-                              <Icons.trash className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Delete Confirmation Modal for Parent Feedback */}
-      {itemToDeleteIndex !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200 no-print-action">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 dark:border-slate-800 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner">
-              🗑️
-            </div>
-            <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-1.5">
-              Hapus Masukan?
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-              Apakah Anda yakin ingin menghapus masukan ini? Masukan yang dihapus tidak dapat dikembalikan.
-            </p>
-
-            {feedbackList[itemToDeleteIndex] && (
-              <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 mb-5 text-left text-xs">
-                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 block mb-0.5">
-                  {feedbackList[itemToDeleteIndex].date}
-                </span>
-                <p className="text-slate-700 dark:text-slate-300 font-medium leading-snug">
-                  "{feedbackList[itemToDeleteIndex].text}"
-                </p>
-              </div>
-            )}
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setItemToDeleteIndex(null)}
-                disabled={isSavingFeedback}
-                className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDeleteFeedbackItem}
-                disabled={isSavingFeedback}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-600/20 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
-              >
-                {isSavingFeedback ? "Menghapus..." : "Ya, Hapus"}
-              </button>
-            </div>
+      {/* ============================================================ */}
+      {/* 2. WORKSHEET ENTRIES / SESSIONS (PER HARI DENGAN BOX SARAN)  */}
+      {/* ============================================================ */}
+      <div className="p-4 sm:p-6 space-y-6">
+        {worksheets.length === 0 ? (
+          <div className="py-12 text-center text-slate-400 italic bg-amber-50/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+            Belum ada baris evaluasi perkembangan untuk siswa ini.
           </div>
-        </div>
-      )}
+        ) : (
+          worksheets.map((item) => (
+            <DailyWorksheetSessionItem
+              key={item.id}
+              item={item}
+              isParentView={isParentView}
+              onEditRow={onEditRow}
+              onDeleteRow={onDeleteRow}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }

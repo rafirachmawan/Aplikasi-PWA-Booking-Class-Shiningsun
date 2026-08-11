@@ -2,18 +2,28 @@
 
 import { ClassManager } from "@/components/features/master/ClassManager";
 import { LabelManager } from "@/components/features/master/LabelManager";
+import { TeacherManager } from "@/components/features/master/TeacherManager";
+import { AssessmentTemplateManager } from "@/components/features/master/AssessmentTemplateManager";
 
 interface MasterClientWrapperProps {
   classes: any[];
   labels: any[];
+  teachers?: any[];
+  templates?: any[];
   activeBranchName?: string | null;
   role?: string | null;
 }
 
-export function MasterClientWrapper({ classes, labels, activeBranchName, role }: MasterClientWrapperProps) {
+export function MasterClientWrapper({
+  classes,
+  labels,
+  teachers = [],
+  templates = [],
+  activeBranchName,
+  role,
+}: MasterClientWrapperProps) {
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
       {/* Header Card - Unified Design */}
       <div className="rounded-3xl bg-brand-600 p-6 sm:p-10 shadow-lg relative overflow-hidden">
         {/* Abstract Background Decoration */}
@@ -30,7 +40,7 @@ export function MasterClientWrapper({ classes, labels, activeBranchName, role }:
             )}
           </h2>
           <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
-            Kelola profil cabang, ruang kelas, dan opsi label kustom Anda.
+            Kelola profil cabang, ruang kelas, label kustom, daftar guru/miss, dan template penilaian.
           </p>
         </div>
       </div>
@@ -46,6 +56,17 @@ export function MasterClientWrapper({ classes, labels, activeBranchName, role }:
           <LabelManager labels={labels} role={role} />
         </div>
       </div>
+
+      {/* Section Data Guru & Template Penilaian */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
+        <div>
+          <TeacherManager teachers={teachers} />
+        </div>
+        <div>
+          <AssessmentTemplateManager templates={templates} />
+        </div>
+      </div>
     </div>
   );
 }
+
