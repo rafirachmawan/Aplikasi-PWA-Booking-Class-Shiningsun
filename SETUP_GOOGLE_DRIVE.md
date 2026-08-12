@@ -1,8 +1,7 @@
-# 🔧 Setup Upload Google Drive — Langkah Terakhir
+# 🔧 Setup Upload Google Drive — Selesai 100% 🎉
 
-> **Status**: ⏳ Tinggal 1 langkah terakhir (verifikasi HP)
-> **Estimasi waktu**: 5 menit
-> **Syarat**: HP POCO C75 (akun shiningsunbalesono@gmail.com) harus ada di tangan
+> **Status**: ✅ **100% Selesai & Terhubung!**
+> **Refresh Token**: Sudah berhasil didapatkan dan tersimpan di `.env.local`
 
 ---
 
@@ -10,13 +9,13 @@
 
 - [x] Buat Project di Google Cloud Console (`ShiningSun Booking Class`)
 - [x] Aktifkan Google Drive API
-- [x] Buat Service Account (tidak bisa dipakai di Gmail pribadi)
-- [x] Buat OAuth2 Client ID (`Web application`)
-- [x] Konfigurasi OAuth consent screen
+- [x] Buat Service Account & OAuth2 Client ID (`Web application`)
+- [x] Konfigurasi OAuth consent screen & tambahkan Test User (`shiningsunbalesono@gmail.com`)
 - [x] Tambahkan Authorized redirect URIs
-- [x] Kode API upload-gdrive sudah dibuat di aplikasi
-- [x] Kode OAuth callback sudah dibuat di aplikasi
-- [x] `.env.local` sudah diisi Client ID & Client Secret
+- [x] Kode API upload-gdrive & OAuth callback dibuat di aplikasi
+- [x] `.env.local` sudah diisi Client ID, Client Secret, Folder ID & Refresh Token
+- [x] Otorisasi Google Drive berhasil dilakukan!
+
 
 ---
 
@@ -107,8 +106,27 @@ Setelah langkah di atas, fitur upload foto di form **Tambah Laporan Perkembangan
 
 ---
 
+## 🛠️ Troubleshooting Error 403: access_denied
+
+Jika muncul pesan ***"Akses diblokir: ShiningSun Booking Class belum menyelesaikan proses verifikasi Google (Error 403: access_denied)"***:
+
+**Penyebab**: Aplikasi di Google Cloud Console masih berstatus *Testing*, dan email `shiningsunbalesono@gmail.com` belum didaftarkan sebagai Penguji (Test User).
+
+**Cara Mengatasi (1 Menit)**:
+1. Buka [Google Cloud Console](https://console.cloud.google.com/)
+2. Pastikan project **ShiningSun Booking Class** sudah terpilih di pojok kiri atas.
+3. Di menu navigasi kiri, pilih **APIs & Services** -> **OAuth consent screen** (Layar persetujuan OAuth).
+4. Gulir ke bawah ke section **Test users** (Penguji).
+5. Klik tombol **+ ADD USERS** (Tambahkan Penguji).
+6. Ketik/Paste email: `shiningsunbalesono@gmail.com`
+7. Klik **SAVE** (Simpan).
+8. Buka kembali `http://localhost:3000/api/auth/gdrive` di browser dan coba login ulang.
+
+---
+
 > 💡 **Untuk deploy di Vercel**: Setelah mendapatkan refresh token, tambahkan juga variabel environment yang sama di **Vercel Dashboard → Settings → Environment Variables**:
 > - `GOOGLE_OAUTH_CLIENT_ID`
 > - `GOOGLE_OAUTH_CLIENT_SECRET`
 > - `GOOGLE_DRIVE_FOLDER_ID`
 > - `GOOGLE_DRIVE_REFRESH_TOKEN`
+

@@ -11,15 +11,15 @@ export async function GET(req: NextRequest) {
 
   if (error) {
     return new NextResponse(
-      `<html><body><h1>Error</h1><p>${error}</p><a href="/">Kembali</a></body></html>`,
-      { headers: { "Content-Type": "text/html" } }
+      `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family:system-ui;max-width:600px;margin:40px auto;padding:20px;text-align:center;"><h1 style="color:#dc2626;">❌ Error</h1><p>${error}</p><a href="/" style="display:inline-block;padding:12px 24px;background:#2563eb;color:white;text-decoration:none;border-radius:12px;font-weight:bold;">Kembali</a></body></html>`,
+      { headers: { "Content-Type": "text/html; charset=utf-8" } }
     );
   }
 
   if (!code) {
     return new NextResponse(
-      `<html><body><h1>Error</h1><p>Tidak ada kode otorisasi.</p><a href="/">Kembali</a></body></html>`,
-      { headers: { "Content-Type": "text/html" } }
+      `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family:system-ui;max-width:600px;margin:40px auto;padding:20px;text-align:center;"><h1 style="color:#dc2626;">❌ Error</h1><p>Tidak ada kode otorisasi.</p><a href="/" style="display:inline-block;padding:12px 24px;background:#2563eb;color:white;text-decoration:none;border-radius:12px;font-weight:bold;">Kembali</a></body></html>`,
+      { headers: { "Content-Type": "text/html; charset=utf-8" } }
     );
   }
 
@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
 
   if (!clientId || !clientSecret) {
     return new NextResponse(
-      `<html><body><h1>Error</h1><p>OAuth credentials belum dikonfigurasi.</p></body></html>`,
-      { headers: { "Content-Type": "text/html" } }
+      `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family:system-ui;max-width:600px;margin:40px auto;padding:20px;text-align:center;"><h1 style="color:#dc2626;">❌ Error</h1><p>OAuth credentials belum dikonfigurasi.</p></body></html>`,
+      { headers: { "Content-Type": "text/html; charset=utf-8" } }
     );
   }
 
@@ -60,14 +60,14 @@ export async function GET(req: NextRequest) {
 
     if (!refreshToken) {
       return new NextResponse(
-        `<html>
-        <head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+        `<!DOCTYPE html><html>
+        <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
         <body style="font-family:system-ui;max-width:600px;margin:40px auto;padding:20px;text-align:center;">
           <h1 style="color:#f59e0b;">⚠️ Tidak mendapatkan Refresh Token</h1>
           <p>Google tidak mengembalikan refresh_token. Coba ulangi proses otorisasi.</p>
           <a href="/api/auth/gdrive" style="display:inline-block;padding:12px 24px;background:#2563eb;color:white;text-decoration:none;border-radius:12px;font-weight:bold;">Coba Lagi</a>
         </body></html>`,
-        { headers: { "Content-Type": "text/html" } }
+        { headers: { "Content-Type": "text/html; charset=utf-8" } }
       );
     }
 
@@ -96,18 +96,19 @@ export async function GET(req: NextRequest) {
           <a href="/worksheets" style="display:inline-block;margin-top:10px;padding:12px 24px;background:#16a34a;color:white;text-decoration:none;border-radius:12px;font-weight:bold;">🏠 Kembali ke Aplikasi</a>
         </div>
       </body></html>`,
-      { headers: { "Content-Type": "text/html" } }
+      { headers: { "Content-Type": "text/html; charset=utf-8" } }
     );
   } catch (err: any) {
     return new NextResponse(
-      `<html>
-      <head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+      `<!DOCTYPE html><html>
+      <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
       <body style="font-family:system-ui;max-width:600px;margin:40px auto;padding:20px;text-align:center;">
         <h1 style="color:#dc2626;">❌ Error</h1>
-        <p>${err.message}</p>
+        <p style="color:#475569;font-weight:bold;">${err.message}</p>
+        <br>
         <a href="/api/auth/gdrive" style="display:inline-block;padding:12px 24px;background:#2563eb;color:white;text-decoration:none;border-radius:12px;font-weight:bold;">Coba Lagi</a>
       </body></html>`,
-      { headers: { "Content-Type": "text/html" } }
+      { headers: { "Content-Type": "text/html; charset=utf-8" } }
     );
   }
 }
