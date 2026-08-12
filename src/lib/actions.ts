@@ -1905,9 +1905,50 @@ export async function getParentSessionStudent() {
   }
 
   const scheduleMap = await getStudentScheduleMap([student.id]);
+
+  // Fetch worksheets to calculate gross attendance points
+  const { data: worksheetsData } = await supabaseServer
+    .from("student_worksheets")
+    .select("materi, title")
+    .eq("student_id", student.id);
+
+  let gross = 0;
+  (worksheetsData || []).forEach((w) => {
+    const m = (w.materi || "").toLowerCase();
+    const t = (w.title || "").toLowerCase();
+    const isAbsent =
+      m.includes("tidak hadir") ||
+      m.includes("libur") ||
+      t.includes("tidak hadir") ||
+      t.includes("libur") ||
+      t.includes("ijin") ||
+      t.includes("sakit");
+    if (!isAbsent) {
+      gross++;
+    }
+  });
+
+  // Fetch redemptions to calculate redeemed points
+  let redeemed = 0;
+  try {
+    const { data: redemptionsData } = await supabaseServer
+      .from("student_point_redemptions")
+      .select("points_deducted")
+      .eq("student_id", student.id);
+
+    (redemptionsData || []).forEach((r) => {
+      redeemed += r.points_deducted || 0;
+    });
+  } catch (e) {}
+
+  const net = Math.max(0, gross - redeemed);
+
   return {
     ...student,
     schedule: scheduleMap[student.id] || null,
+    gross_points: gross,
+    redeemed_points: redeemed,
+    points: net,
   };
 }
 

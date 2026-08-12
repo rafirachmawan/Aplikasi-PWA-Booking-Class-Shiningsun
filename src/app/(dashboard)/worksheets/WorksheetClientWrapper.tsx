@@ -596,6 +596,7 @@ export function WorksheetClientWrapper({
               key={`${student.id}_${bulanKe ?? 'none'}`}
               student={student}
               worksheets={studentWsList}
+              bulanKe={bulanKe}
               onAddRow={(studentId, bk) => {
                 setEditingWorksheet({ student_id: studentId, bulan_ke: bk });
                 setIsModalOpen(true);

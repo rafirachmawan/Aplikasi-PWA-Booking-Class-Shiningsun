@@ -10,6 +10,7 @@ import { updateSingleWorksheetParentFeedback } from "@/lib/actions";
 interface StudentWorksheetTableProps {
   student: any;
   worksheets: any[];
+  bulanKe?: number | null;
   isParentView?: boolean;
   onAddRow?: (studentId: string, bulanKe?: number) => void;
   onEditRow?: (worksheet: any) => void;
@@ -464,6 +465,7 @@ function DailyWorksheetSessionItem({
 export function StudentWorksheetTable({
   student,
   worksheets,
+  bulanKe,
   isParentView = false,
   onAddRow,
   onEditRow,
@@ -473,7 +475,12 @@ export function StudentWorksheetTable({
 }: StudentWorksheetTableProps) {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
-  const latestMonth = [...worksheets].reverse().find((w) => w.bulan_ke != null)?.bulan_ke;
+  const currentBulanKe =
+    bulanKe !== undefined && bulanKe !== null
+      ? bulanKe
+      : worksheets.find((w) => w.bulan_ke != null)?.bulan_ke ?? null;
+
+  const latestMonth = currentBulanKe ?? [...worksheets].reverse().find((w) => w.bulan_ke != null)?.bulan_ke;
   const firstLetter = student?.name ? student.name.charAt(0).toUpperCase() : "S";
 
   const handleDownloadPdf = async () => {
@@ -683,7 +690,7 @@ export function StudentWorksheetTable({
         <hr className="my-4 sm:my-5 border-slate-200 dark:border-slate-800" />
 
         {/* Bottom Info Grid Below Divider Line */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs text-slate-800 dark:text-slate-200 font-medium">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs text-slate-800 dark:text-slate-200 font-medium">
           <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
             <span className="block text-[10px] font-bold text-slate-400 uppercase">Unit</span>
             <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
@@ -705,14 +712,23 @@ export function StudentWorksheetTable({
             </span>
           </div>
 
-          <div className="bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800/60">
-            <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">⭐ Poin Kehadiran</span>
-            <span className="font-extrabold text-amber-700 dark:text-amber-300 text-xs sm:text-sm">
-              {calculateStudentPoints(worksheets)} Poin
+          <div className="bg-sky-50 dark:bg-sky-950/40 p-2.5 rounded-xl border border-sky-200 dark:border-sky-800/60">
+            <span className="block text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase">📅 Bulan Ke</span>
+            <span className="font-extrabold text-sky-700 dark:text-sky-300 text-xs sm:text-sm">
+              {currentBulanKe != null ? `Bulan ke-${currentBulanKe}` : "Bulan ke-1"}
             </span>
           </div>
 
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 col-span-2 sm:col-span-1">
+          <div className="bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800/60">
+            <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">⭐ Poin Kehadiran</span>
+            <span className="font-extrabold text-amber-700 dark:text-amber-300 text-xs sm:text-sm">
+              {student?.points !== undefined
+                ? student.points
+                : Math.max(0, calculateStudentPoints(worksheets) - (student?.redeemed_points || 0))} Poin
+            </span>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
             <span className="block text-[10px] font-bold text-slate-400 uppercase">Status</span>
             <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">
               {student?.status === 'REGISTERED' ? 'Siswa Reguler' : student?.status === 'CG' ? 'Coba Gratis' : 'Nonaktif'}

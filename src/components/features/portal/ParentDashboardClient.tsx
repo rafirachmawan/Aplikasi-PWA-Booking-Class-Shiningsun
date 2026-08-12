@@ -42,7 +42,9 @@ export function ParentDashboardClient({
   };
 
   const firstLetter = student?.name ? student.name.charAt(0).toUpperCase() : "S";
-  const totalPoints = calculateStudentPoints(worksheets);
+  const grossPoints = student?.gross_points ?? calculateStudentPoints(worksheets);
+  const redeemedPoints = student?.redeemed_points ?? 0;
+  const netPoints = student?.points ?? Math.max(0, grossPoints - redeemedPoints);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans pb-12">
@@ -134,7 +136,7 @@ export function ParentDashboardClient({
             <div className="flex sm:flex-col items-start sm:items-end gap-2 flex-wrap w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/15">
               <div className="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-400/30 text-amber-100 border border-amber-300/40 backdrop-blur-md flex items-center gap-1.5 shadow-sm">
                 <span className="text-sm">⭐</span>
-                <span>{student.points ?? totalPoints} Poin Kehadiran</span>
+                <span>{netPoints} Poin Kehadiran</span>
               </div>
 
               {student.label ? (
@@ -165,7 +167,7 @@ export function ParentDashboardClient({
           <div className="flex-1">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-xs sm:text-sm font-extrabold text-amber-900 dark:text-amber-200">
-                Poin Kehadiran Siswa: <span className="text-sm sm:text-base text-amber-600 dark:text-amber-400 font-black">{student.points ?? totalPoints} Poin Tersedia</span>
+                Poin Kehadiran Siswa: <span className="text-sm sm:text-base text-amber-600 dark:text-amber-400 font-black">{netPoints} Poin Tersedia</span>
               </h3>
               {(student.redeemed_points || 0) > 0 && (
                 <button
@@ -267,6 +269,7 @@ export function ParentDashboardClient({
                   key={`parent_${student.id}_${bk}`}
                   student={student}
                   worksheets={wsGroup}
+                  bulanKe={bk === 'none' ? null : parseInt(bk, 10)}
                   isParentView={true}
                 />
               ));
@@ -295,7 +298,7 @@ export function ParentDashboardClient({
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-3">
                   <div className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-300">
-                    +{student.gross_points || totalPoints}
+                    +{grossPoints}
                   </div>
                   <div className="text-[10px] sm:text-xs text-amber-800 dark:text-amber-400 font-semibold mt-0.5">
                     Total Hadir
@@ -303,7 +306,7 @@ export function ParentDashboardClient({
                 </div>
                 <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl p-3">
                   <div className="text-xl sm:text-2xl font-black text-rose-700 dark:text-rose-300">
-                    -{student.redeemed_points || 0}
+                    -{redeemedPoints}
                   </div>
                   <div className="text-[10px] sm:text-xs text-rose-800 dark:text-rose-400 font-semibold mt-0.5">
                     Sudah Ditukar
@@ -311,7 +314,7 @@ export function ParentDashboardClient({
                 </div>
                 <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-3">
                   <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">
-                    {student.points ?? totalPoints}
+                    {netPoints}
                   </div>
                   <div className="text-[10px] sm:text-xs text-emerald-800 dark:text-emerald-400 font-semibold mt-0.5">
                     Sisa Poin Aktif
