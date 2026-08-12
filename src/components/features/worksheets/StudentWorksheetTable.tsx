@@ -203,7 +203,7 @@ function DailyWorksheetSessionItem({
       </div>
 
 
-      {/* 2. 3-Column Table (Kegiatan | Hasil belajar | File aksi) */}
+      {/* 2. 2-Column Table (Kegiatan | Hasil belajar) */}
       <div className="overflow-x-auto touch-pan-x">
         <table className="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
@@ -211,11 +211,8 @@ function DailyWorksheetSessionItem({
               <th className="py-2.5 px-4 min-w-[140px] border-r border-sky-400/40 text-left">
                 Kegiatan
               </th>
-              <th className="py-2.5 px-4 min-w-[180px] border-r border-sky-400/40 text-left">
+              <th className="py-2.5 px-4 min-w-[140px] text-left">
                 Hasil belajar
-              </th>
-              <th className="py-2.5 px-3 w-28 min-w-[90px] text-center">
-                File aksi
               </th>
             </tr>
           </thead>
@@ -232,7 +229,7 @@ function DailyWorksheetSessionItem({
               </td>
 
               {/* Hasil Belajar */}
-              <td className="py-3.5 px-4 font-medium border-r border-slate-200 dark:border-slate-800 align-top">
+              <td className="py-3.5 px-4 font-medium align-top">
                 {((item.hasil_belajar || item.description || "-")).split("\n").filter(Boolean).map((line: string, i: number) => (
                   <div key={i} className="flex items-start gap-1.5 leading-relaxed">
                     <span className="text-sky-500 font-bold shrink-0 mt-0.5">-</span>
@@ -240,50 +237,52 @@ function DailyWorksheetSessionItem({
                   </div>
                 ))}
               </td>
-
-              {/* File Aksi */}
-              <td className="py-3.5 px-3 text-center align-top">
-                <div className="flex items-center justify-center gap-1.5">
-                  {item.gdrive_link ? (
-                    <a
-                      href={getGDriveDirectLink(item.gdrive_link)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-8 h-8 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-xs flex items-center justify-center text-sm font-bold cursor-pointer"
-                      title="Unduh / Lihat File GDrive"
-                    >
-                      📄
-                    </a>
-                  ) : (
-                    <span className="text-slate-300 dark:text-slate-700 text-xs font-mono">-</span>
-                  )}
-
-                  {!isParentView && (
-                    <div className="flex items-center gap-1 no-print-action">
-                      <button
-                        type="button"
-                        onClick={() => onEditRow && onEditRow(item)}
-                        className="w-7 h-7 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
-                        title="Edit Baris Evaluasi Ini"
-                      >
-                        <Icons.edit className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDeleteRow && onDeleteRow(item.id)}
-                        className="w-7 h-7 rounded-lg text-slate-500 hover:text-red-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
-                        title="Hapus Baris Evaluasi Ini"
-                      >
-                        <Icons.trash className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      {/* Action Bar (File + Edit/Delete) */}
+      {(!isParentView || item.gdrive_link) && (
+        <div className="flex items-center justify-between px-4 py-2 bg-slate-50/80 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            {item.gdrive_link && (
+              <a
+                href={getGDriveDirectLink(item.gdrive_link)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold hover:bg-emerald-700 transition-all shadow-xs cursor-pointer"
+                title="Unduh / Lihat File GDrive"
+              >
+                📄 Lihat File
+              </a>
+            )}
+          </div>
+
+          {!isParentView && (
+            <div className="flex items-center gap-1 no-print-action">
+              <button
+                type="button"
+                onClick={() => onEditRow && onEditRow(item)}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-colors cursor-pointer"
+                title="Edit Baris Evaluasi Ini"
+              >
+                <Icons.edit className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Edit</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onDeleteRow && onDeleteRow(item.id)}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                title="Hapus Baris Evaluasi Ini"
+              >
+                <Icons.trash className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Hapus</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Rekomendasi di Rumah Opsional jika ada */}
       {item.rekomendasi_rumah && (

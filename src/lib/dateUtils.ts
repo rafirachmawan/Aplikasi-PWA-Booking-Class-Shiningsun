@@ -36,8 +36,8 @@ function parseDateInput(dateInput: string | Date): Date | null {
 }
 
 /**
- * Formats date to Indonesian Short Format (e.g. "Sen, 3 Agu")
- * ALWAYS guarantees Day, Date Month format across all OS/Browsers (iOS, Android, Windows, Mac).
+ * Formats date to Indonesian Short Format (e.g. "Sen, 3 Agu 2026")
+ * ALWAYS guarantees Day, Date Month Year format across all OS/Browsers (iOS, Android, Windows, Mac).
  */
 export function formatShortDate(dateInput: string | Date): string {
   const d = parseDateInput(dateInput);
@@ -46,8 +46,9 @@ export function formatShortDate(dateInput: string | Date): string {
   const dayName = DAYS_SHORT[d.getDay()];
   const dateNum = d.getDate();
   const monthName = MONTHS_SHORT[d.getMonth()];
+  const year = d.getFullYear();
 
-  return `${dayName}, ${dateNum} ${monthName}`;
+  return `${dayName}, ${dateNum} ${monthName} ${year}`;
 }
 
 /**

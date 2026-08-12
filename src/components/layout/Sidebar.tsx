@@ -44,11 +44,17 @@ export function Sidebar({
   const [resetError, setResetError] = useState("");
   const passwordInputRef = useRef<HTMLInputElement>(null);
 
-  // Worksheet Lock Modal State
-  const [showWorksheetLockModal, setShowWorksheetLockModal] = useState(false);
-  const [worksheetPassword, setWorksheetPassword] = useState("");
-  const [worksheetError, setWorksheetError] = useState("");
-  const worksheetPassInputRef = useRef<HTMLInputElement>(null);
+  // Development Lock Modal State (for routes still in development)
+  const lockedRoutes: Record<string, { label: string; sessionKey: string }> = {
+    "/worksheets": { label: "Laporan Perkembangan", sessionKey: "worksheets_unlocked" },
+    "/teachers": { label: "Kelola Guru", sessionKey: "teachers_unlocked" },
+    "/templates": { label: "Template Penilaian", sessionKey: "templates_unlocked" },
+  };
+  const [showDevLockModal, setShowDevLockModal] = useState(false);
+  const [devLockTarget, setDevLockTarget] = useState<string | null>(null);
+  const [devLockPassword, setDevLockPassword] = useState("");
+  const [devLockError, setDevLockError] = useState("");
+  const devLockPassInputRef = useRef<HTMLInputElement>(null);
 
   const openResetModal = () => {
     setResetModal('confirm');
@@ -91,31 +97,37 @@ export function Sidebar({
     window.location.href = "/dashboard";
   };
 
-  // Nav click protection for Lembar Kerja
+  // Nav click protection for locked (in-development) routes
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (href === "/worksheets") {
-      const isUnlocked = typeof window !== "undefined" && sessionStorage.getItem("worksheets_unlocked") === "true";
+    const lockInfo = lockedRoutes[href];
+    if (lockInfo) {
+      const isUnlocked = typeof window !== "undefined" && sessionStorage.getItem(lockInfo.sessionKey) === "true";
       if (!isUnlocked) {
         e.preventDefault();
-        setShowWorksheetLockModal(true);
-        setWorksheetPassword("");
-        setWorksheetError("");
-        setTimeout(() => worksheetPassInputRef.current?.focus(), 100);
+        setDevLockTarget(href);
+        setShowDevLockModal(true);
+        setDevLockPassword("");
+        setDevLockError("");
+        setTimeout(() => devLockPassInputRef.current?.focus(), 100);
         return;
       }
     }
   };
 
-  const handleUnlockWorksheet = (e: React.FormEvent) => {
+  const handleUnlockDevRoute = (e: React.FormEvent) => {
     e.preventDefault();
-    if (worksheetPassword === "123") {
+    if (!devLockTarget) return;
+    const lockInfo = lockedRoutes[devLockTarget];
+    if (!lockInfo) return;
+
+    if (devLockPassword === "123") {
       if (typeof window !== "undefined") {
-        sessionStorage.setItem("worksheets_unlocked", "true");
+        sessionStorage.setItem(lockInfo.sessionKey, "true");
       }
-      setShowWorksheetLockModal(false);
-      window.location.href = "/worksheets";
+      setShowDevLockModal(false);
+      window.location.href = devLockTarget;
     } else {
-      setWorksheetError("Password salah! Hubungi pihak developer.");
+      setDevLockError("Password salah! Hubungi pihak developer.");
     }
   };
 
@@ -123,47 +135,47 @@ export function Sidebar({
     <>
       {(isNavigating || isResetting) && <LoadingSpinner usePortal={true} />}
 
-      {/* Worksheet Lock Protection Modal */}
-      {showWorksheetLockModal && (
+      {/* Development Lock Protection Modal */}
+      {showDevLockModal && devLockTarget && lockedRoutes[devLockTarget] && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div 
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
-            onClick={() => setShowWorksheetLockModal(false)}
+            onClick={() => setShowDevLockModal(false)}
           />
           <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center animate-in zoom-in-95 duration-200">
             <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 text-2xl shadow-sm">
               🔒
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Akses Laporan Perkembangan Dikunci
+              Akses {lockedRoutes[devLockTarget].label} Dikunci
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-              Fitur ini masih dalam tahap prarilis. Masukkan password untuk membuka akses modul ini.
+              Fitur ini masih dalam tahap pengembangan. Masukkan password untuk membuka akses modul ini.
             </p>
 
-            <form onSubmit={handleUnlockWorksheet} className="mt-5 space-y-4">
+            <form onSubmit={handleUnlockDevRoute} className="mt-5 space-y-4">
               <div>
                 <input
-                  ref={worksheetPassInputRef}
+                  ref={devLockPassInputRef}
                   type="password"
                   required
-                  value={worksheetPassword}
+                  value={devLockPassword}
                   onChange={(e) => {
-                    setWorksheetPassword(e.target.value);
-                    setWorksheetError("");
+                    setDevLockPassword(e.target.value);
+                    setDevLockError("");
                   }}
                   placeholder="Masukkan password..."
                   className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent font-medium"
                 />
-                {worksheetError && (
-                  <p className="text-xs text-red-500 font-semibold mt-2 animate-in fade-in">{worksheetError}</p>
+                {devLockError && (
+                  <p className="text-xs text-red-500 font-semibold mt-2 animate-in fade-in">{devLockError}</p>
                 )}
               </div>
 
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowWorksheetLockModal(false)}
+                  onClick={() => setShowDevLockModal(false)}
                   className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 >
                   Batal
@@ -385,7 +397,7 @@ export function Sidebar({
                   }`}
                 />
                 <span className="flex-1">{item.name}</span>
-                {item.href === "/worksheets" && (
+                {lockedRoutes[item.href] && (
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-300/40">
                     🔒
                   </span>

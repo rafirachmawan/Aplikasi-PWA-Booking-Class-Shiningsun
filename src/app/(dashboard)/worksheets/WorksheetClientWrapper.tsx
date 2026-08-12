@@ -29,7 +29,7 @@ export function WorksheetClientWrapper({
 }: WorksheetClientWrapperProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState("__none__");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorksheet, setEditingWorksheet] = useState<any>(null);
 
@@ -154,7 +154,7 @@ export function WorksheetClientWrapper({
         kegiatan.toLowerCase().includes(searchQuery.toLowerCase()) ||
         desc.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesStudent = !selectedStudentId || w.student_id === selectedStudentId;
+      const matchesStudent = selectedStudentId === "" || selectedStudentId === "__none__" || w.student_id === selectedStudentId;
 
       return matchesSearch && matchesStudent;
     });
@@ -183,7 +183,7 @@ export function WorksheetClientWrapper({
     });
 
     // If specific student selected in filter and has 0 filtered worksheets, still render their empty table
-    if (selectedStudentId && !Array.from(map.values()).some(g => g.student.id === selectedStudentId)) {
+    if (selectedStudentId && selectedStudentId !== "" && selectedStudentId !== "__none__" && !Array.from(map.values()).some(g => g.student.id === selectedStudentId)) {
       const studentObj = students.find((s) => s.id === selectedStudentId);
       if (studentObj) {
         map.set(`${selectedStudentId}_none`, { student: studentObj, bulanKe: null, worksheets: [] });
@@ -482,9 +482,11 @@ export function WorksheetClientWrapper({
               className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2.5 pl-10 pr-3.5 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-brand-600 focus:outline-none shadow-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/80 cursor-pointer"
             >
               <span className="truncate">
-                {selectedStudentObj
-                  ? `👤 ${selectedStudentObj.name} ${selectedStudentObj.nickname ? `(${selectedStudentObj.nickname})` : ""}`
-                  : `✨ Semua Siswa (${students.length})`}
+                {selectedStudentId === "__none__"
+                  ? "👤 Pilih Siswa..."
+                  : selectedStudentObj
+                    ? `👤 ${selectedStudentObj.name} ${selectedStudentObj.nickname ? `(${selectedStudentObj.nickname})` : ""}`
+                    : `✨ Semua Siswa (${students.length})`}
               </span>
               <Icons.chevronDown
                 className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${
@@ -568,7 +570,17 @@ export function WorksheetClientWrapper({
 
       {/* Worksheets Grid / List Grouped By Student Table Document */}
       <div className="space-y-6">
-        {groupedWorksheets.length === 0 ? (
+        {selectedStudentId === "__none__" ? (
+          <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 p-8">
+            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-2xl">
+              👤
+            </div>
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">Pilih Siswa Terlebih Dahulu</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+              Silakan pilih siswa dari dropdown di atas untuk melihat atau menambahkan laporan perkembangan.
+            </p>
+          </div>
+        ) : groupedWorksheets.length === 0 ? (
           <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 p-8">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400">
               <Icons.edit className="w-6 h-6" />

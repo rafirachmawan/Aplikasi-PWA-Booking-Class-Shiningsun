@@ -57,7 +57,7 @@ const CATEGORIES: { id: CategoryType; label: string; icon: string; desc: string;
 
 export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<CategoryType>("kegiatan");
+  const [activeTab, setActiveTab] = useState<CategoryType | null>(null);
 
   const [isAdding, setIsAdding] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,8 +75,8 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  const currentCategoryObj = CATEGORIES.find((c) => c.id === activeTab) || CATEGORIES[0];
-  const filteredTemplates = templates.filter((t) => (t.category || "kegiatan") === activeTab);
+  const currentCategoryObj = activeTab ? CATEGORIES.find((c) => c.id === activeTab) : null;
+  const filteredTemplates = activeTab ? templates.filter((t) => (t.category || "kegiatan") === activeTab) : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,23 +232,41 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
             onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
             className="w-full flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-sky-500/60 rounded-xl shadow-xs transition-all text-left cursor-pointer"
           >
-            <div className="flex items-center gap-2.5 min-w-0 pr-2">
-              <span className="text-lg shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-300">
-                {currentCategoryObj.icon}
-              </span>
-              <div className="min-w-0">
-                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                  {currentCategoryObj.label}
-                </div>
-                <div className="text-[11px] text-slate-400 truncate">
-                  {currentCategoryObj.desc}
+            {currentCategoryObj ? (
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <span className="text-lg shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-300">
+                  {currentCategoryObj.icon}
+                </span>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                    {currentCategoryObj.label}
+                  </div>
+                  <div className="text-[11px] text-slate-400 truncate">
+                    {currentCategoryObj.desc}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <span className="text-lg shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
+                  📋
+                </span>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">
+                    Pilih Kategori Penilaian
+                  </div>
+                  <div className="text-[11px] text-slate-400 truncate">
+                    Klik untuk memilih kategori template
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-2 shrink-0">
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300 border border-sky-100 dark:border-sky-900">
-                {filteredTemplates.length} Opsi
-              </span>
+              {currentCategoryObj && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300 border border-sky-100 dark:border-sky-900">
+                  {filteredTemplates.length} Opsi
+                </span>
+              )}
               <Icons.chevronDown
                 className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
                   isCategoryDropdownOpen ? "rotate-180 text-sky-600" : ""
@@ -337,14 +355,14 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
             <div className="relative flex items-center justify-between p-5 bg-gradient-to-r from-sky-600 to-indigo-600 text-white">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg">
-                  {currentCategoryObj.icon}
+                  {currentCategoryObj?.icon || "📋"}
                 </div>
                 <div>
                   <h3 className="text-sm font-extrabold uppercase tracking-wide">
                     {editingTemplate ? "Edit Opsi Template" : "Tambah Opsi Template Baru"}
                   </h3>
                   <p className="text-[11px] text-sky-100 font-medium">
-                    Kategori: {currentCategoryObj.label}
+                    Kategori: {currentCategoryObj?.label || "-"}
                   </p>
                 </div>
               </div>
@@ -376,7 +394,7 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
                 <input
                   required
                   type="text"
-                  placeholder={currentCategoryObj.placeholderTitle}
+                  placeholder={currentCategoryObj?.placeholderTitle || "Masukkan judul opsi"}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-4 py-2.5 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none placeholder:text-slate-400"
@@ -429,13 +447,25 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
 
       {/* Templates List per Tab */}
       <div className="divide-y divide-slate-100 dark:divide-slate-800">
-        {filteredTemplates.length === 0 ? (
+        {!activeTab ? (
           <div className="px-6 py-12 text-center">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-2xl">
-              {currentCategoryObj.icon}
+              📋
             </div>
             <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
-              Belum Ada Opsi Khusus untuk {currentCategoryObj.label}
+              Pilih Kategori Penilaian
+            </p>
+            <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
+              Silakan pilih salah satu kategori di dropdown di atas untuk melihat dan mengelola opsi template penilaian.
+            </p>
+          </div>
+        ) : filteredTemplates.length === 0 ? (
+          <div className="px-6 py-12 text-center">
+            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-2xl">
+              {currentCategoryObj?.icon || "📋"}
+            </div>
+            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+              Belum Ada Opsi Khusus untuk {currentCategoryObj?.label}
             </p>
             <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
               Sistem saat ini menggunakan opsi bawaan standar. Klik tombol &quot;Tambah Opsi Baru&quot; di atas untuk menambahkan atau menyesuaikan opsi pilihan sesuai keinginan Anda.
@@ -445,39 +475,40 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
           filteredTemplates.map((tpl, index) => (
             <div
               key={tpl.id}
-              className="p-4 sm:p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex items-center justify-between gap-4"
+              className="p-4 sm:p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
             >
-              <div className="flex items-start gap-3 min-w-0">
+              <div className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-xl bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5 border border-sky-200 dark:border-sky-800">
                   {index + 1}
                 </div>
-                <div className="min-w-0">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                    {tpl.title}
-                  </h4>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-snug flex-1">
+                      {tpl.title}
+                    </h4>
+                    <div className="flex items-center gap-0.5 shrink-0 -mt-0.5">
+                      <button
+                        onClick={() => handleEdit(tpl)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/50 transition-colors cursor-pointer"
+                        title="Edit Opsi"
+                      >
+                        <Icons.edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => confirmDelete(tpl.id, tpl.title)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
+                        title="Hapus Opsi"
+                      >
+                        <Icons.trash className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
                   {tpl.materi && (
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 whitespace-pre-line">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 whitespace-pre-line leading-relaxed">
                       {tpl.materi}
                     </p>
                   )}
                 </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={() => handleEdit(tpl)}
-                  className="p-2 rounded-xl text-slate-500 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/50 transition-colors cursor-pointer"
-                  title="Edit Opsi"
-                >
-                  <Icons.edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => confirmDelete(tpl.id, tpl.title)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
-                  title="Hapus Opsi"
-                >
-                  <Icons.trash className="w-4 h-4" />
-                </button>
               </div>
             </div>
           ))
