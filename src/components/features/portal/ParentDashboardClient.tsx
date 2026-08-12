@@ -6,7 +6,7 @@ import Image from "next/image";
 import { StudentScheduleCard } from "./StudentScheduleCard";
 import { StudentWorksheetTable } from "@/components/features/worksheets/StudentWorksheetTable";
 import { clearParentSession } from "@/lib/actions";
-import { formatShortDate } from "@/lib/dateUtils";
+import { formatShortDate, calculateStudentPoints } from "@/lib/dateUtils";
 import { getGDriveDirectLink, getGDrivePreviewLink } from "@/lib/gdriveUtils";
 
 interface ParentDashboardClientProps {
@@ -14,6 +14,7 @@ interface ParentDashboardClientProps {
   upcomingSchedules: any[];
   scheduleHistory: any[];
   worksheets: any[];
+  redemptions?: any[];
 }
 
 export function ParentDashboardClient({
@@ -21,9 +22,10 @@ export function ParentDashboardClient({
   upcomingSchedules,
   scheduleHistory,
   worksheets,
+  redemptions = [],
 }: ParentDashboardClientProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"schedule" | "worksheets">("worksheets");
+  const [activeTab, setActiveTab] = useState<"worksheets" | "schedule" | "points">("worksheets");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -40,6 +42,7 @@ export function ParentDashboardClient({
   };
 
   const firstLetter = student?.name ? student.name.charAt(0).toUpperCase() : "S";
+  const totalPoints = calculateStudentPoints(worksheets);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans pb-12">
@@ -127,8 +130,13 @@ export function ParentDashboardClient({
               </div>
             </div>
 
-            {/* Level & Status Chips */}
+            {/* Level, Points & Status Chips */}
             <div className="flex sm:flex-col items-start sm:items-end gap-2 flex-wrap w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/15">
+              <div className="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-400/30 text-amber-100 border border-amber-300/40 backdrop-blur-md flex items-center gap-1.5 shadow-sm">
+                <span className="text-sm">⭐</span>
+                <span>{student.points ?? totalPoints} Poin Kehadiran</span>
+              </div>
+
               {student.label ? (
                 <span
                   className="px-3 py-1.5 rounded-xl text-xs font-extrabold text-white shadow-sm border border-white/20"
@@ -149,19 +157,45 @@ export function ParentDashboardClient({
           </div>
         </div>
 
+        {/* Poin Kehadiran Info Banner */}
+        <div className="bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-amber-500/10 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-4 sm:p-5 flex items-start gap-3 shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-xl shrink-0 border border-amber-200 dark:border-amber-800">
+            ⭐
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-xs sm:text-sm font-extrabold text-amber-900 dark:text-amber-200">
+                Poin Kehadiran Siswa: <span className="text-sm sm:text-base text-amber-600 dark:text-amber-400 font-black">{student.points ?? totalPoints} Poin Tersedia</span>
+              </h3>
+              {(student.redeemed_points || 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("points")}
+                  className="text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-800 transition-colors cursor-pointer"
+                >
+                  Sudah Ditukar: {student.redeemed_points} Poin 📜
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] sm:text-xs text-amber-800 dark:text-amber-300/80 mt-1 leading-relaxed">
+              <strong>Info Penukaran Hadiah:</strong> Hadiah dapat ditukarkan langsung dengan menghubungi Admin/Tutor di tempat les. Poin akan dipotong oleh Admin sesuai hadiah fisik yang dipilih. (+1 Poin setiap masuk kelas).
+            </p>
+          </div>
+        </div>
+
         {/* Tab Navigation (Segmented Control) */}
-        <div className="flex rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 p-1.5 shadow-xs">
+        <div className="grid grid-cols-3 gap-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 p-1.5 shadow-xs">
           <button
             type="button"
             onClick={() => setActiveTab("worksheets")}
-            className={`flex-1 py-3 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl text-[11px] sm:text-sm font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 cursor-pointer text-center leading-tight ${
               activeTab === "worksheets"
                 ? "bg-brand-600 text-white shadow-md shadow-brand-500/20"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
             }`}
           >
-            <span>📄 Rapor & Laporan Perkembangan</span>
-            <span className={`px-2 py-0.5 rounded-full text-[11px] ${activeTab === "worksheets" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
+            <span>📄 <span className="hidden sm:inline">Rapor & Laporan</span><span className="sm:hidden">Rapor</span></span>
+            <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] ${activeTab === "worksheets" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
               {worksheets.length}
             </span>
           </button>
@@ -169,15 +203,30 @@ export function ParentDashboardClient({
           <button
             type="button"
             onClick={() => setActiveTab("schedule")}
-            className={`flex-1 py-3 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl text-[11px] sm:text-sm font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 cursor-pointer text-center leading-tight ${
               activeTab === "schedule"
                 ? "bg-brand-600 text-white shadow-md shadow-brand-500/20"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
             }`}
           >
-            <span>📅 Jadwal Kelas</span>
-            <span className={`px-2 py-0.5 rounded-full text-[11px] ${activeTab === "schedule" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
+            <span>📅 Jadwal</span>
+            <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] ${activeTab === "schedule" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
               {upcomingSchedules.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("points")}
+            className={`py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl text-[11px] sm:text-sm font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 cursor-pointer text-center leading-tight ${
+              activeTab === "points"
+                ? "bg-brand-600 text-white shadow-md shadow-brand-500/20"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
+            }`}
+          >
+            <span>🎁 <span className="hidden sm:inline">Riwayat</span> Poin</span>
+            <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] ${activeTab === "points" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
+              {redemptions.length}
             </span>
           </button>
         </div>
@@ -232,6 +281,83 @@ export function ParentDashboardClient({
               upcomingSchedules={upcomingSchedules}
               scheduleHistory={scheduleHistory}
             />
+          </div>
+        )}
+
+        {/* Tab Content: Points & Redemption History */}
+        {activeTab === "points" && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {/* Points Summary Card */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2 mb-3">
+                <span>⭐ Rincian Poin Kehadiran</span>
+              </h3>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-3">
+                  <div className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-300">
+                    +{student.gross_points || totalPoints}
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-amber-800 dark:text-amber-400 font-semibold mt-0.5">
+                    Total Hadir
+                  </div>
+                </div>
+                <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl p-3">
+                  <div className="text-xl sm:text-2xl font-black text-rose-700 dark:text-rose-300">
+                    -{student.redeemed_points || 0}
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-rose-800 dark:text-rose-400 font-semibold mt-0.5">
+                    Sudah Ditukar
+                  </div>
+                </div>
+                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-3">
+                  <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">
+                    {student.points ?? totalPoints}
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-emerald-800 dark:text-emerald-400 font-semibold mt-0.5">
+                    Sisa Poin Aktif
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Redemption List */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                  📜 Catatan Riwayat Penukaran Hadiah
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Daftar pemotongan poin saat penukaran barang fisik di Admin
+                </p>
+              </div>
+
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {redemptions.length === 0 ? (
+                  <div className="py-12 text-center text-xs sm:text-sm text-slate-400 p-4">
+                    🎁 Belum ada riwayat penukaran poin. Orang tua dapat menukarkan poin siswa di cabang/admin tempat les.
+                  </div>
+                ) : (
+                  redemptions.map((item) => (
+                    <div key={item.id} className="p-4 flex items-center justify-between gap-3">
+                      <div>
+                        <h5 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
+                          {item.reward_note || "Penukaran Hadiah"}
+                        </h5>
+                        <span className="text-[10px] text-slate-400 block mt-0.5">
+                          Tanggal: {item.created_at ? formatShortDate(item.created_at) : "-"}
+                        </span>
+                      </div>
+
+                      <div className="shrink-0">
+                        <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 px-3 py-1 rounded-xl text-xs font-black border border-rose-200 dark:border-rose-800">
+                          -{item.points_deducted} Poin
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         )}
       </main>

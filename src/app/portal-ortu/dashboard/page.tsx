@@ -4,6 +4,7 @@ import {
   getStudentUpcomingSchedule,
   getStudentScheduleHistory,
   getWorksheetsByStudent,
+  getPointRedemptions,
 } from "@/lib/actions";
 import { ParentDashboardClient } from "@/components/features/portal/ParentDashboardClient";
 
@@ -16,10 +17,11 @@ export default async function ParentDashboardPage() {
     redirect("/portal-ortu");
   }
 
-  const [upcomingSchedules, scheduleHistory, worksheets] = await Promise.all([
+  const [upcomingSchedules, scheduleHistory, worksheets, redemptions] = await Promise.all([
     getStudentUpcomingSchedule(student.id),
     getStudentScheduleHistory(student.id),
     getWorksheetsByStudent(student.id),
+    getPointRedemptions(student.id),
   ]);
 
   return (
@@ -28,6 +30,7 @@ export default async function ParentDashboardPage() {
       upcomingSchedules={upcomingSchedules}
       scheduleHistory={scheduleHistory}
       worksheets={worksheets}
+      redemptions={redemptions}
     />
   );
 }

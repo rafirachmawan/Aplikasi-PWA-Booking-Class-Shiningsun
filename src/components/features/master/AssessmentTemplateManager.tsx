@@ -401,20 +401,7 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
                 />
               </div>
 
-              {(activeTab === "afirmasi" || activeTab === "pemahaman") && (
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Isi Kalimat Lengkap / Deskripsi
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder="Contoh: Luar biasa! Sudah bisa mengerjakan mandiri. Pertahankan!"
-                    value={materi}
-                    onChange={(e) => setMateri(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-4 py-2.5 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none placeholder:text-slate-400"
-                  />
-                </div>
-              )}
+
 
               <div className="flex justify-end gap-2.5 pt-3">
                 <button
@@ -503,11 +490,7 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
                       </button>
                     </div>
                   </div>
-                  {tpl.materi && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 whitespace-pre-line leading-relaxed">
-                      {tpl.materi}
-                    </p>
-                  )}
+
                 </div>
               </div>
             </div>

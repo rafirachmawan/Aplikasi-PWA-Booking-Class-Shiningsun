@@ -43,6 +43,15 @@ const quickActions = [
     borderHover: 'hover:border-amber-200 dark:hover:border-amber-800',
   },
   {
+    name: 'Poin Kehadiran',
+    description: 'Leaderboard & katalog tukar hadiah',
+    href: '/points',
+    icon: Icons.star,
+    color: 'text-orange-600 dark:text-orange-400',
+    bg: 'bg-orange-50 dark:bg-orange-500/10',
+    borderHover: 'hover:border-orange-200 dark:hover:border-orange-800',
+  },
+  {
     name: 'Kelola Guru',
     description: 'Kelola data guru & pengajar',
     href: '/teachers',
@@ -73,6 +82,7 @@ const quickActions = [
 
 const lockedRoutes: Record<string, { label: string; sessionKey: string }> = {
   "/worksheets": { label: "Laporan Perkembangan", sessionKey: "worksheets_unlocked" },
+  "/points": { label: "Poin Kehadiran", sessionKey: "points_unlocked" },
   "/teachers": { label: "Kelola Guru", sessionKey: "teachers_unlocked" },
   "/templates": { label: "Template Penilaian", sessionKey: "templates_unlocked" },
 };

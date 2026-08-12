@@ -380,6 +380,9 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                   Tingkat Level
                 </th>
                 <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                  Poin Kehadiran
+                </th>
+                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900 dark:text-white">
                   Tgl Lahir & Usia
                 </th>
                 <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900 dark:text-white">
@@ -393,7 +396,7 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
               {displayedStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-slate-500">
+                  <td colSpan={7} className="py-10 text-center text-slate-500">
                     Belum ada data siswa untuk kategori ini.
                   </td>
                 </tr>
@@ -455,6 +458,11 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                         ) : (
                           "-"
                         )}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm font-bold text-amber-600 dark:text-amber-400">
+                        <span className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-2.5 py-1 rounded-xl text-xs">
+                          ⭐ {person.points || 0} Poin
+                        </span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500 dark:text-slate-400">
                         <div>{formatNumericDate(person.date_of_birth)}</div>
@@ -571,7 +579,7 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 mb-4 relative z-10 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                <div className="grid grid-cols-3 gap-2 text-xs text-slate-500 mb-4 relative z-10 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
                   <div>
                     <span className="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Tgl Lahir</span>
                     <span className="block font-medium text-slate-700 dark:text-slate-300">{formatNumericDate(person.date_of_birth)}</span>
@@ -579,6 +587,10 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                   <div>
                     <span className="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Tgl Masuk</span>
                     <span className="block font-medium text-slate-700 dark:text-slate-300">{formatNumericDate(person.registration_date)}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[9px] font-bold text-amber-500 uppercase tracking-wider mb-0.5">⭐ Poin</span>
+                    <span className="block font-extrabold text-amber-600 dark:text-amber-400">{person.points || 0} Poin</span>
                   </div>
                 </div>
 

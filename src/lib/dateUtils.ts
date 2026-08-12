@@ -109,3 +109,24 @@ export function getTodayISO(): string {
   const d = String(now.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
+
+/**
+ * Calculates attendance points for a student based on their worksheet reports.
+ * - +1 Point for every HADIR (attended) class session.
+ * - 0 Points for IJIN, SAKIT, LIBUR (points do not change / not deducted).
+ */
+export function calculateStudentPoints(worksheets: any[]): number {
+  if (!worksheets || !Array.isArray(worksheets) || worksheets.length === 0) return 0;
+  return worksheets.filter((w) => {
+    const m = (w.materi || "").toLowerCase();
+    const t = (w.title || "").toLowerCase();
+    const isAbsent =
+      m.includes("tidak hadir") ||
+      m.includes("libur") ||
+      t.includes("tidak hadir") ||
+      t.includes("libur") ||
+      t.includes("ijin") ||
+      t.includes("sakit");
+    return !isAbsent;
+  }).length;
+}

@@ -16,6 +16,7 @@ const navigation = [
   { name: "Penjadwalan Siswa", href: "/scheduling", icon: Icons.users },
   { name: "Kelola Siswa", href: "/students", icon: Icons.users },
   { name: "Laporan Perkembangan", href: "/worksheets", icon: Icons.edit },
+  { name: "Poin Kehadiran", href: "/points", icon: Icons.star },
   { name: "Kelola Guru", href: "/teachers", icon: Icons.userCheck },
   { name: "Template Penilaian", href: "/templates", icon: Icons.fileText },
   { name: "Master Data", href: "/master", icon: Icons.settings },
@@ -47,6 +48,7 @@ export function Sidebar({
   // Development Lock Modal State (for routes still in development)
   const lockedRoutes: Record<string, { label: string; sessionKey: string }> = {
     "/worksheets": { label: "Laporan Perkembangan", sessionKey: "worksheets_unlocked" },
+    "/points": { label: "Poin Kehadiran", sessionKey: "points_unlocked" },
     "/teachers": { label: "Kelola Guru", sessionKey: "teachers_unlocked" },
     "/templates": { label: "Template Penilaian", sessionKey: "templates_unlocked" },
   };

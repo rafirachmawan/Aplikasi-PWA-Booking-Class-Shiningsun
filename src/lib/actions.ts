@@ -451,10 +451,57 @@ export async function getStudents() {
   if (data && data.length > 0) {
     const studentIds = data.map((s) => s.id);
     const scheduleMap = await getStudentScheduleMap(studentIds);
-    return data.map((s) => ({
-      ...s,
-      schedule: scheduleMap[s.id] || null,
-    }));
+
+    // Fetch worksheets to calculate gross attendance points for each student
+    const { data: worksheetsData } = await supabaseServer
+      .from("student_worksheets")
+      .select("student_id, materi, title")
+      .in("student_id", studentIds);
+
+    const grossPointsMap: Record<string, number> = {};
+    (worksheetsData || []).forEach((w) => {
+      const m = (w.materi || "").toLowerCase();
+      const t = (w.title || "").toLowerCase();
+      const isAbsent =
+        m.includes("tidak hadir") ||
+        m.includes("libur") ||
+        t.includes("tidak hadir") ||
+        t.includes("libur") ||
+        t.includes("ijin") ||
+        t.includes("sakit");
+      if (!isAbsent) {
+        grossPointsMap[w.student_id] = (grossPointsMap[w.student_id] || 0) + 1;
+      }
+    });
+
+    // Fetch redemptions to calculate redeemed points per student
+    const redeemedPointsMap: Record<string, number> = {};
+    try {
+      const { data: redemptionsData } = await supabaseServer
+        .from("student_point_redemptions")
+        .select("student_id, points_deducted")
+        .in("student_id", studentIds);
+
+      (redemptionsData || []).forEach((r) => {
+        redeemedPointsMap[r.student_id] =
+          (redeemedPointsMap[r.student_id] || 0) + (r.points_deducted || 0);
+      });
+    } catch (e) {
+      // Gracefully handle if table does not exist yet
+    }
+
+    return data.map((s) => {
+      const gross = grossPointsMap[s.id] || 0;
+      const redeemed = redeemedPointsMap[s.id] || 0;
+      const net = Math.max(0, gross - redeemed);
+      return {
+        ...s,
+        schedule: scheduleMap[s.id] || null,
+        gross_points: gross,
+        redeemed_points: redeemed,
+        points: net,
+      };
+    });
   }
 
   return data || [];
@@ -1813,6 +1860,12 @@ export async function verifyParentAccess(
     throw new Error("Nama siswa atau PIN Akses salah. Silakan coba lagi.");
   }
 
+  if (matchedStudent.status === "INACTIVE") {
+    throw new Error(
+      "Akun siswa ini sedang Nonaktif. Silakan hubungi pihak admin sekolah."
+    );
+  }
+
   // Set session cookie for Parent Portal (valid for 7 days)
   const cookieStore = await cookies();
   cookieStore.set("parent_student_id", matchedStudent.id, {
@@ -1845,6 +1898,12 @@ export async function getParentSessionStudent() {
     .single();
 
   if (error || !student) return null;
+
+  if (student.status === "INACTIVE") {
+    cookieStore.delete("parent_student_id");
+    return null;
+  }
+
   const scheduleMap = await getStudentScheduleMap([student.id]);
   return {
     ...student,
@@ -2225,5 +2284,79 @@ export async function deleteAssessmentTemplate(id: string) {
   revalidatePath("/master");
   return true;
 }
+
+export async function redeemStudentPoints({
+  studentId,
+  branchId,
+  pointsDeducted,
+  rewardNote,
+}: {
+  studentId: string;
+  branchId?: string;
+  pointsDeducted: number;
+  rewardNote?: string;
+}) {
+  const supabaseServer = await createClient();
+
+  if (!studentId || pointsDeducted <= 0) {
+    throw new Error("Jumlah poin yang ditukar harus lebih dari 0.");
+  }
+
+  const { data: redemption, error } = await supabaseServer
+    .from("student_point_redemptions")
+    .insert({
+      student_id: studentId,
+      branch_id: branchId || null,
+      points_deducted: pointsDeducted,
+      reward_note: rewardNote?.trim() || "Penukaran Hadiah",
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error redeeming points:", error);
+    if (error.message.includes('relation "public.student_point_redemptions" does not exist')) {
+      throw new Error(
+        "Tabel 'student_point_redemptions' belum dibuat di Supabase. Silakan jalankan file SQL 'supabase/student_point_redemptions.sql' pada Supabase SQL Editor."
+      );
+    }
+    throw new Error("Gagal memotong poin: " + error.message);
+  }
+
+  revalidatePath("/points");
+  revalidatePath("/students");
+  revalidatePath("/portal-ortu/dashboard");
+  return redemption;
+}
+
+export async function getPointRedemptions(studentId?: string) {
+  const supabaseServer = await createClient();
+  const activeBranchId = await getBranchId();
+
+  try {
+    let query = supabaseServer
+      .from("student_point_redemptions")
+      .select(`
+        *,
+        student:students(name, nickname)
+      `)
+      .order("created_at", { ascending: false });
+
+    if (studentId) {
+      query = query.eq("student_id", studentId);
+    } else if (activeBranchId && activeBranchId !== "ALL") {
+      query = query.eq("branch_id", activeBranchId);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      return [];
+    }
+    return data || [];
+  } catch (e) {
+    return [];
+  }
+}
+
 
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Icons } from "@/components/ui/icons";
-import { formatShortDate } from "@/lib/dateUtils";
+import { formatShortDate, calculateStudentPoints } from "@/lib/dateUtils";
 import { getGDriveDirectLink } from "@/lib/gdriveUtils";
 import { updateSingleWorksheetParentFeedback } from "@/lib/actions";
 
@@ -683,7 +683,7 @@ export function StudentWorksheetTable({
         <hr className="my-4 sm:my-5 border-slate-200 dark:border-slate-800" />
 
         {/* Bottom Info Grid Below Divider Line */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-slate-800 dark:text-slate-200 font-medium">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs text-slate-800 dark:text-slate-200 font-medium">
           <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
             <span className="block text-[10px] font-bold text-slate-400 uppercase">Unit</span>
             <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
@@ -705,7 +705,14 @@ export function StudentWorksheetTable({
             </span>
           </div>
 
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+          <div className="bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800/60">
+            <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">⭐ Poin Kehadiran</span>
+            <span className="font-extrabold text-amber-700 dark:text-amber-300 text-xs sm:text-sm">
+              {calculateStudentPoints(worksheets)} Poin
+            </span>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 col-span-2 sm:col-span-1">
             <span className="block text-[10px] font-bold text-slate-400 uppercase">Status</span>
             <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">
               {student?.status === 'REGISTERED' ? 'Siswa Reguler' : student?.status === 'CG' ? 'Coba Gratis' : 'Nonaktif'}
