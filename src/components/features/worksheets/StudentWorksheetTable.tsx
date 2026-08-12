@@ -621,12 +621,16 @@ export function StudentWorksheetTable({
         
         {/* Top Header Row: PP (Photo Box) + Student Main Info */}
         <div className="flex items-start gap-4 sm:gap-6">
-          {/* PP Box (Photo Profile Avatar) */}
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 border-2 border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-white shadow-md shrink-0 relative overflow-hidden">
-            <span className="text-2xl sm:text-3xl font-black tracking-widest">{firstLetter}</span>
-            <span className="text-[10px] font-extrabold tracking-wider bg-black/20 w-full text-center py-0.5 mt-1 uppercase">
-              PP
-            </span>
+          {/* ShiningSun Logo Box */}
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center p-2 sm:p-2.5 shadow-md shrink-0 relative overflow-hidden">
+            <Image
+              src="/logo.png"
+              alt="ShiningSun Logo"
+              width={80}
+              height={80}
+              className="w-full h-full object-contain"
+              priority
+            />
           </div>
 
           {/* Lines Next to PP */}

@@ -91,9 +91,16 @@ export function ParentDashboardClient({
 
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
             <div className="flex items-start sm:items-center gap-4">
-              {/* Student Avatar Icon */}
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 backdrop-blur-md border-2 border-white/30 text-white flex items-center justify-center font-extrabold text-xl sm:text-2xl shadow-lg shrink-0">
-                {firstLetter}
+              {/* ShiningSun Logo Box */}
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white p-2 border-2 border-white/40 shadow-lg shrink-0 flex items-center justify-center">
+                <Image
+                  src="/logo.png"
+                  alt="ShiningSun Logo"
+                  width={56}
+                  height={56}
+                  className="w-full h-full object-contain"
+                  priority
+                />
               </div>
 
               <div className="space-y-1">

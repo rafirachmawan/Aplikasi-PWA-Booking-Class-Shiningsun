@@ -715,7 +715,7 @@ export function WorksheetFormModal({
                           </button>
 
                           {openDropdown === 'materi' && (
-                            <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-1.5 space-y-1 max-h-52 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+                            <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-1.5 space-y-1 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -738,14 +738,14 @@ export function WorksheetFormModal({
                                       setMateri(t.title);
                                       setOpenDropdown(null);
                                     }}
-                                    className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
+                                    className={`w-full text-left px-3 py-2.5 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
                                       isSel
                                         ? "bg-sky-100 dark:bg-sky-900/60 text-sky-900 dark:text-sky-200 font-extrabold"
                                         : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                                     }`}
                                   >
-                                    <span className="truncate">📚 {t.title}</span>
-                                    {isSel && <span className="text-sky-600 shrink-0 text-xs font-bold">✓</span>}
+                                    <span className="break-words whitespace-normal leading-snug">📚 {t.title}</span>
+                                    {isSel && <span className="text-sky-600 shrink-0 text-xs font-bold mt-0.5">✓</span>}
                                   </button>
                                 );
                               })}
@@ -767,7 +767,7 @@ export function WorksheetFormModal({
                         onClick={() => setOpenDropdown(openDropdown === 'kegiatan' ? null : 'kegiatan')}
                         className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-xs hover:border-slate-400 cursor-pointer text-left"
                       >
-                        <span className="truncate">
+                        <span className="line-clamp-2 leading-snug">
                           {selectedKegiatan
                             ? `${selectedKegiatan.num}. ${selectedKegiatan.label.replace(/^(1|2|3|4)\.\s*/, "")}`
                             : "-- Pilih Jenis Kegiatan --"}
@@ -776,7 +776,7 @@ export function WorksheetFormModal({
                       </button>
 
                       {openDropdown === 'kegiatan' && (
-                        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 space-y-1 max-h-52 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+                        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 space-y-1 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
                           {defaultKegiatanOptions.map((opt) => {
                             const isSel = smartKegiatanId === opt.id;
                             return (
@@ -787,14 +787,14 @@ export function WorksheetFormModal({
                                   setSmartKegiatanId(opt.id);
                                   setOpenDropdown(null);
                                 }}
-                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
+                                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
                                   isSel
                                     ? "bg-brand-50 dark:bg-brand-950/70 text-brand-700 dark:text-brand-300 font-extrabold"
                                     : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                                 }`}
                               >
-                                <span className="truncate">{opt.num}. {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}</span>
-                                {isSel && <span className="text-brand-600 shrink-0 text-xs font-bold">✓</span>}
+                                <span className="break-words whitespace-normal leading-snug">{opt.num}. {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}</span>
+                                {isSel && <span className="text-brand-600 shrink-0 text-xs font-bold mt-0.5">✓</span>}
                               </button>
                             );
                           })}
@@ -814,7 +814,7 @@ export function WorksheetFormModal({
                         onClick={() => setOpenDropdown(openDropdown === 'pemahaman' ? null : 'pemahaman')}
                         className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/50 dark:bg-slate-800 text-emerald-950 dark:text-emerald-200 text-xs sm:text-sm font-semibold shadow-xs hover:border-emerald-400 cursor-pointer text-left"
                       >
-                        <span className="truncate">
+                        <span className="line-clamp-2 leading-snug">
                           {selectedPemahaman
                             ? `${selectedPemahaman.num}. ${selectedPemahaman.label.replace(/^(1|2|3|4)\.\s*/, "")}`
                             : "-- Pilih Hasil Evaluasi / Pemahaman --"}
@@ -823,7 +823,7 @@ export function WorksheetFormModal({
                       </button>
 
                       {openDropdown === 'pemahaman' && (
-                        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-emerald-200 dark:border-emerald-800 p-1.5 space-y-1 max-h-52 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+                        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-emerald-200 dark:border-emerald-800 p-1.5 space-y-1 max-h-64 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
                           {defaultPemahamanOptions.map((opt) => {
                             const isSel = smartPemahamanId === opt.id;
                             return (
@@ -834,14 +834,16 @@ export function WorksheetFormModal({
                                   handlePemahamanChange(opt.id);
                                   setOpenDropdown(null);
                                 }}
-                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
+                                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
                                   isSel
                                     ? "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 font-extrabold"
                                     : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                                 }`}
                               >
-                                <span className="truncate">{opt.num}. {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}</span>
-                                {isSel && <span className="text-emerald-600 shrink-0 text-xs font-bold">✓</span>}
+                                <span className="break-words whitespace-normal leading-snug">
+                                  {opt.num}. {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
+                                </span>
+                                {isSel && <span className="text-emerald-600 shrink-0 text-xs font-bold mt-0.5">✓</span>}
                               </button>
                             );
                           })}
@@ -861,7 +863,7 @@ export function WorksheetFormModal({
                         onClick={() => setOpenDropdown(openDropdown === 'rumah' ? null : 'rumah')}
                         className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border border-amber-300 dark:border-amber-800/80 bg-amber-50/50 dark:bg-slate-800 text-amber-950 dark:text-amber-200 text-xs sm:text-sm font-semibold shadow-xs hover:border-amber-400 cursor-pointer text-left"
                       >
-                        <span className="truncate">
+                        <span className="line-clamp-2 leading-snug">
                           {selectedRumah
                             ? `${selectedRumah.num}. ${selectedRumah.label.replace(/^(1|2|3|4)\.\s*/, "")}`
                             : "-- Pilih Rekomendasi di Rumah --"}
@@ -870,7 +872,7 @@ export function WorksheetFormModal({
                       </button>
 
                       {openDropdown === 'rumah' && (
-                        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-amber-200 dark:border-amber-800 p-1.5 space-y-1 max-h-52 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+                        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-amber-200 dark:border-amber-800 p-1.5 space-y-1 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
                           {defaultRumahOptions.map((opt) => {
                             const isSel = smartRumahId === opt.id;
                             return (
@@ -881,14 +883,14 @@ export function WorksheetFormModal({
                                   setSmartRumahId(opt.id);
                                   setOpenDropdown(null);
                                 }}
-                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
+                                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
                                   isSel
                                     ? "bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-extrabold"
                                     : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                                 }`}
                               >
-                                <span className="truncate">{opt.num}. {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}</span>
-                                {isSel && <span className="text-amber-600 shrink-0 text-xs font-bold">✓</span>}
+                                <span className="break-words whitespace-normal leading-snug">{opt.num}. {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}</span>
+                                {isSel && <span className="text-amber-600 shrink-0 text-xs font-bold mt-0.5">✓</span>}
                               </button>
                             );
                           })}
@@ -908,7 +910,7 @@ export function WorksheetFormModal({
                         onClick={() => setOpenDropdown(openDropdown === 'afirmasi' ? null : 'afirmasi')}
                         className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border border-sky-300 dark:border-sky-800/80 bg-sky-50/50 dark:bg-slate-800 text-sky-950 dark:text-sky-200 text-xs sm:text-sm font-semibold shadow-xs hover:border-sky-400 cursor-pointer text-left"
                       >
-                        <span className="truncate">
+                        <span className="line-clamp-2 leading-snug">
                           {selectedAfirmasi
                             ? `${selectedAfirmasi.num}. ${selectedAfirmasi.label.replace(/^(1|2|3|4)\.\s*/, "")}`
                             : "-- Pilih Afirmasi Positif --"}
@@ -917,7 +919,7 @@ export function WorksheetFormModal({
                       </button>
 
                       {openDropdown === 'afirmasi' && (
-                        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-1.5 space-y-1 max-h-52 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+                        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-1.5 space-y-1 max-h-64 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
                           {defaultAfirmasiOptions.map((opt) => {
                             const isSel = smartAfirmasiId === opt.id;
                             return (
@@ -928,19 +930,16 @@ export function WorksheetFormModal({
                                   handleAfirmasiChange(opt.id);
                                   setOpenDropdown(null);
                                 }}
-                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex flex-col items-start gap-0.5 cursor-pointer ${
+                                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
                                   isSel
                                     ? "bg-sky-100 dark:bg-sky-900/60 text-sky-900 dark:text-sky-200 font-extrabold"
                                     : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                                 }`}
                               >
-                                <div className="w-full flex items-center justify-between">
-                                  <span className="truncate">{opt.num}. {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}</span>
-                                  {isSel && <span className="text-sky-600 shrink-0 text-xs font-bold">✓</span>}
-                                </div>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-normal italic line-clamp-1">
-                                  &quot;{opt.text}&quot;
-                                </p>
+                                <span className="break-words whitespace-normal leading-snug">
+                                  {opt.num}. {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
+                                </span>
+                                {isSel && <span className="text-sky-600 shrink-0 text-xs font-bold mt-0.5">✓</span>}
                               </button>
                             );
                           })}

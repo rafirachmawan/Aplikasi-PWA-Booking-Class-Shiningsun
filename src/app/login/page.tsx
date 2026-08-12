@@ -3,8 +3,8 @@ import { LoginForm } from "@/components/features/auth/LoginForm";
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen bg-slate-900 overflow-hidden font-sans">
-      {/* Left Panel - Branding (hidden on mobile) */}
+    <div className="min-h-screen bg-[#0A0F1C] flex flex-col lg:flex-row overflow-x-hidden font-sans">
+      {/* Left Panel - Branding (desktop only) */}
       <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-12 overflow-hidden bg-[#0A0F1C]">
         
         {/* Animated Mesh Gradient Background */}
@@ -49,16 +49,16 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Bottom - Footer / Testimonial Style */}
+        {/* Bottom - Footer */}
         <div className="relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
           <div className="flex items-center gap-4 mb-4">
             <div className="flex -space-x-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className={`w-10 h-10 rounded-full bg-slate-800 border-2 border-[#0A0F1C] flex items-center justify-center text-xs text-white/50 shadow-sm z-[${4-i}]`}>
+                <div key={i} className="w-10 h-10 rounded-full bg-slate-800 border-2 border-[#0A0F1C] flex items-center justify-center text-xs text-white/50 shadow-sm">
                   {i}
                 </div>
               ))}
-              <div className="w-10 h-10 rounded-full bg-brand-600 border-2 border-[#0A0F1C] flex items-center justify-center text-xs font-bold text-white shadow-sm z-0">
+              <div className="w-10 h-10 rounded-full bg-brand-600 border-2 border-[#0A0F1C] flex items-center justify-center text-xs font-bold text-white shadow-sm">
                 +99
               </div>
             </div>
@@ -68,57 +68,62 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right Panel - Login Form Container */}
-      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-20 bg-white dark:bg-[#0B1120] relative z-10 lg:rounded-l-[40px] shadow-[-20px_0_40px_-15px_rgba(0,0,0,0.3)]">
+      {/* Right Panel - Mobile & Desktop Login Form Container */}
+      <div className="flex-1 flex flex-col justify-center min-h-screen lg:min-h-0 px-3 py-4 sm:px-8 sm:py-8 lg:px-20 bg-[#0A0F1C] lg:bg-white lg:dark:bg-[#0B1120] relative z-10 lg:rounded-l-[40px] shadow-[-20px_0_40px_-15px_rgba(0,0,0,0.3)] overflow-hidden">
         
-        {/* Mobile Header Decoration */}
-        <div className="lg:hidden absolute top-0 left-0 right-0 h-[40vh] bg-[#0A0F1C] rounded-b-[40px] -z-10 overflow-hidden shadow-lg">
-          {/* Animated Mesh for Mobile */}
-          <div className="absolute -top-1/4 -left-1/4 w-[150%] h-[150%] rounded-full bg-brand-600/40 blur-[70px] mix-blend-screen animate-pulse" style={{ animationDuration: '8s' }} />
-          <div className="absolute top-1/4 -right-1/4 w-[120%] h-[120%] rounded-full bg-blue-500/30 blur-[60px] mix-blend-screen animate-pulse" style={{ animationDuration: '12s' }} />
-          {/* Grid Overlay */}
-          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-30 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+        {/* Mobile Full Background Ambient Glow (Seamless & Continuous) */}
+        <div className="lg:hidden absolute inset-0 pointer-events-none overflow-hidden -z-10">
+          {/* Top Radial Glow */}
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[140%] h-[550px] rounded-full bg-gradient-to-b from-brand-600/25 via-indigo-600/15 to-transparent blur-3xl" />
+          {/* Bottom Ambient Accent */}
+          <div className="absolute -bottom-32 left-1/2 -translate-x-1/2 w-[120%] h-[400px] rounded-full bg-gradient-to-t from-blue-600/15 via-brand-600/10 to-transparent blur-3xl" />
+          {/* Subtle Grid Overlay */}
+          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-15 [mask-image:linear-gradient(180deg,white_0%,transparent_100%)]" />
         </div>
 
-        <div className="mx-auto w-full max-w-[400px] relative z-10 mt-10 lg:mt-0">
+        {/* Top Spacer / Mobile Header & Form Wrapper */}
+        <div className="w-full max-w-[380px] mx-auto my-auto py-2 sm:py-0">
           
-          {/* Mobile Logo & Welcome (hidden on desktop) */}
-          <div className="flex flex-col items-center mb-8 lg:hidden text-center -mt-20">
-            <div className="h-16 w-16 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-2xl border border-white/20 mb-4">
-              <Image src="/logo.png" alt="ShiningSun Logo" width={40} height={40} className="object-contain" priority />
+          {/* Mobile Logo & Welcome Header */}
+          <div className="flex flex-col items-center mb-5 sm:mb-6 lg:hidden text-center">
+            <div className="h-16 w-16 sm:h-20 sm:w-20 bg-white/15 backdrop-blur-2xl rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-2xl border border-white/25 mb-3 p-1.5 overflow-hidden">
+              <Image src="/logo.png" alt="ShiningSun Logo" width={80} height={80} className="w-full h-full object-contain drop-shadow-md" priority />
             </div>
-            <h2 className="text-2xl font-extrabold text-white tracking-tight drop-shadow-md">ShiningSun</h2>
-            <p className="mt-2 text-brand-100/90 text-sm font-medium max-w-[280px]">Sistem Penjadwalan Cerdas & Elegan</p>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">ShiningSun</h2>
+            <p className="mt-1 text-slate-200 text-xs sm:text-sm font-medium">Sistem Penjadwalan Cerdas & Elegan</p>
           </div>
 
-          {/* Desktop heading */}
+          {/* Desktop Heading */}
           <div className="hidden lg:block mb-8 animate-in fade-in slide-in-from-right-8 duration-700 delay-200">
             <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Selamat Datang</h2>
             <p className="mt-2 text-base text-slate-500 dark:text-slate-400">Silakan masuk ke akun manajemen Anda</p>
           </div>
 
-          <div className="animate-in fade-in slide-in-from-bottom-8 lg:slide-in-from-right-8 duration-700 delay-300">
+          {/* Form */}
+          <div className="animate-in fade-in slide-in-from-bottom-6 lg:slide-in-from-right-8 duration-700 delay-300">
             <LoginForm />
           </div>
 
-          {/* Fallback for devices where JavaScript/React doesn't work */}
+          {/* Fallback for devices without JS */}
           <noscript>
-            <div style={{ textAlign: 'center', marginTop: '16px', padding: '12px', background: '#fef3c7', borderRadius: '12px', border: '1px solid #fde68a' }}>
-              <p style={{ fontSize: '13px', color: '#92400e', fontWeight: 600, margin: '0 0 8px 0' }}>
-                JavaScript tidak aktif di browser ini.
-              </p>
-              <a href="/login-basic" style={{ fontSize: '14px', color: '#d97706', fontWeight: 700, textDecoration: 'underline' }}>
+            <div className="mt-3 p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-center">
+              <p className="text-xs text-amber-600 font-bold mb-1">JavaScript tidak aktif di browser ini.</p>
+              <a href="/login-basic" className="text-xs text-amber-700 font-extrabold underline">
                 Klik di sini untuk Login Kompatibel
               </a>
             </div>
           </noscript>
           
-          <div className="text-center mt-3">
-            <a href="/login-basic" className="text-[11px] text-slate-400 hover:text-slate-500 underline transition-colors">
+          <div className="text-center mt-3 mb-1">
+            <a href="/login-basic" className="text-[11px] text-slate-400 hover:text-slate-300 underline transition-colors">
               Tidak bisa login? Coba halaman Login Kompatibel
             </a>
           </div>
-          
+        </div>
+
+        {/* Bottom Mobile Footer */}
+        <div className="lg:hidden text-center pt-2 pb-1 text-[10px] text-slate-500 font-medium">
+          &copy; 2026 ShiningSun Preschool & Academy
         </div>
       </div>
     </div>

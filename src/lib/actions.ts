@@ -1771,15 +1771,43 @@ export async function verifyParentAccess(
     );
   }
 
-  // Filter student matching search and pin
-  const matchedStudent = students.find((s) => {
-    const nameMatch =
-      s.name.toLowerCase().includes(cleanSearch) ||
-      (s.nickname && s.nickname.toLowerCase().includes(cleanSearch)) ||
-      s.id === cleanSearch;
-    const pinMatch = (s.access_pin || "123456") === cleanPin;
-    return nameMatch && pinMatch;
-  });
+  // Priority-based matching: exact match first, then partial match as fallback
+  // This prevents "Rafi" from matching "Syafira" instead of the actual student named "Rafi"
+  
+  // Helper: check if a student's PIN matches
+  const pinMatches = (s: any) => (s.access_pin || "123456") === cleanPin;
+
+  // 1. Exact nickname match (case-insensitive) — highest priority
+  let matchedStudent = students.find((s) =>
+    s.nickname && s.nickname.toLowerCase() === cleanSearch && pinMatches(s)
+  );
+
+  // 2. Exact full name match (case-insensitive)
+  if (!matchedStudent) {
+    matchedStudent = students.find((s) =>
+      s.name.toLowerCase() === cleanSearch && pinMatches(s)
+    );
+  }
+
+  // 3. Name starts with search term (more specific than includes)
+  if (!matchedStudent) {
+    matchedStudent = students.find((s) => {
+      const nameStartsWith = s.name.toLowerCase().startsWith(cleanSearch);
+      const nicknameStartsWith = s.nickname && s.nickname.toLowerCase().startsWith(cleanSearch);
+      return (nameStartsWith || nicknameStartsWith) && pinMatches(s);
+    });
+  }
+
+  // 4. Partial match (contains) as last resort
+  if (!matchedStudent) {
+    matchedStudent = students.find((s) => {
+      const nameMatch =
+        s.name.toLowerCase().includes(cleanSearch) ||
+        (s.nickname && s.nickname.toLowerCase().includes(cleanSearch)) ||
+        s.id === cleanSearch;
+      return nameMatch && pinMatches(s);
+    });
+  }
 
   if (!matchedStudent) {
     throw new Error("Nama siswa atau PIN Akses salah. Silakan coba lagi.");
