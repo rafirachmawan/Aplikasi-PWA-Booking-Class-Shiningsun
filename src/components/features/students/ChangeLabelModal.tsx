@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Icons } from "@/components/ui/icons";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { updateStudentLabel } from "@/lib/actions";
+import { WorksheetFormModal } from "@/components/features/worksheets/WorksheetFormModal";
 
 interface Label {
   id: string;
@@ -34,16 +35,25 @@ export function ChangeLabelModal({
   onSuccess,
 }: ChangeLabelModalProps) {
   const [selectedLabelId, setSelectedLabelId] = useState<string>("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState("");
+
+  // Worksheet Modal state
+  const [isWorksheetModalOpen, setIsWorksheetModalOpen] = useState(false);
+  const [teachersList, setTeachersList] = useState<any[]>([]);
+  const [templatesList, setTemplatesList] = useState<any[]>([]);
 
   useEffect(() => {
     if (student) {
       setSelectedLabelId(student.label_id || student.label?.id || "");
+      setIsDropdownOpen(false);
     }
   }, [student]);
 
   if (!isOpen || !student) return null;
+
+  const selectedLabel = labels.find((l) => l.id === selectedLabelId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +67,20 @@ export function ChangeLabelModal({
       setModalError("Gagal mengubah level siswa: " + (error?.message || "Terjadi kesalahan."));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenWorksheet = async () => {
+    setIsWorksheetModalOpen(true);
+    if (teachersList.length === 0 || templatesList.length === 0) {
+      try {
+        const { getTeachers, getAssessmentTemplates } = await import("@/lib/actions");
+        const [tchs, tpls] = await Promise.all([getTeachers(), getAssessmentTemplates()]);
+        setTeachersList(tchs);
+        setTemplatesList(tpls);
+      } catch (err) {
+        console.error("Gagal mengambil data pendukung laporan:", err);
+      }
     }
   };
 
@@ -105,68 +129,119 @@ export function ChangeLabelModal({
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                 Siswa
               </label>
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Icons.users className="w-4 h-4 text-brand-500" />
-                <span>{student.nickname || student.name}</span>
-                {student.name && student.nickname && (
-                  <span className="text-xs font-normal text-slate-400">({student.name})</span>
-                )}
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-sm font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Icons.users className="w-4 h-4 text-brand-500 shrink-0" />
+                  <span className="truncate">{student.nickname || student.name}</span>
+                  {student.name && student.nickname && (
+                    <span className="text-xs font-normal text-slate-400 truncate">({student.name})</span>
+                  )}
+                </div>
               </div>
             </div>
 
+            {/* Custom Collapsible Level Dropdown */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                 Pilih Level / Kelas Baru
               </label>
-              
-              <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
-                <button
-                  type="button"
-                  onClick={() => setSelectedLabelId("")}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-medium border transition-all min-h-[44px] ${
-                    selectedLabelId === ""
-                      ? "border-brand-500 bg-brand-50/70 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300 font-bold ring-1 ring-brand-500"
-                      : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
-                    -- Tanpa Level --
-                  </span>
-                  {selectedLabelId === "" && (
-                    <Icons.check className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-                  )}
-                </button>
 
-                {labels.map((lbl) => {
-                  const isSelected = selectedLabelId === lbl.id;
-                  return (
-                    <button
-                      key={lbl.id}
-                      type="button"
-                      onClick={() => setSelectedLabelId(lbl.id)}
-                      className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-medium border transition-all min-h-[44px] ${
-                        isSelected
-                          ? "border-brand-500 bg-brand-50/70 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300 font-bold ring-1 ring-brand-500"
-                          : "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <span
-                          className="w-3 h-3 rounded-full shrink-0 shadow-xs"
-                          style={{ backgroundColor: lbl.hex_color }}
-                        ></span>
-                        <span>
-                          {lbl.main_level} - {lbl.sub_level}
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer min-h-[46px] ${
+                  isDropdownOpen
+                    ? "border-brand-500 ring-2 ring-brand-500/20 bg-white dark:bg-slate-900"
+                    : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800"
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span
+                    className="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                    style={{ backgroundColor: selectedLabel?.hex_color || "#94a3b8" }}
+                  />
+                  <span className="truncate text-slate-800 dark:text-slate-100">
+                    {selectedLabel
+                      ? `${selectedLabel.main_level} - ${selectedLabel.sub_level}`
+                      : "-- Tanpa Level --"}
+                  </span>
+                </div>
+                <Icons.chevronDown
+                  className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
+                    isDropdownOpen ? "rotate-180 text-brand-500" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Collapsible Options List */}
+              {isDropdownOpen && (
+                <div className="mt-2 bg-slate-50/90 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-2 space-y-1 max-h-[190px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200 shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedLabelId("");
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                      selectedLabelId === ""
+                        ? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 font-bold border border-brand-200/60 dark:border-brand-800/40"
+                        : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                      -- Tanpa Level --
+                    </span>
+                    {selectedLabelId === "" && (
+                      <Icons.check className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                    )}
+                  </button>
+
+                  {labels.map((lbl) => {
+                    const isSelected = selectedLabelId === lbl.id;
+                    return (
+                      <button
+                        key={lbl.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedLabelId(lbl.id);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 font-bold border border-brand-200/60 dark:border-brand-800/40"
+                            : "text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2.5 min-w-0">
+                          <span
+                            className="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                            style={{ backgroundColor: lbl.hex_color }}
+                          />
+                          <span className="truncate">
+                            {lbl.main_level} - {lbl.sub_level}
+                          </span>
                         </span>
-                      </span>
-                      {isSelected && (
-                        <Icons.check className="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                        {isSelected && (
+                          <Icons.check className="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0 ml-2" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Quick Action: Fill Progress Report */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleOpenWorksheet}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 font-bold text-xs transition-all cursor-pointer shadow-xs min-h-[44px]"
+              >
+                <Icons.edit className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>Isi Laporan Perkembangan Siswa</span>
+              </button>
             </div>
 
             {/* Footer Buttons */}
@@ -190,6 +265,26 @@ export function ChangeLabelModal({
           </form>
         </div>
       </div>
+
+      {/* Embedded Worksheet Form Modal for filling progress report directly */}
+      {isWorksheetModalOpen && (
+        <WorksheetFormModal
+          students={[{
+            id: student.id,
+            name: student.name,
+            nickname: student.nickname,
+            label: student.label,
+          }]}
+          teachers={teachersList}
+          templates={templatesList}
+          initialData={{ student_id: student.id }}
+          onClose={() => setIsWorksheetModalOpen(false)}
+          onSuccess={() => {
+            setIsWorksheetModalOpen(false);
+            onSuccess();
+          }}
+        />
+      )}
     </>
   );
 }

@@ -39,7 +39,20 @@ export function WorksheetFormModal({
   const [worksheetDate, setWorksheetDate] = useState(initialData?.worksheet_date || getTodayISO());
   const [gdriveLink, setGdriveLink] = useState(initialData?.gdrive_link || '');
   const [materi, setMateri] = useState(initialData?.materi || '');
-  
+
+  // Attendance Status State ('HADIR' | 'IJIN' | 'SAKIT' | 'LIBUR')
+  type AttendanceStatus = "HADIR" | "IJIN" | "SAKIT" | "LIBUR";
+  const [attendanceStatus, setAttendanceStatus] = useState<AttendanceStatus>(() => {
+    const t = initialData?.title || "";
+    const m = initialData?.materi || "";
+    if (t.includes("Ijin") || m.includes("Ijin")) return "IJIN";
+    if (t.includes("Sakit") || m.includes("Sakit")) return "SAKIT";
+    if (t.includes("Libur") || m.includes("Libur")) return "LIBUR";
+    return "HADIR";
+  });
+
+  const isAbsent = attendanceStatus !== "HADIR";
+
   // Custom Student Dropdown State
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
   const [studentSearch, setStudentSearch] = useState("");
@@ -94,6 +107,37 @@ export function WorksheetFormModal({
   const [rekomendasiRumah, setRekomendasiRumah] = useState(initialData?.rekomendasi_rumah || '');
   const [ttdGuru, setTtdGuru] = useState(initialData?.ttd_guru || '');
   const [bulanKe, setBulanKe] = useState(initialData?.bulan_ke?.toString() || '');
+
+  const handleAttendanceChange = (status: AttendanceStatus) => {
+    setAttendanceStatus(status);
+    if (status === "IJIN") {
+      setMateri("Tidak Hadir (Ijin)");
+      setKegiatanItems(["Siswa Ijin (Tidak Mengikuti Sesi Kelas)"]);
+      setHasilBelajarItems(["Siswa Ijin"]);
+      setCatatanGuru("Ananda tidak dapat mengikuti kelas hari ini karena Ijin.");
+      setRekomendasiRumah("Dapat mempelajari materi mandiri jika memungkinkan.");
+    } else if (status === "SAKIT") {
+      setMateri("Tidak Hadir (Sakit)");
+      setKegiatanItems(["Siswa Sakit (Istirahat di Rumah)"]);
+      setHasilBelajarItems(["Siswa Sakit"]);
+      setCatatanGuru("Ananda tidak dapat mengikuti kelas hari ini karena Sakit. Semoga lekas sembuh! 🌸");
+      setRekomendasiRumah("Istirahat yang cukup hingga kondisi fit kembali.");
+    } else if (status === "LIBUR") {
+      setMateri("Libur Hari Besar");
+      setKegiatanItems(["Kelas Diliburkan"]);
+      setHasilBelajarItems(["Libur Hari Besar"]);
+      setCatatanGuru("Kelas diliburkan dalam rangka memperingati Libur Hari Besar.");
+      setRekomendasiRumah("Selamat berlibur bersama keluarga!");
+    } else {
+      if (materi.includes("Tidak Hadir") || materi.includes("Libur")) {
+        setMateri("");
+        setKegiatanItems([""]);
+        setHasilBelajarItems([""]);
+        setCatatanGuru("");
+        setRekomendasiRumah("");
+      }
+    }
+  };
   
   // Google Drive Upload states
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -528,6 +572,43 @@ export function WorksheetFormModal({
               </div>
             )}
 
+            {/* Status Kehadiran Siswa */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+                <span>Status Kehadiran Siswa</span>
+                {isAbsent && (
+                  <span className="text-[10px] font-extrabold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800/60 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    🔒 Materi Terkunci
+                  </span>
+                )}
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: "HADIR", label: "Hadir", icon: "✅", activeClass: "bg-emerald-600 text-white border-emerald-600 shadow-sm font-extrabold" },
+                  { id: "IJIN", label: "Ijin", icon: "📩", activeClass: "bg-amber-500 text-white border-amber-500 shadow-sm font-extrabold" },
+                  { id: "SAKIT", label: "Sakit", icon: "🤒", activeClass: "bg-rose-500 text-white border-rose-500 shadow-sm font-extrabold" },
+                  { id: "LIBUR", label: "Libur Hari Besar", icon: "🎉", activeClass: "bg-purple-600 text-white border-purple-600 shadow-sm font-extrabold" },
+                ].map((opt) => {
+                  const isActive = attendanceStatus === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => handleAttendanceChange(opt.id as any)}
+                      className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs transition-all cursor-pointer min-h-[42px] ${
+                        isActive
+                          ? opt.activeClass
+                          : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium"
+                      }`}
+                    >
+                      <span className="text-sm">{opt.icon}</span>
+                      <span className="truncate">{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Date + Bulan Ke + TTD Guru in grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div>
@@ -670,31 +751,38 @@ export function WorksheetFormModal({
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">📋 Data Perkembangan Anak</span>
             </div>
 
-            {/* Smart Assessment Builder Panel (Format Client 1/2/3) */}
-            <div className="bg-white dark:bg-slate-900 border border-brand-200 dark:border-brand-900/60 rounded-2xl p-4 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">⚡</span>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                      Penilaian Cepat (Format Opsi 1/2/3/4)
-                    </h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Pilih angka 1, 2, atau 3/4 untuk menyusun kalimat evaluasi &amp; afirmasi positif secara otomatis.
-                    </p>
-                  </div>
+            {/* Lock Notice Banner when Absent */}
+            {isAbsent && (
+              <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/80 text-amber-900 dark:text-amber-200 text-xs font-bold flex items-center gap-3 shadow-xs animate-in fade-in zoom-in-95 duration-200">
+                <span className="text-2xl shrink-0">🔒</span>
+                <div>
+                  <span className="font-extrabold block text-xs sm:text-sm text-amber-900 dark:text-amber-100">
+                    Siswa Tidak Hadir ({attendanceStatus === 'IJIN' ? 'Ijin' : attendanceStatus === 'SAKIT' ? 'Sakit' : 'Libur Hari Besar'})
+                  </span>
+                  <span className="text-[11px] font-medium text-amber-700 dark:text-amber-300 block mt-0.5">
+                    Materi dan penilaian perkembangan dikunci otomatis karena siswa tidak mengikuti sesi kelas hari ini.
+                  </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowSmartBuilder(!showSmartBuilder)}
-                  className="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline cursor-pointer shrink-0"
-                >
-                  {showSmartBuilder ? "▲ Sembunyikan" : "▼ Buka Generator"}
-                </button>
+              </div>
+            )}
+
+            {/* Smart Assessment Builder Panel (Format Client 1/2/3) */}
+            <div className={`bg-white dark:bg-slate-900 border border-brand-200 dark:border-brand-900/60 rounded-2xl p-4 shadow-xs space-y-4 transition-opacity duration-200 ${
+              isAbsent ? "opacity-50 pointer-events-none" : ""
+            }`}>
+              <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <span className="text-lg">⚡</span>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Penilaian Cepat (Format Opsi 1/2/3/4)
+                  </h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Pilih angka 1, 2, atau 3/4 untuk menyusun kalimat evaluasi &amp; afirmasi positif secara otomatis.
+                  </p>
+                </div>
               </div>
 
-              {showSmartBuilder && (
-                <div className="space-y-4 pt-1 animate-in fade-in duration-200">
+              <div className="space-y-4 pt-1 animate-in fade-in duration-200">
                   {/* 1. Materi yang Diajarkan */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -962,7 +1050,6 @@ export function WorksheetFormModal({
                     </button>
                   </div>
                 </div>
-              )}
             </div>
 
             {/* Materi */}
@@ -973,12 +1060,17 @@ export function WorksheetFormModal({
               <input
                 type="text"
                 value={materi}
+                disabled={isAbsent}
                 onChange={(e) => {
                   setMateri(e.target.value);
                   setSmartMateriText(e.target.value);
                 }}
                 placeholder="Cth: Berhitung 1-10, Mengenal huruf vokal"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none placeholder:text-slate-400"
+                className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none placeholder:text-slate-400 ${
+                  isAbsent
+                    ? "bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-bold cursor-not-allowed border-amber-300 dark:border-amber-800"
+                    : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                }`}
               />
             </div>
 
@@ -988,14 +1080,16 @@ export function WorksheetFormModal({
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
                   Kegiatan di Kelas
                 </label>
-                <button
-                  type="button"
-                  onClick={addKegiatanItem}
-                  className="text-xs font-bold text-sky-700 dark:text-sky-300 hover:text-sky-900 flex items-center gap-1 bg-sky-100 dark:bg-sky-900/60 hover:bg-sky-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-                >
-                  <Icons.add className="w-3.5 h-3.5" />
-                  <span>Tambah Poin</span>
-                </button>
+                {!isAbsent && (
+                  <button
+                    type="button"
+                    onClick={addKegiatanItem}
+                    className="text-xs font-bold text-sky-700 dark:text-sky-300 hover:text-sky-900 flex items-center gap-1 bg-sky-100 dark:bg-sky-900/60 hover:bg-sky-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Icons.add className="w-3.5 h-3.5" />
+                    <span>Tambah Poin</span>
+                  </button>
+                )}
               </div>
               <div className="space-y-2">
                 {kegiatanItems.map((item, idx) => (
@@ -1004,11 +1098,16 @@ export function WorksheetFormModal({
                     <input
                       type="text"
                       value={item}
+                      disabled={isAbsent}
                       onChange={(e) => handleKegiatanChange(idx, e.target.value)}
                       placeholder={`Poin ${idx + 1}: Cth: Menulis angka 1-10`}
-                      className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-sky-500 focus:outline-none placeholder:text-slate-400"
+                      className={`flex-1 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-sky-500 focus:outline-none placeholder:text-slate-400 ${
+                        isAbsent
+                          ? "bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-medium cursor-not-allowed"
+                          : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                      }`}
                     />
-                    {kegiatanItems.length > 1 && (
+                    {!isAbsent && kegiatanItems.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeKegiatanItem(idx)}
@@ -1029,14 +1128,16 @@ export function WorksheetFormModal({
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
                   Hasil Belajar Anak
                 </label>
-                <button
-                  type="button"
-                  onClick={addHasilItem}
-                  className="text-xs font-bold text-sky-700 dark:text-sky-300 hover:text-sky-900 flex items-center gap-1 bg-sky-100 dark:bg-sky-900/60 hover:bg-sky-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-                >
-                  <Icons.add className="w-3.5 h-3.5" />
-                  <span>Tambah Poin</span>
-                </button>
+                {!isAbsent && (
+                  <button
+                    type="button"
+                    onClick={addHasilItem}
+                    className="text-xs font-bold text-sky-700 dark:text-sky-300 hover:text-sky-900 flex items-center gap-1 bg-sky-100 dark:bg-sky-900/60 hover:bg-sky-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Icons.add className="w-3.5 h-3.5" />
+                    <span>Tambah Poin</span>
+                  </button>
+                )}
               </div>
               <div className="space-y-2">
                 {hasilBelajarItems.map((item, idx) => (
@@ -1045,11 +1146,16 @@ export function WorksheetFormModal({
                     <input
                       type="text"
                       value={item}
+                      disabled={isAbsent}
                       onChange={(e) => handleHasilChange(idx, e.target.value)}
                       placeholder={`Poin ${idx + 1}: Cth: Sudah bisa menghitung 1-10`}
-                      className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-sky-500 focus:outline-none placeholder:text-slate-400"
+                      className={`flex-1 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-sky-500 focus:outline-none placeholder:text-slate-400 ${
+                        isAbsent
+                          ? "bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-medium cursor-not-allowed"
+                          : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                      }`}
                     />
-                    {hasilBelajarItems.length > 1 && (
+                    {!isAbsent && hasilBelajarItems.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeHasilItem(idx)}
