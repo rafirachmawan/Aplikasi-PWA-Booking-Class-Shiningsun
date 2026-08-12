@@ -86,7 +86,7 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
     setSubmitError("");
     try {
       const formData = new FormData();
-      formData.append("category", activeTab);
+      formData.append("category", activeTab || "kegiatan");
       formData.append("title", title.trim());
       formData.append("materi", materi.trim());
 
