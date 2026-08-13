@@ -55,7 +55,7 @@ const CATEGORIES: { id: CategoryType; label: string; icon: string; desc: string;
   },
 ];
 
-export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
+export function AssessmentTemplateManager({ templates, labels = [] }: { templates: any[]; labels?: any[] }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<CategoryType | null>(null);
 
@@ -65,6 +65,8 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [title, setTitle] = useState("");
   const [materi, setMateri] = useState("");
+  const [selectedLabelId, setSelectedLabelId] = useState<string>("");
+  const [isLabelDropdownOpen, setIsLabelDropdownOpen] = useState(false);
 
   // Delete modal state
   const [deleteModal, setDeleteModal] = useState(false);
@@ -89,6 +91,7 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
       formData.append("category", activeTab || "kegiatan");
       formData.append("title", title.trim());
       formData.append("materi", materi.trim());
+      if (selectedLabelId) formData.append("label_id", selectedLabelId);
 
       if (editingTemplate) {
         await updateAssessmentTemplate(editingTemplate.id, formData);
@@ -110,12 +113,17 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
   const resetForm = () => {
     setTitle("");
     setMateri("");
+    setSelectedLabelId("");
+    setIsLabelDropdownOpen(false);
   };
 
   const handleEdit = (tpl: any) => {
     setEditingTemplate(tpl);
     setTitle(tpl.title || "");
     setMateri(tpl.materi || "");
+    const labelObj = Array.isArray(tpl.label) ? tpl.label[0] : tpl.label;
+    setSelectedLabelId(tpl.label_id || labelObj?.id || "");
+    setIsLabelDropdownOpen(false);
     setIsAdding(true);
     setSubmitError("");
   };
@@ -350,9 +358,9 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
               }
             }}
           />
-          <div className="relative z-10 w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="relative z-10 w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="relative flex items-center justify-between p-5 bg-gradient-to-r from-sky-600 to-indigo-600 text-white">
+            <div className="relative flex items-center justify-between p-5 bg-gradient-to-r from-sky-600 to-indigo-600 text-white rounded-t-3xl">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg">
                   {currentCategoryObj?.icon || "📋"}
@@ -400,6 +408,102 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
                   className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-4 py-2.5 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none placeholder:text-slate-400"
                 />
               </div>
+
+              {/* Label / Level Selector - hanya untuk kategori materi */}
+              {activeTab === "materi" && labels.length > 0 && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    🎯 Untuk Level / Kelas Siswa
+                  </label>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-2">
+                    Materi ini hanya akan muncul di dropdown siswa dengan level yang dipilih.
+                  </p>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsLabelDropdownOpen(!isLabelDropdownOpen)}
+                      className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold shadow-xs cursor-pointer text-left transition-all ${
+                        isLabelDropdownOpen
+                          ? "border-sky-500 ring-2 ring-sky-500/20 bg-white dark:bg-slate-900"
+                          : "border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span
+                          className="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                          style={{ backgroundColor: labels.find((l) => l.id === selectedLabelId)?.hex_color || "#94a3b8" }}
+                        />
+                        <span className="truncate text-slate-800 dark:text-slate-100">
+                          {selectedLabelId
+                            ? (() => {
+                                const lbl = labels.find((l) => l.id === selectedLabelId);
+                                return lbl ? `${lbl.main_level} - ${lbl.sub_level}` : "-- Semua Level --";
+                              })()
+                            : "-- Semua Level (Tanpa Filter) --"}
+                        </span>
+                      </div>
+                      <Icons.chevronDown
+                        className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
+                          isLabelDropdownOpen ? "rotate-180 text-sky-500" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {isLabelDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 space-y-1 max-h-52 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedLabelId("");
+                            setIsLabelDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
+                            !selectedLabelId
+                              ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 font-extrabold"
+                              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600" />
+                            Semua Level (Tanpa Filter)
+                          </span>
+                          {!selectedLabelId && <span className="text-sky-600 shrink-0 text-xs font-bold">✓</span>}
+                        </button>
+
+                        {labels.map((lbl) => {
+                          const isSel = selectedLabelId === lbl.id;
+                          return (
+                            <button
+                              key={lbl.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedLabelId(lbl.id);
+                                setIsLabelDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
+                                isSel
+                                  ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 font-extrabold"
+                                  : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium"
+                              }`}
+                            >
+                              <span className="flex items-center gap-2.5 min-w-0">
+                                <span
+                                  className="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                                  style={{ backgroundColor: lbl.hex_color }}
+                                />
+                                <span className="truncate">
+                                  {lbl.main_level} - {lbl.sub_level}
+                                </span>
+                              </span>
+                              {isSel && <span className="text-sky-600 shrink-0 text-xs font-bold">✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
 
 
@@ -470,9 +574,29 @@ export function AssessmentTemplateManager({ templates }: { templates: any[] }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-snug flex-1">
-                      {tpl.title}
-                    </h4>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+                        {tpl.title}
+                      </h4>
+                      {/* Label Badge */}
+                      {(() => {
+                        const labelObj = Array.isArray(tpl.label) ? tpl.label[0] : tpl.label;
+                        if (!labelObj) return null;
+                        return (
+                          <span
+                            className="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                            style={{
+                              backgroundColor: `${labelObj.hex_color}20`,
+                              borderColor: `${labelObj.hex_color}60`,
+                              color: labelObj.hex_color,
+                            }}
+                          >
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: labelObj.hex_color }} />
+                            {labelObj.main_level} - {labelObj.sub_level}
+                          </span>
+                        );
+                      })()}
+                    </div>
                     <div className="flex items-center gap-0.5 shrink-0 -mt-0.5">
                       <button
                         onClick={() => handleEdit(tpl)}

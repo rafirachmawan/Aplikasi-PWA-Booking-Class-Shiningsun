@@ -129,31 +129,53 @@ export function StudentScheduleCard({
               </p>
             </div>
           ) : (
-            scheduleHistory.map((slot, index) => (
-              <div
-                key={slot.id || index}
-                className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800/60 gap-3"
-              >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-slate-200/60 dark:bg-slate-800 text-slate-500 flex items-center justify-center shrink-0 font-bold text-xs">
-                    #{index + 1}
+            scheduleHistory.map((slot, index) => {
+              const slotStr = `${slot.status || ""} ${slot.note || ""} ${slot.class?.name || ""}`.toLowerCase();
+              const isSakit = slotStr.includes("sakit");
+              const isIjin = !isSakit && (slotStr.includes("ijin") || slotStr.includes("izin"));
+
+              return (
+                <div
+                  key={slot.id || index}
+                  className={`flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border gap-3 ${
+                    isSakit
+                      ? "bg-red-50/80 dark:bg-red-950/40 border-red-300 dark:border-red-800"
+                      : isIjin
+                      ? "bg-amber-50/80 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800"
+                      : "bg-slate-50/60 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800/60"
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs ${
+                      isSakit
+                        ? "bg-red-200/80 dark:bg-red-900/60 text-red-800 dark:text-red-200"
+                        : "bg-slate-200/60 dark:bg-slate-800 text-slate-500"
+                    }`}>
+                      #{index + 1}
+                    </div>
+
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">
+                        {slot.class?.name || "Kelas"}
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {formatFullIndonesianDate(slot.date)} • {formatShortTime(slot.time)} WIB
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">
-                      {slot.class?.name || "Kelas"}
-                    </h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {formatFullIndonesianDate(slot.date)} • {formatShortTime(slot.time)} WIB
-                    </p>
-                  </div>
+                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold shrink-0 ${
+                    isSakit
+                      ? "bg-red-600 text-white shadow-2xs"
+                      : isIjin
+                      ? "bg-amber-500 text-white shadow-2xs"
+                      : "bg-slate-200/70 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                  }`}>
+                    {isSakit ? "🤒 Sakit" : isIjin ? "📩 Ijin" : "Selesai"}
+                  </span>
                 </div>
-
-                <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-200/70 text-slate-600 dark:bg-slate-800 dark:text-slate-400 shrink-0">
-                  Selesai
-                </span>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}

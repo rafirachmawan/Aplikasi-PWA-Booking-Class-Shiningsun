@@ -46,14 +46,21 @@ export function ChangeLabelModal({
 
   useEffect(() => {
     if (student) {
-      setSelectedLabelId(student.label_id || student.label?.id || "");
+      const labelObj = Array.isArray(student.label) ? student.label[0] : student.label;
+      const currentId = student.label_id || labelObj?.id || "";
+      setSelectedLabelId(currentId);
       setIsDropdownOpen(false);
     }
   }, [student]);
 
   if (!isOpen || !student) return null;
 
-  const selectedLabel = labels.find((l) => l.id === selectedLabelId);
+  const studentLabelObj = Array.isArray(student.label) ? student.label[0] : student.label;
+  const selectedLabel =
+    labels.find((l) => l.id === selectedLabelId) ||
+    (selectedLabelId && (selectedLabelId === student.label_id || selectedLabelId === studentLabelObj?.id)
+      ? studentLabelObj
+      : null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

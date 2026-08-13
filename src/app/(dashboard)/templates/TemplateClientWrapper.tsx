@@ -4,12 +4,14 @@ import { AssessmentTemplateManager } from "@/components/features/master/Assessme
 
 interface TemplateClientWrapperProps {
   templates: any[];
+  labels?: any[];
   activeBranchName?: string | null;
   role?: string | null;
 }
 
 export function TemplateClientWrapper({
   templates,
+  labels = [],
   activeBranchName,
   role,
 }: TemplateClientWrapperProps) {
@@ -32,7 +34,7 @@ export function TemplateClientWrapper({
         </div>
       </div>
 
-      <AssessmentTemplateManager templates={templates} />
+      <AssessmentTemplateManager templates={templates} labels={labels} />
     </div>
   );
 }

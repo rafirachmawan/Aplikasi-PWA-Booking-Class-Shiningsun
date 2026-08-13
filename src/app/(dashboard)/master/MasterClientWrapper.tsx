@@ -63,7 +63,7 @@ export function MasterClientWrapper({
           <TeacherManager teachers={teachers} />
         </div>
         <div>
-          <AssessmentTemplateManager templates={templates} />
+          <AssessmentTemplateManager templates={templates} labels={labels} />
         </div>
       </div>
     </div>

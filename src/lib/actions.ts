@@ -434,7 +434,7 @@ export async function getStudents() {
 
   let query = supabaseServer
     .from("students")
-    .select("*, label:labels(main_level, sub_level, hex_color)")
+    .select("*, label:labels(id, main_level, sub_level, hex_color)")
     .order("created_at", { ascending: false });
 
   if (branchId !== "ALL") {
@@ -856,7 +856,7 @@ export async function getMonthlySchedules(year: number, month: number) {
       class:classes(name, max_quota),
       bookings:schedule_student(
         student_id,
-        student:students(name, nickname, status, label:labels(hex_color))
+        student:students(id, name, nickname, status, label_id, label:labels(id, main_level, sub_level, hex_color))
       )
     `,
     )
@@ -1197,7 +1197,7 @@ export async function getSchedulesByDate(dateStr: string) {
       class:classes(name, max_quota),
       bookings:schedule_student(
         student_id,
-        student:students(name, nickname, status, label:labels(hex_color))
+        student:students(id, name, nickname, status, label_id, label:labels(id, main_level, sub_level, hex_color))
       )
     `,
     )
@@ -1231,7 +1231,7 @@ export async function getStudentsByStatusWithSchedules(
   let studentQuery = supabase
     .from("students")
     .select(
-      "id, name, nickname, gender, status, label:labels(main_level, sub_level, hex_color)",
+      "id, name, nickname, gender, status, label_id, label:labels(id, main_level, sub_level, hex_color)",
     )
     .eq("status", status)
     .order("name", { ascending: true });
@@ -1342,7 +1342,7 @@ export async function getClassesWithSchedules() {
       id, class_id, date, time, is_locked,
       bookings:schedule_student(
         student_id,
-        student:students(name, nickname, status, label:labels(hex_color))
+        student:students(id, name, nickname, status, label_id, label:labels(id, main_level, sub_level, hex_color))
       )
     `,
     )
@@ -1535,7 +1535,7 @@ export async function getWorksheetsByBranch() {
       .select(
         `
         *,
-        student:students(id, name, nickname, gender, date_of_birth, status, access_pin, label:labels(main_level, sub_level, hex_color))
+        student:students(id, name, nickname, gender, date_of_birth, status, access_pin, label_id, label:labels(id, main_level, sub_level, hex_color))
       `,
 
       )
@@ -1804,13 +1804,24 @@ export async function verifyParentAccess(
 
   const supabaseServer = await createClient();
 
-  // Search student by name or nickname
-  const { data: students, error } = await supabaseServer.from("students")
+  // Search student by name or nickname (with fallback if access_pin column is missing)
+  let { data: students, error } = await supabaseServer.from("students")
     .select(`
       id, name, nickname, gender, date_of_birth, status, registration_date, access_pin,
       branch:branches(name),
-      label:labels(main_level, sub_level, hex_color)
+      label:labels(id, main_level, sub_level, hex_color)
     `);
+
+  if (error) {
+    const fallbackRes = await supabaseServer.from("students")
+      .select(`
+        id, name, nickname, gender, date_of_birth, status, registration_date,
+        branch:branches(name),
+        label:labels(id, main_level, sub_level, hex_color)
+      `);
+    students = fallbackRes.data;
+    error = fallbackRes.error;
+  }
 
   if (error || !students || students.length === 0) {
     throw new Error(
@@ -1885,17 +1896,35 @@ export async function getParentSessionStudent() {
   if (!studentId) return null;
 
   const supabaseServer = await createClient();
-  const { data: student, error } = await supabaseServer
+  let { data: student, error } = await supabaseServer
     .from("students")
     .select(
       `
-      id, name, nickname, gender, date_of_birth, status, registration_date,
+      id, name, nickname, gender, date_of_birth, status, registration_date, photo_url,
       branch:branches(name),
-      label:labels(main_level, sub_level, hex_color)
+      label:labels(id, main_level, sub_level, hex_color)
     `,
     )
     .eq("id", studentId)
     .single();
+
+  // Fallback if photo_url column does not exist in Supabase database yet
+  if (error) {
+    const fallbackRes = await supabaseServer
+      .from("students")
+      .select(
+        `
+        id, name, nickname, gender, date_of_birth, status, registration_date,
+        branch:branches(name),
+        label:labels(id, main_level, sub_level, hex_color)
+      `,
+      )
+      .eq("id", studentId)
+      .single();
+
+    student = fallbackRes.data;
+    error = fallbackRes.error;
+  }
 
   if (error || !student) return null;
 
@@ -2219,7 +2248,7 @@ export async function getAssessmentTemplates() {
 
     let query = supabaseServer
       .from("assessment_templates")
-      .select("*")
+      .select("*, label:labels(id, main_level, sub_level, hex_color)")
       .eq("is_active", true)
       .order("created_at", { ascending: true });
 
@@ -2245,6 +2274,7 @@ export async function createAssessmentTemplate(formData: FormData) {
   const materi = (formData.get("materi") as string) || "";
   const kegiatan = (formData.get("kegiatan") as string) || "";
   const hasil_belajar = (formData.get("hasil_belajar") as string) || "";
+  const label_id = (formData.get("label_id") as string) || null;
 
   if (!title || !title.trim()) {
     throw new Error("Judul / Isi Template wajib diisi.");
@@ -2253,15 +2283,25 @@ export async function createAssessmentTemplate(formData: FormData) {
   const branchId = await getBranchId();
   const supabaseServer = await createClient();
 
-  const { error } = await supabaseServer.from("assessment_templates").insert({
+  const insertPayload: any = {
     branch_id: branchId === "ALL" ? null : branchId,
     category: category,
     title: title.trim(),
     materi: materi.trim(),
     kegiatan: kegiatan.trim(),
     hasil_belajar: hasil_belajar.trim(),
+    label_id: label_id || null,
     is_active: true,
-  });
+  };
+
+  let { error } = await supabaseServer.from("assessment_templates").insert(insertPayload);
+
+  // Fallback retry jika kolom label_id belum ada di database Supabase
+  if (error && (error.message?.toLowerCase().includes("label_id") || error.code === "PGRST204" || error.code === "42703")) {
+    delete insertPayload.label_id;
+    const retry = await supabaseServer.from("assessment_templates").insert(insertPayload);
+    error = retry.error;
+  }
 
   if (error) {
     console.error("Error creating assessment template:", error);
@@ -2280,22 +2320,37 @@ export async function updateAssessmentTemplate(id: string, formData: FormData) {
   const materi = (formData.get("materi") as string) || "";
   const kegiatan = (formData.get("kegiatan") as string) || "";
   const hasil_belajar = (formData.get("hasil_belajar") as string) || "";
+  const label_id = (formData.get("label_id") as string) || null;
 
   if (!title || !title.trim()) {
     throw new Error("Judul / Isi Template wajib diisi.");
   }
 
   const supabaseServer = await createClient();
-  const { error } = await supabaseServer
+
+  const updatePayload: any = {
+    category: category,
+    title: title.trim(),
+    materi: materi.trim(),
+    kegiatan: kegiatan.trim(),
+    hasil_belajar: hasil_belajar.trim(),
+    label_id: label_id || null,
+  };
+
+  let { error } = await supabaseServer
     .from("assessment_templates")
-    .update({
-      category: category,
-      title: title.trim(),
-      materi: materi.trim(),
-      kegiatan: kegiatan.trim(),
-      hasil_belajar: hasil_belajar.trim(),
-    })
+    .update(updatePayload)
     .eq("id", id);
+
+  // Fallback retry jika kolom label_id belum ada di database Supabase
+  if (error && (error.message?.toLowerCase().includes("label_id") || error.code === "PGRST204" || error.code === "42703")) {
+    delete updatePayload.label_id;
+    const retry = await supabaseServer
+      .from("assessment_templates")
+      .update(updatePayload)
+      .eq("id", id);
+    error = retry.error;
+  }
 
   if (error) {
     console.error("Error updating assessment template:", error);
@@ -2370,6 +2425,50 @@ export async function redeemStudentPoints({
   return redemption;
 }
 
+export async function addManualStudentPoints({
+  studentId,
+  branchId,
+  pointsAdded,
+  note,
+}: {
+  studentId: string;
+  branchId?: string;
+  pointsAdded: number;
+  note?: string;
+}) {
+  const supabaseServer = await createClient();
+
+  if (!studentId || pointsAdded <= 0) {
+    throw new Error("Jumlah poin tambahan harus lebih dari 0.");
+  }
+
+  const { data: record, error } = await supabaseServer
+    .from("student_point_redemptions")
+    .insert({
+      student_id: studentId,
+      branch_id: branchId || null,
+      points_deducted: -Math.abs(pointsAdded),
+      reward_note: note?.trim() || "Bonus Poin Manual / Lomba",
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error adding manual points:", error);
+    if (error.message.includes('relation "public.student_point_redemptions" does not exist')) {
+      throw new Error(
+        "Tabel 'student_point_redemptions' belum dibuat di Supabase. Silakan jalankan file SQL 'supabase/student_point_redemptions.sql' pada Supabase SQL Editor."
+      );
+    }
+    throw new Error("Gagal menambah poin manual: " + error.message);
+  }
+
+  revalidatePath("/points");
+  revalidatePath("/students");
+  revalidatePath("/portal-ortu/dashboard");
+  return record;
+}
+
 export async function getPointRedemptions(studentId?: string) {
   const supabaseServer = await createClient();
   const activeBranchId = await getBranchId();
@@ -2396,6 +2495,26 @@ export async function getPointRedemptions(studentId?: string) {
     return data || [];
   } catch (e) {
     return [];
+  }
+}
+
+export async function updateStudentPhotoUrl(studentId: string, photoUrl: string) {
+  try {
+    const supabaseServer = await createClient();
+    const { error } = await supabaseServer
+      .from("students")
+      .update({ photo_url: photoUrl })
+      .eq("id", studentId);
+
+    if (error) {
+      console.error("Error updating photo_url:", error);
+      return { success: false, error: error.message };
+    }
+    revalidatePath("/portal-ortu/dashboard");
+    return { success: true };
+  } catch (e: any) {
+    console.error("Error updating photo_url:", e);
+    return { success: false, error: e.message || "Gagal memperbarui foto profil" };
   }
 }
 

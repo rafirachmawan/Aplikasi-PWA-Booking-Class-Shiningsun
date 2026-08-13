@@ -30,11 +30,9 @@ export default function ParentLoginPage() {
 
     try {
       await verifyParentAccess(studentName, pin);
-      router.push("/portal-ortu/dashboard");
-      router.refresh();
+      window.location.href = "/portal-ortu/dashboard";
     } catch (err: any) {
       setErrorMsg(err.message || "Gagal masuk. Periksa nama siswa dan PIN.");
-    } finally {
       setIsLoading(false);
     }
   };
@@ -180,6 +178,9 @@ export default function ParentLoginPage() {
                     <input
                       id="studentName"
                       type="text"
+                      name="student_name"
+                      autoComplete="off"
+                      data-lpignore="true"
                       required
                       value={studentName}
                       onChange={(e) => setStudentName(e.target.value)}
@@ -210,6 +211,10 @@ export default function ParentLoginPage() {
                     <input
                       id="pin"
                       type={showPin ? "text" : "password"}
+                      name="access_pin"
+                      autoComplete="one-time-code"
+                      inputMode="numeric"
+                      data-lpignore="true"
                       maxLength={10}
                       required
                       value={pin}

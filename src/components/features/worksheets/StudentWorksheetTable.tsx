@@ -12,6 +12,7 @@ interface StudentWorksheetTableProps {
   worksheets: any[];
   bulanKe?: number | null;
   isParentView?: boolean;
+  hideDownloadBtn?: boolean;
   onAddRow?: (studentId: string, bulanKe?: number) => void;
   onEditRow?: (worksheet: any) => void;
   onDeleteRow?: (worksheetId: string) => void;
@@ -166,40 +167,106 @@ function DailyWorksheetSessionItem({
     }
   };
 
+  // Status Detection for visual themes (Sakit -> Red, Ijin -> Amber, Libur -> Purple)
+  const statusStr = `${item.materi || ""} ${item.title || ""} ${item.kegiatan || ""} ${item.hasil_belajar || ""} ${item.description || ""} ${item.catatan_guru || ""}`.toLowerCase();
+  const isSakit = statusStr.includes("sakit");
+  const isIjin = !isSakit && (statusStr.includes("ijin") || statusStr.includes("izin"));
+  const isLibur = !isSakit && !isIjin && statusStr.includes("libur");
+
+  // Dynamic style classes based on status
+  const containerClass = isSakit
+    ? "bg-red-50/40 dark:bg-red-950/20 rounded-2xl border-2 border-red-500/80 dark:border-red-600 overflow-hidden shadow-sm space-y-0"
+    : isIjin
+    ? "bg-amber-50/40 dark:bg-amber-950/20 rounded-2xl border-2 border-amber-400 dark:border-amber-700 overflow-hidden shadow-sm space-y-0"
+    : isLibur
+    ? "bg-purple-50/40 dark:bg-purple-950/20 rounded-2xl border-2 border-purple-400 dark:border-purple-700 overflow-hidden shadow-sm space-y-0"
+    : "bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm space-y-0";
+
+  const headerBarClass = isSakit
+    ? "bg-red-100 dark:bg-red-950/90 px-4 py-3 border-b border-red-200 dark:border-red-900/60"
+    : isIjin
+    ? "bg-amber-100 dark:bg-amber-950/90 px-4 py-3 border-b border-amber-200 dark:border-amber-900/60"
+    : isLibur
+    ? "bg-purple-100 dark:bg-purple-950/90 px-4 py-3 border-b border-purple-200 dark:border-purple-900/60"
+    : "bg-slate-100/90 dark:bg-slate-800/90 px-4 py-3 border-b border-slate-200 dark:border-slate-800";
+
+  const tableHeaderClass = isSakit
+    ? "bg-red-600 dark:bg-red-700 text-white font-extrabold uppercase tracking-wider text-center border-b border-red-500"
+    : isIjin
+    ? "bg-amber-500 dark:bg-amber-600 text-white font-extrabold uppercase tracking-wider text-center border-b border-amber-500"
+    : isLibur
+    ? "bg-purple-600 dark:bg-purple-700 text-white font-extrabold uppercase tracking-wider text-center border-b border-purple-500"
+    : "bg-[#00A3E0] dark:bg-sky-700 text-white font-extrabold uppercase tracking-wider text-center border-b border-sky-600";
+
+  const tableBodyClass = isSakit
+    ? "bg-red-50/60 dark:bg-red-950/40 text-slate-900 dark:text-slate-100"
+    : isIjin
+    ? "bg-amber-50/60 dark:bg-amber-950/40 text-slate-900 dark:text-slate-100"
+    : isLibur
+    ? "bg-purple-50/60 dark:bg-purple-950/40 text-slate-900 dark:text-slate-100"
+    : "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100";
+
+  const bulletColorClass = isSakit
+    ? "text-red-600 dark:text-red-400 font-bold shrink-0 mt-0.5"
+    : isIjin
+    ? "text-amber-600 dark:text-amber-400 font-bold shrink-0 mt-0.5"
+    : isLibur
+    ? "text-purple-600 dark:text-purple-400 font-bold shrink-0 mt-0.5"
+    : "text-sky-500 font-bold shrink-0 mt-0.5";
+
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm space-y-0">
+    <div className={containerClass}>
       {/* 1. Metadata Header Bar per Session */}
-      <div className="bg-slate-100/90 dark:bg-slate-800/90 px-4 py-3 border-b border-slate-200 dark:border-slate-800">
-        <div className="space-y-1.5 text-xs sm:text-sm font-medium">
-          <div className="grid grid-cols-[100px_auto_1fr] gap-x-1.5 items-baseline">
-            <span className="font-bold text-slate-600 dark:text-slate-400 uppercase text-[10px] sm:text-[11px] tracking-wider">
-              Hari/tgl
-            </span>
-            <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
-            <span className="font-extrabold text-slate-900 dark:text-white">
-              {formatShortDate(item.worksheet_date)}
-            </span>
+      <div className={headerBarClass}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1.5 text-xs sm:text-sm font-medium flex-1">
+            <div className="grid grid-cols-[100px_auto_1fr] gap-x-1.5 items-baseline">
+              <span className={`font-bold uppercase text-[10px] sm:text-[11px] tracking-wider ${isSakit ? "text-red-800 dark:text-red-300" : isIjin ? "text-amber-800 dark:text-amber-300" : isLibur ? "text-purple-800 dark:text-purple-300" : "text-slate-600 dark:text-slate-400"}`}>
+                Hari/tgl
+              </span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+              <span className={`font-extrabold ${isSakit ? "text-red-950 dark:text-red-100" : "text-slate-900 dark:text-white"}`}>
+                {formatShortDate(item.worksheet_date)}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-[100px_auto_1fr] gap-x-1.5 items-baseline">
+              <span className={`font-bold uppercase text-[10px] sm:text-[11px] tracking-wider ${isSakit ? "text-red-800 dark:text-red-300" : isIjin ? "text-amber-800 dark:text-amber-300" : isLibur ? "text-purple-800 dark:text-purple-300" : "text-slate-600 dark:text-slate-400"}`}>
+                Materi
+              </span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+              <span className={`font-bold ${isSakit ? "text-red-700 dark:text-red-300" : isIjin ? "text-amber-700 dark:text-amber-300" : isLibur ? "text-purple-700 dark:text-purple-300" : "text-brand-600 dark:text-brand-400"}`}>
+                {item.materi || item.title || "-"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-[100px_auto_1fr] gap-x-1.5 items-baseline">
+              <span className={`font-bold uppercase text-[10px] sm:text-[11px] tracking-wider ${isSakit ? "text-red-800 dark:text-red-300" : isIjin ? "text-amber-800 dark:text-amber-300" : isLibur ? "text-purple-800 dark:text-purple-300" : "text-slate-600 dark:text-slate-400"}`}>
+                Pembimbing
+              </span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+              <span className="font-extrabold italic text-slate-900 dark:text-white">
+                {item.ttd_guru || "-"}
+              </span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-[100px_auto_1fr] gap-x-1.5 items-baseline">
-            <span className="font-bold text-slate-600 dark:text-slate-400 uppercase text-[10px] sm:text-[11px] tracking-wider">
-              Materi
+          {/* Prominent Status Badge */}
+          {isSakit && (
+            <span className="px-3 py-1 rounded-full bg-red-600 text-white text-xs font-black tracking-wider shadow-sm shrink-0 flex items-center gap-1.5 animate-in fade-in">
+              🤒 SAKIT
             </span>
-            <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
-            <span className="font-bold text-brand-600 dark:text-brand-400">
-              {item.materi || item.title || "-"}
+          )}
+          {isIjin && (
+            <span className="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-black tracking-wider shadow-sm shrink-0 flex items-center gap-1.5 animate-in fade-in">
+              📩 IJIN
             </span>
-          </div>
-
-          <div className="grid grid-cols-[100px_auto_1fr] gap-x-1.5 items-baseline">
-            <span className="font-bold text-slate-600 dark:text-slate-400 uppercase text-[10px] sm:text-[11px] tracking-wider">
-              Pembimbing
+          )}
+          {isLibur && (
+            <span className="px-3 py-1 rounded-full bg-purple-600 text-white text-xs font-black tracking-wider shadow-sm shrink-0 flex items-center gap-1.5 animate-in fade-in">
+              🎉 LIBUR
             </span>
-            <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
-            <span className="font-extrabold italic text-slate-900 dark:text-white">
-              {item.ttd_guru || "-"}
-            </span>
-          </div>
+          )}
         </div>
       </div>
 
@@ -208,8 +275,8 @@ function DailyWorksheetSessionItem({
       <div className="overflow-x-auto touch-pan-x">
         <table className="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
-            <tr className="bg-[#00A3E0] dark:bg-sky-700 text-white font-extrabold uppercase tracking-wider text-center border-b border-sky-600">
-              <th className="py-2.5 px-4 min-w-[140px] border-r border-sky-400/40 text-left">
+            <tr className={tableHeaderClass}>
+              <th className="py-2.5 px-4 min-w-[140px] border-r border-white/20 text-left">
                 Kegiatan
               </th>
               <th className="py-2.5 px-4 min-w-[140px] text-left">
@@ -218,12 +285,12 @@ function DailyWorksheetSessionItem({
             </tr>
           </thead>
           <tbody>
-            <tr className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+            <tr className={tableBodyClass}>
               {/* Kegiatan */}
-              <td className="py-3.5 px-4 font-medium border-r border-slate-200 dark:border-slate-800 align-top">
+              <td className="py-3.5 px-4 font-medium border-r border-slate-200/80 dark:border-slate-800/80 align-top">
                 {(item.kegiatan || "-").split("\n").filter(Boolean).map((line: string, i: number) => (
                   <div key={i} className="flex items-start gap-1.5 leading-relaxed">
-                    <span className="text-sky-500 font-bold shrink-0 mt-0.5">-</span>
+                    <span className={bulletColorClass}>-</span>
                     <span>{line.replace(/^[-•]\s*/, "")}</span>
                   </div>
                 ))}
@@ -233,7 +300,7 @@ function DailyWorksheetSessionItem({
               <td className="py-3.5 px-4 font-medium align-top">
                 {((item.hasil_belajar || item.description || "-")).split("\n").filter(Boolean).map((line: string, i: number) => (
                   <div key={i} className="flex items-start gap-1.5 leading-relaxed">
-                    <span className="text-sky-500 font-bold shrink-0 mt-0.5">-</span>
+                    <span className={bulletColorClass}>-</span>
                     <span>{line.replace(/^[-•]\s*/, "")}</span>
                   </div>
                 ))}
@@ -245,7 +312,15 @@ function DailyWorksheetSessionItem({
 
       {/* Action Bar (File + Edit/Delete) */}
       {(!isParentView || item.gdrive_link) && (
-        <div className="flex items-center justify-between px-4 py-2 bg-slate-50/80 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800">
+        <div className={`flex items-center justify-between px-4 py-2 border-t ${
+          isSakit
+            ? "bg-red-100/60 dark:bg-red-950/50 border-red-200 dark:border-red-900/60"
+            : isIjin
+            ? "bg-amber-100/60 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900/60"
+            : isLibur
+            ? "bg-purple-100/60 dark:bg-purple-950/50 border-purple-200 dark:border-purple-900/60"
+            : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800"
+        }`}>
           <div className="flex items-center gap-2">
             {item.gdrive_link && (
               <a
@@ -287,8 +362,12 @@ function DailyWorksheetSessionItem({
 
       {/* Rekomendasi di Rumah Opsional jika ada */}
       {item.rekomendasi_rumah && (
-        <div className="p-3 bg-amber-50/70 dark:bg-amber-950/30 border-t border-amber-100 dark:border-amber-900/40 text-xs">
-          <span className="font-extrabold text-amber-800 dark:text-amber-300 mr-2">
+        <div className={`p-3 border-t text-xs ${
+          isSakit
+            ? "bg-red-100/70 dark:bg-red-950/60 border-red-200 dark:border-red-900/70"
+            : "bg-amber-50/70 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/40"
+        }`}>
+          <span className={`font-extrabold mr-2 ${isSakit ? "text-red-900 dark:text-red-300" : "text-amber-800 dark:text-amber-300"}`}>
             🏡 Rekomendasi di Rumah:
           </span>
           <span className="text-slate-700 dark:text-slate-300 font-medium">
@@ -299,8 +378,12 @@ function DailyWorksheetSessionItem({
 
       {/* Catatan Guru Opsional jika ada */}
       {item.catatan_guru && (
-        <div className="p-3 bg-sky-50/70 dark:bg-sky-950/30 border-t border-sky-100 dark:border-sky-900/40 text-xs">
-          <span className="font-extrabold text-sky-800 dark:text-sky-300 mr-2">
+        <div className={`p-3 border-t text-xs ${
+          isSakit
+            ? "bg-red-100/70 dark:bg-red-950/60 border-red-200 dark:border-red-900/70"
+            : "bg-sky-50/70 dark:bg-sky-950/30 border-sky-100 dark:border-sky-900/40"
+        }`}>
+          <span className={`font-extrabold mr-2 ${isSakit ? "text-red-900 dark:text-red-300" : "text-sky-800 dark:text-sky-300"}`}>
             ✍️ Catatan Guru:
           </span>
           <span className="text-slate-700 dark:text-slate-300 font-medium">
@@ -310,11 +393,19 @@ function DailyWorksheetSessionItem({
       )}
 
       {/* 3. SARAN ORANG TUA PER HARI (MATCHING SKETCH "Saran :" PER SESI) */}
-      <div className="p-3.5 sm:p-4 bg-emerald-50/40 dark:bg-emerald-950/20 border-t-2 border-emerald-300 dark:border-emerald-800/80">
+      <div className={`p-3.5 sm:p-4 border-t-2 ${
+        isSakit
+          ? "bg-red-50/80 dark:bg-red-950/40 border-red-300 dark:border-red-800/80"
+          : "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/80"
+      }`}>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+          <span className={`text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 ${
+            isSakit ? "text-red-900 dark:text-red-300" : "text-emerald-800 dark:text-emerald-300"
+          }`}>
             <span>💬 SARAN :</span>
-            <span className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 lowercase">
+            <span className={`text-[11px] font-normal lowercase ${
+              isSakit ? "text-red-700 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+            }`}>
               (masukan / tanggapan orang tua)
             </span>
           </span>
@@ -467,6 +558,7 @@ export function StudentWorksheetTable({
   worksheets,
   bulanKe,
   isParentView = false,
+  hideDownloadBtn = false,
   onAddRow,
   onEditRow,
   onDeleteRow,
@@ -628,16 +720,25 @@ export function StudentWorksheetTable({
         
         {/* Top Header Row: PP (Photo Box) + Student Main Info */}
         <div className="flex items-start gap-4 sm:gap-6">
-          {/* ShiningSun Logo Box */}
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center p-2 sm:p-2.5 shadow-md shrink-0 relative overflow-hidden">
-            <Image
-              src="/logo.png"
-              alt="ShiningSun Logo"
-              width={80}
-              height={80}
-              className="w-full h-full object-contain"
-              priority
-            />
+          {/* Photo / Logo Box */}
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center p-1 sm:p-1.5 shadow-md shrink-0 relative overflow-hidden">
+            {student?.photo_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={student.photo_url}
+                alt={student?.name || "Foto Siswa"}
+                className="w-full h-full object-cover rounded-xl"
+              />
+            ) : (
+              <Image
+                src="/logo.png"
+                alt="ShiningSun Logo"
+                width={80}
+                height={80}
+                className="w-full h-full object-contain p-1"
+                priority
+              />
+            )}
           </div>
 
           {/* Lines Next to PP */}
@@ -689,48 +790,48 @@ export function StudentWorksheetTable({
         {/* Divider Line (Divider Sesuai Sketsa Gambar) */}
         <hr className="my-4 sm:my-5 border-slate-200 dark:border-slate-800" />
 
-        {/* Bottom Info Grid Below Divider Line */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs text-slate-800 dark:text-slate-200 font-medium">
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
-            <span className="block text-[10px] font-bold text-slate-400 uppercase">Unit</span>
-            <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
-              {student?.branch?.name || "ShiningSun"}
+        {/* Bottom Info Grid Below Divider Line (Uniform Neutral Styling - Full Text Visibility) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 text-xs text-slate-800 dark:text-slate-200 font-medium">
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between">
+            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Unit</span>
+            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
+              {student?.branch?.name ? `ShiningSun ${student.branch.name}` : "ShiningSun"}
             </span>
           </div>
 
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
-            <span className="block text-[10px] font-bold text-slate-400 uppercase">Jadwal</span>
-            <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between">
+            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Jadwal</span>
+            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
               {student?.schedule || "-"}
             </span>
           </div>
 
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
-            <span className="block text-[10px] font-bold text-slate-400 uppercase">Level</span>
-            <span className="font-bold text-brand-600 dark:text-brand-400 text-xs sm:text-sm">
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between">
+            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Level</span>
+            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
               {student?.label ? `${student.label.main_level} ${student.label.sub_level}` : "Tanpa Level"}
             </span>
           </div>
 
-          <div className="bg-sky-50 dark:bg-sky-950/40 p-2.5 rounded-xl border border-sky-200 dark:border-sky-800/60">
-            <span className="block text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase">📅 Bulan Ke</span>
-            <span className="font-extrabold text-sky-700 dark:text-sky-300 text-xs sm:text-sm">
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between">
+            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Bulan Ke</span>
+            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
               {currentBulanKe != null ? `Bulan ke-${currentBulanKe}` : "Bulan ke-1"}
             </span>
           </div>
 
-          <div className="bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800/60">
-            <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">⭐ Poin Kehadiran</span>
-            <span className="font-extrabold text-amber-700 dark:text-amber-300 text-xs sm:text-sm">
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between">
+            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Poin Kehadiran</span>
+            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
               {student?.points !== undefined
                 ? student.points
                 : Math.max(0, calculateStudentPoints(worksheets) - (student?.redeemed_points || 0))} Poin
             </span>
           </div>
 
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
-            <span className="block text-[10px] font-bold text-slate-400 uppercase">Status</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between">
+            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</span>
+            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
               {student?.status === 'REGISTERED' ? 'Siswa Reguler' : student?.status === 'CG' ? 'Coba Gratis' : 'Nonaktif'}
             </span>
           </div>
@@ -776,27 +877,29 @@ export function StudentWorksheetTable({
           )}
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={handleDownloadPdf}
-              disabled={isDownloadingPdf}
-              className="flex-1 sm:w-auto justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 disabled:opacity-50 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
-              title="Download langsung file PDF laporan perkembangan siswa ini"
-            >
-              {isDownloadingPdf ? (
-                <svg className="animate-spin h-3.5 w-3.5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" x2="12" y1="15" y2="3"/>
-                </svg>
-              )}
-              <span className="whitespace-nowrap">{isDownloadingPdf ? "Memproses..." : "Download PDF"}</span>
-            </button>
+            {!hideDownloadBtn && (
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={isDownloadingPdf}
+                className="flex-1 sm:w-auto justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 disabled:opacity-50 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
+                title="Download langsung file PDF laporan perkembangan siswa ini"
+              >
+                {isDownloadingPdf ? (
+                  <svg className="animate-spin h-3.5 w-3.5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" x2="12" y1="15" y2="3"/>
+                  </svg>
+                )}
+                <span className="whitespace-nowrap">{isDownloadingPdf ? "Memproses..." : "Download PDF"}</span>
+              </button>
+            )}
 
             {!isParentView && onDeleteSheet && (
               <button

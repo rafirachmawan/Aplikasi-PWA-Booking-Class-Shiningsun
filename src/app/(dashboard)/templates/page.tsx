@@ -1,4 +1,4 @@
-import { getAssessmentTemplates, getCurrentUserRole, getBranchId, getActiveBranchName } from "@/lib/actions";
+import { getAssessmentTemplates, getLabels, getCurrentUserRole, getBranchId, getActiveBranchName } from "@/lib/actions";
 import { TemplateClientWrapper } from "./TemplateClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 
@@ -12,7 +12,17 @@ export default async function TemplatesPage() {
   }
 
   const activeBranchName = role === 'SUPERADMIN' ? await getActiveBranchName() : null;
-  const templates = await getAssessmentTemplates();
+  const [templates, labels] = await Promise.all([
+    getAssessmentTemplates(),
+    getLabels(),
+  ]);
 
-  return <TemplateClientWrapper templates={templates} activeBranchName={activeBranchName} role={role} />;
+  return (
+    <TemplateClientWrapper
+      templates={templates}
+      labels={labels}
+      activeBranchName={activeBranchName}
+      role={role}
+    />
+  );
 }

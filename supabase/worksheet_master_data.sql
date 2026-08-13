@@ -29,8 +29,10 @@ CREATE TABLE IF NOT EXISTS assessment_templates (
 -- Migration safety for existing tables
 ALTER TABLE assessment_templates ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'kegiatan';
 ALTER TABLE assessment_templates ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0;
+ALTER TABLE assessment_templates ADD COLUMN IF NOT EXISTS label_id UUID REFERENCES labels(id) ON DELETE SET NULL;
 
 -- Indexing
 CREATE INDEX IF NOT EXISTS idx_teachers_branch ON teachers(branch_id);
 CREATE INDEX IF NOT EXISTS idx_templates_branch ON assessment_templates(branch_id);
 CREATE INDEX IF NOT EXISTS idx_templates_category ON assessment_templates(category);
+CREATE INDEX IF NOT EXISTS idx_templates_label ON assessment_templates(label_id);

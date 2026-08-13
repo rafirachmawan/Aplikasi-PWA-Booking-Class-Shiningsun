@@ -39,9 +39,9 @@ export default function LoginPage() {
             Platform Manajemen Modern
           </div>
           <h1 className="text-6xl font-bold text-white leading-[1.1] tracking-tight">
-            Sistem Penjadwalan <br />
+            Shiningsun Report <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-blue-400 to-indigo-400">
-              Cerdas & Elegan
+              Cerdas, Ceria, Kreatif dan Mandiri
             </span>
           </h1>
           <p className="text-slate-300/80 text-xl max-w-lg leading-relaxed font-light">
@@ -89,8 +89,8 @@ export default function LoginPage() {
             <div className="h-16 w-16 sm:h-20 sm:w-20 bg-white/15 backdrop-blur-2xl rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-2xl border border-white/25 mb-3 p-1.5 overflow-hidden">
               <Image src="/logo.png" alt="ShiningSun Logo" width={80} height={80} className="w-full h-full object-contain drop-shadow-md" priority />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">ShiningSun</h2>
-            <p className="mt-1 text-slate-200 text-xs sm:text-sm font-medium">Sistem Penjadwalan Cerdas & Elegan</p>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Shiningsun Report</h2>
+            <p className="mt-1 text-slate-200 text-xs sm:text-sm font-medium">Cerdas, Ceria, Kreatif dan Mandiri</p>
           </div>
 
           {/* Desktop Heading */}
