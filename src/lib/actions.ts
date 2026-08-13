@@ -1804,13 +1804,18 @@ export async function verifyParentAccess(
 
   const supabaseServer = await createClient();
 
-  // Search student by name or nickname (with fallback if access_pin column is missing)
-  let { data: students, error } = await supabaseServer.from("students")
+  let students: any[] | null = null;
+  let error: any = null;
+
+  const primaryRes = await supabaseServer.from("students")
     .select(`
       id, name, nickname, gender, date_of_birth, status, registration_date, access_pin,
       branch:branches(name),
       label:labels(id, main_level, sub_level, hex_color)
     `);
+
+  students = primaryRes.data;
+  error = primaryRes.error;
 
   if (error) {
     const fallbackRes = await supabaseServer.from("students")
@@ -1896,7 +1901,10 @@ export async function getParentSessionStudent() {
   if (!studentId) return null;
 
   const supabaseServer = await createClient();
-  let { data: student, error } = await supabaseServer
+  let student: any = null;
+  let error: any = null;
+
+  const primaryRes = await supabaseServer
     .from("students")
     .select(
       `
@@ -1907,6 +1915,9 @@ export async function getParentSessionStudent() {
     )
     .eq("id", studentId)
     .single();
+
+  student = primaryRes.data;
+  error = primaryRes.error;
 
   // Fallback if photo_url column does not exist in Supabase database yet
   if (error) {
