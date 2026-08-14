@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Icons } from "@/components/ui/icons";
 import { redeemStudentPoints, addManualStudentPoints } from "@/lib/actions";
 import { formatShortDate } from "@/lib/dateUtils";
@@ -38,6 +38,15 @@ export function PointsClientWrapper({
   const [addSuccessMsg, setAddSuccessMsg] = useState("");
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
   const [studentSearchInModal, setStudentSearchInModal] = useState("");
+  const studentSearchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isStudentDropdownOpen) {
+      setTimeout(() => {
+        studentSearchInputRef.current?.focus();
+      }, 50);
+    }
+  }, [isStudentDropdownOpen]);
 
   // Active students list (exclude INACTIVE and CG)
   const activeStudents = useMemo(
@@ -865,11 +874,13 @@ export function PointsClientWrapper({
                 <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="sticky top-0 bg-white dark:bg-slate-900 pb-1 z-10">
                     <input
+                      ref={studentSearchInputRef}
                       type="text"
                       value={studentSearchInModal}
                       onChange={(e) => setStudentSearchInModal(e.target.value)}
                       placeholder="🔍 Cari nama siswa dalam daftar..."
                       className="w-full px-3 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                      autoFocus
                     />
                   </div>
 

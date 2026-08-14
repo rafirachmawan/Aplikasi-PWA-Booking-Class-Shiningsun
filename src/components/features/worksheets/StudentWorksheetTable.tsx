@@ -865,17 +865,6 @@ export function StudentWorksheetTable({
         )}
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-          {!isParentView && (
-            <button
-              type="button"
-              onClick={() => onAddRow && onAddRow(student.id, latestMonth)}
-              className="w-full sm:w-auto justify-center px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
-            >
-              <Icons.add className="w-4 h-4 shrink-0" />
-              <span className="whitespace-nowrap">Tambah Sesi / Evaluasi</span>
-            </button>
-          )}
-
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {!hideDownloadBtn && (
               <button

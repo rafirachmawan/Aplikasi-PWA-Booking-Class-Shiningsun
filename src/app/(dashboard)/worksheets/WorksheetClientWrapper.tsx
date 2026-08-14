@@ -28,7 +28,6 @@ export function WorksheetClientWrapper({
   templates = [],
 }: WorksheetClientWrapperProps) {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("__none__");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorksheet, setEditingWorksheet] = useState<any>(null);
@@ -37,6 +36,15 @@ export function WorksheetClientWrapper({
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
   const [studentDropdownFilter, setStudentDropdownFilter] = useState("");
   const studentDropdownRef = useRef<HTMLDivElement>(null);
+  const studentSearchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isStudentDropdownOpen) {
+      setTimeout(() => {
+        studentSearchInputRef.current?.focus();
+      }, 50);
+    }
+  }, [isStudentDropdownOpen]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent | TouchEvent) {
@@ -139,26 +147,13 @@ export function WorksheetClientWrapper({
   // Filter worksheets
   const filteredWorksheets = useMemo(() => {
     return initialWorksheets.filter((w) => {
-      const studentName = w.student?.name || "";
-      const studentNickname = w.student?.nickname || "";
-      const title = w.title || "";
-      const desc = w.description || "";
-      const materi = w.materi || "";
-      const kegiatan = w.kegiatan || "";
-
-      const matchesSearch =
-        studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        studentNickname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        materi.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        kegiatan.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        desc.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesStudent = selectedStudentId === "" || selectedStudentId === "__none__" || w.student_id === selectedStudentId;
-
-      return matchesSearch && matchesStudent;
+      return (
+        selectedStudentId === "" ||
+        selectedStudentId === "__none__" ||
+        w.student_id === selectedStudentId
+      );
     });
-  }, [initialWorksheets, searchQuery, selectedStudentId]);
+  }, [initialWorksheets, selectedStudentId]);
 
   // Group worksheets by student_id + bulan_ke (each month = separate card/table)
   const groupedWorksheets = useMemo(() => {
@@ -447,8 +442,11 @@ export function WorksheetClientWrapper({
 
           <button
             type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-x-2 rounded-xl bg-white text-brand-700 px-5 py-3 text-sm font-bold shadow-md hover:bg-brand-50 focus-visible:outline-none shrink-0 w-full sm:w-auto justify-center transition-all active:scale-95"
+            onClick={() => {
+              setEditingWorksheet(null);
+              setIsModalOpen(true);
+            }}
+            className="inline-flex items-center gap-x-2 rounded-xl bg-white text-brand-700 px-5 py-3 text-sm font-bold shadow-md hover:bg-brand-50 focus-visible:outline-none shrink-0 w-full sm:w-auto justify-center transition-all active:scale-95 cursor-pointer"
             style={{ color: '#1d4ed8', backgroundColor: 'white' }}
           >
             <Icons.add className="-ml-0.5 h-5 w-5" />
@@ -458,63 +456,48 @@ export function WorksheetClientWrapper({
       </div>
 
       {/* Filters Toolbar */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-sm space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Search Input */}
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <Icons.search className="h-5 w-5 text-slate-400" />
-            </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari judul atau nama siswa..."
-              className="block w-full rounded-xl border-0 py-2.5 pl-10 pr-3 text-slate-900 ring-1 ring-inset ring-slate-200 bg-slate-50 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-600 sm:text-sm dark:bg-slate-800 dark:ring-slate-700 dark:text-white"
+      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm">
+        {/* Custom Student Select Filter (Opens Downward Always) */}
+        <div className="relative w-full" ref={studentDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setIsStudentDropdownOpen(!isStudentDropdownOpen)}
+            className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-3 pl-10 pr-3.5 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-brand-600 focus:outline-none shadow-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/80 cursor-pointer"
+          >
+            <span className="truncate">
+              {selectedStudentId === "__none__"
+                ? "👤 Pilih Siswa..."
+                : selectedStudentObj
+                  ? `👤 ${selectedStudentObj.name} ${selectedStudentObj.nickname ? `(${selectedStudentObj.nickname})` : ""}`
+                  : `✨ Semua Siswa (${students.length})`}
+            </span>
+            <Icons.chevronDown
+              className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                isStudentDropdownOpen ? "rotate-180" : ""
+              }`}
             />
+          </button>
+
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+            <Icons.users className="h-5 w-5 text-slate-400" />
           </div>
-
-          {/* Custom Student Select Filter (Opens Downward Always) */}
-          <div className="relative" ref={studentDropdownRef}>
-            <button
-              type="button"
-              onClick={() => setIsStudentDropdownOpen(!isStudentDropdownOpen)}
-              className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2.5 pl-10 pr-3.5 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-brand-600 focus:outline-none shadow-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/80 cursor-pointer"
-            >
-              <span className="truncate">
-                {selectedStudentId === "__none__"
-                  ? "👤 Pilih Siswa..."
-                  : selectedStudentObj
-                    ? `👤 ${selectedStudentObj.name} ${selectedStudentObj.nickname ? `(${selectedStudentObj.nickname})` : ""}`
-                    : `✨ Semua Siswa (${students.length})`}
-              </span>
-              <Icons.chevronDown
-                className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${
-                  isStudentDropdownOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <Icons.users className="h-5 w-5 text-slate-400" />
-            </div>
 
             {/* Dropdown Menu (Always Opens Downwards) */}
             {isStudentDropdownOpen && (
               <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 animate-in fade-in slide-in-from-top-2 duration-150 space-y-1.5">
                 {/* Quick Search inside dropdown */}
-                {students.length > 5 && (
-                  <div className="p-1">
-                    <input
-                      type="text"
-                      value={studentDropdownFilter}
-                      onChange={(e) => setStudentDropdownFilter(e.target.value)}
-                      placeholder="🔍 Cari nama siswa..."
-                      className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                )}
+                <div className="p-1">
+                  <input
+                    ref={studentSearchInputRef}
+                    type="text"
+                    value={studentDropdownFilter}
+                    onChange={(e) => setStudentDropdownFilter(e.target.value)}
+                    placeholder="🔍 Cari nama siswa..."
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium"
+                    onClick={(e) => e.stopPropagation()}
+                    autoFocus
+                  />
+                </div>
 
                 <div className="max-h-64 overflow-y-auto space-y-0.5 pr-1 custom-scrollbar">
                   <button
@@ -566,7 +549,6 @@ export function WorksheetClientWrapper({
             )}
           </div>
         </div>
-      </div>
 
       {/* Worksheets Grid / List Grouped By Student Table Document */}
       <div className="space-y-6">
