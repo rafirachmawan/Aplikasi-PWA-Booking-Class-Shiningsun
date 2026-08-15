@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { WorksheetFormModal } from "@/components/features/worksheets/WorksheetFormModal";
 import { StudentWorksheetTable } from "@/components/features/worksheets/StudentWorksheetTable";
-import { deleteWorksheet, deleteWorksheetMonth, updateStudentAccessPin } from "@/lib/actions";
+import { deleteWorksheet, deleteWorksheetMonth, updateStudentAccessPin, getModuleLockPasswords } from "@/lib/actions";
 import { formatNumericDate, formatShortDate } from "@/lib/dateUtils";
 import { getGDrivePreviewLink, getGDriveDirectLink } from "@/lib/gdriveUtils";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -31,6 +31,12 @@ export function WorksheetClientWrapper({
   const [selectedStudentId, setSelectedStudentId] = useState("__none__");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorksheet, setEditingWorksheet] = useState<any>(null);
+
+  // Date Range Filter & Single PDF Export State
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const printableRef = useRef<HTMLDivElement>(null);
 
   // Custom dropdown state for Student Filter (always opens downwards)
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
@@ -61,6 +67,17 @@ export function WorksheetClientWrapper({
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
     };
+  }, []);
+
+  // Sync URL searchParam student_id on load
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const studentIdParam = urlParams.get("student_id");
+      if (studentIdParam) {
+        setSelectedStudentId(studentIdParam);
+      }
+    }
   }, []);
 
   const selectedStudentObj = useMemo(() => {
@@ -113,9 +130,25 @@ export function WorksheetClientWrapper({
   const [lockError, setLockError] = useState("");
 
   useEffect(() => {
-    const unlocked = sessionStorage.getItem("worksheets_unlocked") === "true";
-    setIsUnlocked(unlocked);
-    setLockChecked(true);
+    async function checkLock() {
+      if (typeof window !== "undefined") {
+        try {
+          const passwords = await getModuleLockPasswords();
+          const expected = passwords["/worksheets"];
+          if (expected === "") {
+            setIsUnlocked(true);
+          } else {
+            const unlocked = sessionStorage.getItem("worksheets_unlocked") === "true";
+            setIsUnlocked(unlocked);
+          }
+        } catch {
+          const unlocked = sessionStorage.getItem("worksheets_unlocked") === "true";
+          setIsUnlocked(unlocked);
+        }
+        setLockChecked(true);
+      }
+    }
+    checkLock();
   }, []);
 
   // PIN modal state
@@ -144,16 +177,126 @@ export function WorksheetClientWrapper({
     setNewPin(randomPin);
   };
 
-  // Filter worksheets
+  // Filter worksheets by student AND date range
   const filteredWorksheets = useMemo(() => {
     return initialWorksheets.filter((w) => {
-      return (
+      const matchStudent =
         selectedStudentId === "" ||
         selectedStudentId === "__none__" ||
-        w.student_id === selectedStudentId
-      );
+        w.student_id === selectedStudentId;
+      if (!matchStudent) return false;
+
+      if (!startDate && !endDate) return true;
+      const rawDate = w.worksheet_date || w.created_at;
+      if (!rawDate) return true;
+      const dateOnly = String(rawDate).split("T")[0];
+      if (startDate && dateOnly < startDate) return false;
+      if (endDate && dateOnly > endDate) return false;
+      return true;
     });
-  }, [initialWorksheets, selectedStudentId]);
+  }, [initialWorksheets, selectedStudentId, startDate, endDate]);
+
+  const handleDownloadPdf = async () => {
+    const cardEl = printableRef.current;
+    if (!cardEl) return;
+
+    const origWidth = cardEl.style.width;
+    const origMinWidth = cardEl.style.minWidth;
+    const origMaxWidth = cardEl.style.maxWidth;
+
+    const actionElements = cardEl.querySelectorAll(".no-print-action");
+    actionElements.forEach((el) => {
+      (el as HTMLElement).style.setProperty("display", "none", "important");
+    });
+
+    const scrollContainers = cardEl.querySelectorAll(".overflow-x-auto");
+    const origOverflows: string[] = [];
+    scrollContainers.forEach((sc, i) => {
+      origOverflows[i] = (sc as HTMLElement).style.overflow;
+      (sc as HTMLElement).style.setProperty("overflow", "visible", "important");
+    });
+
+    cardEl.style.setProperty("width", "850px", "important");
+    cardEl.style.setProperty("min-width", "850px", "important");
+    cardEl.style.setProperty("max-width", "none", "important");
+
+    try {
+      setIsDownloadingPdf(true);
+
+      if (!(window as any).htmlToImage) {
+        const script1 = document.createElement("script");
+        script1.src =
+          "https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js";
+        document.head.appendChild(script1);
+        await new Promise((r) => (script1.onload = r));
+      }
+
+      if (!(window as any).jspdf) {
+        const script2 = document.createElement("script");
+        script2.src =
+          "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+        document.head.appendChild(script2);
+        await new Promise((r) => (script2.onload = r));
+      }
+
+      await new Promise((r) => setTimeout(r, 200));
+
+      const dataUrl = await (window as any).htmlToImage.toPng(cardEl, {
+        backgroundColor: "#ffffff",
+        pixelRatio: 2,
+        width: 850,
+      });
+
+      const { jsPDF } = (window as any).jspdf;
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgProps = pdf.getImageProperties(dataUrl);
+
+      const margin = 10;
+      let imgWidth = pdfWidth - margin * 2;
+      let imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+
+      if (imgHeight > pdfHeight - margin * 2) {
+        imgHeight = pdfHeight - margin * 2;
+        imgWidth = (imgProps.width * imgHeight) / imgProps.height;
+      }
+
+      const xOffset = margin + (pdfWidth - margin * 2 - imgWidth) / 2;
+      const yOffset = margin;
+
+      pdf.addImage(dataUrl, "PNG", xOffset, yOffset, imgWidth, imgHeight);
+
+      const safeFileName = (selectedStudentObj?.name || "Laporan_Perkembangan")
+        .replace(/[^a-zA-Z0-9]/g, "_")
+        .replace(/_+/g, "_");
+
+      const dateRangeStr =
+        startDate || endDate ? `_${startDate || "Awal"}_sd_${endDate || "Akhir"}` : "";
+      pdf.save(`Laporan_Perkembangan_${safeFileName}${dateRangeStr}.pdf`);
+    } catch (error) {
+      console.error("Failed to generate PDF:", error);
+      alert("Gagal mendownload PDF. Silakan coba lagi.");
+    } finally {
+      cardEl.style.width = origWidth;
+      cardEl.style.minWidth = origMinWidth;
+      cardEl.style.maxWidth = origMaxWidth;
+
+      scrollContainers.forEach((sc, i) => {
+        (sc as HTMLElement).style.overflow = origOverflows[i] || "";
+      });
+
+      actionElements.forEach((el) => {
+        (el as HTMLElement).style.removeProperty("display");
+      });
+      setIsDownloadingPdf(false);
+    }
+  };
 
   // Group worksheets by student_id + bulan_ke (each month = separate card/table)
   const groupedWorksheets = useMemo(() => {
@@ -194,15 +337,28 @@ export function WorksheetClientWrapper({
     });
   }, [filteredWorksheets, selectedStudentId, students]);
 
-  const handleUnlockPage = (e: React.FormEvent) => {
+  const handleUnlockPage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (lockPassword === "123") {
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("worksheets_unlocked", "true");
+    try {
+      const passwords = await getModuleLockPasswords();
+      const expectedPassword = passwords["/worksheets"] ?? "123";
+      if (lockPassword === expectedPassword) {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("worksheets_unlocked", "true");
+        }
+        setIsUnlocked(true);
+      } else {
+        setLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
       }
-      setIsUnlocked(true);
-    } else {
-      setLockError("Password salah! Hubungi pihak developer.");
+    } catch {
+      if (lockPassword === "123") {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("worksheets_unlocked", "true");
+        }
+        setIsUnlocked(true);
+      } else {
+        setLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
+      }
     }
   };
 
@@ -550,8 +706,125 @@ export function WorksheetClientWrapper({
           </div>
         </div>
 
+      {/* Date Range Filter & Single Download PDF Control Panel (Same as Portal Ortu) */}
+      {selectedStudentId !== "__none__" && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-4">
+          <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+            <div>
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                📄 Filter & Download Laporan PDF
+              </h3>
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Filter berdasarkan tanggal dan unduh file PDF resmi.
+              </p>
+            </div>
+            <span className="shrink-0 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+              {filteredWorksheets.length} Sesi
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                  Mulai Tanggal
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none transition-all cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                  Sampai Tanggal
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none transition-all cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {(startDate || endDate) && (
+              <div className="flex justify-end pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartDate("");
+                    setEndDate("");
+                  }}
+                  className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 underline cursor-pointer"
+                >
+                  Reset Filter Tanggal
+                </button>
+              </div>
+            )}
+
+            {/* SINGLE Download PDF Button */}
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf || filteredWorksheets.length === 0}
+              className="w-full py-2.5 sm:py-3 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 active:scale-98 transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isDownloadingPdf ? (
+                <>
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  <span>Memproses PDF...</span>
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" x2="12" y1="15" y2="3" />
+                  </svg>
+                  <span>
+                    Download PDF ({filteredWorksheets.length} Sesi)
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Worksheets Grid / List Grouped By Student Table Document */}
-      <div className="space-y-6">
+      <div ref={printableRef} className="space-y-6">
         {selectedStudentId === "__none__" ? (
           <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 p-8">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-2xl">
@@ -579,6 +852,7 @@ export function WorksheetClientWrapper({
               student={student}
               worksheets={studentWsList}
               bulanKe={bulanKe}
+              hideDownloadBtn={true}
               onAddRow={(studentId, bk) => {
                 setEditingWorksheet({ student_id: studentId, bulan_ke: bk });
                 setIsModalOpen(true);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import {
@@ -65,7 +65,7 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [title, setTitle] = useState("");
   const [materi, setMateri] = useState("");
-  const [selectedLabelId, setSelectedLabelId] = useState<string>("");
+  const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   const [isLabelDropdownOpen, setIsLabelDropdownOpen] = useState(false);
 
   // Delete modal state
@@ -77,8 +77,66 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  // Search & Level Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilterLabelId, setSelectedFilterLabelId] = useState("");
+  const [isFilterLevelDropdownOpen, setIsFilterLevelDropdownOpen] = useState(false);
+
   const currentCategoryObj = activeTab ? CATEGORIES.find((c) => c.id === activeTab) : null;
   const filteredTemplates = activeTab ? templates.filter((t) => (t.category || "kegiatan") === activeTab) : [];
+
+  // Group templates with identical title & category into 1 single item for UI & edit operations
+  const groupedTemplates = useMemo(() => {
+    if (!activeTab) return [];
+
+    const groups: { [key: string]: any } = {};
+
+    filteredTemplates.forEach((tpl) => {
+      const key = `${(tpl.category || "kegiatan").toLowerCase()}::${(tpl.title || "").trim().toLowerCase()}`;
+      const labelObj = Array.isArray(tpl.label) ? tpl.label[0] : tpl.label;
+      const lId = tpl.label_id || labelObj?.id;
+
+      if (!groups[key]) {
+        groups[key] = {
+          id: tpl.id,
+          ids: [tpl.id],
+          title: tpl.title,
+          materi: tpl.materi,
+          category: tpl.category,
+          created_at: tpl.created_at,
+          labels: labelObj ? [labelObj] : [],
+          label_ids: lId ? [lId] : [],
+        };
+      } else {
+        groups[key].ids.push(tpl.id);
+        if (labelObj && !groups[key].labels.some((l: any) => l.id === labelObj.id)) {
+          groups[key].labels.push(labelObj);
+        }
+        if (lId && !groups[key].label_ids.includes(lId)) {
+          groups[key].label_ids.push(lId);
+        }
+      }
+    });
+
+    return Object.values(groups);
+  }, [filteredTemplates, activeTab]);
+
+  // Filter grouped templates by search query and level filter
+  const searchedAndFilteredTemplates = useMemo(() => {
+    return groupedTemplates.filter((tpl) => {
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch = !q || (tpl.title || "").toLowerCase().includes(q) || (tpl.materi || "").toLowerCase().includes(q);
+
+      let matchesLevel = true;
+      if (selectedFilterLabelId === "GLOBAL") {
+        matchesLevel = !tpl.labels || tpl.labels.length === 0;
+      } else if (selectedFilterLabelId) {
+        matchesLevel = tpl.label_ids && tpl.label_ids.includes(selectedFilterLabelId);
+      }
+
+      return matchesSearch && matchesLevel;
+    });
+  }, [groupedTemplates, searchQuery, selectedFilterLabelId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,9 +149,19 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
       formData.append("category", activeTab || "kegiatan");
       formData.append("title", title.trim());
       formData.append("materi", materi.trim());
-      if (selectedLabelId) formData.append("label_id", selectedLabelId);
+
+      if (selectedLabelIds.length > 0) {
+        selectedLabelIds.forEach((id) => {
+          formData.append("label_id", id);
+        });
+      }
 
       if (editingTemplate) {
+        if (editingTemplate.ids && Array.isArray(editingTemplate.ids)) {
+          editingTemplate.ids.forEach((id: string) => {
+            formData.append("ids", id);
+          });
+        }
         await updateAssessmentTemplate(editingTemplate.id, formData);
       } else {
         await createAssessmentTemplate(formData);
@@ -113,7 +181,7 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
   const resetForm = () => {
     setTitle("");
     setMateri("");
-    setSelectedLabelId("");
+    setSelectedLabelIds([]);
     setIsLabelDropdownOpen(false);
   };
 
@@ -121,15 +189,15 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
     setEditingTemplate(tpl);
     setTitle(tpl.title || "");
     setMateri(tpl.materi || "");
-    const labelObj = Array.isArray(tpl.label) ? tpl.label[0] : tpl.label;
-    setSelectedLabelId(tpl.label_id || labelObj?.id || "");
+    const lIds = tpl.label_ids || (tpl.label_id ? [tpl.label_id] : []);
+    setSelectedLabelIds(lIds);
     setIsLabelDropdownOpen(false);
     setIsAdding(true);
     setSubmitError("");
   };
 
-  const confirmDelete = (id: string, templateTitle: string) => {
-    setTemplateToDelete({ id, title: templateTitle });
+  const confirmDelete = (tpl: any) => {
+    setTemplateToDelete({ id: tpl.id, title: tpl.title, ids: tpl.ids } as any);
     setDeleteError("");
     setDeleteModal(true);
   };
@@ -139,12 +207,13 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
     setIsDeleting(true);
     setDeleteError("");
     try {
-      await deleteAssessmentTemplate(templateToDelete.id);
+      const targetIds = (templateToDelete as any).ids || templateToDelete.id;
+      await deleteAssessmentTemplate(targetIds);
       setDeleteModal(false);
       setTemplateToDelete(null);
       router.refresh();
     } catch (error: any) {
-      setDeleteError(error.message || "Gagal menghapus opsi template.");
+      setDeleteError(error?.message || "Gagal menghapus opsi template.");
     } finally {
       setIsDeleting(false);
     }
@@ -409,38 +478,54 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                 />
               </div>
 
-              {/* Label / Level Selector - hanya untuk kategori materi */}
+              {/* Label / Level Selector - Standard Worksheet Form Style */}
               {activeTab === "materi" && labels.length > 0 && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                    🎯 Untuk Level / Kelas Siswa
-                  </label>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-2">
-                    Materi ini hanya akan muncul di dropdown siswa dengan level yang dipilih.
-                  </p>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      🎯 Pilih Level Siswa
+                    </label>
+                    <span className="text-[10px] font-extrabold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
+                      {selectedLabelIds.length === 0
+                        ? "Semua Level"
+                        : `${selectedLabelIds.length} Level Dipilih`}
+                    </span>
+                  </div>
+
                   <div className="relative">
+                    {/* Standard Single Row Dropdown Button */}
                     <button
                       type="button"
                       onClick={() => setIsLabelDropdownOpen(!isLabelDropdownOpen)}
-                      className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold shadow-xs cursor-pointer text-left transition-all ${
+                      className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold shadow-xs cursor-pointer text-left transition-all ${
                         isLabelDropdownOpen
                           ? "border-sky-500 ring-2 ring-sky-500/20 bg-white dark:bg-slate-900"
                           : "border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800"
                       }`}
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span
-                          className="w-3 h-3 rounded-full shrink-0 shadow-xs"
-                          style={{ backgroundColor: labels.find((l) => l.id === selectedLabelId)?.hex_color || "#94a3b8" }}
-                        />
-                        <span className="truncate text-slate-800 dark:text-slate-100">
-                          {selectedLabelId
-                            ? (() => {
-                                const lbl = labels.find((l) => l.id === selectedLabelId);
-                                return lbl ? `${lbl.main_level} - ${lbl.sub_level}` : "-- Semua Level --";
-                              })()
-                            : "-- Semua Level (Tanpa Filter) --"}
-                        </span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        {selectedLabelIds.length === 0 ? (
+                          <span className="truncate text-slate-600 dark:text-slate-300 font-semibold">
+                            🌐 Semua Level (Materi Bebas / Global)
+                          </span>
+                        ) : selectedLabelIds.length === 1 ? (
+                          (() => {
+                            const lbl = labels.find((l) => l.id === selectedLabelIds[0]);
+                            return (
+                              <span className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-100 truncate">
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
+                                  style={{ backgroundColor: lbl?.hex_color || "#94a3b8" }}
+                                />
+                                {lbl ? `${lbl.main_level} - ${lbl.sub_level}` : "1 Level Dipilih"}
+                              </span>
+                            );
+                          })()
+                        ) : (
+                          <span className="font-extrabold text-sky-600 dark:text-sky-400 truncate">
+                            ✨ {selectedLabelIds.length} Level Terpilih (Klik untuk ubah)
+                          </span>
+                        )}
                       </div>
                       <Icons.chevronDown
                         className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
@@ -449,36 +534,57 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                       />
                     </button>
 
+                    {/* Popover Dropdown List */}
                     {isLabelDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 space-y-1 max-h-52 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedLabelId("");
-                            setIsLabelDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
-                            !selectedLabelId
-                              ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 font-extrabold"
-                              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                          }`}
-                        >
-                          <span className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600" />
-                            Semua Level (Tanpa Filter)
-                          </span>
-                          {!selectedLabelId && <span className="text-sky-600 shrink-0 text-xs font-bold">✓</span>}
-                        </button>
+                      <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+                        {/* Quick action bar */}
+                        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100 dark:border-slate-800/80 px-1">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedLabelIds([])}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
+                              selectedLabelIds.length === 0
+                                ? "bg-sky-600 text-white shadow-xs"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
+                            }`}
+                          >
+                            🌐 Semua Level
+                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedLabelIds(labels.map((l) => l.id))}
+                              className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300 hover:bg-sky-100 cursor-pointer"
+                            >
+                              ✓ Pilih Semua
+                            </button>
+                            {selectedLabelIds.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedLabelIds([])}
+                                className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer"
+                              >
+                                Reset
+                              </button>
+                            )}
+                          </div>
+                        </div>
 
+                        {/* List of selectable levels */}
                         {labels.map((lbl) => {
-                          const isSel = selectedLabelId === lbl.id;
+                          const isSel = selectedLabelIds.includes(lbl.id);
                           return (
                             <button
                               key={lbl.id}
                               type="button"
                               onClick={() => {
-                                setSelectedLabelId(lbl.id);
-                                setIsLabelDropdownOpen(false);
+                                if (isSel) {
+                                  setSelectedLabelIds(
+                                    selectedLabelIds.filter((id) => id !== lbl.id)
+                                  );
+                                } else {
+                                  setSelectedLabelIds([...selectedLabelIds, lbl.id]);
+                                }
                               }}
                               className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
                                 isSel
@@ -487,6 +593,12 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                               }`}
                             >
                               <span className="flex items-center gap-2.5 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  checked={isSel}
+                                  readOnly
+                                  className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-700 cursor-pointer pointer-events-none"
+                                />
                                 <span
                                   className="w-3 h-3 rounded-full shrink-0 shadow-xs"
                                   style={{ backgroundColor: lbl.hex_color }}
@@ -495,17 +607,60 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                                   {lbl.main_level} - {lbl.sub_level}
                                 </span>
                               </span>
-                              {isSel && <span className="text-sky-600 shrink-0 text-xs font-bold">✓</span>}
+                              {isSel && (
+                                <span className="text-sky-600 shrink-0 text-xs font-bold">
+                                  ✓
+                                </span>
+                              )}
                             </button>
                           );
                         })}
                       </div>
                     )}
                   </div>
+
+                  {/* Penjelasan Jelas Mengenai Dampak Pilihan Level */}
+                  <div className="mt-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
+                    {selectedLabelIds.length === 0 ? (
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
+                        <span>ℹ️</span>
+                        <span>
+                          <strong>Materi Bebas/Global:</strong> Materi ini akan langsung muncul untuk semua siswa di cabang Anda.
+                        </span>
+                      </p>
+                    ) : (
+                      <div>
+                        <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                          <span>📌</span>
+                          <span>
+                            Materi ini otomatis terdaftar untuk <strong>{selectedLabelIds.length} level</strong> berikut:
+                          </span>
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {selectedLabelIds.map((id) => {
+                            const lbl = labels.find((l) => l.id === id);
+                            if (!lbl) return null;
+                            return (
+                              <span
+                                key={id}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-xs"
+                              >
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10"
+                                  style={{ backgroundColor: lbl.hex_color || "#3b82f6" }}
+                                />
+                                <span>
+                                  {lbl.main_level} - {lbl.sub_level}
+                                </span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
-
-
 
               <div className="flex justify-end gap-2.5 pt-3">
                 <button
@@ -536,6 +691,182 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
         </div>
       )}
 
+      {/* Search & Level Filter Bar */}
+      {activeTab && (
+        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20 space-y-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            {/* Search Input Box */}
+            <div className="relative flex-1">
+              <Icons.search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder={`Cari opsi ${currentCategoryObj?.label.toLowerCase() || ""}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all shadow-2xs"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold w-5 h-5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 flex items-center justify-center transition-all cursor-pointer"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Filter by Level Custom Dropdown */}
+            {activeTab === "materi" && labels.length > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="relative min-w-[170px] sm:w-56">
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterLevelDropdownOpen(!isFilterLevelDropdownOpen)}
+                    className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs font-bold shadow-2xs cursor-pointer text-left transition-all ${
+                      isFilterLevelDropdownOpen
+                        ? "border-sky-500 ring-2 ring-sky-500/20 bg-white dark:bg-slate-900"
+                        : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0 truncate">
+                      {!selectedFilterLabelId ? (
+                        <span className="truncate text-slate-700 dark:text-slate-200 font-semibold">
+                          🎯 Semua Level
+                        </span>
+                      ) : selectedFilterLabelId === "GLOBAL" ? (
+                        <span className="truncate text-slate-700 dark:text-slate-200 font-semibold">
+                          🌐 Materi Bebas (Global)
+                        </span>
+                      ) : (
+                        (() => {
+                          const lbl = labels.find((l) => l.id === selectedFilterLabelId);
+                          return (
+                            <span className="flex items-center gap-2 truncate text-slate-800 dark:text-slate-100 font-bold">
+                              <span
+                                className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs border border-black/10"
+                                style={{ backgroundColor: lbl?.hex_color || "#0ea5e9" }}
+                              />
+                              <span className="truncate">
+                                {lbl ? `${lbl.main_level} - ${lbl.sub_level}` : "Level Terpilih"}
+                              </span>
+                            </span>
+                          );
+                        })()
+                      )}
+                    </div>
+                    <Icons.chevronDown
+                      className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
+                        isFilterLevelDropdownOpen ? "rotate-180 text-sky-500" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {/* Custom Popover List */}
+                  {isFilterLevelDropdownOpen && (
+                    <div className="absolute top-full right-0 sm:left-0 mt-1.5 z-50 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 space-y-1 max-h-64 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+                      {/* Option: Semua Level */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedFilterLabelId("");
+                          setIsFilterLevelDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                          !selectedFilterLabelId
+                            ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300"
+                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        <span>🎯 Semua Level</span>
+                        {!selectedFilterLabelId && <span className="text-sky-600 font-bold">✓</span>}
+                      </button>
+
+                      {/* Option: Materi Bebas (Global) */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedFilterLabelId("GLOBAL");
+                          setIsFilterLevelDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                          selectedFilterLabelId === "GLOBAL"
+                            ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300"
+                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        <span>🌐 Materi Bebas (Global)</span>
+                        {selectedFilterLabelId === "GLOBAL" && <span className="text-sky-600 font-bold">✓</span>}
+                      </button>
+
+                      <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+
+                      {/* List of Levels with Colorful Dots */}
+                      {labels.map((lbl) => {
+                        const isSel = selectedFilterLabelId === lbl.id;
+                        return (
+                          <button
+                            key={lbl.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedFilterLabelId(lbl.id);
+                              setIsFilterLevelDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                              isSel
+                                ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300"
+                                : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            }`}
+                          >
+                            <span className="flex items-center gap-2.5 min-w-0">
+                              <span
+                                className="w-3 h-3 rounded-full shrink-0 shadow-2xs border border-black/10"
+                                style={{ backgroundColor: lbl.hex_color || "#0ea5e9" }}
+                              />
+                              <span className="truncate">
+                                {lbl.main_level} - {lbl.sub_level}
+                              </span>
+                            </span>
+                            {isSel && <span className="text-sky-600 shrink-0 font-bold">✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {(searchQuery || selectedFilterLabelId) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSelectedFilterLabelId("");
+                      setIsFilterLevelDropdownOpen(false);
+                    }}
+                    className="px-2.5 py-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-all cursor-pointer shrink-0"
+                    title="Reset Filter"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Counter & Status Info */}
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-semibold px-0.5">
+            <span>
+              Menampilkan <strong>{searchedAndFilteredTemplates.length}</strong> dari {groupedTemplates.length} Opsi
+            </span>
+            {(searchQuery || selectedFilterLabelId) && (
+              <span className="text-sky-600 dark:text-sky-400 font-bold">
+                Filter Aktif
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Templates List per Tab */}
       <div className="divide-y divide-slate-100 dark:divide-slate-800">
         {!activeTab ? (
@@ -550,20 +881,34 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
               Silakan pilih salah satu kategori di dropdown di atas untuk melihat dan mengelola opsi template penilaian.
             </p>
           </div>
-        ) : filteredTemplates.length === 0 ? (
+        ) : searchedAndFilteredTemplates.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-2xl">
-              {currentCategoryObj?.icon || "📋"}
+              🔍
             </div>
             <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
-              Belum Ada Opsi Khusus untuk {currentCategoryObj?.label}
+              Tidak Ada Opsi Materi Yang Cocok
             </p>
             <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
-              Sistem saat ini menggunakan opsi bawaan standar. Klik tombol &quot;Tambah Opsi Baru&quot; di atas untuk menambahkan atau menyesuaikan opsi pilihan sesuai keinginan Anda.
+              {searchQuery || selectedFilterLabelId
+                ? "Coba ubah kata kunci pencarian atau filter level Anda."
+                : "Klik tombol \"Tambah Opsi Baru\" di atas untuk menambahkan materi baru."}
             </p>
+            {(searchQuery || selectedFilterLabelId) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedFilterLabelId("");
+                }}
+                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 cursor-pointer"
+              >
+                Reset Filter
+              </button>
+            )}
           </div>
         ) : (
-          filteredTemplates.map((tpl, index) => (
+          searchedAndFilteredTemplates.map((tpl: any, index: number) => (
             <div
               key={tpl.id}
               className="p-4 sm:p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
@@ -578,24 +923,30 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                       <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
                         {tpl.title}
                       </h4>
-                      {/* Label Badge */}
-                      {(() => {
-                        const labelObj = Array.isArray(tpl.label) ? tpl.label[0] : tpl.label;
-                        if (!labelObj) return null;
-                        return (
-                          <span
-                            className="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold border"
-                            style={{
-                              backgroundColor: `${labelObj.hex_color}20`,
-                              borderColor: `${labelObj.hex_color}60`,
-                              color: labelObj.hex_color,
-                            }}
-                          >
-                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: labelObj.hex_color }} />
-                            {labelObj.main_level} - {labelObj.sub_level}
-                          </span>
-                        );
-                      })()}
+                      
+                      {/* Multi-Level Badges List */}
+                      {activeTab === "materi" && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {tpl.labels && tpl.labels.length > 0 ? (
+                            tpl.labels.map((labelObj: any) => (
+                              <span
+                                key={labelObj.id}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-2xs"
+                              >
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs border border-black/10"
+                                  style={{ backgroundColor: labelObj.hex_color || "#0ea5e9" }}
+                                />
+                                <span>{labelObj.main_level} - {labelObj.sub_level}</span>
+                              </span>
+                            ))
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                              🌐 Semua Level (Materi Bebas)
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0 -mt-0.5">
                       <button
@@ -606,7 +957,7 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                         <Icons.edit className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => confirmDelete(tpl.id, tpl.title)}
+                        onClick={() => confirmDelete(tpl)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
                         title="Hapus Opsi"
                       >
@@ -614,7 +965,6 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                       </button>
                     </div>
                   </div>
-
                 </div>
               </div>
             </div>

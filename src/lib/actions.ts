@@ -417,6 +417,13 @@ export async function getStudentScheduleMap(
         }
 
         scheduleMap[sId] = daysText;
+
+        // Build day+time format for richer display (e.g. "Senin 10:00, Rabu 14:00")
+        const dayTimeEntries = sortedDays.map((day) => {
+          const t = map.get(day);
+          return t ? `${day} ${t}` : day;
+        });
+        scheduleMap[`${sId}__detail`] = dayTimeEntries.join(", ");
       }
     }
 
@@ -1788,6 +1795,8 @@ export async function updateStudentAccessPin(
     throw new Error("Gagal mengubah PIN Akses: " + error.message);
   }
 
+  revalidatePath("/students");
+  revalidatePath("/portal-ortu/dashboard");
   return true;
 }
 
@@ -1986,6 +1995,7 @@ export async function getParentSessionStudent() {
   return {
     ...student,
     schedule: scheduleMap[student.id] || null,
+    schedule_detail: scheduleMap[`${student.id}__detail`] || null,
     gross_points: gross,
     redeemed_points: redeemed,
     points: net,
@@ -2254,20 +2264,13 @@ export async function deleteTeacher(id: string) {
 export async function getAssessmentTemplates() {
   try {
     const supabaseServer = await createClient();
-    const branchId = await getBranchId();
-    if (!branchId) return [];
 
-    let query = supabaseServer
+    const { data, error } = await supabaseServer
       .from("assessment_templates")
       .select("*, label:labels(id, main_level, sub_level, hex_color)")
       .eq("is_active", true)
       .order("created_at", { ascending: true });
 
-    if (branchId !== "ALL") {
-      query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
-    }
-
-    const { data, error } = await query;
     if (error) {
       console.warn("Notice fetching assessment templates:", error.message);
       return [];
@@ -2285,7 +2288,7 @@ export async function createAssessmentTemplate(formData: FormData) {
   const materi = (formData.get("materi") as string) || "";
   const kegiatan = (formData.get("kegiatan") as string) || "";
   const hasil_belajar = (formData.get("hasil_belajar") as string) || "";
-  const label_id = (formData.get("label_id") as string) || null;
+  const labelIds = formData.getAll("label_id").map((item) => String(item)).filter(Boolean);
 
   if (!title || !title.trim()) {
     throw new Error("Judul / Isi Template wajib diisi.");
@@ -2294,29 +2297,55 @@ export async function createAssessmentTemplate(formData: FormData) {
   const branchId = await getBranchId();
   const supabaseServer = await createClient();
 
-  const insertPayload: any = {
-    branch_id: branchId === "ALL" ? null : branchId,
-    category: category,
-    title: title.trim(),
-    materi: materi.trim(),
-    kegiatan: kegiatan.trim(),
-    hasil_belajar: hasil_belajar.trim(),
-    label_id: label_id || null,
-    is_active: true,
-  };
+  if (labelIds.length > 1) {
+    const insertPayloads = labelIds.map((lId) => ({
+      branch_id: null,
+      category: category,
+      title: title.trim(),
+      materi: materi.trim(),
+      kegiatan: kegiatan.trim(),
+      hasil_belajar: hasil_belajar.trim(),
+      label_id: lId,
+      is_active: true,
+    }));
 
-  let { error } = await supabaseServer.from("assessment_templates").insert(insertPayload);
+    let { error } = await supabaseServer.from("assessment_templates").insert(insertPayloads);
 
-  // Fallback retry jika kolom label_id belum ada di database Supabase
-  if (error && (error.message?.toLowerCase().includes("label_id") || error.code === "PGRST204" || error.code === "42703")) {
-    delete insertPayload.label_id;
-    const retry = await supabaseServer.from("assessment_templates").insert(insertPayload);
-    error = retry.error;
-  }
+    if (error && (error.message?.toLowerCase().includes("label_id") || error.code === "PGRST204" || error.code === "42703")) {
+      const fallbackPayloads = insertPayloads.map(({ label_id, ...rest }) => rest);
+      const retry = await supabaseServer.from("assessment_templates").insert(fallbackPayloads);
+      error = retry.error;
+    }
 
-  if (error) {
-    console.error("Error creating assessment template:", error);
-    throw new Error("Gagal membuat template: " + error.message);
+    if (error) {
+      console.error("Error creating assessment templates in batch:", error);
+      throw new Error("Gagal membuat template: " + error.message);
+    }
+  } else {
+    const singleLabelId = labelIds[0] || null;
+    const insertPayload: any = {
+      branch_id: null,
+      category: category,
+      title: title.trim(),
+      materi: materi.trim(),
+      kegiatan: kegiatan.trim(),
+      hasil_belajar: hasil_belajar.trim(),
+      label_id: singleLabelId,
+      is_active: true,
+    };
+
+    let { error } = await supabaseServer.from("assessment_templates").insert(insertPayload);
+
+    if (error && (error.message?.toLowerCase().includes("label_id") || error.code === "PGRST204" || error.code === "42703")) {
+      delete insertPayload.label_id;
+      const retry = await supabaseServer.from("assessment_templates").insert(insertPayload);
+      error = retry.error;
+    }
+
+    if (error) {
+      console.error("Error creating assessment template:", error);
+      throw new Error("Gagal membuat template: " + error.message);
+    }
   }
 
   revalidatePath("/templates");
@@ -2331,41 +2360,70 @@ export async function updateAssessmentTemplate(id: string, formData: FormData) {
   const materi = (formData.get("materi") as string) || "";
   const kegiatan = (formData.get("kegiatan") as string) || "";
   const hasil_belajar = (formData.get("hasil_belajar") as string) || "";
-  const label_id = (formData.get("label_id") as string) || null;
+  const labelIds = formData.getAll("label_id").map((item) => String(item)).filter(Boolean);
+  const idsToDelete = formData.getAll("ids").map((item) => String(item)).filter(Boolean);
 
   if (!title || !title.trim()) {
     throw new Error("Judul / Isi Template wajib diisi.");
   }
 
+  const branchId = await getBranchId();
   const supabaseServer = await createClient();
 
-  const updatePayload: any = {
-    category: category,
-    title: title.trim(),
-    materi: materi.trim(),
-    kegiatan: kegiatan.trim(),
-    hasil_belajar: hasil_belajar.trim(),
-    label_id: label_id || null,
-  };
+  // Delete all existing grouped records first
+  const targetIds = idsToDelete.length > 0 ? idsToDelete : [id];
+  await supabaseServer.from("assessment_templates").delete().in("id", targetIds);
 
-  let { error } = await supabaseServer
-    .from("assessment_templates")
-    .update(updatePayload)
-    .eq("id", id);
+  // Re-insert template records for selected level IDs
+  if (labelIds.length > 1) {
+    const insertPayloads = labelIds.map((lId) => ({
+      branch_id: null,
+      category: category,
+      title: title.trim(),
+      materi: materi.trim(),
+      kegiatan: kegiatan.trim(),
+      hasil_belajar: hasil_belajar.trim(),
+      label_id: lId,
+      is_active: true,
+    }));
 
-  // Fallback retry jika kolom label_id belum ada di database Supabase
-  if (error && (error.message?.toLowerCase().includes("label_id") || error.code === "PGRST204" || error.code === "42703")) {
-    delete updatePayload.label_id;
-    const retry = await supabaseServer
-      .from("assessment_templates")
-      .update(updatePayload)
-      .eq("id", id);
-    error = retry.error;
-  }
+    let { error } = await supabaseServer.from("assessment_templates").insert(insertPayloads);
 
-  if (error) {
-    console.error("Error updating assessment template:", error);
-    throw new Error("Gagal memperbarui template: " + error.message);
+    if (error && (error.message?.toLowerCase().includes("label_id") || error.code === "PGRST204" || error.code === "42703")) {
+      const fallbackPayloads = insertPayloads.map(({ label_id, ...rest }) => rest);
+      const retry = await supabaseServer.from("assessment_templates").insert(fallbackPayloads);
+      error = retry.error;
+    }
+
+    if (error) {
+      console.error("Error updating assessment templates:", error);
+      throw new Error("Gagal memperbarui template: " + error.message);
+    }
+  } else {
+    const singleLabelId = labelIds[0] || null;
+    const insertPayload: any = {
+      branch_id: null,
+      category: category,
+      title: title.trim(),
+      materi: materi.trim(),
+      kegiatan: kegiatan.trim(),
+      hasil_belajar: hasil_belajar.trim(),
+      label_id: singleLabelId,
+      is_active: true,
+    };
+
+    let { error } = await supabaseServer.from("assessment_templates").insert(insertPayload);
+
+    if (error && (error.message?.toLowerCase().includes("label_id") || error.code === "PGRST204" || error.code === "42703")) {
+      delete insertPayload.label_id;
+      const retry = await supabaseServer.from("assessment_templates").insert(insertPayload);
+      error = retry.error;
+    }
+
+    if (error) {
+      console.error("Error updating assessment template:", error);
+      throw new Error("Gagal memperbarui template: " + error.message);
+    }
   }
 
   revalidatePath("/templates");
@@ -2374,12 +2432,14 @@ export async function updateAssessmentTemplate(id: string, formData: FormData) {
   return true;
 }
 
-export async function deleteAssessmentTemplate(id: string) {
+export async function deleteAssessmentTemplate(idOrIds: string | string[]) {
   const supabaseServer = await createClient();
+  const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
+
   const { error } = await supabaseServer
     .from("assessment_templates")
     .delete()
-    .eq("id", id);
+    .in("id", ids);
 
   if (error) {
     console.error("Error deleting assessment template:", error);
@@ -2528,6 +2588,107 @@ export async function updateStudentPhotoUrl(studentId: string, photoUrl: string)
     return { success: false, error: e.message || "Gagal memperbarui foto profil" };
   }
 }
+
+// Global in-memory cache fallback for module lock passwords
+let memoryLockPasswords: Record<string, string> = {
+  "/points": "123",
+  "/worksheets": "123",
+  "/teachers": "123",
+  "/templates": "123",
+};
+
+export async function getModuleLockPasswords(): Promise<Record<string, string>> {
+  const result: Record<string, string> = {
+    ...memoryLockPasswords,
+  };
+
+  // 1. Try reading from cookie fallback
+  try {
+    const cookieStore = await cookies();
+    const cookieVal = cookieStore.get("module_lock_passwords")?.value;
+    if (cookieVal) {
+      const parsed = JSON.parse(cookieVal);
+      Object.assign(result, parsed);
+      Object.assign(memoryLockPasswords, parsed);
+    }
+  } catch {
+    // Ignore cookie error
+  }
+
+  // 2. Try fetching from Supabase system_settings table if present
+  try {
+    const supabaseServer = await createClient();
+    const { data, error } = await supabaseServer
+      .from("system_settings")
+      .select("key, value")
+      .like("key", "lock_password_%");
+
+    if (!error && data && data.length > 0) {
+      data.forEach((item: { key: string; value: string }) => {
+        if (item.key === "lock_password_points") result["/points"] = item.value;
+        if (item.key === "lock_password_worksheets") result["/worksheets"] = item.value;
+        if (item.key === "lock_password_teachers") result["/teachers"] = item.value;
+        if (item.key === "lock_password_templates") result["/templates"] = item.value;
+      });
+      Object.assign(memoryLockPasswords, result);
+    }
+  } catch {
+    // Graceful fallback when table doesn't exist
+  }
+
+  return result;
+}
+
+export async function updateModuleLockPassword(routeKey: string, newPassword: string) {
+  const cleanPass = newPassword ? newPassword.trim() : "";
+  memoryLockPasswords[routeKey] = cleanPass;
+
+  // 1. Store in server cookie fallback
+  try {
+    const cookieStore = await cookies();
+    let currentCookies: Record<string, string> = {};
+    const rawCookie = cookieStore.get("module_lock_passwords")?.value;
+    if (rawCookie) {
+      try {
+        currentCookies = JSON.parse(rawCookie);
+      } catch {}
+    }
+    currentCookies[routeKey] = cleanPass;
+    cookieStore.set("module_lock_passwords", JSON.stringify(currentCookies), {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+      httpOnly: false,
+    });
+  } catch (e) {
+    console.error("Cookie write error:", e);
+  }
+
+  // 2. Try updating database system_settings table if available
+  try {
+    const dbKeyMap: Record<string, string> = {
+      "/points": "lock_password_points",
+      "/worksheets": "lock_password_worksheets",
+      "/teachers": "lock_password_teachers",
+      "/templates": "lock_password_templates",
+    };
+
+    const keyName = dbKeyMap[routeKey] || `lock_password_${routeKey.replace('/', '')}`;
+    const supabaseServer = await createClient();
+
+    const { error } = await supabaseServer
+      .from("system_settings")
+      .upsert({ key: keyName, value: cleanPass, updated_at: new Date().toISOString() }, { onConflict: "key" });
+
+    if (error) {
+      console.warn("system_settings table unavailable, saved to cookie/memory fallback:", error.message);
+    }
+  } catch (e: any) {
+    console.warn("DB error fallback:", e?.message);
+  }
+
+  return true;
+}
+
 
 
 

@@ -2,6 +2,7 @@ import { Icons } from "@/components/ui/icons";
 import { getDashboardStats, getTodaySchedules, getCurrentUserRole, getBranches, getBranchId, getClasses, getActiveBranchName } from "@/lib/actions";
 import { TodaySchedule } from "@/components/features/dashboard/TodaySchedule";
 import { QuickAccessLinks } from "@/components/features/dashboard/QuickAccessLinks";
+import { ResetDataSection } from "@/components/features/dashboard/ResetDataSection";
 import { BranchSelector } from "@/components/features/auth/BranchSelector";
 import { DashboardStatsPanel } from "@/components/features/dashboard/DashboardStatsPanel";
 import { NotificationPermissionBanner } from "@/components/features/notifications/NotificationPermissionBanner";
@@ -166,8 +167,10 @@ export default async function DashboardPage() {
             <h3 className="text-lg font-bold leading-6 text-slate-900 dark:text-white mb-4">
               Akses Cepat
             </h3>
-            <QuickAccessLinks />
+            <QuickAccessLinks isSuperadmin={isSuperadmin} />
           </div>
+
+          <ResetDataSection isSuperadmin={isSuperadmin} />
         </>
       )}
     </div>

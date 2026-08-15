@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { StudentScheduleCard } from "./StudentScheduleCard";
 import { StudentWorksheetTable } from "@/components/features/worksheets/StudentWorksheetTable";
-import { clearParentSession, updateStudentPhotoUrl } from "@/lib/actions";
+import { clearParentSession, updateStudentPhotoUrl, updateStudentAccessPin } from "@/lib/actions";
 import { formatShortDate, calculateStudentPoints } from "@/lib/dateUtils";
 import { getGDriveDirectLink, getGDrivePreviewLink } from "@/lib/gdriveUtils";
 
@@ -29,6 +29,36 @@ export function ParentDashboardClient({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
 
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Deterministic DOB & Age calculation (Prevents SSR / Client hydration mismatch)
+  const dobInfo = useMemo(() => {
+    if (!student?.date_of_birth) return null;
+    try {
+      const parts = String(student.date_of_birth).split("T")[0].split("-");
+      if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const monthsIndo = [
+          "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+          "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+        ];
+        const formatted = `${day} ${monthsIndo[month] || ""} ${year}`;
+        
+        const today = new Date();
+        let age = today.getFullYear() - year;
+        const mDiff = today.getMonth() - month;
+        if (mDiff < 0 || (mDiff === 0 && today.getDate() < day)) age--;
+        return { formatted, age: age > 0 ? age : 0 };
+      }
+    } catch (e) {}
+    return null;
+  }, [student?.date_of_birth]);
+
   // Date Range Filtering for Worksheets & PDF Download
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -47,6 +77,47 @@ export function ParentDashboardClient({
   const [cropOffset, setCropOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Change PIN modal state
+  const [showChangePinModal, setShowChangePinModal] = useState(false);
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [isSubmittingPin, setIsSubmittingPin] = useState(false);
+  const [pinErrorMsg, setPinErrorMsg] = useState("");
+  const [pinSuccessMsg, setPinSuccessMsg] = useState("");
+  const [showPinText, setShowPinText] = useState(false);
+
+  const handleChangePin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinErrorMsg("");
+    setPinSuccessMsg("");
+
+    const cleanNew = newPin.trim();
+    if (!cleanNew || cleanNew.length < 4) {
+      setPinErrorMsg("PIN Akses minimal 4 karakter / angka.");
+      return;
+    }
+    if (cleanNew !== confirmPin.trim()) {
+      setPinErrorMsg("Konfirmasi PIN tidak sesuai dengan PIN baru.");
+      return;
+    }
+
+    setIsSubmittingPin(true);
+    try {
+      await updateStudentAccessPin(student.id, cleanNew);
+      setPinSuccessMsg("PIN Akses berhasil diperbarui! Admin juga telah mendapatkan PIN terbaru ini.");
+      setTimeout(() => {
+        setShowChangePinModal(false);
+        setNewPin("");
+        setConfirmPin("");
+        setPinSuccessMsg("");
+      }, 1500);
+    } catch (err: any) {
+      setPinErrorMsg(err?.message || "Gagal memperbarui PIN Akses.");
+    } finally {
+      setIsSubmittingPin(false);
+    }
+  };
 
   // Sync photo with localStorage on mount & when student changes
   useEffect(() => {
@@ -373,10 +444,10 @@ export function ParentDashboardClient({
       <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 space-y-6">
         
         {/* Student Profile Card (Clean Brand Blue Banner) */}
-        <div className="rounded-3xl bg-brand-600 dark:bg-brand-700 border border-brand-500/40 p-5 sm:p-7 text-white shadow-xl space-y-5">
-          {/* Top Profile Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5 sm:gap-4">
+        <div className="rounded-3xl bg-brand-600 dark:bg-brand-700 border border-brand-500/40 p-5 sm:p-7 text-white shadow-xl space-y-4">
+
+          {/* Top: Photo + Name + Nickname + Branch */}
+          <div className="flex items-center gap-3.5 sm:gap-5">
               {/* Hidden File Input */}
               <input
                 type="file"
@@ -431,12 +502,11 @@ export function ParentDashboardClient({
                 )}
               </button>
 
-              <div className="space-y-1">
-                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight truncate">
                   {student.name}
                 </h2>
-
-                <div className="flex items-center gap-2 flex-wrap text-xs">
+                <div className="flex items-center gap-1.5 flex-wrap text-xs mt-0.5">
                   {student.nickname && (
                     <span className="font-medium text-brand-100">
                       Panggilan: <strong className="text-white font-bold">&quot;{student.nickname}&quot;</strong>
@@ -444,77 +514,157 @@ export function ParentDashboardClient({
                   )}
                   {student.branch?.name && (
                     <>
-                      <span className="text-brand-300 hidden sm:inline">•</span>
-                      <span className="font-semibold text-brand-100">📍 Cabang {student.branch.name}</span>
+                      {student.nickname && <span className="text-brand-300/60">•</span>}
+                      <span className="font-semibold text-brand-100">📍 {student.branch.name}</span>
                     </>
                   )}
                 </div>
               </div>
-            </div>
-
-            {/* Badges Stack: Level & Status */}
-            <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-white/20">
-              {/* PROMINENT LEVEL PILL (Sangat Jelas & Rapi) */}
-              <div className="bg-white text-slate-900 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md border border-white flex items-center gap-2">
-                <span
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: student.label?.hex_color || '#16a34a' }}
-                />
-                <span className="text-slate-500 font-bold text-[11px] uppercase tracking-wider">Level:</span>
-                <span className="font-black text-brand-700 uppercase tracking-wide">
-                  {student.label ? `${student.label.main_level} ${student.label.sub_level}` : "Belum Diatur"}
-                </span>
-              </div>
-
-              {/* STATUS BADGE */}
-              <span className="px-3 py-1.5 rounded-xl text-xs font-extrabold text-emerald-950 bg-emerald-300 border border-emerald-200 shadow-2xs">
-                {student.status === 'REGISTERED' ? 'Siswa Reguler' : student.status === 'CG' ? 'Coba Gratis' : 'Nonaktif'}
-              </span>
-            </div>
           </div>
 
-          {/* HIGHLIGHTED POINTS SHOWCASE CARD (TONJOLKAN POIN SISWA - HIGH CONTRAST WHITE BOX) */}
-          <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md border border-white/60 dark:border-slate-800">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center text-2xl font-black shrink-0 shadow-sm border border-amber-300">
+          {/* Middle: Info Grid — DOB, Usia, Jadwal */}
+          {(student.date_of_birth || student.schedule_detail) && (
+            <div className="bg-white rounded-2xl p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 shadow-md border border-white divide-y divide-slate-100 sm:divide-y-0 sm:divide-x sm:divide-slate-100">
+              {student.date_of_birth && dobInfo && (
+                <div className="flex items-start gap-2.5 text-[12px] pb-2 sm:pb-0">
+                  <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center text-base shrink-0 mt-0.5">
+                    🎂
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Tanggal Lahir</span>
+                    <span className="font-bold text-slate-800 leading-snug block" suppressHydrationWarning>
+                      {dobInfo.formatted}
+                      <span className="text-slate-400 font-semibold ml-1.5 inline-block" suppressHydrationWarning>
+                        ({dobInfo.age} thn)
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              )}
+              {student.schedule_detail && (
+                <div className="flex items-start gap-2.5 text-[12px] pt-2.5 sm:pt-0 sm:pl-3">
+                  <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center text-base shrink-0 mt-0.5">
+                    📅
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      Jadwal Kelas
+                    </span>
+                    <div className="space-y-1.5">
+                      {student.schedule_detail.split(", ").map((item: string, idx: number) => {
+                        const spaceIdx = item.indexOf(" ");
+                        const dayName = spaceIdx !== -1 ? item.substring(0, spaceIdx) : item;
+                        const timeStr = spaceIdx !== -1 ? item.substring(spaceIdx + 1) : "";
+                        return (
+                          <div key={idx} className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                            <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" />
+                            <span className="w-16 shrink-0 text-slate-700">{dayName}</span>
+                            {timeStr && (
+                              <span className="text-[11px] font-bold text-brand-700 bg-brand-50/80 px-2 py-0.5 rounded-md border border-brand-100/80 font-mono tracking-tight">
+                                {timeStr}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Bottom: Level Badge + Status Badge */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* PROMINENT LEVEL PILL */}
+            <div className="bg-white text-slate-900 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md border border-white flex items-center gap-2">
+              <span
+                className="w-2.5 h-2.5 rounded-full shrink-0"
+                style={{ backgroundColor: student.label?.hex_color || '#16a34a' }}
+              />
+              <span className="text-slate-500 font-bold text-[11px] uppercase tracking-wider">Level:</span>
+              <span className="font-black text-brand-700 uppercase tracking-wide">
+                {student.label ? `${student.label.main_level} ${student.label.sub_level}` : "Belum Diatur"}
+              </span>
+            </div>
+
+            {/* STATUS BADGE */}
+            <span className="bg-white text-emerald-700 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md border border-white inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+              <span>
+                {student.status === 'REGISTERED' ? 'Siswa Reguler' : student.status === 'CG' ? 'Coba Gratis' : 'Nonaktif'}
+              </span>
+            </span>
+          </div>
+
+          {/* Points Display — Inside Card with White Background */}
+          <div className="bg-white rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-md border border-white text-slate-900">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-xl font-black shrink-0 shadow-sm border border-amber-300">
                 ⭐
               </div>
               <div>
-                <span className="block text-[11px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                <span className="block text-[10px] font-extrabold text-amber-600 uppercase tracking-wider">
                   Poin Kehadiran Siswa
                 </span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                     {netPoints}
                   </span>
-                  <span className="text-sm font-extrabold text-slate-600 dark:text-slate-300">
-                    Poin Tersedia
+                  <span className="text-sm font-extrabold text-slate-600">
+                    Poin
                   </span>
                 </div>
               </div>
             </div>
-
-            <div className="flex items-center gap-2 self-end sm:self-center">
-              {(student.redeemed_points || 0) > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("points")}
-                  className="text-[11px] font-bold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-                >
-                  Telah Ditukar: <strong className="text-rose-600 dark:text-rose-400 font-extrabold">{student.redeemed_points} Poin</strong>
-                </button>
-              )}
-            </div>
+            {(student.redeemed_points || 0) > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("points")}
+                className="text-[10px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-xl border border-slate-200 transition-colors cursor-pointer shrink-0"
+              >
+                Ditukar: <strong className="text-rose-600 font-extrabold">{student.redeemed_points}</strong>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Poin Kehadiran Info Box */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 flex items-start gap-3 shadow-xs">
-          <div className="text-lg shrink-0">💡</div>
-          <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+        {/* Info Penting — Red Card */}
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-start gap-3 shadow-xs">
+          <div className="text-lg shrink-0">⚠️</div>
+          <div className="text-xs text-red-700 dark:text-red-300 leading-relaxed">
             <strong>Info Poin Kehadiran:</strong> Siswa mendapatkan <strong>+1 Poin</strong> setiap kali masuk kelas. Hadiah dapat ditukarkan langsung melalui Admin/Tutor di tempat les.
           </div>
         </div>
+
+        {/* Ganti PIN Akses — Standalone Card */}
+        <button
+          type="button"
+          onClick={() => {
+            setShowChangePinModal(true);
+            setNewPin("");
+            setConfirmPin("");
+            setPinErrorMsg("");
+            setPinSuccessMsg("");
+            setShowPinText(false);
+          }}
+          className="w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800/80 active:scale-[0.98] transition-all cursor-pointer group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-lg shrink-0 group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20 transition-colors">
+            🔑
+          </div>
+          <div className="flex-1 text-left">
+            <span className="block text-sm font-bold text-slate-900 dark:text-white">
+              Ganti PIN Akses
+            </span>
+            <span className="block text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              Ubah PIN login Portal Orang Tua. Perubahan langsung berlaku.
+            </span>
+          </div>
+          <svg className="w-5 h-5 text-slate-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
 
         {/* Tab Navigation (Segmented Control) */}
         <div className="grid grid-cols-3 gap-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 p-1.5 shadow-xs">
@@ -718,7 +868,7 @@ export function ParentDashboardClient({
                 </div>
                 <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl p-3">
                   <div className="text-xl sm:text-2xl font-black text-rose-700 dark:text-rose-300">
-                    -{redeemedPoints}
+                    -{Math.max(0, redeemedPoints)}
                   </div>
                   <div className="text-[10px] sm:text-xs text-rose-800 dark:text-rose-400 font-semibold mt-0.5">
                     Sudah Ditukar
@@ -735,41 +885,58 @@ export function ParentDashboardClient({
               </div>
             </div>
 
-            {/* Redemption List */}
+            {/* Redemption & Bonus List */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
               <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
                 <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                  📜 Catatan Riwayat Penukaran Hadiah
+                  📜 Catatan Riwayat Penukaran Hadiah & Bonus Poin
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  Daftar pemotongan poin saat penukaran barang fisik di Admin
+                  Daftar pemotongan poin (hadiah) dan penambahan bonus poin dari Admin
                 </p>
               </div>
 
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {redemptions.length === 0 ? (
                   <div className="py-12 text-center text-xs sm:text-sm text-slate-400 p-4">
-                    🎁 Belum ada riwayat penukaran poin. Orang tua dapat menukarkan poin siswa di cabang/admin tempat les.
+                    🎁 Belum ada riwayat penukaran atau bonus poin. Orang tua dapat menukarkan poin siswa di cabang/admin tempat les.
                   </div>
                 ) : (
-                  redemptions.map((item) => (
-                    <div key={item.id} className="p-4 flex items-center justify-between gap-3">
-                      <div>
-                        <h5 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
-                          {item.reward_note || "Penukaran Hadiah"}
-                        </h5>
-                        <span className="text-[10px] text-slate-400 block mt-0.5">
-                          Tanggal: {item.created_at ? formatShortDate(item.created_at) : "-"}
-                        </span>
-                      </div>
+                  redemptions.map((item) => {
+                    const isBonus = item.points_deducted < 0;
+                    const pointsAmount = Math.abs(item.points_deducted);
+                    return (
+                      <div key={item.id} className="p-4 flex items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h5 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
+                              {item.reward_note || (isBonus ? "Bonus Poin Manual" : "Penukaran Hadiah")}
+                            </h5>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              isBonus
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+                            }`}>
+                              {isBonus ? "Bonus Poin" : "Tukar Hadiah"}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 block mt-0.5">
+                            Tanggal: {item.created_at ? formatShortDate(item.created_at) : "-"}
+                          </span>
+                        </div>
 
-                      <div className="shrink-0">
-                        <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 px-3 py-1 rounded-xl text-xs font-black border border-rose-200 dark:border-rose-800">
-                          -{item.points_deducted} Poin
-                        </span>
+                        <div className="shrink-0">
+                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-black border ${
+                            isBonus
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                              : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800"
+                          }`}>
+                            {isBonus ? `+${pointsAmount}` : `-${pointsAmount}`} Poin
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -949,6 +1116,128 @@ export function ParentDashboardClient({
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Change PIN Modal ── */}
+      {showChangePinModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => !isSubmittingPin && setShowChangePinModal(false)}
+          />
+          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 pt-6 pb-3 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center mx-auto mb-3 text-2xl">
+                🔑
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                Ganti PIN Akses
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                PIN baru akan langsung berlaku untuk login Portal Orang Tua dan juga terupdate di sisi Admin.
+              </p>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleChangePin} className="px-6 pb-2 space-y-3">
+              {pinErrorMsg && (
+                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-3 rounded-xl text-xs font-semibold flex items-start gap-2 animate-in fade-in duration-200">
+                  <span className="shrink-0 mt-0.5">⚠️</span>
+                  <span>{pinErrorMsg}</span>
+                </div>
+              )}
+              {pinSuccessMsg && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 p-3 rounded-xl text-xs font-semibold flex items-start gap-2 animate-in fade-in duration-200">
+                  <span className="shrink-0 mt-0.5">✅</span>
+                  <span>{pinSuccessMsg}</span>
+                </div>
+              )}
+
+              {/* New PIN */}
+              <div>
+                <label htmlFor="newPin" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                  PIN Baru
+                </label>
+                <div className="relative">
+                  <input
+                    id="newPin"
+                    type={showPinText ? "text" : "password"}
+                    inputMode="numeric"
+                    autoComplete="new-password"
+                    maxLength={10}
+                    required
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value)}
+                    className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3.5 pr-10 py-2.5 text-sm font-bold tracking-widest text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none placeholder:text-slate-400 placeholder:font-normal placeholder:tracking-normal transition-all"
+                    placeholder="Masukkan PIN baru (min. 4)"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPinText(!showPinText)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 transition-colors rounded-lg"
+                  >
+                    {showPinText ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm PIN */}
+              <div>
+                <label htmlFor="confirmPin" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                  Konfirmasi PIN Baru
+                </label>
+                <input
+                  id="confirmPin"
+                  type={showPinText ? "text" : "password"}
+                  inputMode="numeric"
+                  autoComplete="new-password"
+                  maxLength={10}
+                  required
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value)}
+                  className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3.5 py-2.5 text-sm font-bold tracking-widest text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none placeholder:text-slate-400 placeholder:font-normal placeholder:tracking-normal transition-all"
+                  placeholder="Ulangi PIN baru"
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-2.5 pt-2 pb-4">
+                <button
+                  type="button"
+                  disabled={isSubmittingPin}
+                  onClick={() => setShowChangePinModal(false)}
+                  className="flex-1 py-2.5 px-4 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[44px]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingPin}
+                  className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-500/20 transition-all disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2"
+                >
+                  {isSubmittingPin ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>🔑 Simpan PIN Baru</>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { updateStudentLabel } from "@/lib/actions";
@@ -34,6 +35,7 @@ export function ChangeLabelModal({
   labels,
   onSuccess,
 }: ChangeLabelModalProps) {
+  const router = useRouter();
   const [selectedLabelId, setSelectedLabelId] = useState<string>("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -239,8 +241,8 @@ export function ChangeLabelModal({
               )}
             </div>
 
-            {/* Quick Action: Fill Progress Report */}
-            <div className="pt-1">
+            {/* Quick Actions: Fill & View Progress Report */}
+            <div className="pt-1 space-y-2">
               <button
                 type="button"
                 onClick={handleOpenWorksheet}
@@ -248,6 +250,18 @@ export function ChangeLabelModal({
               >
                 <Icons.edit className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <span>Isi Laporan Perkembangan Siswa</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  router.push(`/worksheets?student_id=${student.id}`);
+                  onClose();
+                }}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 dark:hover:bg-sky-900/50 border border-sky-200 dark:border-sky-800/60 text-sky-800 dark:text-sky-300 font-bold text-xs transition-all cursor-pointer shadow-xs min-h-[44px]"
+              >
+                <Icons.fileText className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                <span>Lihat Perkembangan Siswa</span>
               </button>
             </div>
 

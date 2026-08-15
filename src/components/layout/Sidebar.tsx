@@ -7,8 +7,7 @@ import { Icons } from "../ui/icons";
 import { useSidebar } from "@/lib/SidebarContext";
 import { useEffect, useState, useRef } from "react";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
-import { resetAllDatabaseData } from "@/lib/actions";
-import { usePWAUpdate } from "@/hooks/usePWAUpdate";
+import { getModuleLockPasswords, updateModuleLockPassword } from "@/lib/actions";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Icons.home },
@@ -36,14 +35,6 @@ export function Sidebar({
   const pathname = usePathname();
   const { isOpen, close } = useSidebar();
   const [isNavigating, setIsNavigating] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
-  const { updateAvailable, isUpdating, applyUpdate } = usePWAUpdate();
-
-  // Reset Modal state: 'closed' | 'confirm' | 'password' | 'success' | 'error'
-  const [resetModal, setResetModal] = useState<'closed' | 'confirm' | 'password' | 'success' | 'error'>('closed');
-  const [resetPassword, setResetPassword] = useState("");
-  const [resetError, setResetError] = useState("");
-  const passwordInputRef = useRef<HTMLInputElement>(null);
 
   // Development Lock Modal State (for routes still in development)
   const lockedRoutes: Record<string, { label: string; sessionKey: string }> = {
@@ -58,51 +49,68 @@ export function Sidebar({
   const [devLockError, setDevLockError] = useState("");
   const devLockPassInputRef = useRef<HTMLInputElement>(null);
 
-  const openResetModal = () => {
-    setResetModal('confirm');
-    setResetPassword("");
-    setResetError("");
-  };
+  // Dynamic Module Lock Passwords state
+  const [lockPasswords, setLockPasswords] = useState<Record<string, string>>({
+    "/points": "123",
+    "/worksheets": "123",
+    "/teachers": "123",
+    "/templates": "123",
+  });
 
-  const closeResetModal = () => {
-    setResetModal('closed');
-    setResetPassword("");
-    setResetError("");
-  };
+  // Super Admin Password Management Modal
+  const [showSuperAdminModal, setShowSuperAdminModal] = useState(false);
+  const [superAdminPasswords, setSuperAdminPasswords] = useState<Record<string, string>>({
+    "/points": "123",
+    "/worksheets": "123",
+    "/teachers": "123",
+    "/templates": "123",
+  });
+  const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
+  const [superAdminSuccessMsg, setSuperAdminSuccessMsg] = useState("");
+  const [superAdminErrorMsg, setSuperAdminErrorMsg] = useState("");
+  const [isSavingAll, setIsSavingAll] = useState(false);
 
-  const handleConfirmStep = () => {
-    setResetModal('password');
-    setTimeout(() => passwordInputRef.current?.focus(), 100);
-  };
-
-  const handlePasswordSubmit = async () => {
-    if (resetPassword !== "123") {
-      setResetError("Password salah! Silakan coba lagi.");
-      return;
-    }
-
-    setIsResetting(true);
-    setResetModal('closed');
+  const handleSaveAllPasswords = async () => {
+    setSuperAdminSuccessMsg("");
+    setSuperAdminErrorMsg("");
+    setIsSavingAll(true);
     try {
-      await resetAllDatabaseData();
-      setResetModal('success');
-    } catch (error: any) {
-      setResetError(error.message);
-      setResetModal('error');
+      const routesToSave = ["/points", "/worksheets", "/teachers", "/templates"];
+      const updatedPasswords: Record<string, string> = { ...lockPasswords };
+
+      for (const route of routesToSave) {
+        const val = superAdminPasswords[route] ?? lockPasswords[route] ?? "123";
+        await updateModuleLockPassword(route, val);
+        updatedPasswords[route] = val;
+        if (typeof window !== "undefined" && lockedRoutes[route]) {
+          sessionStorage.removeItem(lockedRoutes[route].sessionKey);
+        }
+      }
+
+      setLockPasswords(updatedPasswords);
+      setSuperAdminPasswords(updatedPasswords);
+      setSuperAdminSuccessMsg("Semua password modul berhasil disimpan dan sesi akses di-reset!");
+    } catch (err: any) {
+      setSuperAdminErrorMsg(err?.message || "Gagal menyimpan password.");
     } finally {
-      setIsResetting(false);
+      setIsSavingAll(false);
     }
   };
 
-  const handleSuccessDismiss = () => {
-    closeResetModal();
-    window.location.href = "/dashboard";
-  };
+  useEffect(() => {
+    getModuleLockPasswords().then((passwords) => {
+      if (passwords) {
+        setLockPasswords(passwords);
+        setSuperAdminPasswords(passwords);
+      }
+    });
+  }, []);
 
   // Nav click protection for locked (in-development) routes
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     const lockInfo = lockedRoutes[href];
     if (lockInfo) {
+      if (lockPasswords[href] === "") return;
       const isUnlocked = typeof window !== "undefined" && sessionStorage.getItem(lockInfo.sessionKey) === "true";
       if (!isUnlocked) {
         e.preventDefault();
@@ -116,26 +124,41 @@ export function Sidebar({
     }
   };
 
-  const handleUnlockDevRoute = (e: React.FormEvent) => {
+  const handleUnlockDevRoute = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!devLockTarget) return;
     const lockInfo = lockedRoutes[devLockTarget];
     if (!lockInfo) return;
 
-    if (devLockPassword === "123") {
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem(lockInfo.sessionKey, "true");
+    try {
+      const passwords = await getModuleLockPasswords();
+      const expectedPassword = passwords[devLockTarget] ?? "123";
+      if (devLockPassword === expectedPassword) {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(lockInfo.sessionKey, "true");
+        }
+        setShowDevLockModal(false);
+        window.location.href = devLockTarget;
+      } else {
+        setDevLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
       }
-      setShowDevLockModal(false);
-      window.location.href = devLockTarget;
-    } else {
-      setDevLockError("Password salah! Hubungi pihak developer.");
+    } catch {
+      const fallbackPassword = lockPasswords[devLockTarget] ?? "123";
+      if (devLockPassword === fallbackPassword) {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(lockInfo.sessionKey, "true");
+        }
+        setShowDevLockModal(false);
+        window.location.href = devLockTarget;
+      } else {
+        setDevLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
+      }
     }
   };
 
   return (
     <>
-      {(isNavigating || isResetting) && <LoadingSpinner usePortal={true} />}
+      {isNavigating && <LoadingSpinner usePortal={true} />}
 
       {/* Development Lock Protection Modal */}
       {showDevLockModal && devLockTarget && lockedRoutes[devLockTarget] && (
@@ -194,137 +217,129 @@ export function Sidebar({
         </div>
       )}
 
-      {/* Reset Modal Overlay */}
-      {resetModal !== 'closed' && (
+      {/* Super Admin Module Lock Settings Modal */}
+      {showSuperAdminModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div 
+          <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
-            onClick={resetModal !== 'success' && resetModal !== 'error' ? closeResetModal : undefined}
+            onClick={() => !isSavingAll && setShowSuperAdminModal(false)}
           />
+          <div className="relative z-10 w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shadow-xs">
+                  🛡️
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                    Khusus Super Admin
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    Atur Password Akses Modul Terkunci
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSuperAdminModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
 
-          {/* Modal Card */}
-          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            
-            {/* Confirm Step */}
-            {resetModal === 'confirm' && (
-              <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-                  <Icons.trash className="w-6 h-6 text-red-600 dark:text-red-400" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center">
-                  Reset Semua Data?
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-2 leading-relaxed">
-                  Tindakan ini akan menghapus <strong className="text-slate-700 dark:text-slate-300">semua data</strong> (booking, jadwal, siswa, ruangan, dan label) di seluruh cabang secara permanen.
-                </p>
-                <div className="flex gap-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={closeResetModal}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleConfirmStep}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
-                  >
-                    Ya, Lanjutkan
-                  </button>
-                </div>
+            {superAdminSuccessMsg && (
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-600 dark:text-emerald-300 animate-in fade-in">
+                ✅ {superAdminSuccessMsg}
               </div>
             )}
 
-            {/* Password Step */}
-            {resetModal === 'password' && (
-              <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-amber-600 dark:text-amber-400"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center">
-                  Konfirmasi Password
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-2">
-                  Masukkan password untuk mengkonfirmasi reset data.
-                </p>
-                <div className="mt-4">
-                  <input
-                    ref={passwordInputRef}
-                    type="password"
-                    value={resetPassword}
-                    onChange={(e) => { setResetPassword(e.target.value); setResetError(""); }}
-                    onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-                    placeholder="Masukkan password..."
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  />
-                  {resetError && (
-                    <p className="text-xs text-red-500 mt-2 text-center font-medium">{resetError}</p>
-                  )}
-                </div>
-                <div className="flex gap-3 mt-5">
-                  <button
-                    type="button"
-                    onClick={closeResetModal}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handlePasswordSubmit}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
-                  >
-                    Reset Data
-                  </button>
-                </div>
+            {superAdminErrorMsg && (
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-xs font-bold text-red-600 dark:text-red-300 animate-in fade-in">
+                ⚠️ {superAdminErrorMsg}
               </div>
             )}
 
-            {/* Success Step */}
-            {resetModal === 'success' && (
-              <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center mx-auto mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-green-600 dark:text-green-400"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center">
-                  Berhasil!
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-2">
-                  Seluruh data telah berhasil direset. Anda akan dialihkan ke Dashboard.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleSuccessDismiss}
-                  className="w-full mt-5 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 transition-colors"
-                >
-                  Ke Dashboard
-                </button>
-              </div>
-            )}
+            <div className="space-y-3.5 max-h-[60vh] overflow-y-auto pr-1">
+              {[
+                { route: "/points", name: "Poin Kehadiran", icon: "⭐", desc: "Password akses halaman Poin Kehadiran Siswa" },
+                { route: "/worksheets", name: "Laporan Perkembangan", icon: "📄", desc: "Password akses halaman Laporan Perkembangan" },
+                { route: "/teachers", name: "Kelola Guru", icon: "👨‍🏫", desc: "Password akses halaman Kelola Data Guru" },
+                { route: "/templates", name: "Template Penilaian", icon: "📋", desc: "Password akses halaman Template Penilaian" },
+              ].map((item) => {
+                const currentVal = superAdminPasswords[item.route] ?? lockPasswords[item.route] ?? "123";
+                const isShowPass = !!showPasswordMap[item.route];
 
-            {/* Error Step */}
-            {resetModal === 'error' && (
-              <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-                  <Icons.close className="w-6 h-6 text-red-600 dark:text-red-400" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center">
-                  Gagal Mereset Data
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-2">
-                  {resetError || "Terjadi kesalahan saat mereset data."}
-                </p>
-                <button
-                  type="button"
-                  onClick={closeResetModal}
-                  className="w-full mt-5 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                >
-                  Tutup
-                </button>
-              </div>
-            )}
+                return (
+                  <div
+                    key={item.route}
+                    className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 space-y-2.5"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-base sm:text-lg">{item.icon}</span>
+                        <div>
+                          <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                            {item.name}
+                          </h4>
+                          <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
+                            {item.desc}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                        {item.route}
+                      </span>
+                    </div>
+
+                    <div className="relative w-full">
+                      <input
+                        type={isShowPass ? "text" : "password"}
+                        value={currentVal}
+                        onChange={(e) =>
+                          setSuperAdminPasswords({
+                            ...superAdminPasswords,
+                            [item.route]: e.target.value,
+                          })
+                        }
+                        className="w-full px-3.5 py-2 text-xs font-mono font-bold rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 pr-16"
+                        placeholder="Kosongkan jika tidak ingin dikunci..."
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowPasswordMap({
+                            ...showPasswordMap,
+                            [item.route]: !isShowPass,
+                          })
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      >
+                        {isShowPass ? "Sembunyikan" : "Lihat"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowSuperAdminModal(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isSavingAll}
+                onClick={handleSaveAllPasswords}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 active:scale-95 transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+              >
+                {isSavingAll ? "Menyimpan..." : "Simpan Semua Password"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -399,7 +414,7 @@ export function Sidebar({
                   }`}
                 />
                 <span className="flex-1">{item.name}</span>
-                {lockedRoutes[item.href] && (
+                {lockedRoutes[item.href] && (lockPasswords[item.href] ?? "123") !== "" && (
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-300/40">
                     🔒
                   </span>
@@ -407,69 +422,35 @@ export function Sidebar({
               </a>
             );
           })}
+
+          {/* Khusus Super Admin Section */}
+          {role === 'SUPERADMIN' && (
+            <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 space-y-1">
+              <label className="text-[11px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2 block px-3 flex items-center gap-1.5">
+                <span>🛡️</span> Khusus Super Admin
+              </label>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSuperAdminSuccessMsg("");
+                  setSuperAdminErrorMsg("");
+                  setShowSuperAdminModal(true);
+                }}
+                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs sm:text-sm font-bold text-amber-800 bg-amber-50/90 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/60 transition-all duration-200 cursor-pointer shadow-2xs"
+              >
+                <Icons.settings className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="flex-1 text-left truncate">Password Akses Modul</span>
+                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 dark:bg-amber-800 dark:text-amber-100 shrink-0">
+                  🔑 PIN
+                </span>
+              </button>
+            </div>
+          )}
         </nav>
       
         {/* Bottom Section */}
         <div className="mt-auto">
-          {/* Reset Button - Only for Superadmin */}
-          {role === 'SUPERADMIN' && (
-            <div className="px-4 pb-2">
-              <button
-                type="button"
-                onClick={openResetModal}
-                disabled={isResetting}
-                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/20 dark:hover:text-red-300 transition-all duration-200"
-              >
-                <Icons.trash className="w-4 h-4 shrink-0" />
-                Reset Semua Data
-              </button>
-            </div>
-          )}
-
-          {/* PWA Update & Clear Cache Button */}
-          <div className="px-4 pb-2 space-y-1">
-            {updateAvailable ? (
-              <button
-                type="button"
-                onClick={applyUpdate}
-                disabled={isUpdating}
-                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600 transition-all duration-200 shadow-sm animate-in fade-in slide-in-from-bottom-2 min-h-[44px]"
-              >
-                {isUpdating ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Memperbarui...
-                  </>
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 2v6h-6"/>
-                      <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
-                      <path d="M3 22v-6h6"/>
-                      <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
-                    </svg>
-                    Update Tersedia — Perbarui
-                  </>
-                )}
-              </button>
-            ) : (
-              <a
-                href="/api/clear-cache"
-                className="group flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-all duration-200 min-h-[44px]"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 2v6h-6"/>
-                  <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
-                  <path d="M3 22v-6h6"/>
-                  <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
-                </svg>
-                <span>Bersihkan Cache & Perbarui Versi</span>
-              </a>
-            )}
-          </div>
 
           {/* User Profile Card */}
           <div className="p-4 border-t border-slate-100 dark:border-slate-800">

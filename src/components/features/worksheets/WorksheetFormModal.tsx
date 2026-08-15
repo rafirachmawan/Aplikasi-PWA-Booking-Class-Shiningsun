@@ -48,15 +48,15 @@ export function WorksheetFormModal({
   const [gdriveLink, setGdriveLink] = useState(initialData?.gdrive_link || "");
   const [materi, setMateri] = useState(initialData?.materi || "");
 
-  // Attendance Status State ('HADIR' | 'IJIN' | 'SAKIT' | 'LIBUR')
-  type AttendanceStatus = "HADIR" | "IJIN" | "SAKIT" | "LIBUR";
+  // Attendance Status State ('HADIR' | 'IJIN' | 'SAKIT' | 'LIBUR' | 'LIBUR_HARI_BESAR')
+  type AttendanceStatus = "HADIR" | "IJIN" | "SAKIT" | "LIBUR" | "LIBUR_HARI_BESAR";
   const [attendanceStatus, setAttendanceStatus] = useState<AttendanceStatus>(
     () => {
       const t = initialData?.title || "";
       const m = initialData?.materi || "";
       if (t.includes("Ijin") || m.includes("Ijin")) return "IJIN";
       if (t.includes("Sakit") || m.includes("Sakit")) return "SAKIT";
-      if (t.includes("Libur") || m.includes("Libur")) return "LIBUR";
+      if (t.includes("Libur") || m.includes("Libur")) return "LIBUR_HARI_BESAR";
       return "HADIR";
     },
   );
@@ -105,9 +105,12 @@ export function WorksheetFormModal({
   }, []);
 
   const filteredStudents = useMemo(() => {
-    if (!studentSearch.trim()) return students;
+    const sorted = [...students].sort((a, b) =>
+      (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }),
+    );
+    if (!studentSearch.trim()) return sorted;
     const q = studentSearch.toLowerCase();
-    return students.filter(
+    return sorted.filter(
       (s) =>
         s.name.toLowerCase().includes(q) ||
         (s.nickname && s.nickname.toLowerCase().includes(q)),
@@ -153,7 +156,7 @@ export function WorksheetFormModal({
         "Ananda tidak dapat mengikuti kelas hari ini karena Sakit. Semoga lekas sembuh! 🌸",
       );
       setRekomendasiRumah("Istirahat yang cukup hingga kondisi fit kembali.");
-    } else if (status === "LIBUR") {
+    } else if (status === "LIBUR" || status === "LIBUR_HARI_BESAR") {
       setMateri("Libur Hari Besar");
       setKegiatanItems(["Kelas Diliburkan"]);
       setHasilBelajarItems(["Libur Hari Besar"]);
@@ -253,17 +256,9 @@ export function WorksheetFormModal({
       ? activeStudentLabel[0]?.id
       : activeStudentLabel?.id) ||
     null;
-  const materiTemplates = templates.filter((t) => {
-    if (t.category !== "materi") return false;
-    // If template has no label_id -> show for all students (global)
-    const tplLabelObj = Array.isArray(t.label) ? t.label[0] : t.label;
-    const tplLabelId = t.label_id || tplLabelObj?.id || null;
-    if (!tplLabelId) return true;
-    // If student has no label -> show all materi
-    if (!activeStudentLabelId) return true;
-    // Only show if label matches
-    return tplLabelId === activeStudentLabelId;
-  });
+  const materiTemplates = templates.filter(
+    (t) => (t.category || "materi") === "materi",
+  );
   const kegiatanTemplates = templates.filter(
     (t) => (t.category || "kegiatan") === "kegiatan",
   );
@@ -292,7 +287,7 @@ export function WorksheetFormModal({
           id: t.id,
           num: (idx + 1).toString(),
           label: t.title,
-          desc: t.materi,
+          desc: t.materi || t.description || t.title,
         }))
       : [
           {
@@ -378,14 +373,21 @@ export function WorksheetFormModal({
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [teacherSearch, setTeacherSearch] = useState("");
   const teacherSearchInputRef = useRef<HTMLInputElement>(null);
+  const [materiSearch, setMateriSearch] = useState("");
+  const materiSearchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (openDropdown === "guru") {
       setTimeout(() => {
         teacherSearchInputRef.current?.focus();
       }, 50);
+    } else if (openDropdown === "materi") {
+      setTimeout(() => {
+        materiSearchInputRef.current?.focus();
+      }, 50);
     } else {
       setTeacherSearch("");
+      setMateriSearch("");
     }
   }, [openDropdown]);
 
@@ -394,6 +396,12 @@ export function WorksheetFormModal({
     const q = teacherSearch.toLowerCase();
     return teachers.filter((t) => t.name.toLowerCase().includes(q));
   }, [teachers, teacherSearch]);
+
+  const filteredMateriTemplates = useMemo(() => {
+    if (!materiSearch.trim()) return materiTemplates;
+    const q = materiSearch.toLowerCase();
+    return materiTemplates.filter((t) => t.title.toLowerCase().includes(q));
+  }, [materiTemplates, materiSearch]);
 
   const selectedKegiatan = defaultKegiatanOptions.find(
     (o) => o.id === smartKegiatanId,
@@ -406,16 +414,13 @@ export function WorksheetFormModal({
     (o) => o.id === smartAfirmasiId,
   );
 
-  // Synchronize Afirmasi dropdown when Pemahaman changes
+  // Independently handle Pemahaman selection for Poin 3 (without altering Poin 5)
   const handlePemahamanChange = (newPemId: string) => {
     setSmartPemahamanId(newPemId);
     const pemOpt = defaultPemahamanOptions.find((o) => o.id === newPemId);
-    const matchedAf = defaultAfirmasiOptions.find(
-      (a) => a.num === pemOpt?.num || a.id === newPemId,
-    );
-    if (matchedAf) {
-      setSmartAfirmasiId(matchedAf.id);
-      setCatatanGuru(matchedAf.text);
+    if (pemOpt) {
+      const fillText = pemOpt.desc || pemOpt.label;
+      setHasilBelajarItems([fillText]);
     }
   };
 
@@ -734,8 +739,8 @@ export function WorksheetFormModal({
                       name="attendance_status"
                       value={st.id}
                       checked={attendanceStatus === st.id}
-                      onChange={(e) =>
-                        setAttendanceStatus(e.target.value as any)
+                      onChange={() =>
+                        handleAttendanceChange(st.id as AttendanceStatus)
                       }
                       className="sr-only peer"
                     />
@@ -776,7 +781,7 @@ export function WorksheetFormModal({
                   className="w-full flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/80 cursor-pointer"
                 >
                   <span className="truncate font-bold">
-                    {bulanKe ? `Bulan ke-${bulanKe}` : "-- Pilih --"}
+                    {bulanKe ? `Bulan ke-${bulanKe}` : "-- Pilih Bulan --"}
                   </span>
                   <Icons.chevronDown
                     className={`h-3.5 w-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
@@ -993,7 +998,7 @@ export function WorksheetFormModal({
                       <span className="truncate">
                         {smartMateriText
                           ? `📚 ${smartMateriText}`
-                          : "-- Pilih dari Master Template Materi --"}
+                          : "-- Pilih Materi --"}
                       </span>
                       <Icons.chevronDown
                         className={`w-3.5 h-3.5 text-sky-600 shrink-0 transition-transform duration-200 ${openDropdown === "materi" ? "rotate-180" : ""}`}
@@ -1001,35 +1006,67 @@ export function WorksheetFormModal({
                     </button>
 
                     {openDropdown === "materi" && (
-                      <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-1.5 space-y-1 max-h-56 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
-                        {materiTemplates.map((t) => {
-                          const isSel = smartMateriText === t.title;
-                          return (
-                            <button
-                              key={t.id}
-                              type="button"
-                              onClick={() => {
-                                setSmartMateriText(t.title);
-                                setMateri(t.title);
-                                setOpenDropdown(null);
-                              }}
-                              className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
-                                isSel
-                                  ? "bg-sky-100 dark:bg-sky-900/60 text-sky-900 dark:text-sky-200 font-extrabold"
-                                  : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
-                              }`}
-                            >
-                              <span className="break-words whitespace-normal leading-snug">
-                                📚 {t.title}
-                              </span>
-                              {isSel && (
-                                <span className="text-sky-600 shrink-0 text-xs font-bold mt-0.5">
-                                  ✓
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
+                      <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-2 space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
+                        {/* Search input for Materi */}
+                        <div className="p-1">
+                          <input
+                            ref={materiSearchInputRef}
+                            type="text"
+                            value={materiSearch}
+                            onChange={(e) => setMateriSearch(e.target.value)}
+                            placeholder="🔍 Cari template materi..."
+                            className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-sky-500 focus:outline-none font-medium"
+                            onClick={(e) => e.stopPropagation()}
+                            autoFocus
+                          />
+                        </div>
+
+                        <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                          {filteredMateriTemplates.length === 0 ? (
+                            <div className="py-3 text-center text-xs text-slate-400 italic">
+                              Materi tidak ditemukan.
+                            </div>
+                          ) : (
+                            filteredMateriTemplates.map((t) => {
+                              const isSel = smartMateriText === t.title;
+                              const tplLabel = Array.isArray(t.label)
+                                ? t.label[0]
+                                : t.label;
+                              return (
+                                <button
+                                  key={t.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSmartMateriText(t.title);
+                                    setMateri(t.title);
+                                    setOpenDropdown(null);
+                                  }}
+                                  className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
+                                    isSel
+                                      ? "bg-sky-100 dark:bg-sky-900/60 text-sky-900 dark:text-sky-200 font-extrabold"
+                                      : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                                  }`}
+                                >
+                                  <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+                                    <span className="break-words whitespace-normal leading-snug">
+                                      📚 {t.title}
+                                    </span>
+                                    {tplLabel && (
+                                      <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                                        Level: {tplLabel.main_level} {tplLabel.sub_level}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {isSel && (
+                                    <span className="text-sky-600 shrink-0 text-xs font-bold mt-0.5">
+                                      ✓
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1086,7 +1123,7 @@ export function WorksheetFormModal({
                     <span className="line-clamp-1 leading-snug">
                       {selectedKegiatan
                         ? `${selectedKegiatan.num}. ${selectedKegiatan.label.replace(/^(1|2|3|4)\.\s*/, "")}`
-                        : "-- Pilih Jenis Kegiatan (Belajar mengenal / Mengulang) --"}
+                        : "-- Pilih Kegiatan --"}
                     </span>
                     <Icons.chevronDown
                       className={`w-3.5 h-3.5 text-slate-500 shrink-0 transition-transform duration-200 ${openDropdown === "kegiatan" ? "rotate-180" : ""}`}
@@ -1206,7 +1243,7 @@ export function WorksheetFormModal({
                     <span className="line-clamp-1 leading-snug">
                       {selectedPemahaman
                         ? `${selectedPemahaman.num}. ${selectedPemahaman.label.replace(/^(1|2|3|4)\.\s*/, "")}`
-                        : "-- Pilih Tingkat Pemahaman (1: Bingung, 2: Tertarik, 3: Mandiri) --"}
+                        : "-- Pilih Pemahaman --"}
                     </span>
                     <Icons.chevronDown
                       className={`w-3.5 h-3.5 text-emerald-600 shrink-0 transition-transform duration-200 ${openDropdown === "pemahaman" ? "rotate-180" : ""}`}
@@ -1223,9 +1260,6 @@ export function WorksheetFormModal({
                             type="button"
                             onClick={() => {
                               handlePemahamanChange(opt.id);
-                              if (opt.desc) {
-                                setHasilBelajarItems([opt.desc]);
-                              }
                               setOpenDropdown(null);
                             }}
                             className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
@@ -1303,7 +1337,7 @@ export function WorksheetFormModal({
                     <span className="line-clamp-1 leading-snug">
                       {selectedRumah
                         ? `${selectedRumah.num}. ${selectedRumah.label.replace(/^(1|2|3|4)\.\s*/, "")}`
-                        : "-- Pilih Template Rekomendasi di Rumah --"}
+                        : "-- Pilih Rekomendasi --"}
                     </span>
                     <Icons.chevronDown
                       className={`w-3.5 h-3.5 text-amber-600 shrink-0 transition-transform duration-200 ${openDropdown === "rumah" ? "rotate-180" : ""}`}
@@ -1387,7 +1421,7 @@ export function WorksheetFormModal({
                     <span className="line-clamp-1 leading-snug">
                       {selectedAfirmasi
                         ? `${selectedAfirmasi.num}. ${selectedAfirmasi.label.replace(/^(1|2|3|4)\.\s*/, "")}`
-                        : "-- Pilih Template Afirmasi Positif --"}
+                        : "-- Pilih Afirmasi --"}
                     </span>
                     <Icons.chevronDown
                       className={`w-3.5 h-3.5 text-sky-600 shrink-0 transition-transform duration-200 ${openDropdown === "afirmasi" ? "rotate-180" : ""}`}
