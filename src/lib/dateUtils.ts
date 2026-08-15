@@ -111,6 +111,71 @@ export function getTodayISO(): string {
 }
 
 /**
+ * Safely parses any date string (ISO, DD/MM/YYYY, "16 Agustus 2026", "16 Agt 2026", etc.)
+ * into a valid YYYY-MM-DD string for PostgreSQL DATE columns.
+ */
+export function parseIndonesianDateToISO(inputStr?: string | null): string {
+  if (!inputStr || !inputStr.trim()) return getTodayISO();
+  const clean = inputStr.trim();
+
+  // 1. If already YYYY-MM-DD format
+  const ymdMatch = clean.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (ymdMatch) {
+    const y = ymdMatch[1];
+    const m = String(parseInt(ymdMatch[2], 10)).padStart(2, "0");
+    const d = String(parseInt(ymdMatch[3], 10)).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  // 2. If DD/MM/YYYY or DD-MM-YYYY format
+  const dmyMatch = clean.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (dmyMatch) {
+    const d = String(parseInt(dmyMatch[1], 10)).padStart(2, "0");
+    const m = String(parseInt(dmyMatch[2], 10)).padStart(2, "0");
+    const y = dmyMatch[3];
+    return `${y}-${m}-${d}`;
+  }
+
+  // 3. Text format: "16 Agustus 2026", "16 Agt 2026", etc.
+  const monthMap: Record<string, string> = {
+    jan: "01", januari: "01", january: "01",
+    feb: "02", februari: "02", february: "02",
+    mar: "03", maret: "03", march: "03",
+    apr: "04", april: "04",
+    mei: "05", may: "05",
+    jun: "06", juni: "06", june: "06",
+    jul: "07", juli: "07", july: "07",
+    agu: "08", agust: "08", agustus: "08", aug: "08", august: "08",
+    sep: "09", september: "09",
+    okt: "10", oktober: "10", oct: "10", october: "10",
+    nov: "11", november: "11",
+    des: "12", desember: "12", dec: "12", december: "12"
+  };
+
+  const textMatch = clean.match(/(\d{1,2})\s+([a-zA-Z]+)\s+(\d{4})/);
+  if (textMatch) {
+    const d = String(parseInt(textMatch[1], 10)).padStart(2, "0");
+    const monthStr = textMatch[2].toLowerCase();
+    const y = textMatch[3];
+    const m = monthMap[monthStr];
+    if (m) {
+      return `${y}-${m}-${d}`;
+    }
+  }
+
+  // Fallback: JS Date
+  const parsed = new Date(clean);
+  if (!isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, "0");
+    const d = String(parsed.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  return getTodayISO();
+}
+
+/**
  * Calculates attendance points for a student based on their worksheet reports.
  * - +1 Point for every HADIR (attended) class session.
  * - 0 Points for IJIN, SAKIT, LIBUR (points do not change / not deducted).

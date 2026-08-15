@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { getTodayISO } from "./dateUtils";
+import { getTodayISO, parseIndonesianDateToISO } from "./dateUtils";
 
 export async function syncUserIdentity() {
   try {
@@ -1616,8 +1616,8 @@ export async function createWorksheet(formData: FormData) {
   const student_id = formData.get("student_id") as string;
   const title = formData.get("title") as string;
   const description = (formData.get("description") as string) || "";
-  const worksheet_date =
-    (formData.get("worksheet_date") as string) || getTodayISO();
+  const rawDate = (formData.get("worksheet_date") as string) || "";
+  const worksheet_date = parseIndonesianDateToISO(rawDate);
   const gdrive_link = (formData.get("gdrive_link") as string) || "";
   const materi = (formData.get("materi") as string) || "";
   const kegiatan = (formData.get("kegiatan") as string) || "";
@@ -1712,7 +1712,7 @@ export async function updateWorksheet(id: string, formData: FormData) {
   };
 
   if (worksheet_date) {
-    updatePayload.worksheet_date = worksheet_date;
+    updatePayload.worksheet_date = parseIndonesianDateToISO(worksheet_date);
   }
 
   const { error } = await supabaseServer
@@ -2569,6 +2569,55 @@ export async function getPointRedemptions(studentId?: string) {
   }
 }
 
+export async function getWorksheetAttendanceHistory() {
+  const supabaseServer = await createClient();
+  const activeBranchId = await getBranchId();
+
+  try {
+    let query = supabaseServer
+      .from("student_worksheets")
+      .select(`
+        id,
+        student_id,
+        title,
+        materi,
+        created_at,
+        bulan_ke,
+        catatan_guru,
+        student:students(name, nickname, branch_id)
+      `)
+      .order("created_at", { ascending: false });
+
+    const { data, error } = await query;
+    if (error) {
+      return [];
+    }
+
+    let filtered = data || [];
+    if (activeBranchId && activeBranchId !== "ALL") {
+      filtered = filtered.filter((item: any) => item.student?.branch_id === activeBranchId);
+    }
+
+    return filtered.map((item: any) => {
+      const m = (item.materi || "").toLowerCase();
+      const t = (item.title || "").toLowerCase();
+      const isAbsent =
+        m.includes("tidak hadir") ||
+        m.includes("libur") ||
+        t.includes("tidak hadir") ||
+        t.includes("libur") ||
+        t.includes("ijin") ||
+        t.includes("sakit");
+      return {
+        ...item,
+        is_absent: isAbsent,
+      };
+    });
+  } catch (e) {
+    return [];
+  }
+}
+
 export async function updateStudentPhotoUrl(studentId: string, photoUrl: string) {
   try {
     const supabaseServer = await createClient();
@@ -2592,9 +2641,6 @@ export async function updateStudentPhotoUrl(studentId: string, photoUrl: string)
 // Global in-memory cache fallback for module lock passwords
 let memoryLockPasswords: Record<string, string> = {
   "/points": "123",
-  "/worksheets": "123",
-  "/teachers": "123",
-  "/templates": "123",
 };
 
 export async function getModuleLockPasswords(): Promise<Record<string, string>> {

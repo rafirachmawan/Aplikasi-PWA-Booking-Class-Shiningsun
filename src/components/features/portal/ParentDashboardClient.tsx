@@ -25,7 +25,8 @@ export function ParentDashboardClient({
   redemptions = [],
 }: ParentDashboardClientProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"worksheets" | "schedule" | "points">("worksheets");
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showPointsModal, setShowPointsModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
 
@@ -542,14 +543,24 @@ export function ParentDashboardClient({
                 </div>
               )}
               {student.schedule_detail && (
-                <div className="flex items-start gap-2.5 text-[12px] pt-2.5 sm:pt-0 sm:pl-3">
-                  <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center text-base shrink-0 mt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setShowScheduleModal(true)}
+                  title="Klik untuk melihat rincian jadwal kelas"
+                  className="flex items-start gap-2.5 text-[12px] pt-2.5 sm:pt-0 sm:pl-3 text-left w-full cursor-pointer hover:bg-slate-50/80 p-2 rounded-xl transition-all group"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center text-base shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
                     📅
                   </div>
                   <div className="min-w-0 flex-1">
-                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                      Jadwal Kelas
-                    </span>
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Jadwal Kelas
+                      </span>
+                      <span className="text-[10px] font-extrabold text-brand-600 dark:text-brand-400 group-hover:underline flex items-center gap-0.5">
+                        Lihat ↗
+                      </span>
+                    </div>
                     <div className="space-y-1.5">
                       {student.schedule_detail.split(", ").map((item: string, idx: number) => {
                         const spaceIdx = item.indexOf(" ");
@@ -569,7 +580,7 @@ export function ParentDashboardClient({
                       })}
                     </div>
                   </div>
-                </div>
+                </button>
               )}
             </div>
           )}
@@ -597,17 +608,27 @@ export function ParentDashboardClient({
             </span>
           </div>
 
-          {/* Points Display — Inside Card with White Background */}
-          <div className="bg-white rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-md border border-white text-slate-900">
+          {/* Points Display — Inside Card with White Background (Clickable to view Point History) */}
+          <button
+            type="button"
+            onClick={() => setShowPointsModal(true)}
+            title="Klik untuk melihat riwayat poin"
+            className="w-full bg-white rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-md border border-white text-slate-900 cursor-pointer hover:bg-amber-50/60 active:scale-[0.99] transition-all group text-left"
+          >
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-xl font-black shrink-0 shadow-sm border border-amber-300">
+              <div className="w-11 h-11 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-xl font-black shrink-0 shadow-sm border border-amber-300 group-hover:scale-105 transition-transform">
                 ⭐
               </div>
               <div>
-                <span className="block text-[10px] font-extrabold text-amber-600 uppercase tracking-wider">
-                  Poin Kehadiran Siswa
-                </span>
-                <div className="flex items-baseline gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="block text-[10px] font-extrabold text-amber-600 uppercase tracking-wider">
+                    Poin Kehadiran Siswa
+                  </span>
+                  <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-md group-hover:bg-amber-200 transition-colors">
+                    Lihat Riwayat ↗
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-1.5 mt-0.5">
                   <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                     {netPoints}
                   </span>
@@ -617,16 +638,17 @@ export function ParentDashboardClient({
                 </div>
               </div>
             </div>
-            {(student.redeemed_points || 0) > 0 && (
-              <button
-                type="button"
-                onClick={() => setActiveTab("points")}
-                className="text-[10px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-xl border border-slate-200 transition-colors cursor-pointer shrink-0"
-              >
-                Ditukar: <strong className="text-rose-600 font-extrabold">{student.redeemed_points}</strong>
-              </button>
-            )}
-          </div>
+            <div className="flex items-center gap-2">
+              {(student.redeemed_points || 0) > 0 && (
+                <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 shrink-0">
+                  Ditukar: <strong className="text-rose-600 font-extrabold">{student.redeemed_points}</strong>
+                </span>
+              )}
+              <svg className="w-5 h-5 text-slate-400 group-hover:text-amber-600 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </button>
         </div>
 
         {/* Info Penting — Red Card */}
@@ -666,282 +688,128 @@ export function ParentDashboardClient({
           </svg>
         </button>
 
-        {/* Tab Navigation (Segmented Control) */}
-        <div className="grid grid-cols-3 gap-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 p-1.5 shadow-xs">
-          <button
-            type="button"
-            onClick={() => setActiveTab("worksheets")}
-            className={`py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl text-[11px] sm:text-sm font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 cursor-pointer text-center leading-tight ${
-              activeTab === "worksheets"
-                ? "bg-brand-600 text-white shadow-md shadow-brand-500/20"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
-            }`}
-          >
-            <span>📄 <span className="hidden sm:inline">Rapor & Laporan</span><span className="sm:hidden">Rapor</span></span>
-            <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] ${activeTab === "worksheets" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
-              {worksheets.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("schedule")}
-            className={`py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl text-[11px] sm:text-sm font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 cursor-pointer text-center leading-tight ${
-              activeTab === "schedule"
-                ? "bg-brand-600 text-white shadow-md shadow-brand-500/20"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
-            }`}
-          >
-            <span>📅 Jadwal</span>
-            <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] ${activeTab === "schedule" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
-              {upcomingSchedules.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("points")}
-            className={`py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl text-[11px] sm:text-sm font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 cursor-pointer text-center leading-tight ${
-              activeTab === "points"
-                ? "bg-brand-600 text-white shadow-md shadow-brand-500/20"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
-            }`}
-          >
-            <span>🎁 <span className="hidden sm:inline">Riwayat</span> Poin</span>
-            <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] ${activeTab === "points" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
-              {redemptions.length}
-            </span>
-          </button>
-        </div>
-
-        {/* Tab Content: Worksheets */}
-        {activeTab === "worksheets" && (
-          <div className="space-y-4 animate-in fade-in duration-200">
-            {/* Header & Date Range Download Control Panel */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-4">
-              {/* Header Title & Badge */}
-              <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
-                <div>
-                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
-                    📄 Laporan Perkembangan Siswa
-                  </h3>
-                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Filter berdasarkan tanggal dan unduh file PDF resmi.
-                  </p>
-                </div>
-                <span className="shrink-0 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
-                  {filteredWorksheets.length} Sesi
-                </span>
-              </div>
-
-              {/* Date Filter & Action Button Grid */}
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                      Mulai Tanggal
-                    </label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none transition-all cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                      Sampai Tanggal
-                    </label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none transition-all cursor-pointer"
-                    />
-                  </div>
-                </div>
-
-                {(startDate || endDate) && (
-                  <div className="flex justify-end pt-0.5">
-                    <button
-                      type="button"
-                      onClick={() => { setStartDate(""); setEndDate(""); }}
-                      className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 underline cursor-pointer"
-                    >
-                      Reset Filter Tanggal
-                    </button>
-                  </div>
-                )}
-
-                {/* SINGLE Download PDF Button */}
-                <button
-                  type="button"
-                  onClick={handleDownloadPdf}
-                  disabled={isDownloadingPdf || filteredWorksheets.length === 0}
-                  className="w-full py-2.5 sm:py-3 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 active:scale-98 transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {isDownloadingPdf ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>Memproses PDF...</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7 10 12 15 17 10"/>
-                        <line x1="12" x2="12" y1="15" y2="3"/>
-                      </svg>
-                      <span>Download PDF ({filteredWorksheets.length} Sesi)</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Printable Container for PDF Export */}
-            <div ref={printableRef} className="space-y-6">
-              {filteredWorksheets.length === 0 ? (
-                <div className="py-12 text-center text-slate-400 italic bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                  Tidak ada data laporan perkembangan untuk rentang tanggal yang dipilih.
-                </div>
-              ) : (
-                (() => {
-                  const grouped = new Map<string, any[]>();
-                  filteredWorksheets.forEach((w) => {
-                    const bk = w.bulan_ke ?? 'none';
-                    const key = String(bk);
-                    if (!grouped.has(key)) grouped.set(key, []);
-                    grouped.get(key)!.push(w);
-                  });
-                  const sortedGroups = Array.from(grouped.entries()).sort((a, b) => {
-                    const aNum = a[0] === 'none' ? 0 : parseInt(a[0]);
-                    const bNum = b[0] === 'none' ? 0 : parseInt(b[0]);
-                    return aNum - bNum;
-                  });
-                  return sortedGroups.map(([bk, wsGroup]) => (
-                    <StudentWorksheetTable
-                      key={`parent_${student.id}_${bk}`}
-                      student={{ ...student, photo_url: photoUrl }}
-                      worksheets={wsGroup}
-                      bulanKe={bk === 'none' ? null : parseInt(bk, 10)}
-                      isParentView={true}
-                      hideDownloadBtn={true}
-                    />
-                  ));
-                })()
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Tab Content: Schedule */}
-        {activeTab === "schedule" && (
-          <div className="animate-in fade-in duration-200">
-            <StudentScheduleCard
-              upcomingSchedules={upcomingSchedules}
-              scheduleHistory={scheduleHistory}
-            />
-          </div>
-        )}
-
-        {/* Tab Content: Points & Redemption History */}
-        {activeTab === "points" && (
-          <div className="space-y-4 animate-in fade-in duration-200">
-            {/* Points Summary Card */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2 mb-3">
-                <span>⭐ Rincian Poin Kehadiran</span>
-              </h3>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-3">
-                  <div className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-300">
-                    +{grossPoints}
-                  </div>
-                  <div className="text-[10px] sm:text-xs text-amber-800 dark:text-amber-400 font-semibold mt-0.5">
-                    Total Hadir
-                  </div>
-                </div>
-                <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl p-3">
-                  <div className="text-xl sm:text-2xl font-black text-rose-700 dark:text-rose-300">
-                    -{Math.max(0, redeemedPoints)}
-                  </div>
-                  <div className="text-[10px] sm:text-xs text-rose-800 dark:text-rose-400 font-semibold mt-0.5">
-                    Sudah Ditukar
-                  </div>
-                </div>
-                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-3">
-                  <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">
-                    {netPoints}
-                  </div>
-                  <div className="text-[10px] sm:text-xs text-emerald-800 dark:text-emerald-400 font-semibold mt-0.5">
-                    Sisa Poin Aktif
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Redemption & Bonus List */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-                <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                  📜 Catatan Riwayat Penukaran Hadiah & Bonus Poin
-                </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  Daftar pemotongan poin (hadiah) dan penambahan bonus poin dari Admin
+        {/* Rapor & Laporan Content — Always Visible */}
+        <div className="space-y-4">
+          {/* Header & Date Range Download Control Panel */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-4">
+            {/* Header Title & Badge */}
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+              <div>
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                  📄 Laporan Perkembangan Siswa
+                </h3>
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Filter berdasarkan tanggal dan unduh file PDF resmi.
                 </p>
               </div>
+              <span className="shrink-0 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+                {filteredWorksheets.length} Sesi
+              </span>
+            </div>
 
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {redemptions.length === 0 ? (
-                  <div className="py-12 text-center text-xs sm:text-sm text-slate-400 p-4">
-                    🎁 Belum ada riwayat penukaran atau bonus poin. Orang tua dapat menukarkan poin siswa di cabang/admin tempat les.
-                  </div>
-                ) : (
-                  redemptions.map((item) => {
-                    const isBonus = item.points_deducted < 0;
-                    const pointsAmount = Math.abs(item.points_deducted);
-                    return (
-                      <div key={item.id} className="p-4 flex items-center justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h5 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
-                              {item.reward_note || (isBonus ? "Bonus Poin Manual" : "Penukaran Hadiah")}
-                            </h5>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              isBonus
-                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
-                            }`}>
-                              {isBonus ? "Bonus Poin" : "Tukar Hadiah"}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-slate-400 block mt-0.5">
-                            Tanggal: {item.created_at ? formatShortDate(item.created_at) : "-"}
-                          </span>
-                        </div>
+            {/* Date Filter & Action Button Grid */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                    Mulai Tanggal
+                  </label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none transition-all cursor-pointer"
+                  />
+                </div>
 
-                        <div className="shrink-0">
-                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-black border ${
-                            isBonus
-                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                              : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800"
-                          }`}>
-                            {isBonus ? `+${pointsAmount}` : `-${pointsAmount}`} Poin
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                    Sampai Tanggal
+                  </label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none transition-all cursor-pointer"
+                  />
+                </div>
               </div>
+
+              {(startDate || endDate) && (
+                <div className="flex justify-end pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => { setStartDate(""); setEndDate(""); }}
+                    className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 underline cursor-pointer"
+                  >
+                    Reset Filter Tanggal
+                  </button>
+                </div>
+              )}
+
+              {/* SINGLE Download PDF Button */}
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={isDownloadingPdf || filteredWorksheets.length === 0}
+                className="w-full py-2.5 sm:py-3 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 active:scale-98 transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isDownloadingPdf ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Memproses PDF...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" x2="12" y1="15" y2="3"/>
+                    </svg>
+                    <span>Download PDF ({filteredWorksheets.length} Sesi)</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
-        )}
+
+          {/* Printable Container for PDF Export */}
+          <div ref={printableRef} className="space-y-6">
+            {filteredWorksheets.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 italic bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                Tidak ada data laporan perkembangan untuk rentang tanggal yang dipilih.
+              </div>
+            ) : (
+              (() => {
+                const grouped = new Map<string, any[]>();
+                filteredWorksheets.forEach((w) => {
+                  const bk = w.bulan_ke ?? 'none';
+                  const key = String(bk);
+                  if (!grouped.has(key)) grouped.set(key, []);
+                  grouped.get(key)!.push(w);
+                });
+                const sortedGroups = Array.from(grouped.entries()).sort((a, b) => {
+                  const aNum = a[0] === 'none' ? 0 : parseInt(a[0]);
+                  const bNum = b[0] === 'none' ? 0 : parseInt(b[0]);
+                  return aNum - bNum;
+                });
+                return sortedGroups.map(([bk, wsGroup]) => (
+                  <StudentWorksheetTable
+                    key={`parent_${student.id}_${bk}`}
+                    student={{ ...student, photo_url: photoUrl }}
+                    worksheets={wsGroup}
+                    bulanKe={bk === 'none' ? null : parseInt(bk, 10)}
+                    isParentView={true}
+                    hideDownloadBtn={true}
+                  />
+                ));
+              })()
+            )}
+          </div>
+        </div>
       </main>
 
       {/* Footer */}
@@ -1238,6 +1106,270 @@ export function ParentDashboardClient({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Schedule Modal ── */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => setShowScheduleModal(false)}
+          />
+          <div className="relative z-10 w-full max-w-lg max-h-[85vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+            {/* Header */}
+            <div className="px-5 pt-5 pb-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-lg">
+                  📅
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Jadwal Kelas</h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Jadwal mendatang & riwayat kelas</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowScheduleModal(false)}
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+              <StudentScheduleCard
+                upcomingSchedules={upcomingSchedules}
+                scheduleHistory={scheduleHistory}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Points & Redemption History Modal ── */}
+      {showPointsModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => setShowPointsModal(false)}
+          />
+          <div className="relative z-10 w-full max-w-lg max-h-[85vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+            {/* Header */}
+            <div className="px-5 pt-5 pb-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center text-lg">
+                  ⭐
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Riwayat Poin</h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Rincian kehadiran & penukaran hadiah</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPointsModal(false)}
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+              {/* Points Summary */}
+              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-3">
+                    <div className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-300">
+                      +{grossPoints}
+                    </div>
+                    <div className="text-[10px] sm:text-xs text-amber-800 dark:text-amber-400 font-semibold mt-0.5">
+                      Total Hadir
+                    </div>
+                  </div>
+                  <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl p-3">
+                    <div className="text-xl sm:text-2xl font-black text-rose-700 dark:text-rose-300">
+                      -{Math.max(0, redeemedPoints)}
+                    </div>
+                    <div className="text-[10px] sm:text-xs text-rose-800 dark:text-rose-400 font-semibold mt-0.5">
+                      Sudah Ditukar
+                    </div>
+                  </div>
+                  <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-3">
+                    <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">
+                      {netPoints}
+                    </div>
+                    <div className="text-[10px] sm:text-xs text-emerald-800 dark:text-emerald-400 font-semibold mt-0.5">
+                      Sisa Poin Aktif
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Section 1: Kehadiran ── */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-amber-50 dark:bg-amber-950/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📋</span>
+                    <div>
+                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">Poin Kehadiran</h4>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">+1 poin setiap hadir kelas</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-black text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-700">
+                    +{grossPoints} Poin
+                  </span>
+                </div>
+                <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-48 overflow-y-auto">
+                  {worksheets.length === 0 ? (
+                    <div className="py-6 text-center text-xs text-slate-400 italic">
+                      Belum ada data kehadiran.
+                    </div>
+                  ) : (
+                    (() => {
+                      const attended = worksheets.filter((w) => {
+                        const m = (w.materi || "").toLowerCase();
+                        const t = (w.title || "").toLowerCase();
+                        const isAbsent = m.includes("tidak hadir") || m.includes("libur") || t.includes("tidak hadir") || t.includes("libur") || t.includes("ijin") || t.includes("sakit");
+                        return !isAbsent;
+                      });
+                      const absent = worksheets.filter((w) => {
+                        const m = (w.materi || "").toLowerCase();
+                        const t = (w.title || "").toLowerCase();
+                        return m.includes("tidak hadir") || m.includes("libur") || t.includes("tidak hadir") || t.includes("libur") || t.includes("ijin") || t.includes("sakit");
+                      });
+                      return (
+                        <>
+                          {attended.map((w, idx) => (
+                            <div key={w.id || `att-${idx}`} className="px-4 py-2.5 flex items-center justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
+                                  {w.materi || w.title || "Kelas"}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {w.worksheet_date ? formatShortDate(w.worksheet_date) : w.created_at ? formatShortDate(w.created_at) : "-"}
+                                </span>
+                              </div>
+                              <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 shrink-0">+1</span>
+                            </div>
+                          ))}
+                          {absent.map((w, idx) => (
+                            <div key={w.id || `abs-${idx}`} className="px-4 py-2.5 flex items-center justify-between gap-2 opacity-50">
+                              <div className="min-w-0 flex-1">
+                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate block">
+                                  {w.materi || w.title || "Tidak Hadir"}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {w.worksheet_date ? formatShortDate(w.worksheet_date) : w.created_at ? formatShortDate(w.created_at) : "-"}
+                                </span>
+                              </div>
+                              <span className="text-[11px] font-bold text-slate-400 shrink-0">0</span>
+                            </div>
+                          ))}
+                        </>
+                      );
+                    })()
+                  )}
+                </div>
+              </div>
+
+              {/* ── Section 2: Manual Poin (Bonus) ── */}
+              {(() => {
+                const bonusItems = redemptions.filter((r) => (r.points_deducted || 0) < 0);
+                const totalBonus = bonusItems.reduce((sum, r) => sum + Math.abs(r.points_deducted || 0), 0);
+                return (
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-sky-50 dark:bg-sky-950/30 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">➕</span>
+                        <div>
+                          <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">Manual Poin</h4>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">Bonus poin dari Admin</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-black text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/40 px-2.5 py-1 rounded-lg border border-sky-200 dark:border-sky-700">
+                        +{totalBonus} Poin
+                      </span>
+                    </div>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-48 overflow-y-auto">
+                      {bonusItems.length === 0 ? (
+                        <div className="py-6 text-center text-xs text-slate-400 italic">
+                          Belum ada bonus poin manual.
+                        </div>
+                      ) : (
+                        bonusItems.map((item) => {
+                          const pointsAmount = Math.abs(item.points_deducted);
+                          return (
+                            <div key={item.id} className="px-4 py-2.5 flex items-center justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
+                                  {item.reward_note || "Bonus Poin Manual"}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {item.created_at ? formatShortDate(item.created_at) : "-"}
+                                </span>
+                              </div>
+                              <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800 shrink-0">
+                                +{pointsAmount} Poin
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ── Section 3: Penukaran Hadiah ── */}
+              {(() => {
+                const redeemItems = redemptions.filter((r) => (r.points_deducted || 0) > 0);
+                const totalRedeemed = redeemItems.reduce((sum, r) => sum + (r.points_deducted || 0), 0);
+                return (
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-rose-50 dark:bg-rose-950/30 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">🎁</span>
+                        <div>
+                          <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">Penukaran Hadiah</h4>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">Poin ditukar menjadi hadiah</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-black text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-900/40 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-700">
+                        -{totalRedeemed} Poin
+                      </span>
+                    </div>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-48 overflow-y-auto">
+                      {redeemItems.length === 0 ? (
+                        <div className="py-6 text-center text-xs text-slate-400 italic">
+                          Belum ada penukaran hadiah.
+                        </div>
+                      ) : (
+                        redeemItems.map((item) => {
+                          const pointsAmount = Math.abs(item.points_deducted);
+                          return (
+                            <div key={item.id} className="px-4 py-2.5 flex items-center justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
+                                  {item.reward_note || "Penukaran Hadiah"}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {item.created_at ? formatShortDate(item.created_at) : "-"}
+                                </span>
+                              </div>
+                              <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800 shrink-0">
+                                -{pointsAmount} Poin
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </div>
       )}

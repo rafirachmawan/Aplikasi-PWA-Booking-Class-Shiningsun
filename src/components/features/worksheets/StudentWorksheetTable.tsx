@@ -50,6 +50,18 @@ function calculateAge(dobStr?: string | null): string {
   return `${years} Thn ${months} Bln`;
 }
 
+function formatAnandaLine(rawLine: string): string {
+  let clean = rawLine.replace(/^[-•*]\s*/, "").trim();
+  if (!clean || clean === "-") return "-";
+  if (/ananda/i.test(clean)) {
+    return clean;
+  }
+  if (/siswa/i.test(clean)) {
+    return clean.replace(/siswa/gi, "Ananda");
+  }
+  return `Ananda ${clean}`;
+}
+
 function formatDateIndonesian(dateStr?: string | null): string {
   if (!dateStr) return "-";
   try {
@@ -291,7 +303,7 @@ function DailyWorksheetSessionItem({
                 {(item.kegiatan || "-").split("\n").filter(Boolean).map((line: string, i: number) => (
                   <div key={i} className="flex items-start gap-1.5 leading-relaxed">
                     <span className={bulletColorClass}>-</span>
-                    <span>{line.replace(/^[-•]\s*/, "")}</span>
+                    <span>{formatAnandaLine(line)}</span>
                   </div>
                 ))}
               </td>
@@ -301,7 +313,7 @@ function DailyWorksheetSessionItem({
                 {((item.hasil_belajar || item.description || "-")).split("\n").filter(Boolean).map((line: string, i: number) => (
                   <div key={i} className="flex items-start gap-1.5 leading-relaxed">
                     <span className={bulletColorClass}>-</span>
-                    <span>{line.replace(/^[-•]\s*/, "")}</span>
+                    <span>{formatAnandaLine(line)}</span>
                   </div>
                 ))}
               </td>

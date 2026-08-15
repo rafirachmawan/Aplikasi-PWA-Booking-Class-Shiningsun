@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { WorksheetFormModal } from "@/components/features/worksheets/WorksheetFormModal";
 import { StudentWorksheetTable } from "@/components/features/worksheets/StudentWorksheetTable";
-import { deleteWorksheet, deleteWorksheetMonth, updateStudentAccessPin, getModuleLockPasswords } from "@/lib/actions";
+import { deleteWorksheet, deleteWorksheetMonth, updateStudentAccessPin } from "@/lib/actions";
 import { formatNumericDate, formatShortDate } from "@/lib/dateUtils";
 import { getGDrivePreviewLink, getGDriveDirectLink } from "@/lib/gdriveUtils";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -123,33 +123,7 @@ export function WorksheetClientWrapper({
     }
   };
 
-  // Protection state for direct URL access
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [lockChecked, setLockChecked] = useState(false);
-  const [lockPassword, setLockPassword] = useState("");
-  const [lockError, setLockError] = useState("");
 
-  useEffect(() => {
-    async function checkLock() {
-      if (typeof window !== "undefined") {
-        try {
-          const passwords = await getModuleLockPasswords();
-          const expected = passwords["/worksheets"];
-          if (expected === "") {
-            setIsUnlocked(true);
-          } else {
-            const unlocked = sessionStorage.getItem("worksheets_unlocked") === "true";
-            setIsUnlocked(unlocked);
-          }
-        } catch {
-          const unlocked = sessionStorage.getItem("worksheets_unlocked") === "true";
-          setIsUnlocked(unlocked);
-        }
-        setLockChecked(true);
-      }
-    }
-    checkLock();
-  }, []);
 
   // PIN modal state
   const [pinModalStudent, setPinModalStudent] = useState<any>(null);
@@ -337,80 +311,7 @@ export function WorksheetClientWrapper({
     });
   }, [filteredWorksheets, selectedStudentId, students]);
 
-  const handleUnlockPage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const passwords = await getModuleLockPasswords();
-      const expectedPassword = passwords["/worksheets"] ?? "123";
-      if (lockPassword === expectedPassword) {
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("worksheets_unlocked", "true");
-        }
-        setIsUnlocked(true);
-      } else {
-        setLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
-      }
-    } catch {
-      if (lockPassword === "123") {
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("worksheets_unlocked", "true");
-        }
-        setIsUnlocked(true);
-      } else {
-        setLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
-      }
-    }
-  };
 
-  if (!lockChecked) {
-    return null;
-  }
-
-  if (!isUnlocked) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[65vh] p-4 animate-in fade-in zoom-in-95 duration-300">
-        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-5">
-          <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-3xl shadow-sm">
-            🔒
-          </div>
-          <div>
-            <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              Modul Laporan Perkembangan Dikunci
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-              Fitur Laporan Perkembangan Siswa ini masih dalam tahap prarilis. Silakan masukkan password akses untuk membuka modul ini.
-            </p>
-          </div>
-
-          <form onSubmit={handleUnlockPage} className="space-y-4 pt-2">
-            <div>
-              <input
-                type="password"
-                required
-                value={lockPassword}
-                onChange={(e) => {
-                  setLockPassword(e.target.value);
-                  setLockError("");
-                }}
-                placeholder="Masukkan password (default: 123)"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none"
-              />
-              {lockError && (
-                <p className="text-xs text-red-500 font-semibold mt-2 animate-in fade-in">{lockError}</p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-3.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-md transition-all active:scale-95"
-            >
-              Buka Akses Laporan Perkembangan
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   const handleUpdatePin = async () => {
     if (!pinModalStudent || !newPin) return;
@@ -885,7 +786,9 @@ export function WorksheetClientWrapper({
           students={students}
           teachers={teachers}
           templates={templates}
+          labels={labels}
           initialData={editingWorksheet}
+          worksheets={initialWorksheets}
           onClose={() => {
             setIsModalOpen(false);
             setEditingWorksheet(null);

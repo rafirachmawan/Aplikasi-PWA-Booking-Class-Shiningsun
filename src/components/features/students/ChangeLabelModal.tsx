@@ -298,6 +298,7 @@ export function ChangeLabelModal({
           }]}
           teachers={teachersList}
           templates={templatesList}
+          labels={labels}
           initialData={{ student_id: student.id }}
           onClose={() => setIsWorksheetModalOpen(false)}
           onSuccess={() => {

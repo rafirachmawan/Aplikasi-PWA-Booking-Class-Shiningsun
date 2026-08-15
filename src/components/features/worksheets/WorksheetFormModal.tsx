@@ -8,13 +8,20 @@ import {
   getGDriveDirectLink,
   extractGDriveFileId,
 } from "@/lib/gdriveUtils";
-import { getTodayISO, formatShortDate } from "@/lib/dateUtils";
+import {
+  getTodayISO,
+  formatShortDate,
+  formatFullIndonesianDate,
+  parseIndonesianDateToISO,
+} from "@/lib/dateUtils";
 
 interface WorksheetFormModalProps {
   students: any[];
   teachers?: any[];
   templates?: any[];
+  labels?: any[];
   initialData?: any;
+  worksheets?: any[];
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -28,11 +35,25 @@ const parseBulletList = (text?: string): string[] => {
   return lines.length > 0 ? lines : [""];
 };
 
+function formatAnandaLine(rawLine: string): string {
+  let clean = rawLine.replace(/^[-•*]\s*/, "").trim();
+  if (!clean || clean === "-") return "-";
+  if (/ananda/i.test(clean)) {
+    return clean;
+  }
+  if (/siswa/i.test(clean)) {
+    return clean.replace(/siswa/gi, "Ananda");
+  }
+  return `Ananda ${clean}`;
+}
+
 export function WorksheetFormModal({
   students,
   teachers = [],
   templates = [],
+  labels = [],
   initialData,
+  worksheets = [],
   onClose,
   onSuccess,
 }: WorksheetFormModalProps) {
@@ -64,6 +85,7 @@ export function WorksheetFormModal({
   const isAbsent = attendanceStatus !== "HADIR";
 
   // Custom Student Dropdown State
+  const formRef = useRef<HTMLFormElement>(null);
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
   const [studentSearch, setStudentSearch] = useState("");
   const studentDropdownRef = useRef<HTMLDivElement>(null);
@@ -135,6 +157,73 @@ export function WorksheetFormModal({
   const [bulanKe, setBulanKe] = useState(
     initialData?.bulan_ke?.toString() || "",
   );
+  const [isManualBulanKe, setIsManualBulanKe] = useState(false);
+
+  // Automatic Bulan Ke Calculation Logic
+  const autoCalculatedBulanKeInfo = useMemo(() => {
+    const activeId = studentId || initialData?.student_id;
+    if (!activeId || !worksheets || worksheets.length === 0) {
+      return { value: "1", isAuto: false, reason: "Belum ada data sebelumnya (Default Bulan ke-1)" };
+    }
+
+    // Filter worksheets for selected student
+    const studentWorksheets = worksheets.filter((w) => {
+      const matchStudent = w.student_id === activeId || w.student?.id === activeId;
+      const isNotSelf = !isEditing || w.id !== initialData?.id;
+      return matchStudent && isNotSelf;
+    });
+
+    if (studentWorksheets.length === 0) {
+      return { value: "1", isAuto: false, reason: "Belum ada data sebelumnya (Default Bulan ke-1)" };
+    }
+
+    // Find earliest worksheet by worksheet_date
+    const sorted = [...studentWorksheets].sort((a, b) => {
+      const dateA = new Date(parseIndonesianDateToISO(a.worksheet_date)).getTime();
+      const dateB = new Date(parseIndonesianDateToISO(b.worksheet_date)).getTime();
+      return dateA - dateB;
+    });
+
+    const earliest = sorted[0];
+    if (!earliest || !earliest.worksheet_date) {
+      return { value: "1", isAuto: false, reason: "Default Bulan ke-1" };
+    }
+
+    const startMonthDate = new Date(parseIndonesianDateToISO(earliest.worksheet_date));
+    const startBulanKe = earliest.bulan_ke ? parseInt(earliest.bulan_ke.toString(), 10) : 1;
+
+    const currentSessionDate = new Date(parseIndonesianDateToISO(worksheetDate));
+    if (isNaN(startMonthDate.getTime()) || isNaN(currentSessionDate.getTime())) {
+      return { value: "1", isAuto: false, reason: "Default Bulan ke-1" };
+    }
+
+    const yearDiff = currentSessionDate.getFullYear() - startMonthDate.getFullYear();
+    const monthDiff = currentSessionDate.getMonth() - startMonthDate.getMonth();
+    const totalMonthDiff = yearDiff * 12 + monthDiff;
+
+    const calculated = Math.max(1, startBulanKe + Math.max(0, totalMonthDiff));
+
+    const MONTH_NAMES_SHORT = [
+      "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+      "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+    ];
+    const earliestMonthStr = `${MONTH_NAMES_SHORT[startMonthDate.getMonth()]} ${startMonthDate.getFullYear()}`;
+
+    return {
+      value: calculated.toString(),
+      isAuto: true,
+      reason: `Otomatis (+${Math.max(0, totalMonthDiff)} bulan dari ${earliestMonthStr}, awal Bulan ke-${startBulanKe})`,
+    };
+  }, [studentId, initialData, worksheets, worksheetDate, isEditing]);
+
+  // Sync bulanKe with autoCalculatedBulanKeInfo when creating new report and not manual
+  useEffect(() => {
+    if (!isEditing && !isManualBulanKe) {
+      if (autoCalculatedBulanKeInfo?.value) {
+        setBulanKe(autoCalculatedBulanKeInfo.value);
+      }
+    }
+  }, [autoCalculatedBulanKeInfo, isEditing, isManualBulanKe]);
 
   const handleAttendanceChange = (status: AttendanceStatus) => {
     setAttendanceStatus(status);
@@ -248,7 +337,7 @@ export function WorksheetFormModal({
   };
 
   // Dynamic template lists per category
-  // Filter materi by student's label: show templates matching student label OR templates without label_id (global)
+  // Filter materi by selected level (or student's level)
   const activeStudentLabel = activeStudent?.label;
   const activeStudentLabelId =
     activeStudent?.label_id ||
@@ -256,17 +345,144 @@ export function WorksheetFormModal({
       ? activeStudentLabel[0]?.id
       : activeStudentLabel?.id) ||
     null;
-  const materiTemplates = templates.filter(
-    (t) => (t.category || "materi") === "materi",
-  );
-  const kegiatanTemplates = templates.filter(
-    (t) => (t.category || "kegiatan") === "kegiatan",
-  );
-  const pemahamanTemplates = templates.filter(
-    (t) => t.category === "pemahaman",
-  );
-  const rumahTemplates = templates.filter((t) => t.category === "rumah");
-  const afirmasiTemplates = templates.filter((t) => t.category === "afirmasi");
+
+  const availableLevels = useMemo(() => {
+    const map = new Map<
+      string,
+      { id: string; main_level: string; sub_level: string; hex_color?: string }
+    >();
+
+    // 1. Incorporate all master labels if provided
+    if (labels && Array.isArray(labels)) {
+      labels.forEach((lbl) => {
+        if (lbl && lbl.id && !map.has(lbl.id)) {
+          map.set(lbl.id, {
+            id: lbl.id,
+            main_level: lbl.main_level || "Level",
+            sub_level: lbl.sub_level || "",
+            hex_color: lbl.hex_color || "#0284c7",
+          });
+        }
+      });
+    }
+
+    // 2. Incorporate labels attached to templates
+    templates.forEach((t) => {
+      if (t.label_id || t.label) {
+        const lbls = Array.isArray(t.label) ? t.label : [t.label];
+        lbls.forEach((lbl: any) => {
+          const lId = t.label_id || lbl?.id;
+          if (lId && !map.has(lId)) {
+            map.set(lId, {
+              id: lId,
+              main_level: lbl?.main_level || "Level",
+              sub_level: lbl?.sub_level || "",
+              hex_color: lbl?.hex_color || "#0284c7",
+            });
+          }
+        });
+      }
+    });
+
+    // 3. Incorporate active student's label if not already present
+    if (activeStudentLabelId && activeStudentLabel) {
+      const lbls = Array.isArray(activeStudentLabel)
+        ? activeStudentLabel
+        : [activeStudentLabel];
+      lbls.forEach((lbl: any) => {
+        if (lbl && lbl.id && !map.has(lbl.id)) {
+          map.set(lbl.id, {
+            id: lbl.id,
+            main_level: lbl.main_level || "Level",
+            sub_level: lbl.sub_level || "",
+            hex_color: lbl.hex_color || "#0284c7",
+          });
+        }
+      });
+    }
+
+    return Array.from(map.values());
+  }, [templates, labels, activeStudentLabelId, activeStudentLabel]);
+
+  const [selectedLevelId, setSelectedLevelId] = useState<string>(() => {
+    if (activeStudentLabelId) return activeStudentLabelId;
+    if (initialData?.id) return "ALL";
+    return "";
+  });
+
+  useEffect(() => {
+    if (activeStudentLabelId) {
+      setSelectedLevelId(activeStudentLabelId);
+    } else if (initialData?.id) {
+      setSelectedLevelId((prev) => prev || "ALL");
+    } else {
+      setSelectedLevelId("");
+    }
+  }, [activeStudentLabelId, initialData?.id]);
+
+  const selectedLevelObj = useMemo(() => {
+    if (!selectedLevelId || selectedLevelId === "ALL") return null;
+    return availableLevels.find((l) => l.id === selectedLevelId) || null;
+  }, [availableLevels, selectedLevelId]);
+
+  const filteredTemplatesByLevel = useMemo(() => {
+    if (!selectedLevelId) return [];
+    if (selectedLevelId === "ALL") return templates;
+    return templates.filter((t) => {
+      const tLabels = Array.isArray(t.label)
+        ? t.label
+        : t.label
+        ? [t.label]
+        : [];
+      const tLabelIds = new Set<string>();
+      if (t.label_id) tLabelIds.add(t.label_id);
+      tLabels.forEach((l: any) => {
+        if (l?.id) tLabelIds.add(l.id);
+      });
+
+      if (tLabelIds.has(selectedLevelId)) return true;
+
+      if (selectedLevelObj) {
+        return tLabels.some((l: any) => {
+          if (!l) return false;
+          const mainMatch =
+            (l.main_level || "").trim().toLowerCase() ===
+            (selectedLevelObj.main_level || "").trim().toLowerCase();
+          const subMatch =
+            (l.sub_level || "").trim().toLowerCase() ===
+            (selectedLevelObj.sub_level || "").trim().toLowerCase();
+          return mainMatch && subMatch;
+        });
+      }
+      return false;
+    });
+  }, [templates, selectedLevelId, selectedLevelObj]);
+
+  const materiTemplates = useMemo(() => {
+    return filteredTemplatesByLevel.filter(
+      (t) => (t.category || "materi") === "materi",
+    );
+  }, [filteredTemplatesByLevel]);
+
+  const kegiatanTemplates = useMemo(() => {
+    return filteredTemplatesByLevel.filter(
+      (t) => (t.category || "kegiatan") === "kegiatan",
+    );
+  }, [filteredTemplatesByLevel]);
+
+  const pemahamanTemplates = useMemo(() => {
+    return filteredTemplatesByLevel.filter(
+      (t) => t.category === "pemahaman",
+    );
+  }, [filteredTemplatesByLevel]);
+
+  const rumahTemplates = useMemo(() => {
+    return filteredTemplatesByLevel.filter((t) => t.category === "rumah");
+  }, [filteredTemplatesByLevel]);
+
+  const afirmasiTemplates = useMemo(() => {
+    return filteredTemplatesByLevel.filter((t) => t.category === "afirmasi");
+  }, [filteredTemplatesByLevel]);
 
   const defaultKegiatanOptions =
     kegiatanTemplates.length > 0
@@ -369,12 +585,14 @@ export function WorksheetFormModal({
   const [smartRumahId, setSmartRumahId] = useState<string>("");
   const [smartAfirmasiId, setSmartAfirmasiId] = useState<string>("");
 
-  // Custom Dropdown Open State ('materi' | 'kegiatan' | 'pemahaman' | 'rumah' | 'afirmasi' | 'guru' | null)
+  // Custom Dropdown Open State ('materi' | 'kegiatan' | 'pemahaman' | 'rumah' | 'afirmasi' | 'guru' | 'level' | null)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [teacherSearch, setTeacherSearch] = useState("");
   const teacherSearchInputRef = useRef<HTMLInputElement>(null);
   const [materiSearch, setMateriSearch] = useState("");
   const materiSearchInputRef = useRef<HTMLInputElement>(null);
+  const [levelSearch, setLevelSearch] = useState("");
+  const levelSearchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (openDropdown === "guru") {
@@ -385,9 +603,14 @@ export function WorksheetFormModal({
       setTimeout(() => {
         materiSearchInputRef.current?.focus();
       }, 50);
+    } else if (openDropdown === "level") {
+      setTimeout(() => {
+        levelSearchInputRef.current?.focus();
+      }, 50);
     } else {
       setTeacherSearch("");
       setMateriSearch("");
+      setLevelSearch("");
     }
   }, [openDropdown]);
 
@@ -402,6 +625,17 @@ export function WorksheetFormModal({
     const q = materiSearch.toLowerCase();
     return materiTemplates.filter((t) => t.title.toLowerCase().includes(q));
   }, [materiTemplates, materiSearch]);
+
+  const filteredAvailableLevels = useMemo(() => {
+    if (!levelSearch.trim()) return availableLevels;
+    const q = levelSearch.toLowerCase();
+    return availableLevels.filter(
+      (lvl) =>
+        lvl.main_level.toLowerCase().includes(q) ||
+        lvl.sub_level.toLowerCase().includes(q) ||
+        `${lvl.main_level} ${lvl.sub_level}`.toLowerCase().includes(q),
+    );
+  }, [availableLevels, levelSearch]);
 
   const selectedKegiatan = defaultKegiatanOptions.find(
     (o) => o.id === smartKegiatanId,
@@ -461,15 +695,18 @@ export function WorksheetFormModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const finalTitle = title.trim() || materi.trim() || "Laporan Perkembangan";
-    if (!isEditing && !studentId) {
+    const effectiveStudentId =
+      studentId ||
+      initialData?.student_id ||
+      (students.length === 1 ? students[0].id : "");
+
+    if (!isEditing && !effectiveStudentId) {
       setErrorMsg("Pilih siswa terlebih dahulu.");
+      formRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
-    if (!bulanKe) {
-      setErrorMsg("Pilih bulan ke- terlebih dahulu.");
-      return;
-    }
+    const effectiveBulanKe = bulanKe || "1";
 
     const formattedKegiatan = kegiatanItems
       .map((item) => item.trim())
@@ -488,10 +725,10 @@ export function WorksheetFormModal({
 
     try {
       const formData = new FormData();
-      formData.append("student_id", studentId);
+      formData.append("student_id", effectiveStudentId);
       formData.append("title", finalTitle);
       formData.append("description", description.trim());
-      formData.append("worksheet_date", worksheetDate);
+      formData.append("worksheet_date", parseIndonesianDateToISO(worksheetDate));
       formData.append("gdrive_link", gdriveLink.trim());
       formData.append("materi", materi.trim());
       formData.append("kegiatan", formattedKegiatan);
@@ -499,7 +736,7 @@ export function WorksheetFormModal({
       formData.append("catatan_guru", catatanGuru.trim());
       formData.append("rekomendasi_rumah", rekomendasiRumah.trim());
       formData.append("ttd_guru", ttdGuru.trim());
-      if (bulanKe) formData.append("bulan_ke", bulanKe);
+      formData.append("bulan_ke", effectiveBulanKe);
 
       if (isEditing) {
         await updateWorksheet(initialData.id, formData);
@@ -507,10 +744,18 @@ export function WorksheetFormModal({
         await createWorksheet(formData);
       }
 
-      onSuccess();
       onClose();
+      if (onSuccess) {
+        try {
+          onSuccess();
+        } catch (err) {
+          console.error("onSuccess callback error:", err);
+        }
+      }
     } catch (err: any) {
+      console.error("Failed to save worksheet:", err);
       setErrorMsg(err.message || "Gagal menyimpan laporan perkembangan.");
+      formRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setIsSubmitting(false);
     }
@@ -559,6 +804,7 @@ export function WorksheetFormModal({
 
         {/* Form Body */}
         <form
+          ref={formRef}
           onSubmit={handleSubmit}
           className="p-3.5 sm:p-6 space-y-4 sm:space-y-5 max-h-[82vh] sm:max-h-[75vh] overflow-y-auto custom-scrollbar"
         >
@@ -756,23 +1002,46 @@ export function WorksheetFormModal({
             </div>
 
             {/* Date & Bulan Ke Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
                   Tanggal Sesi <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
-                  value={worksheetDate}
+                  value={/^\d{4}-\d{2}-\d{2}$/.test(worksheetDate) ? worksheetDate : ""}
                   onChange={(e) => setWorksheetDate(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs"
                 />
+                <input
+                  type="text"
+                  value={worksheetDate}
+                  onChange={(e) => setWorksheetDate(e.target.value)}
+                  placeholder="Atau ketik manual: 16 Agustus 2026 (Tanggal Bulan Tahun)..."
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none placeholder:text-slate-400 shadow-2xs"
+                />
+                <span className="text-[10px] text-slate-400 block">
+                  💡 Format manual: <b>Tanggal Bulan Tahun</b> (contoh: 16 Agustus 2026 atau 16/08/2026).
+                </span>
               </div>
 
               <div className="relative" ref={bulanKeDropdownRef}>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Bulan ke- <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    Bulan ke- <span className="text-red-500">*</span>
+                  </label>
+                  {autoCalculatedBulanKeInfo.isAuto && !isManualBulanKe && (
+                    <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60">
+                      ⚡ Otomatis
+                    </span>
+                  )}
+                  {isManualBulanKe && (
+                    <span className="text-[10px] font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800/60">
+                      ✏️ Manual
+                    </span>
+                  )}
+                </div>
+
                 <button
                   type="button"
                   onClick={() =>
@@ -780,8 +1049,13 @@ export function WorksheetFormModal({
                   }
                   className="w-full flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/80 cursor-pointer"
                 >
-                  <span className="truncate font-bold">
-                    {bulanKe ? `Bulan ke-${bulanKe}` : "-- Pilih Bulan --"}
+                  <span className="truncate font-bold flex items-center gap-1.5">
+                    <span>📅 {bulanKe ? `Bulan ke-${bulanKe}` : "-- Pilih Bulan --"}</span>
+                    {autoCalculatedBulanKeInfo.isAuto && !isManualBulanKe && (
+                      <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        (Otomatis)
+                      </span>
+                    )}
                   </span>
                   <Icons.chevronDown
                     className={`h-3.5 w-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
@@ -790,17 +1064,37 @@ export function WorksheetFormModal({
                   />
                 </button>
 
+                <span className="text-[10px] text-slate-400 block mt-1">
+                  💡 {autoCalculatedBulanKeInfo.reason}
+                </span>
+
                 {/* Custom Popover for Bulan Ke */}
                 {isBulanKeDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150 max-h-48 overflow-y-auto custom-scrollbar">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => {
+                  <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150 max-h-56 overflow-y-auto custom-scrollbar">
+                    {autoCalculatedBulanKeInfo.isAuto && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBulanKe(autoCalculatedBulanKeInfo.value);
+                          setIsManualBulanKe(false);
+                          setIsBulanKeDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200 font-extrabold border border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all flex items-center justify-between cursor-pointer mb-1"
+                      >
+                        <span>⚡ Gunakan Rekomendasi Otomatis (Bulan ke-{autoCalculatedBulanKeInfo.value})</span>
+                        {!isManualBulanKe && <span className="text-emerald-600 font-bold">✓</span>}
+                      </button>
+                    )}
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].map((m) => {
                       const isSel = bulanKe === m.toString();
+                      const isAutoTarget = autoCalculatedBulanKeInfo.isAuto && autoCalculatedBulanKeInfo.value === m.toString();
                       return (
                         <button
                           key={m}
                           type="button"
                           onClick={() => {
                             setBulanKe(m.toString());
+                            setIsManualBulanKe(true);
                             setIsBulanKeDropdownOpen(false);
                           }}
                           className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
@@ -809,7 +1103,14 @@ export function WorksheetFormModal({
                               : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                           }`}
                         >
-                          <span>📅 Bulan ke-{m}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span>📅 Bulan ke-{m}</span>
+                            {isAutoTarget && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-extrabold">
+                                ⚡ Rekomendasi
+                              </span>
+                            )}
+                          </div>
                           {isSel && (
                             <span className="text-brand-600 dark:text-brand-400 font-bold shrink-0 text-xs">
                               ✓
@@ -951,114 +1252,161 @@ export function WorksheetFormModal({
               className={`space-y-3.5 sm:space-y-4 transition-opacity duration-200 ${isAbsent ? "opacity-50 pointer-events-none" : ""}`}
             >
               {/* 1. Materi yang Diajarkan (Unified Dropdown + Input) */}
-              <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-sky-200/90 dark:border-slate-800 shadow-xs space-y-2">
+              <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-sky-200/90 dark:border-slate-800 shadow-xs space-y-2.5">
                 <div className="flex items-center justify-between flex-wrap gap-1">
                   <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                     <span>1. Materi yang Diajarkan</span>
                   </label>
-                  {activeStudentLabelId &&
-                    activeStudentLabel &&
-                    (() => {
-                      const lbl = Array.isArray(activeStudentLabel)
-                        ? activeStudentLabel[0]
-                        : activeStudentLabel;
-                      if (!lbl) return null;
-                      return (
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0"
-                          style={{
-                            backgroundColor: `${lbl.hex_color}20`,
-                            borderColor: `${lbl.hex_color}60`,
-                            color: lbl.hex_color,
-                          }}
-                        >
-                          <span
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: lbl.hex_color }}
-                          />
-                          Level: {lbl.main_level} {lbl.sub_level}
-                        </span>
-                      );
-                    })()}
+                  {selectedLevelObj && (
+                    <span
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border shrink-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                      style={{
+                        borderColor: `${selectedLevelObj.hex_color || '#0284c7'}80`,
+                      }}
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0 border border-black/10"
+                        style={{ backgroundColor: selectedLevelObj.hex_color || '#0284c7' }}
+                      />
+                      Level: {selectedLevelObj.main_level} {selectedLevelObj.sub_level}
+                    </span>
+                  )}
                 </div>
 
-                {/* Dropdown Template Materi */}
-                {materiTemplates.length > 0 && (
+                {/* Level Filter Selector Bar (Custom Color Dropdown) */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-sky-50/80 dark:bg-slate-800/80 p-2.5 rounded-xl border border-sky-200/80 dark:border-slate-700">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-sky-900 dark:text-sky-200">
+                    <span>🎯 Pilih Level Materi:</span>
+                  </div>
+
                   <div className="relative">
                     <button
                       type="button"
                       disabled={isAbsent}
                       onClick={() =>
-                        setOpenDropdown(
-                          openDropdown === "materi" ? null : "materi",
-                        )
+                        setOpenDropdown(openDropdown === "level" ? null : "level")
                       }
-                      className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-sky-300 dark:border-sky-800 bg-sky-50/60 dark:bg-slate-800 text-sky-950 dark:text-sky-200 text-xs font-semibold shadow-xs hover:border-sky-400 cursor-pointer text-left"
+                      className="w-full sm:w-auto flex items-center justify-between gap-2.5 px-3 py-2 rounded-xl border border-sky-300 dark:border-sky-700 bg-white dark:bg-slate-900 text-xs font-extrabold shadow-xs hover:border-sky-400 cursor-pointer min-w-[210px] text-left"
                     >
-                      <span className="truncate">
-                        {smartMateriText
-                          ? `📚 ${smartMateriText}`
-                          : "-- Pilih Materi --"}
-                      </span>
+                      <div className="flex items-center gap-2 truncate min-w-0">
+                        {selectedLevelObj ? (
+                          <>
+                            <span
+                              className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs border border-black/10"
+                              style={{
+                                backgroundColor:
+                                  selectedLevelObj.hex_color || "#0284c7",
+                              }}
+                            />
+                            <span className="text-slate-900 dark:text-slate-100 font-extrabold truncate">
+                              {selectedLevelObj.main_level}{" "}
+                              {selectedLevelObj.sub_level}
+                            </span>
+                          </>
+                        ) : selectedLevelId === "ALL" ? (
+                          <>
+                            <span className="w-3 h-3 rounded-full shrink-0 bg-sky-500 shadow-xs" />
+                            <span className="text-sky-900 dark:text-sky-200 font-extrabold">
+                              🌐 Semua Level
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-amber-400 animate-pulse shadow-xs" />
+                            <span className="text-amber-800 dark:text-amber-300 font-extrabold italic">
+                              -- Pilih Level Materi --
+                            </span>
+                          </>
+                        )}
+                      </div>
                       <Icons.chevronDown
-                        className={`w-3.5 h-3.5 text-sky-600 shrink-0 transition-transform duration-200 ${openDropdown === "materi" ? "rotate-180" : ""}`}
+                        className={`w-3.5 h-3.5 text-sky-600 shrink-0 transition-transform duration-200 ${
+                          openDropdown === "level" ? "rotate-180" : ""
+                        }`}
                       />
                     </button>
 
-                    {openDropdown === "materi" && (
-                      <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-2 space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
-                        {/* Search input for Materi */}
+                    {openDropdown === "level" && (
+                      <div className="absolute top-full right-0 mt-1.5 z-50 w-full sm:w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-2 space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
+                        {/* Search input for Level */}
                         <div className="p-1">
                           <input
-                            ref={materiSearchInputRef}
+                            ref={levelSearchInputRef}
                             type="text"
-                            value={materiSearch}
-                            onChange={(e) => setMateriSearch(e.target.value)}
-                            placeholder="🔍 Cari template materi..."
+                            value={levelSearch}
+                            onChange={(e) => setLevelSearch(e.target.value)}
+                            placeholder="🔍 Cari level..."
                             className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-sky-500 focus:outline-none font-medium"
                             onClick={(e) => e.stopPropagation()}
                             autoFocus
                           />
                         </div>
 
-                        <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                          {filteredMateriTemplates.length === 0 ? (
+                        {/* Scrollable Container showing ~8-10 items */}
+                        <div className="max-h-60 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                          {/* Option: Semua Level */}
+                          {(!levelSearch.trim() ||
+                            "semua level".includes(levelSearch.toLowerCase())) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedLevelId("ALL");
+                                setOpenDropdown(null);
+                                setLevelSearch("");
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                                selectedLevelId === "ALL"
+                                  ? "bg-sky-50 dark:bg-sky-950/70 text-sky-900 dark:text-sky-200 font-extrabold border border-sky-200 dark:border-sky-800"
+                                  : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full bg-sky-500 shadow-xs flex items-center justify-center text-[9px] text-white">
+                                  🌐
+                                </span>
+                                Semua Level
+                              </span>
+                              {selectedLevelId === "ALL" && (
+                                <span className="text-sky-600 font-extrabold">✓</span>
+                              )}
+                            </button>
+                          )}
+
+                          {/* Available Levels List with Hex Colors */}
+                          {filteredAvailableLevels.length === 0 ? (
                             <div className="py-3 text-center text-xs text-slate-400 italic">
-                              Materi tidak ditemukan.
+                              Level tidak ditemukan.
                             </div>
                           ) : (
-                            filteredMateriTemplates.map((t) => {
-                              const isSel = smartMateriText === t.title;
-                              const tplLabel = Array.isArray(t.label)
-                                ? t.label[0]
-                                : t.label;
+                            filteredAvailableLevels.map((lvl) => {
+                              const isSel = selectedLevelId === lvl.id;
+                              const color = lvl.hex_color || "#0284c7";
                               return (
                                 <button
-                                  key={t.id}
+                                  key={lvl.id}
                                   type="button"
                                   onClick={() => {
-                                    setSmartMateriText(t.title);
-                                    setMateri(t.title);
+                                    setSelectedLevelId(lvl.id);
                                     setOpenDropdown(null);
+                                    setLevelSearch("");
                                   }}
-                                  className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
+                                  className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
                                     isSel
-                                      ? "bg-sky-100 dark:bg-sky-900/60 text-sky-900 dark:text-sky-200 font-extrabold"
+                                      ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold border border-slate-300 dark:border-slate-700 shadow-2xs"
                                       : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                                   }`}
                                 >
-                                  <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-                                    <span className="break-words whitespace-normal leading-snug">
-                                      📚 {t.title}
+                                  <span className="flex items-center gap-2.5 min-w-0">
+                                    <span
+                                      className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs border border-black/10"
+                                      style={{ backgroundColor: color }}
+                                    />
+                                    <span className="truncate font-extrabold text-slate-900 dark:text-slate-100">
+                                      {lvl.main_level} {lvl.sub_level}
                                     </span>
-                                    {tplLabel && (
-                                      <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
-                                        Level: {tplLabel.main_level} {tplLabel.sub_level}
-                                      </span>
-                                    )}
-                                  </div>
+                                  </span>
                                   {isSel && (
-                                    <span className="text-sky-600 shrink-0 text-xs font-bold mt-0.5">
+                                    <span className="font-extrabold text-xs text-sky-600 dark:text-sky-400">
                                       ✓
                                     </span>
                                   )}
@@ -1070,6 +1418,112 @@ export function WorksheetFormModal({
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* Dropdown Template Materi (Hanya muncul saat Level sudah dipilih) */}
+                {!selectedLevelId ? (
+                  <div className="p-3.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 text-amber-800 dark:text-amber-200 text-xs font-semibold flex items-center gap-2.5 shadow-2xs">
+                    <span className="text-base shrink-0">💡</span>
+                    <span>Silakan <strong>Pilih Level Materi</strong> terlebih dahulu di atas untuk menampilkan pilihan materi/soal yang sesuai.</span>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      disabled={isAbsent}
+                      onClick={() =>
+                        setOpenDropdown(
+                          openDropdown === "materi" ? null : "materi",
+                        )
+                      }
+                      className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-sky-300 dark:border-sky-800 bg-sky-50/60 dark:bg-slate-800 text-sky-950 dark:text-sky-200 text-xs font-semibold shadow-xs hover:border-sky-400 cursor-pointer text-left"
+                    >
+                      <span className="truncate">
+                        {smartMateriText
+                          ? `📚 ${smartMateriText}`
+                          : "-- Pilih Materi --"}
+                      </span>
+                      <Icons.chevronDown
+                        className={`w-3.5 h-3.5 text-sky-600 shrink-0 transition-transform duration-200 ${openDropdown === "materi" ? "rotate-180" : ""}`}
+                      />
+                    </button>
+
+                  {openDropdown === "materi" && (
+                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
+                      {/* Search input for Materi */}
+                      <div className="p-1">
+                        <input
+                          ref={materiSearchInputRef}
+                          type="text"
+                          value={materiSearch}
+                          onChange={(e) => setMateriSearch(e.target.value)}
+                          placeholder="🔍 Cari template materi..."
+                          className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-sky-500 focus:outline-none font-medium"
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                        />
+                      </div>
+
+                      <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                        {filteredMateriTemplates.length === 0 ? (
+                          <div className="py-4 text-center text-xs text-slate-400 italic space-y-1">
+                            <div>Tidak ada materi untuk level ini.</div>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedLevelId("ALL")}
+                              className="text-sky-600 dark:text-sky-400 font-bold underline cursor-pointer hover:text-sky-700"
+                            >
+                              Tampilkan Semua Level
+                            </button>
+                          </div>
+                        ) : (
+                          filteredMateriTemplates.map((t) => {
+                            const isSel = smartMateriText === t.title;
+                            const tplLabel = Array.isArray(t.label)
+                              ? t.label[0]
+                              : t.label;
+                            return (
+                              <button
+                                key={t.id}
+                                type="button"
+                                onClick={() => {
+                                  setSmartMateriText(t.title);
+                                  setMateri(t.title);
+                                  setOpenDropdown(null);
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
+                                  isSel
+                                    ? "bg-sky-100 dark:bg-sky-900/60 text-sky-900 dark:text-sky-200 font-extrabold"
+                                    : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                                }`}
+                              >
+                                <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+                                  <span className="break-words whitespace-normal leading-snug">
+                                    📚 {t.title}
+                                  </span>
+                                  {tplLabel && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                                      <span
+                                        className="w-2 h-2 rounded-full shrink-0 border border-black/10"
+                                        style={{ backgroundColor: tplLabel.hex_color || "#0284c7" }}
+                                      />
+                                      Level: {tplLabel.main_level} {tplLabel.sub_level}
+                                    </span>
+                                  )}
+                                </div>
+                                {isSel && (
+                                  <span className="text-sky-600 shrink-0 text-xs font-bold mt-0.5">
+                                    ✓
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 )}
 
                 {/* Direct Text Input for Materi */}
@@ -1501,33 +1955,58 @@ export function WorksheetFormModal({
                 📸 Upload Foto Hasil Belajar (Otomatis ke Google Drive):
               </label>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <input
-                  type="file"
-                  accept="image/*"
-                  id="gdrive-file-input"
-                  className="hidden"
-                  onChange={(e) => {
-                    handleFileChange(e);
-                    if (e.target.files?.[0]) {
-                      handleUploadToGDrive(e.target.files[0]);
-                    }
-                  }}
-                />
-                <label
-                  htmlFor="gdrive-file-input"
-                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700 shadow-xs active:scale-95"
-                >
-                  <Icons.add className="w-4 h-4 text-brand-600" />
-                  <span>
-                    {selectedFile
-                      ? "📁 Ganti Foto..."
-                      : "📁 Pilih Foto dari HP / Laptop"}
-                  </span>
-                </label>
+              <div className="space-y-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                  {/* Input 1: Galeri / File */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="gdrive-file-input-gallery"
+                    className="hidden"
+                    onChange={(e) => {
+                      handleFileChange(e);
+                      if (e.target.files?.[0]) {
+                        handleUploadToGDrive(e.target.files[0]);
+                      }
+                    }}
+                  />
+
+                  {/* Input 2: Kamera Langsung */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    id="gdrive-file-input-camera"
+                    className="hidden"
+                    onChange={(e) => {
+                      handleFileChange(e);
+                      if (e.target.files?.[0]) {
+                        handleUploadToGDrive(e.target.files[0]);
+                      }
+                    }}
+                  />
+
+                  {/* Tombol Kamera */}
+                  <label
+                    htmlFor="gdrive-file-input-camera"
+                    className="px-3.5 py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-brand-200 dark:border-brand-800 shadow-xs active:scale-95 flex-1"
+                  >
+                    <span className="text-sm">📷</span>
+                    <span>Ambil Foto (Kamera)</span>
+                  </label>
+
+                  {/* Tombol Galeri */}
+                  <label
+                    htmlFor="gdrive-file-input-gallery"
+                    className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-300 dark:border-slate-700 shadow-xs active:scale-95 flex-1"
+                  >
+                    <span className="text-sm">🖼️</span>
+                    <span>Pilih dari Galeri</span>
+                  </label>
+                </div>
 
                 {isUploadingGDrive && (
-                  <div className="flex items-center gap-2 text-xs font-semibold text-brand-600 dark:text-brand-400 animate-pulse">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-brand-600 dark:text-brand-400 animate-pulse pt-1">
                     <span className="w-3.5 h-3.5 border-2 border-brand-600 border-t-transparent rounded-full animate-spin"></span>
                     <span>Mengunggah ke Google Drive...</span>
                   </div>
@@ -1740,7 +2219,7 @@ export function WorksheetFormModal({
                                 <span className="text-sky-500 font-bold shrink-0 mt-0.5">
                                   -
                                 </span>
-                                <span>{line.replace(/^[-•]\s*/, "")}</span>
+                                <span>{formatAnandaLine(line)}</span>
                               </div>
                             ))
                         ) : (
@@ -1762,7 +2241,7 @@ export function WorksheetFormModal({
                                 <span className="text-sky-500 font-bold shrink-0 mt-0.5">
                                   -
                                 </span>
-                                <span>{line.replace(/^[-•]\s*/, "")}</span>
+                                <span>{formatAnandaLine(line)}</span>
                               </div>
                             ))
                         ) : (
@@ -1829,6 +2308,12 @@ export function WorksheetFormModal({
           </div>
 
           {/* Submit Actions */}
+          {errorMsg && (
+            <div className="p-3 rounded-xl bg-red-50 text-red-700 text-xs font-semibold border border-red-200/60 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50 flex items-center gap-2">
+              <span>⚠️</span>
+              <span>{errorMsg}</span>
+            </div>
+          )}
           <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"

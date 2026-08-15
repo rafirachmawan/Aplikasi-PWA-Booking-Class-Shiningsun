@@ -81,12 +81,7 @@ const quickActions = [
   },
 ];
 
-const lockedRoutes: Record<string, { label: string; sessionKey: string }> = {
-  "/worksheets": { label: "Laporan Perkembangan", sessionKey: "worksheets_unlocked" },
-  "/points": { label: "Poin Kehadiran", sessionKey: "points_unlocked" },
-  "/teachers": { label: "Kelola Guru", sessionKey: "teachers_unlocked" },
-  "/templates": { label: "Template Penilaian", sessionKey: "templates_unlocked" },
-};
+const lockedRoutes: Record<string, { label: string; sessionKey: string }> = {};
 
 interface QuickAccessLinksProps {
   isSuperadmin?: boolean;
@@ -105,18 +100,12 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
 
   const [lockPasswords, setLockPasswords] = useState<Record<string, string>>({
     "/points": "123",
-    "/worksheets": "123",
-    "/teachers": "123",
-    "/templates": "123",
   });
 
   // Super Admin Password Management Modal State
   const [showSuperAdminModal, setShowSuperAdminModal] = useState(false);
   const [superAdminPasswords, setSuperAdminPasswords] = useState<Record<string, string>>({
     "/points": "123",
-    "/worksheets": "123",
-    "/teachers": "123",
-    "/templates": "123",
   });
   const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
   const [superAdminSuccessMsg, setSuperAdminSuccessMsg] = useState("");
@@ -128,7 +117,7 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
     setSuperAdminErrorMsg("");
     setIsSavingAll(true);
     try {
-      const routesToSave = ["/points", "/worksheets", "/teachers", "/templates"];
+      const routesToSave = ["/points"];
       const updatedPasswords: Record<string, string> = { ...lockPasswords };
 
       for (const route of routesToSave) {
@@ -342,10 +331,7 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
 
             <div className="space-y-3.5 max-h-[60vh] overflow-y-auto pr-1">
               {[
-                { route: "/points", name: "Poin Kehadiran", icon: "⭐", desc: "Password akses halaman Poin Kehadiran Siswa" },
-                { route: "/worksheets", name: "Laporan Perkembangan", icon: "📄", desc: "Password akses halaman Laporan Perkembangan" },
-                { route: "/teachers", name: "Kelola Guru", icon: "👨‍🏫", desc: "Password akses halaman Kelola Data Guru" },
-                { route: "/templates", name: "Template Penilaian", icon: "📋", desc: "Password akses halaman Template Penilaian" },
+                { route: "/points", name: "Fitur Tambah Poin", icon: "⭐", desc: "Password akses untuk tombol Tambah Poin Manual" },
               ].map((item) => {
                 const currentVal = superAdminPasswords[item.route] ?? lockPasswords[item.route] ?? "123";
                 const isShowPass = !!showPasswordMap[item.route];

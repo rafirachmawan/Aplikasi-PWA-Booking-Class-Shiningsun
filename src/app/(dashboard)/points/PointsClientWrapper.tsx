@@ -9,70 +9,28 @@ interface PointsClientWrapperProps {
   students: any[];
   activeBranchName?: string | null;
   initialRedemptions?: any[];
+  initialAttendanceHistory?: any[];
 }
 
 export function PointsClientWrapper({
   students: initialStudents,
   activeBranchName,
   initialRedemptions = [],
+  initialAttendanceHistory = [],
 }: PointsClientWrapperProps) {
   const [students, setStudents] = useState(initialStudents);
   const [redemptions, setRedemptions] = useState(initialRedemptions);
+  const [attendanceHistory, setAttendanceHistory] = useState(initialAttendanceHistory);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState<"leaderboard" | "redeem" | "history">("leaderboard");
+  const [selectedHistoryStudent, setSelectedHistoryStudent] = useState<string>("");
+  const [historyTypeFilter, setHistoryTypeFilter] = useState<"all" | "attendance" | "extra" | "redeem">("all");
 
-  // Lock protection state for Points module
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [lockChecked, setLockChecked] = useState(false);
+  // Lock protection state for "+ Tambah Poin" action
+  const [showAddLockModal, setShowAddLockModal] = useState(false);
+  const [pendingAddStudent, setPendingAddStudent] = useState<any>(null);
   const [lockPassword, setLockPassword] = useState("");
   const [lockError, setLockError] = useState("");
-
-  useEffect(() => {
-    async function checkLock() {
-      if (typeof window !== "undefined") {
-        try {
-          const passwords = await getModuleLockPasswords();
-          const expected = passwords["/points"];
-          if (expected === "") {
-            setIsUnlocked(true);
-          } else {
-            const unlocked = sessionStorage.getItem("points_unlocked") === "true";
-            setIsUnlocked(unlocked);
-          }
-        } catch {
-          const unlocked = sessionStorage.getItem("points_unlocked") === "true";
-          setIsUnlocked(unlocked);
-        }
-        setLockChecked(true);
-      }
-    }
-    checkLock();
-  }, []);
-
-  const handleUnlockPage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const passwords = await getModuleLockPasswords();
-      const expectedPassword = passwords["/points"] ?? "123";
-      if (lockPassword === expectedPassword) {
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("points_unlocked", "true");
-        }
-        setIsUnlocked(true);
-      } else {
-        setLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
-      }
-    } catch {
-      if (lockPassword === "123") {
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("points_unlocked", "true");
-        }
-        setIsUnlocked(true);
-      } else {
-        setLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
-      }
-    }
-  };
 
   // Modal State for Admin ACC Potong Poin
   const [selectedStudentForRedeem, setSelectedStudentForRedeem] = useState<any | null>(null);
@@ -93,6 +51,11 @@ export function PointsClientWrapper({
   const [studentSearchInModal, setStudentSearchInModal] = useState("");
   const studentSearchInputRef = useRef<HTMLInputElement>(null);
 
+  // Custom Searchable Dropdown state for History Student Filter
+  const [isHistoryStudentOpen, setIsHistoryStudentOpen] = useState(false);
+  const [historyStudentSearch, setHistoryStudentSearch] = useState("");
+  const historyStudentRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (isStudentDropdownOpen) {
       setTimeout(() => {
@@ -100,6 +63,17 @@ export function PointsClientWrapper({
       }, 50);
     }
   }, [isStudentDropdownOpen]);
+
+  // Close history student dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (historyStudentRef.current && !historyStudentRef.current.contains(e.target as Node)) {
+        setIsHistoryStudentOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Active students list (exclude INACTIVE and CG)
   const activeStudents = useMemo(
@@ -145,16 +119,82 @@ export function PointsClientWrapper({
     });
   }, [activeStudents, searchQuery]);
 
-  const historyFilteredRedemptions = useMemo(() => {
-    if (!searchQuery.trim()) return redemptions;
-    const q = searchQuery.toLowerCase();
-    return redemptions.filter((item) => {
-      const sName = item.student?.name?.toLowerCase() || "";
-      const sNick = item.student?.nickname?.toLowerCase() || "";
-      const note = item.reward_note?.toLowerCase() || "";
-      return sName.includes(q) || sNick.includes(q) || note.includes(q);
+  const combinedHistory = useMemo(() => {
+    const list: any[] = [];
+
+    // 1. Attendance history (Poin Pertemuan)
+    if (historyTypeFilter === "all" || historyTypeFilter === "attendance") {
+      attendanceHistory.forEach((item: any) => {
+        const isAbsent = item.is_absent;
+        list.push({
+          id: `att_${item.id}`,
+          raw_id: item.id,
+          kind: "attendance",
+          created_at: item.created_at,
+          student_id: item.student_id,
+          student: item.student,
+          title: item.title || "Lembar Perkembangan Siswa",
+          note: item.materi
+            ? `Materi: ${item.materi}`
+            : isAbsent
+            ? "Status: Tidak Hadir / Libur"
+            : "Presensi Pertemuan Kelas (+1 Poin Pertemuan)",
+          is_absent: isAbsent,
+          badgeLabel: isAbsent ? "Absensi (Libur/Izin)" : "Poin Pertemuan",
+          displayPoints: isAbsent ? "0 Poin" : "+1 Poin",
+        });
+      });
+    }
+
+    // 2. Extra bonus & redemption history (Poin Extra & Point Ditukar)
+    redemptions.forEach((item: any) => {
+      const isBonus = item.points_deducted < 0;
+      const pts = Math.abs(item.points_deducted);
+
+      if (
+        historyTypeFilter === "all" ||
+        (historyTypeFilter === "extra" && isBonus) ||
+        (historyTypeFilter === "redeem" && !isBonus)
+      ) {
+        list.push({
+          id: `red_${item.id}`,
+          raw_id: item.id,
+          kind: "extra_redeem",
+          created_at: item.created_at,
+          student_id: item.student_id,
+          student: item.student,
+          title: isBonus ? "Poin Extra (Bonus / Lomba)" : "Point Ditukar (Hadiah)",
+          note: item.reward_note || (isBonus ? "Poin Extra Manual" : "Point Ditukar (Hadiah)"),
+          is_bonus: isBonus,
+          badgeLabel: isBonus ? "Poin Extra" : "Point Ditukar",
+          displayPoints: isBonus ? `+${pts} Poin` : `-${pts} Poin`,
+        });
+      }
     });
-  }, [redemptions, searchQuery]);
+
+    // Sort descending by created_at date
+    list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    // Filter by selected student dropdown
+    let result = list;
+    if (selectedHistoryStudent) {
+      result = result.filter((item) => item.student_id === selectedHistoryStudent);
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((item) => {
+        const sName = item.student?.name?.toLowerCase() || "";
+        const sNick = item.student?.nickname?.toLowerCase() || "";
+        const note = item.note?.toLowerCase() || "";
+        const title = item.title?.toLowerCase() || "";
+        return sName.includes(q) || sNick.includes(q) || note.includes(q) || title.includes(q);
+      });
+    }
+
+    return result;
+  }, [attendanceHistory, redemptions, historyTypeFilter, selectedHistoryStudent, searchQuery]);
 
   // Handlers for Redeem Modal
   const handleOpenRedeemModal = (student: any) => {
@@ -243,6 +283,43 @@ export function PointsClientWrapper({
     setStudentSearchInModal("");
   };
 
+  const handleAddPointsClick = async (student?: any) => {
+    try {
+      const passwords = await getModuleLockPasswords();
+      const expectedPassword = passwords["/points"];
+      if (expectedPassword === "") {
+        handleOpenAddModal(student);
+        return;
+      }
+    } catch {}
+
+    setPendingAddStudent(student || activeStudents[0] || null);
+    setLockPassword("");
+    setLockError("");
+    setShowAddLockModal(true);
+  };
+
+  const handleUnlockAddPoints = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const passwords = await getModuleLockPasswords();
+      const expectedPassword = passwords["/points"] ?? "123";
+      if (lockPassword === expectedPassword) {
+        setShowAddLockModal(false);
+        handleOpenAddModal(pendingAddStudent);
+      } else {
+        setLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
+      }
+    } catch {
+      if (lockPassword === "123") {
+        setShowAddLockModal(false);
+        handleOpenAddModal(pendingAddStudent);
+      } else {
+        setLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
+      }
+    }
+  };
+
   const handleConfirmAddPoints = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStudentForAdd) return;
@@ -299,58 +376,10 @@ export function PointsClientWrapper({
       }, 1500);
     } catch (err: any) {
       setAddErrorMsg(err.message || "Gagal menambah poin.");
+    } finally {
+      setIsSubmittingAdd(false);
     }
   };
-
-  if (!lockChecked) return null;
-
-  if (!isUnlocked) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[65vh] p-4 animate-in fade-in zoom-in-95 duration-300">
-        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-5">
-          <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-3xl shadow-sm">
-            🔒
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-              Akses Poin Kehadiran Dikunci
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-              Halaman ini dilindungi oleh SuperAdmin. Masukkan password akses untuk melanjutkan.
-            </p>
-          </div>
-
-          <form onSubmit={handleUnlockPage} className="space-y-4 pt-2">
-            <div>
-              <input
-                type="password"
-                required
-                value={lockPassword}
-                onChange={(e) => {
-                  setLockPassword(e.target.value);
-                  setLockError("");
-                }}
-                placeholder="Masukkan password..."
-                className="w-full px-4 py-3 rounded-2xl text-sm border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
-              />
-              {lockError && (
-                <p className="text-xs text-red-500 font-semibold mt-2 animate-in fade-in">
-                  {lockError}
-                </p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-3 rounded-2xl text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 active:scale-98 transition-all shadow-md"
-            >
-              Buka Akses
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -412,7 +441,7 @@ export function PointsClientWrapper({
               : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
           }`}
         >
-          <span>🎁 Kelola <span className="hidden sm:inline">& Potong Poin</span></span>
+          <span>🎁 Kelola <span className="hidden sm:inline">& Point Ditukar</span></span>
         </button>
         <button
           type="button"
@@ -556,7 +585,7 @@ export function PointsClientWrapper({
                               <span>Belum ada level</span>
                             )}
                             <span className="text-slate-300 dark:text-slate-700">·</span>
-                            <span>Hadir: {student.gross_points || student.points || 0}</span>
+                            <span>Poin Pertemuan: {student.gross_points || 0}</span>
                             {student.redeemed_points > 0 && (
                               <>
                                 <span className="text-slate-300 dark:text-slate-700">·</span>
@@ -615,10 +644,10 @@ export function PointsClientWrapper({
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-amber-900 dark:text-amber-200">
-                Fitur Kelola Poin Siswa (Tambah Bonus / Potong Hadiah)
+                Fitur Kelola Poin Siswa (Tambah Extra / Point Ditukar)
               </h3>
               <p className="text-[11px] sm:text-xs text-amber-800 dark:text-amber-300/80 mt-0.5 leading-relaxed">
-                Anda dapat menambahkan poin tambahan (lomba, event, prestasi) menggunakan tombol <strong>&quot;+ Tambah Poin&quot;</strong> atau memotong poin saat siswa menukar hadiah fisik menggunakan tombol <strong>&quot;🎁 Potong Poin&quot;</strong>.
+                Anda dapat menambahkan poin tambahan (lomba, event, prestasi) menggunakan tombol <strong>&quot;+ Tambah Poin&quot;</strong> atau memotong poin saat siswa menukar hadiah fisik menggunakan tombol <strong>&quot;🎁 Point Ditukar&quot;</strong>.
               </p>
             </div>
           </div>
@@ -633,6 +662,24 @@ export function PointsClientWrapper({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {redeemFilteredStudents.map((student) => {
                 const hasPoints = (student.points || 0) > 0;
+                const meetingPoints = student.gross_points || 0;
+
+                const studentRedemptions = redemptions.filter((r) => r.student_id === student.id);
+                let extraPoints = studentRedemptions
+                  .filter((r) => (r.points_deducted || 0) < 0)
+                  .reduce((sum, r) => sum + Math.abs(r.points_deducted || 0), 0);
+                let redeemedPoints = studentRedemptions
+                  .filter((r) => (r.points_deducted || 0) > 0)
+                  .reduce((sum, r) => sum + (r.points_deducted || 0), 0);
+
+                if (studentRedemptions.length === 0 && student.redeemed_points) {
+                  if (student.redeemed_points < 0) {
+                    extraPoints = Math.abs(student.redeemed_points);
+                  } else if (student.redeemed_points > 0) {
+                    redeemedPoints = student.redeemed_points;
+                  }
+                }
+
                 return (
                   <div
                     key={student.id}
@@ -656,13 +703,19 @@ export function PointsClientWrapper({
 
                       <div className="mt-3 text-xs text-slate-500 space-y-1">
                         <div className="flex justify-between">
-                          <span>Total Kehadiran:</span>
-                          <span className="font-semibold text-slate-700 dark:text-slate-300">{student.gross_points || student.points || 0} Pertemuan</span>
+                          <span>Poin Pertemuan:</span>
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">{meetingPoints} Pertemuan</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Status Penukaran:</span>
-                          <span className={`font-semibold ${student.redeemed_points > 0 ? 'text-rose-600 dark:text-rose-400' : student.redeemed_points < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}`}>
-                            {student.redeemed_points > 0 ? `-${student.redeemed_points} Poin Ditukar` : student.redeemed_points < 0 ? `+${Math.abs(student.redeemed_points)} Poin Bonus` : 'Belum Pernah Ditukar'}
+                          <span>Poin Extra:</span>
+                          <span className={`font-semibold ${extraPoints > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}`}>
+                            {extraPoints > 0 ? `+${extraPoints} Poin` : '0 Poin'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Poin Ditukar:</span>
+                          <span className={`font-semibold ${redeemedPoints > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500'}`}>
+                            {redeemedPoints > 0 ? `-${redeemedPoints} Poin` : '0 Poin'}
                           </span>
                         </div>
                       </div>
@@ -672,7 +725,7 @@ export function PointsClientWrapper({
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => handleOpenAddModal(student)}
+                        onClick={() => handleAddPointsClick(student)}
                         className="w-full py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
                       >
                         <Icons.add className="w-3.5 h-3.5" />
@@ -689,7 +742,7 @@ export function PointsClientWrapper({
                             : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed"
                         }`}
                       >
-                        <span>🎁 Potong Poin</span>
+                        <span>🎁 Point Ditukar</span>
                       </button>
                     </div>
                   </div>
@@ -700,74 +753,257 @@ export function PointsClientWrapper({
         </div>
       )}
 
-      {/* Tab 3: Riwayat Penukaran & Bonus */}
+      {/* Tab 3: Riwayat Penukaran, Extra & Kehadiran */}
       {selectedTab === "history" && (
         <div className="space-y-6">
-          {/* Search Bar */}
-          <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-2xs">
-            <div className="relative w-full">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                <Icons.search className="h-4 w-4 text-slate-400" aria-hidden="true" />
+          {/* Controls: Student Dropdown Filter & Search Bar */}
+          <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-2xs space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Custom Searchable Student Filter Dropdown */}
+              <div className="relative" ref={historyStudentRef}>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  👤 Filter Siswa:
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsHistoryStudentOpen(!isHistoryStudentOpen)}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white flex items-center justify-between gap-2 h-[44px] hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-xs"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="text-amber-500 font-bold">👤</span>
+                    <span className="truncate">
+                      {selectedHistoryStudent
+                        ? activeStudents.find((s) => s.id === selectedHistoryStudent)?.name || "Siswa Terpilih"
+                        : `-- Semua Siswa (${activeStudents.length}) --`}
+                    </span>
+                  </div>
+                  <span className="text-slate-400 text-xs shrink-0">{isHistoryStudentOpen ? "▲" : "▼"}</span>
+                </button>
+
+                {/* Popover Menu */}
+                {isHistoryStudentOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2.5 max-h-72 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+                    {/* Popover Search */}
+                    <div className="relative mb-2 shrink-0">
+                      <Icons.search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                      <input
+                        type="text"
+                        value={historyStudentSearch}
+                        onChange={(e) => setHistoryStudentSearch(e.target.value)}
+                        placeholder="Cari siswa..."
+                        className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border-none focus:ring-2 focus:ring-amber-500 outline-none"
+                      />
+                    </div>
+
+                    {/* Popover Student List */}
+                    <div className="overflow-y-auto space-y-1 flex-1 pr-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedHistoryStudent("");
+                          setIsHistoryStudentOpen(false);
+                          setHistoryStudentSearch("");
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between cursor-pointer ${
+                          !selectedHistoryStudent
+                            ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
+                            : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        }`}
+                      >
+                        <span>✨ Semua Siswa ({activeStudents.length})</span>
+                        {!selectedHistoryStudent && <span>✓</span>}
+                      </button>
+
+                      {activeStudents
+                        .filter((st) => {
+                          if (!historyStudentSearch.trim()) return true;
+                          const q = historyStudentSearch.toLowerCase();
+                          return (
+                            st.name.toLowerCase().includes(q) ||
+                            (st.nickname && st.nickname.toLowerCase().includes(q))
+                          );
+                        })
+                        .map((st) => {
+                          const isSelected = selectedHistoryStudent === st.id;
+                          return (
+                            <button
+                              key={st.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedHistoryStudent(st.id);
+                                setIsHistoryStudentOpen(false);
+                                setHistoryStudentSearch("");
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                                isSelected
+                                  ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 font-bold"
+                                  : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
+                              }`}
+                            >
+                              <div className="truncate pr-2">
+                                <span className="font-bold">{st.name}</span>
+                                {st.nickname && (
+                                  <span className="text-slate-400 text-[11px] ml-1">({st.nickname})</span>
+                                )}
+                              </div>
+                              {isSelected && <span className="text-amber-600 font-black">✓</span>}
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
               </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all h-[44px]"
-                placeholder="Cari nama siswa atau keterangan riwayat..."
-              />
+
+              {/* Text Search Bar */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  🔍 Pencarian Kata Kunci:
+                </label>
+                <div className="relative w-full">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                    <Icons.search className="h-4 w-4 text-slate-400" aria-hidden="true" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all h-[44px]"
+                    placeholder="Cari materi, keterangan..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Category Segmented Control Layout: Separate Extra and Redeem */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+                🏷️ Kategori Riwayat:
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => setHistoryTypeFilter("all")}
+                  className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer text-center truncate ${
+                    historyTypeFilter === "all"
+                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  <span>Semua</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setHistoryTypeFilter("attendance")}
+                  className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer text-center truncate ${
+                    historyTypeFilter === "attendance"
+                      ? "bg-sky-600 text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400"
+                  }`}
+                >
+                  <span>📅 Pertemuan</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setHistoryTypeFilter("extra")}
+                  className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer text-center truncate ${
+                    historyTypeFilter === "extra"
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                  }`}
+                >
+                  <span>🏆 Poin Extra</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setHistoryTypeFilter("redeem")}
+                  className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer text-center truncate ${
+                    historyTypeFilter === "redeem"
+                      ? "bg-rose-600 text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400"
+                  }`}
+                >
+                  <span>🎁 Point Ditukar</span>
+                </button>
+              </div>
             </div>
           </div>
 
+          {/* History List Card */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                📜 Riwayat Penukaran Hadiah & Bonus Poin Manual
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                Catatan aktivitas pemotongan hadiah dan penambahan poin bonus/lomba oleh admin
-              </p>
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                  📜 Log Riwayat Aktivitas Poin
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  {selectedHistoryStudent
+                    ? "Menampilkan riwayat aktivitas untuk siswa terpilih"
+                    : "Catatan presensi kelas, poin extra manual, dan penukaran hadiah"}
+                </p>
+              </div>
+              <span className="text-xs font-extrabold text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-800 px-2.5 py-1 rounded-full">
+                {combinedHistory.length} Record
+              </span>
             </div>
 
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {historyFilteredRedemptions.length === 0 ? (
-                <div className="py-12 text-center text-sm text-slate-400">
-                  {searchQuery ? `Tidak ada riwayat ditemukan dengan kata kunci "${searchQuery}".` : "Belum ada riwayat aktivitas poin."}
+              {combinedHistory.length === 0 ? (
+                <div className="py-16 text-center text-sm text-slate-400">
+                  <div className="text-3xl mb-2">📜</div>
+                  {searchQuery || selectedHistoryStudent
+                    ? "Tidak ada data riwayat sesuai filter yang dipilih."
+                    : "Belum ada riwayat aktivitas poin."}
                 </div>
               ) : (
-                historyFilteredRedemptions.map((item) => {
-                  const isBonus = item.points_deducted < 0;
-                  const pointsAmount = Math.abs(item.points_deducted);
+                combinedHistory.map((item) => {
+                  const isAttendance = item.kind === "attendance";
+                  const isBonus = item.is_bonus;
+                  const isAbsent = item.is_absent;
 
                   return (
-                    <div key={item.id} className="p-4 flex items-center justify-between gap-3">
+                    <div key={item.id} className="p-4 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                       <div className="flex items-center gap-3">
                         <div
                           className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${
-                            isBonus
+                            isAttendance
+                              ? isAbsent
+                                ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                                : "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200 dark:border-sky-800"
+                              : isBonus
                               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
                               : "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
                           }`}
                         >
-                          {isBonus ? "🏆" : "🎁"}
+                          {isAttendance ? (isAbsent ? "⏸️" : "📅") : isBonus ? "🏆" : "🎁"}
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                              {item.student?.nickname || item.student?.name || "Siswa"}
+                              {item.student?.name || "Siswa"}
                             </h4>
+                            {item.student?.nickname && (
+                              <span className="text-xs text-slate-400">({item.student.nickname})</span>
+                            )}
                             <span
                               className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
-                                isBonus
+                                isAttendance
+                                  ? isAbsent
+                                    ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                    : "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300"
+                                  : isBonus
                                   ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
                                   : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
                               }`}
                             >
-                              {isBonus ? "Bonus Poin" : "Tukar Hadiah"}
+                              {item.badgeLabel}
                             </span>
                           </div>
                           <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
-                            {item.reward_note || (isBonus ? "Bonus Poin Manual" : "Penukaran Hadiah")}
+                            {item.note}
                           </p>
                           <span className="text-[10px] text-slate-400 block mt-0.5">
                             {item.created_at ? formatShortDate(item.created_at) : "-"}
@@ -778,12 +1014,16 @@ export function PointsClientWrapper({
                       <div className="shrink-0">
                         <span
                           className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-black border ${
-                            isBonus
+                            isAttendance
+                              ? isAbsent
+                                ? "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+                                : "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 border-sky-200 dark:border-sky-800"
+                              : isBonus
                               ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
                               : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800"
                           }`}
                         >
-                          {isBonus ? `+${pointsAmount} Poin` : `-${pointsAmount} Poin`}
+                          {item.displayPoints}
                         </span>
                       </div>
                     </div>
@@ -809,9 +1049,9 @@ export function PointsClientWrapper({
                 <span className="text-2xl">🎁</span>
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                    ACC / Potong Poin Hadiah
+                    ACC / Point Ditukar
                   </h3>
-                  <p className="text-xs text-slate-500">Konfirmasi penukaran poin siswa</p>
+                  <p className="text-xs text-slate-500">Konfirmasi penukaran poin siswa untuk hadiah</p>
                 </div>
               </div>
               <button
@@ -851,7 +1091,7 @@ export function PointsClientWrapper({
             <form onSubmit={handleConfirmRedeem} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Jumlah Poin yang Dipotong / Ditukar <span className="text-red-500">*</span>
+                  Jumlah Point Ditukar <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -892,7 +1132,7 @@ export function PointsClientWrapper({
                   disabled={isSubmitting}
                   className="flex-1 py-2.5 rounded-xl text-xs font-extrabold text-white bg-amber-600 hover:bg-amber-700 transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-1 cursor-pointer"
                 >
-                  {isSubmitting ? "Memproses..." : "Konfirmasi Potong Poin"}
+                  {isSubmitting ? "Memproses..." : "Konfirmasi Point Ditukar"}
                 </button>
               </div>
             </form>
@@ -1077,6 +1317,65 @@ export function PointsClientWrapper({
                   className="flex-1 py-2.5 rounded-xl text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1 cursor-pointer"
                 >
                   {isSubmittingAdd ? "Memproses..." : "⭐ Tambah Poin Sekarang"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Lock Akses Tambah Poin */}
+      {showAddLockModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setShowAddLockModal(false)}
+          />
+          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center animate-in zoom-in-95 duration-200 space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-2xl shadow-sm">
+              🔒
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                Akses Tambah Poin Dikunci
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                Fitur Tambah Poin Manual dilindungi SuperAdmin. Masukkan password PIN untuk membuka fitur ini.
+              </p>
+            </div>
+
+            <form onSubmit={handleUnlockAddPoints} className="space-y-4 pt-1">
+              <div>
+                <input
+                  type="password"
+                  autoFocus
+                  required
+                  value={lockPassword}
+                  onChange={(e) => {
+                    setLockPassword(e.target.value);
+                    setLockError("");
+                  }}
+                  placeholder="Masukkan password PIN..."
+                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                />
+                {lockError && (
+                  <p className="text-xs text-red-500 font-semibold mt-2 animate-in fade-in">{lockError}</p>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddLockModal(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 transition-colors shadow-sm"
+                >
+                  Buka Akses
                 </button>
               </div>
             </form>
