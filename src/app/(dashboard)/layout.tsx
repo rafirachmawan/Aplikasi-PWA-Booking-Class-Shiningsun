@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { BackButtonHandler } from "@/components/layout/BackButtonHandler";
 import { SidebarProvider } from "@/lib/SidebarContext";
 import { getCurrentUserRole, getBranches, getBranchId, syncUserIdentity } from "@/lib/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -48,6 +49,7 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
+      <BackButtonHandler />
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
         {/* Native HTML checkbox for CSS-only sidebar toggle fallback */}
         <input type="checkbox" id="sidebar-drawer-toggle" className="peer/sidebar hidden" />

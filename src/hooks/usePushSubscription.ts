@@ -130,6 +130,17 @@ export function usePushSubscription() {
       const resData = await res.json().catch(() => ({}));
       if (res.ok) {
         setIsSubscribed(true);
+        
+        // Show immediate system notification popup on the user's OS/device
+        if (reg && "showNotification" in reg) {
+          reg.showNotification("Notifikasi PWA ShiningSun Aktif! 🎉", {
+            body: "Notifikasi PWA berhasil diaktifkan. Anda akan menerima pengingat dan pembaruan jadwal.",
+            icon: "/logo.png",
+            badge: "/logo.png",
+            tag: "pwa-subscribe-success",
+          } as NotificationOptions).catch(() => {});
+        }
+
         return {
           success: true,
           message: "Notifikasi PWA berhasil diaktifkan! Perangkat ini akan menerima update jadwal pukul 05:00 WIB.",

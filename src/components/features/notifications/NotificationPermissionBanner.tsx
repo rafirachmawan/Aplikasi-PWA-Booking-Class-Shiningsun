@@ -65,6 +65,40 @@ export function NotificationPermissionBanner() {
     }
   };
 
+  const handleTestNotification = async () => {
+    try {
+      if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+      let reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) {
+        reg = await navigator.serviceWorker.ready;
+      }
+      if (reg && "showNotification" in reg) {
+        await reg.showNotification("Tes Notifikasi ShiningSun 🔔", {
+          body: "Ini adalah notifikasi uji coba PWA. Sistem notifikasi perangkat Anda aktif dan siap menerima pengingat!",
+          icon: "/logo.png",
+          badge: "/logo.png",
+          tag: "pwa-test-notification",
+        } as NotificationOptions);
+
+        setModalConfig({
+          isOpen: true,
+          type: "success",
+          title: "Tes Notifikasi Berhasil! 🔔",
+          message: "Notifikasi uji coba telah dikirim. Periksa panel notifikasi perangkat/HP Anda.",
+        });
+      } else {
+        throw new Error("Service Worker belum aktif");
+      }
+    } catch (err: any) {
+      setModalConfig({
+        isOpen: true,
+        type: "error",
+        title: "Gagal Mengirim Notifikasi",
+        message: err?.message || "Tidak dapat memicu notifikasi pada perangkat ini.",
+      });
+    }
+  };
+
   return (
     <>
       <div
@@ -106,22 +140,33 @@ export function NotificationPermissionBanner() {
           </div>
         </div>
 
-        {/* Right: Action Button */}
-        <div className="shrink-0">
+        {/* Right: Action Buttons */}
+        <div className="shrink-0 flex items-center gap-1.5 sm:gap-2">
           {isActive ? (
-            <button
-              type="button"
-              onClick={handleUnsubscribe}
-              disabled={isLoading}
-              className="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-red-500 hover:text-white text-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-red-600 dark:hover:text-white text-[11px] sm:text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              {isLoading ? (
-                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Icons.close className="w-3 h-3" />
-              )}
-              <span>{isLoading ? "..." : "Nonaktifkan"}</span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleTestNotification}
+                disabled={isLoading}
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold shadow-xs transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              >
+                <Icons.bell className="w-3 h-3" />
+                <span>Tes Notif</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleUnsubscribe}
+                disabled={isLoading}
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-red-500 hover:text-white text-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-red-600 dark:hover:text-white text-[11px] sm:text-xs font-bold shadow-xs transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Icons.close className="w-3 h-3" />
+                )}
+                <span>{isLoading ? "..." : "Nonaktifkan"}</span>
+              </button>
+            </>
           ) : (
             <button
               type="button"
