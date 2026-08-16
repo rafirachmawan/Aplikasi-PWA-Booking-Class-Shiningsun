@@ -159,71 +159,116 @@ export function WorksheetFormModal({
   );
   const [isManualBulanKe, setIsManualBulanKe] = useState(false);
 
+  const prevStudentIdRef = useRef(studentId);
+
   // Automatic Bulan Ke Calculation Logic
   const autoCalculatedBulanKeInfo = useMemo(() => {
     const activeId = studentId || initialData?.student_id;
     if (!activeId || !worksheets || worksheets.length === 0) {
-      return { value: "1", isAuto: false, reason: "Belum ada data sebelumnya (Default Bulan ke-1)" };
+      return {
+        value: "1",
+        hasHistory: false,
+        isAuto: false,
+        reason: "Belum ada riwayat lembar perkembangan (Dapat diisi manual di awal, misal: Bulan ke-1, 2, atau 3).",
+      };
     }
 
-    // Filter worksheets for selected student
+    // Filter worksheets for selected student (excluding current record if editing)
     const studentWorksheets = worksheets.filter((w) => {
       const matchStudent = w.student_id === activeId || w.student?.id === activeId;
       const isNotSelf = !isEditing || w.id !== initialData?.id;
-      return matchStudent && isNotSelf;
+      const hasDate = !!(w.worksheet_date || w.created_at);
+      const hasBulanKe = w.bulan_ke !== null && w.bulan_ke !== undefined && !isNaN(parseInt(w.bulan_ke, 10));
+      return matchStudent && isNotSelf && hasDate && hasBulanKe;
     });
 
     if (studentWorksheets.length === 0) {
-      return { value: "1", isAuto: false, reason: "Belum ada data sebelumnya (Default Bulan ke-1)" };
+      return {
+        value: "1",
+        hasHistory: false,
+        isAuto: false,
+        reason: "Belum ada riwayat lembar perkembangan (Dapat diisi manual di awal, misal: Bulan ke-1, 2, atau 3).",
+      };
     }
 
-    // Find earliest worksheet by worksheet_date
+    // Sort student worksheets by worksheet_date ascending (chronological)
     const sorted = [...studentWorksheets].sort((a, b) => {
-      const dateA = new Date(parseIndonesianDateToISO(a.worksheet_date)).getTime();
-      const dateB = new Date(parseIndonesianDateToISO(b.worksheet_date)).getTime();
-      return dateA - dateB;
+      const dateA = parseIndonesianDateToISO(a.worksheet_date || a.created_at);
+      const dateB = parseIndonesianDateToISO(b.worksheet_date || b.created_at);
+      return dateA.localeCompare(dateB);
     });
 
     const earliest = sorted[0];
-    if (!earliest || !earliest.worksheet_date) {
-      return { value: "1", isAuto: false, reason: "Default Bulan ke-1" };
+    const earliestIso = parseIndonesianDateToISO(earliest.worksheet_date || earliest.created_at);
+    const earliestMatch = earliestIso.match(/^(\d{4})-(\d{2})/);
+
+    const currentIso = parseIndonesianDateToISO(worksheetDate);
+    const currentMatch = currentIso.match(/^(\d{4})-(\d{2})/);
+
+    if (!earliestMatch || !currentMatch) {
+      return {
+        value: "1",
+        hasHistory: false,
+        isAuto: false,
+        reason: "Format tanggal tidak valid (Default Bulan ke-1)",
+      };
     }
 
-    const startMonthDate = new Date(parseIndonesianDateToISO(earliest.worksheet_date));
-    const startBulanKe = earliest.bulan_ke ? parseInt(earliest.bulan_ke.toString(), 10) : 1;
+    const startYear = parseInt(earliestMatch[1], 10);
+    const startMonth = parseInt(earliestMatch[2], 10);
+    const startBulanKe = parseInt(earliest.bulan_ke.toString(), 10) || 1;
 
-    const currentSessionDate = new Date(parseIndonesianDateToISO(worksheetDate));
-    if (isNaN(startMonthDate.getTime()) || isNaN(currentSessionDate.getTime())) {
-      return { value: "1", isAuto: false, reason: "Default Bulan ke-1" };
-    }
+    const currentYear = parseInt(currentMatch[1], 10);
+    const currentMonth = parseInt(currentMatch[2], 10);
 
-    const yearDiff = currentSessionDate.getFullYear() - startMonthDate.getFullYear();
-    const monthDiff = currentSessionDate.getMonth() - startMonthDate.getMonth();
-    const totalMonthDiff = yearDiff * 12 + monthDiff;
-
-    const calculated = Math.max(1, startBulanKe + Math.max(0, totalMonthDiff));
+    const totalMonthDiff = (currentYear - startYear) * 12 + (currentMonth - startMonth);
+    const calculated = Math.max(1, startBulanKe + totalMonthDiff);
 
     const MONTH_NAMES_SHORT = [
-      "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+      "", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
       "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
     ];
-    const earliestMonthStr = `${MONTH_NAMES_SHORT[startMonthDate.getMonth()]} ${startMonthDate.getFullYear()}`;
+    const earliestMonthName = MONTH_NAMES_SHORT[startMonth] || "";
+    const earliestLabel = `${earliestMonthName} ${startYear}`;
+
+    let diffText = "";
+    if (totalMonthDiff > 0) {
+      diffText = `+${totalMonthDiff} bulan dari ${earliestLabel}`;
+    } else if (totalMonthDiff < 0) {
+      diffText = `${totalMonthDiff} bulan dari ${earliestLabel}`;
+    } else {
+      diffText = `sama dengan bulan ${earliestLabel}`;
+    }
 
     return {
       value: calculated.toString(),
+      hasHistory: true,
       isAuto: true,
-      reason: `Otomatis (+${Math.max(0, totalMonthDiff)} bulan dari ${earliestMonthStr}, awal Bulan ke-${startBulanKe})`,
+      reason: `Otomatis meneruskan riwayat (Awal Bulan ke-${startBulanKe} pada ${earliestLabel}, ${diffText})`,
     };
   }, [studentId, initialData, worksheets, worksheetDate, isEditing]);
 
-  // Sync bulanKe with autoCalculatedBulanKeInfo when creating new report and not manual
+  // Reset manual override flag whenever selected student changes
   useEffect(() => {
-    if (!isEditing && !isManualBulanKe) {
-      if (autoCalculatedBulanKeInfo?.value) {
+    if (prevStudentIdRef.current !== studentId) {
+      prevStudentIdRef.current = studentId;
+      setIsManualBulanKe(false);
+    }
+  }, [studentId]);
+
+  const isBulanKeDisabled = !isEditing && autoCalculatedBulanKeInfo.hasHistory;
+
+  // Sync bulanKe state with autoCalculatedBulanKeInfo
+  useEffect(() => {
+    if (!isEditing) {
+      if (autoCalculatedBulanKeInfo.hasHistory) {
         setBulanKe(autoCalculatedBulanKeInfo.value);
+        setIsManualBulanKe(false);
+      } else if (!isManualBulanKe) {
+        setBulanKe(initialData?.bulan_ke?.toString() || autoCalculatedBulanKeInfo.value || "1");
       }
     }
-  }, [autoCalculatedBulanKeInfo, isEditing, isManualBulanKe]);
+  }, [autoCalculatedBulanKeInfo, isEditing, isManualBulanKe, initialData?.bulan_ke]);
 
   const handleAttendanceChange = (status: AttendanceStatus) => {
     setAttendanceStatus(status);
@@ -1030,64 +1075,68 @@ export function WorksheetFormModal({
                   <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
                     Bulan ke- <span className="text-red-500">*</span>
                   </label>
-                  {autoCalculatedBulanKeInfo.isAuto && !isManualBulanKe && (
-                    <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60">
-                      ⚡ Otomatis
+                  {isBulanKeDisabled ? (
+                    <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1">
+                      🔒 Otomatis Terkunci
                     </span>
-                  )}
-                  {isManualBulanKe && (
-                    <span className="text-[10px] font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800/60">
-                      ✏️ Manual
+                  ) : (
+                    <span className="text-[10px] font-extrabold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded-full border border-sky-200 dark:border-sky-800/60 flex items-center gap-1">
+                      ✏️ Mode Manual (Siswa Baru)
                     </span>
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    setIsBulanKeDropdownOpen(!isBulanKeDropdownOpen)
-                  }
-                  className="w-full flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/80 cursor-pointer"
-                >
-                  <span className="truncate font-bold flex items-center gap-1.5">
-                    <span>📅 {bulanKe ? `Bulan ke-${bulanKe}` : "-- Pilih Bulan --"}</span>
-                    {autoCalculatedBulanKeInfo.isAuto && !isManualBulanKe && (
+                {isBulanKeDisabled ? (
+                  <div className="w-full flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-bold shadow-xs cursor-not-allowed opacity-90">
+                    <span className="truncate flex items-center gap-1.5">
+                      <span>🔒 Bulan ke-{bulanKe || autoCalculatedBulanKeInfo.value}</span>
                       <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                        (Otomatis)
+                        (Otomatis Meneruskan)
                       </span>
-                    )}
-                  </span>
-                  <Icons.chevronDown
-                    className={`h-3.5 w-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
-                      isBulanKeDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
+                    </span>
+                    <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-md">
+                      Terkunci
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setIsBulanKeDropdownOpen(!isBulanKeDropdownOpen)
+                    }
+                    className="w-full flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-xl border border-sky-300 dark:border-sky-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:ring-2 focus:ring-sky-500 focus:outline-none shadow-xs transition-colors hover:bg-sky-50/50 dark:hover:bg-slate-700/80 cursor-pointer"
+                  >
+                    <span className="truncate flex items-center gap-1.5">
+                      <span>📅 {bulanKe ? `Bulan ke-${bulanKe}` : "-- Pilih Bulan --"}</span>
+                      {isManualBulanKe && (
+                        <span className="text-[10px] font-semibold text-sky-600 dark:text-sky-400">
+                          (Manual)
+                        </span>
+                      )}
+                    </span>
+                    <Icons.chevronDown
+                      className={`h-3.5 w-3.5 text-sky-600 dark:text-sky-400 shrink-0 transition-transform duration-200 ${
+                        isBulanKeDropdownOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                )}
 
-                <span className="text-[10px] text-slate-400 block mt-1">
-                  💡 {autoCalculatedBulanKeInfo.reason}
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-1">
+                  {isBulanKeDropdownOpen ? (
+                    "💡 Silakan pilih Bulan ke- awal secara manual untuk siswa baru ini."
+                  ) : isBulanKeDisabled ? (
+                    `🔒 ${autoCalculatedBulanKeInfo.reason} (Dikunci otomatis untuk konsistensi data).`
+                  ) : (
+                    "💡 Belum ada riwayat perkembangan. Silakan tentukan Bulan ke- awal secara manual."
+                  )}
                 </span>
 
-                {/* Custom Popover for Bulan Ke */}
-                {isBulanKeDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150 max-h-56 overflow-y-auto custom-scrollbar">
-                    {autoCalculatedBulanKeInfo.isAuto && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setBulanKe(autoCalculatedBulanKeInfo.value);
-                          setIsManualBulanKe(false);
-                          setIsBulanKeDropdownOpen(false);
-                        }}
-                        className="w-full text-left px-3 py-2 rounded-xl text-xs bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200 font-extrabold border border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all flex items-center justify-between cursor-pointer mb-1"
-                      >
-                        <span>⚡ Gunakan Rekomendasi Otomatis (Bulan ke-{autoCalculatedBulanKeInfo.value})</span>
-                        {!isManualBulanKe && <span className="text-emerald-600 font-bold">✓</span>}
-                      </button>
-                    )}
+                {/* Custom Popover for Manual Bulan Ke */}
+                {!isBulanKeDisabled && isBulanKeDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150 max-h-56 overflow-y-auto custom-scrollbar">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].map((m) => {
                       const isSel = bulanKe === m.toString();
-                      const isAutoTarget = autoCalculatedBulanKeInfo.isAuto && autoCalculatedBulanKeInfo.value === m.toString();
                       return (
                         <button
                           key={m}
@@ -1099,20 +1148,15 @@ export function WorksheetFormModal({
                           }}
                           className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
                             isSel
-                              ? "bg-brand-50 dark:bg-brand-950/70 text-brand-700 dark:text-brand-300 font-extrabold border border-brand-200/80 dark:border-brand-800/50"
+                              ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 font-extrabold border border-sky-200 dark:border-sky-800/50"
                               : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                           }`}
                         >
                           <div className="flex items-center gap-1.5">
                             <span>📅 Bulan ke-{m}</span>
-                            {isAutoTarget && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-extrabold">
-                                ⚡ Rekomendasi
-                              </span>
-                            )}
                           </div>
                           {isSel && (
-                            <span className="text-brand-600 dark:text-brand-400 font-bold shrink-0 text-xs">
+                            <span className="text-sky-600 dark:text-sky-400 font-bold shrink-0 text-xs">
                               ✓
                             </span>
                           )}
