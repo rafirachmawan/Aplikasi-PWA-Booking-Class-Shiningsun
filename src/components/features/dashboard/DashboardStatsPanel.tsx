@@ -2,10 +2,17 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Icons } from "@/components/ui/icons";
-import { getStudentsByStatusWithSchedules, getClassesWithSchedules } from "@/lib/actions";
-import { formatShortDate, getIndonesianMonthYearName as getMonthName, getTodayISO } from "@/lib/dateUtils";
+import {
+  getStudentsByStatusWithSchedules,
+  getClassesWithSchedules,
+} from "@/lib/actions";
+import {
+  formatShortDate,
+  getIndonesianMonthYearName as getMonthName,
+  getTodayISO,
+} from "@/lib/dateUtils";
 
-type TabType = 'REGISTERED' | 'CG' | 'CLASSES';
+type TabType = "REGISTERED" | "CG" | "CLASSES";
 
 type StatItem = {
   name: string;
@@ -53,7 +60,9 @@ export function DashboardStatsCards({
               <dt className="text-[8.5px] sm:text-xs font-bold text-white/95 uppercase tracking-tight leading-tight">
                 {item.name}
               </dt>
-              <div className={`p-1 sm:p-1.5 rounded-lg bg-white/20 text-white shadow-xs shrink-0 transition-transform ${isClickable ? 'group-hover:scale-110' : ''}`}>
+              <div
+                className={`p-1 sm:p-1.5 rounded-lg bg-white/20 text-white shadow-xs shrink-0 transition-transform ${isClickable ? "group-hover:scale-110" : ""}`}
+              >
                 <IconComponent className="h-3 w-3 sm:h-4 sm:w-4" />
               </div>
             </div>
@@ -73,12 +82,24 @@ export function DashboardStatsCards({
             </dd>
 
             {isClickable && (
-              <div className={`mt-1.5 flex items-center gap-1 transition-all duration-200 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+              <div
+                className={`mt-1.5 flex items-center gap-1 transition-all duration-200 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+              >
                 <span className="text-[8px] sm:text-[10px] font-semibold text-white/80">
                   {isActive ? "Tutup Detail" : "Lihat Detail"}
                 </span>
-                <svg className={`w-2.5 h-2.5 sm:w-3 sm:h-3 text-white/70 transition-transform duration-200 ${isActive ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+                <svg
+                  className={`w-2.5 h-2.5 sm:w-3 sm:h-3 text-white/70 transition-transform duration-200 ${isActive ? "rotate-180" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m6 9 6 6 6-6"
+                  />
                 </svg>
               </div>
             )}
@@ -89,17 +110,15 @@ export function DashboardStatsCards({
   );
 }
 
-export function DashboardStatsPanel({
-  stats,
-}: {
-  stats: StatItem[];
-}) {
+export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
   const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<'label' | 'name'>('label');
-  const [cgFilter, setCgFilter] = useState<'ALL' | 'UPCOMING' | 'PASSED'>('ALL');
+  const [sortBy, setSortBy] = useState<"label" | "name">("label");
+  const [cgFilter, setCgFilter] = useState<"ALL" | "UPCOMING" | "PASSED">(
+    "ALL",
+  );
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -121,7 +140,7 @@ export function DashboardStatsPanel({
     setExpandedItemId(null);
 
     try {
-      if (stat.statusFilter === 'CLASSES') {
+      if (stat.statusFilter === "CLASSES") {
         const data = await getClassesWithSchedules();
         setItems(data);
       } else {
@@ -139,7 +158,10 @@ export function DashboardStatsPanel({
   useEffect(() => {
     if (activeTab && panelRef.current) {
       setTimeout(() => {
-        panelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        panelRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
       }, 150);
     }
   }, [activeTab]);
@@ -147,7 +169,7 @@ export function DashboardStatsPanel({
   const filteredItems = items.filter((item) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    if (activeTab === 'CLASSES') {
+    if (activeTab === "CLASSES") {
       return item.name?.toLowerCase().includes(q);
     }
     return (
@@ -157,22 +179,32 @@ export function DashboardStatsPanel({
   });
 
   const sortedItems = [...filteredItems].sort((a, b) => {
-    if (activeTab === 'CLASSES') {
-      return (a.name || '').localeCompare(b.name || '');
+    if (activeTab === "CLASSES") {
+      return (a.name || "").localeCompare(b.name || "");
     }
 
-    if (sortBy === 'label') {
-      const labelA = a.label ? `${a.label.main_level || ''} ${a.label.sub_level || ''}`.trim() : 'ZZZ';
-      const labelB = b.label ? `${b.label.main_level || ''} ${b.label.sub_level || ''}`.trim() : 'ZZZ';
+    if (sortBy === "label") {
+      const labelA = a.label
+        ? `${a.label.main_level || ""} ${a.label.sub_level || ""}`.trim()
+        : "ZZZ";
+      const labelB = b.label
+        ? `${b.label.main_level || ""} ${b.label.sub_level || ""}`.trim()
+        : "ZZZ";
 
       if (labelA !== labelB) {
-        return labelA.localeCompare(labelB, undefined, { numeric: true, sensitivity: 'base' });
+        return labelA.localeCompare(labelB, undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
       }
     }
 
-    const nameA = a.nickname || a.name || '';
-    const nameB = b.nickname || b.name || '';
-    return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+    const nameA = a.nickname || a.name || "";
+    const nameB = b.nickname || b.name || "";
+    return nameA.localeCompare(nameB, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
   });
 
   const today = getTodayISO();
@@ -183,7 +215,7 @@ export function DashboardStatsPanel({
   };
 
   const upcomingStudents = sortedItems.filter(isStudentUpcoming);
-  const passedStudents = sortedItems.filter(s => !isStudentUpcoming(s));
+  const passedStudents = sortedItems.filter((s) => !isStudentUpcoming(s));
 
   const renderStudentItem = (student: any, idx: number) => {
     const hex = student.label?.hex_color || "#94a3b8";
@@ -192,7 +224,8 @@ export function DashboardStatsPanel({
     const isEven = idx % 2 === 0;
     const isUpcoming = isStudentUpcoming(student);
 
-    const todaySchedules = student.schedules?.filter((sched: any) => sched.date === today) || [];
+    const todaySchedules =
+      student.schedules?.filter((sched: any) => sched.date === today) || [];
     const hasTodaySchedule = todaySchedules.length > 0;
 
     return (
@@ -200,90 +233,127 @@ export function DashboardStatsPanel({
         <button
           type="button"
           onClick={() => setExpandedItemId(isExpanded ? null : student.id)}
-          className={`w-full flex items-center justify-between gap-2.5 px-3.5 py-3 sm:px-6 transition-all cursor-pointer text-left ${
+          className={`w-full flex items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 transition-all cursor-pointer text-left ${
             isExpanded
-              ? 'bg-brand-50/60'
+              ? "bg-brand-50/60"
               : hasTodaySchedule
-                ? 'bg-emerald-50/40 hover:bg-emerald-50/80'
+                ? "bg-emerald-50/40 hover:bg-emerald-50/80"
                 : isEven
-                  ? 'bg-white hover:bg-slate-50'
-                  : 'bg-slate-50/40 hover:bg-slate-100/60'
+                  ? "bg-white hover:bg-slate-50"
+                  : "bg-slate-50/40 hover:bg-slate-100/60"
           }`}
         >
           {/* Index number & Color Dot */}
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-bold text-slate-400 w-4 text-right tabular-nums">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-xs font-bold text-slate-300 w-4 text-right tabular-nums sm:w-5">
               {idx + 1}
             </span>
             <div
-              className="w-2.5 h-2.5 rounded-full ring-1 ring-black/10 shrink-0"
+              className="w-2 h-2 rounded-full ring-1 ring-black/10 shrink-0"
               style={{ backgroundColor: hex }}
             />
           </div>
 
-          {/* Student Name, Gender & Level Badge */}
-          <div className="flex-1 min-w-0 py-0.5">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-xs sm:text-sm font-bold text-slate-800 leading-snug">
-                {student.nickname || student.name}
-              </span>
-              {student.gender === 'Perempuan' ? (
-                <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-200/60 shrink-0">
-                  👧 P
-                </span>
-              ) : student.gender === 'Laki-laki' ? (
-                <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200/60 shrink-0">
-                  👦 L
-                </span>
-              ) : null}
-              {student.label && (
-                <span
-                  className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded text-white shadow-2xs shrink-0"
-                  style={{ backgroundColor: hex }}
-                >
-                  {student.label.main_level}{student.label.sub_level ? `.${student.label.sub_level}` : ''}
-                </span>
-              )}
-              {activeTab === 'CG' && (
-                <span className={`text-[8.5px] sm:text-[9.5px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 ${
-                  isUpcoming
-                    ? 'bg-amber-50 text-amber-700 border-amber-200'
-                    : 'bg-slate-100 text-slate-500 border-slate-200'
-                }`}>
-                  {isUpcoming ? 'Belum Terlewat' : 'Sudah Terlewat'}
-                </span>
-              )}
-              {hasTodaySchedule && (
-                <span className="inline-flex items-center gap-1 text-[8.5px] sm:text-[9.5px] font-extrabold px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs shrink-0 animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <span>Hari Ini ({todaySchedules[0]?.time?.slice(0, 5)})</span>
-                </span>
-              )}
+          {/* Student Name, Gender & Level Badge - Mobile optimized */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-2">
+              {/* Left section: Name + Badges (stacked vertically for clarity) */}
+              <div className="flex flex-col gap-1 flex-1">
+                {/* Row 1: Name */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-800 leading-tight truncate">
+                    {student.nickname || student.name}
+                  </span>
+                  {student.gender === "Perempuan" ? (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-pink-600 text-white text-[9px] font-bold shadow-md shrink-0 whitespace-nowrap">
+                      👧 P
+                    </span>
+                  ) : student.gender === "Laki-laki" ? (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-blue-600 text-white text-[9px] font-bold shadow-md shrink-0 whitespace-nowrap">
+                      👦 L
+                    </span>
+                  ) : null}
+                </div>
+
+                {/* Row 2: Level Badge (always on new line for consistency) */}
+                {student.label && (
+                  <div className="flex items-center">
+                    <span
+                      className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-extrabold text-slate-900 shadow-md shrink-0 whitespace-nowrap"
+                      style={{
+                        backgroundColor: `${hex}66`,
+                        backgroundImage: `linear-gradient(135deg, #FFFFFF 0%, ${hex}88 100%)`,
+                        boxShadow: `0 2px 4px rgba(0,0,0,0.2), 0 1px 2px rgba(255,255,255,0.6) inset`,
+                        borderWidth: "2px",
+                        borderStyle: "solid",
+                        borderColor: "#FFFFFF",
+                      }}
+                    >
+                      {student.label.main_level}
+                      {student.label.sub_level
+                        ? `.${student.label.sub_level}`
+                        : ""}
+                    </span>
+                  </div>
+                )}
+
+                {/* CG Status if active */}
+                {activeTab === "CG" && (
+                  <span
+                    className={`text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-md border shrink-0 whitespace-nowrap ${
+                      isUpcoming
+                        ? "bg-amber-100 text-amber-800 border-amber-200"
+                        : "bg-slate-100 text-slate-600 border-slate-200"
+                    }`}
+                  >
+                    {isUpcoming ? "Belum Terlewat" : "Sudah Terlewat"}
+                  </span>
+                )}
+
+                {/* Today's schedule indicator */}
+                {hasTodaySchedule && (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0 animate-pulse whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>Hari Ini</span>
+                  </span>
+                )}
+              </div>
             </div>
+
+            {/* Full name subtitle (if different from nickname) */}
             {student.nickname && student.name !== student.nickname && (
-              <span className="text-[10px] text-slate-400 block mt-0.5">
+              <span className="text-xs text-slate-400 mt-1 block">
                 {student.name}
               </span>
             )}
           </div>
 
-          {/* Schedule count badge & Chevron */}
-          <div className="flex items-center gap-2 shrink-0">
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-              hasTodaySchedule
-                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                : scheduleCount > 0
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
-                  : 'bg-slate-100 text-slate-400 border border-slate-200'
-            }`}>
+          {/* Schedule count badge & Chevron - Right aligned */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <span
+              className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
+                hasTodaySchedule
+                  ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                  : scheduleCount > 0
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200/80"
+                    : "bg-slate-100 text-slate-400 border border-slate-200"
+              }`}
+            >
               {scheduleCount} sesi
             </span>
 
             <svg
-              className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180 text-brand-500' : ''}`}
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180 text-brand-500" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m6 9 6 6 6-6"
+              />
             </svg>
           </div>
         </button>
@@ -301,26 +371,28 @@ export function DashboardStatsPanel({
                   {student.schedules.map((sched: any, sIdx: number) => {
                     const isPast = sched.date < today;
                     const isToday = sched.date === today;
-                    
+
                     return (
                       <div
                         key={sIdx}
                         className={`flex items-center justify-between gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-lg transition-colors ${
                           isToday
-                            ? 'bg-emerald-50 border border-emerald-200 shadow-2xs'
+                            ? "bg-emerald-50 border border-emerald-200 shadow-2xs"
                             : isPast
-                              ? 'opacity-40'
-                              : 'hover:bg-white'
+                              ? "opacity-40"
+                              : "hover:bg-white"
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                            isToday
-                              ? 'bg-emerald-500 animate-pulse'
-                              : isPast
-                                ? 'bg-slate-300'
-                                : 'bg-brand-500'
-                          }`} />
+                          <div
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                              isToday
+                                ? "bg-emerald-500 animate-pulse"
+                                : isPast
+                                  ? "bg-slate-300"
+                                  : "bg-brand-500"
+                            }`}
+                          />
                           <span className="text-[11px] sm:text-xs font-semibold text-slate-600 shrink-0">
                             {formatShortDate(sched.date)}
                           </span>
@@ -328,7 +400,7 @@ export function DashboardStatsPanel({
                             {sched.time?.slice(0, 5) || sched.time}
                           </span>
                           <span className="text-[11px] sm:text-xs font-medium text-slate-600 truncate min-w-0">
-                            {sched.class?.name || '-'}
+                            {sched.class?.name || "-"}
                           </span>
                         </div>
 
@@ -370,16 +442,18 @@ export function DashboardStatsPanel({
               {/* Header Top Row: Title & Close Button */}
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className={`p-2 rounded-xl shadow-xs shrink-0 ${
-                    activeTab === 'REGISTERED'
-                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
-                      : activeTab === 'CG'
-                        ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white'
-                        : 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white'
-                  }`}>
-                    {activeTab === 'REGISTERED' ? (
+                  <div
+                    className={`p-2 rounded-xl shadow-xs shrink-0 ${
+                      activeTab === "REGISTERED"
+                        ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                        : activeTab === "CG"
+                          ? "bg-gradient-to-br from-amber-400 to-amber-500 text-white"
+                          : "bg-gradient-to-br from-indigo-500 to-indigo-600 text-white"
+                    }`}
+                  >
+                    {activeTab === "REGISTERED" ? (
                       <Icons.users className="h-4 w-4" />
-                    ) : activeTab === 'CG' ? (
+                    ) : activeTab === "CG" ? (
                       <Icons.sun className="h-4 w-4" />
                     ) : (
                       <Icons.calendar className="h-4 w-4" />
@@ -387,16 +461,16 @@ export function DashboardStatsPanel({
                   </div>
                   <div className="min-w-0">
                     <h4 className="text-sm sm:text-base font-bold text-slate-800 truncate">
-                      {activeTab === 'REGISTERED'
-                        ? 'Daftar Siswa Aktif'
-                        : activeTab === 'CG'
-                          ? 'Daftar Siswa Coba Gratis'
-                          : 'Daftar Tipe Kelas'}
+                      {activeTab === "REGISTERED"
+                        ? "Daftar Siswa Aktif"
+                        : activeTab === "CG"
+                          ? "Daftar Siswa Coba Gratis"
+                          : "Daftar Tipe Kelas"}
                     </h4>
                     <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                      {activeTab === 'CLASSES'
+                      {activeTab === "CLASSES"
                         ? `${sortedItems.length} tipe kelas tersedia`
-                        : activeTab === 'CG'
+                        : activeTab === "CG"
                           ? `Bulan ${getMonthName()} • ${upcomingStudents.length} belum terlewat, ${passedStudents.length} sudah terlewat`
                           : `Bulan ${getMonthName()} • ${sortedItems.length} siswa`}
                     </p>
@@ -406,7 +480,12 @@ export function DashboardStatsPanel({
                 {/* Close Button */}
                 <button
                   type="button"
-                  onClick={() => { setActiveTab(null); setItems([]); setSearchQuery(""); setExpandedItemId(null); }}
+                  onClick={() => {
+                    setActiveTab(null);
+                    setItems([]);
+                    setSearchQuery("");
+                    setExpandedItemId(null);
+                  }}
                   className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-all cursor-pointer shrink-0 ml-auto"
                   title="Tutup"
                 >
@@ -415,60 +494,80 @@ export function DashboardStatsPanel({
               </div>
 
               {/* Sub-filter tabs & Controls Row */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-200/60">
-                {/* Sub-filter tabs for CG */}
-                {activeTab === 'CG' ? (
-                  <div className="flex items-center gap-1 bg-slate-200/70 p-1 rounded-xl overflow-x-auto no-scrollbar max-w-full">
-                    <button
-                      type="button"
-                      onClick={() => setCgFilter('ALL')}
-                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0 whitespace-nowrap ${
-                        cgFilter === 'ALL'
-                          ? 'bg-slate-800 text-white shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-3 border-t border-slate-200/60">
+                {/* Sub-filter dropdown for CG - Mobile friendly */}
+                {activeTab === "CG" ? (
+                  <div className="relative w-full sm:w-auto min-w-[140px]">
+                    <select
+                      value={cgFilter}
+                      onChange={(e) =>
+                        setCgFilter(
+                          e.target.value as "ALL" | "UPCOMING" | "PASSED",
+                        )
+                      }
+                      className="w-full appearance-none px-3 py-1.5 text-xs font-bold bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 cursor-pointer"
                     >
-                      Semua ({sortedItems.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCgFilter('UPCOMING')}
-                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0 whitespace-nowrap ${
-                        cgFilter === 'UPCOMING'
-                          ? 'bg-amber-500 text-white shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      Belum Terlewat ({upcomingStudents.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCgFilter('PASSED')}
-                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0 whitespace-nowrap ${
-                        cgFilter === 'PASSED'
-                          ? 'bg-slate-600 text-white shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      Sudah Terlewat ({passedStudents.length})
-                    </button>
+                      <option value="ALL">Semua ({sortedItems.length})</option>
+                      <option value="UPCOMING">
+                        Belum Terlewat ({upcomingStudents.length})
+                      </option>
+                      <option value="PASSED">
+                        Sudah Terlewat ({passedStudents.length})
+                      </option>
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg
+                        className="w-4 h-4 text-slate-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="m19 9 7 7-7 7"
+                        />
+                      </svg>
+                    </div>
                   </div>
-                ) : <div />}
+                ) : (
+                  <div />
+                )}
 
                 {/* Controls (Sort & Search) */}
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   {/* Sort toggle for students */}
-                  {activeTab !== 'CLASSES' && (
+                  {activeTab !== "CLASSES" && (
                     <button
                       type="button"
-                      onClick={() => setSortBy(prev => prev === 'label' ? 'name' : 'label')}
+                      onClick={() =>
+                        setSortBy((prev) =>
+                          prev === "label" ? "name" : "label",
+                        )
+                      }
                       className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-all cursor-pointer shrink-0 shadow-2xs"
                       title="Ganti Urutan"
                     >
-                      <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                      <svg
+                        className="w-3.5 h-3.5 text-slate-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
+                        />
                       </svg>
-                      <span>Urut: <strong className="text-brand-600">{sortBy === 'label' ? 'Label' : 'Nama'}</strong></span>
+                      <span>
+                        Urut:{" "}
+                        <strong className="text-brand-600">
+                          {sortBy === "label" ? "Label" : "Nama"}
+                        </strong>
+                      </span>
                     </button>
                   )}
 
@@ -477,7 +576,11 @@ export function DashboardStatsPanel({
                     <Icons.search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                     <input
                       type="text"
-                      placeholder={activeTab === 'CLASSES' ? "Cari kelas..." : "Cari nama / panggilan..."}
+                      placeholder={
+                        activeTab === "CLASSES"
+                          ? "Cari kelas..."
+                          : "Cari nama / panggilan..."
+                      }
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-8 pr-3 py-1.5 text-xs font-medium text-slate-800 bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all shadow-2xs"
@@ -492,16 +595,20 @@ export function DashboardStatsPanel({
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
                   <div className="w-8 h-8 border-[3px] border-slate-200 border-t-brand-500 rounded-full animate-spin" />
-                  <span className="text-xs text-slate-500 font-medium">Memuat data...</span>
+                  <span className="text-xs text-slate-500 font-medium">
+                    Memuat data...
+                  </span>
                 </div>
               ) : sortedItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-2">
                   <Icons.users className="w-8 h-8 text-slate-300" />
                   <span className="text-xs text-slate-400 font-medium">
-                    {searchQuery ? "Tidak ada data yang cocok" : "Belum ada data"}
+                    {searchQuery
+                      ? "Tidak ada data yang cocok"
+                      : "Belum ada data"}
                   </span>
                 </div>
-              ) : activeTab === 'CLASSES' ? (
+              ) : activeTab === "CLASSES" ? (
                 /* Render Classes List */
                 <div className="divide-y divide-slate-100">
                   {sortedItems.map((cls, idx) => {
@@ -513,13 +620,15 @@ export function DashboardStatsPanel({
                       <div key={cls.id}>
                         <button
                           type="button"
-                          onClick={() => setExpandedItemId(isExpanded ? null : cls.id)}
+                          onClick={() =>
+                            setExpandedItemId(isExpanded ? null : cls.id)
+                          }
                           className={`w-full flex items-center justify-between gap-3 px-4 py-3 sm:px-6 transition-all cursor-pointer text-left ${
                             isExpanded
-                              ? 'bg-brand-50/60'
+                              ? "bg-brand-50/60"
                               : isEven
-                                ? 'bg-white hover:bg-slate-50'
-                                : 'bg-slate-50/50 hover:bg-slate-100/60'
+                                ? "bg-white hover:bg-slate-50"
+                                : "bg-slate-50/50 hover:bg-slate-100/60"
                           }`}
                         >
                           <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -537,19 +646,28 @@ export function DashboardStatsPanel({
                               Maks {cls.max_quota || 4} siswa
                             </span>
 
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                              scheduleCount > 0
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
-                                : 'bg-slate-100 text-slate-400 border border-slate-200'
-                            }`}>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                scheduleCount > 0
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200/80"
+                                  : "bg-slate-100 text-slate-400 border border-slate-200"
+                              }`}
+                            >
                               {scheduleCount} sesi
                             </span>
 
                             <svg
-                              className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180 text-brand-500' : ''}`}
-                              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                              className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180 text-brand-500" : ""}`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
                             >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="m6 9 6 6 6-6"
+                              />
                             </svg>
                           </div>
                         </button>
@@ -560,34 +678,38 @@ export function DashboardStatsPanel({
                             <div className="ml-7 pl-3 border-l-2 border-brand-300 space-y-2">
                               {scheduleCount === 0 ? (
                                 <p className="text-xs text-slate-400 italic py-1">
-                                  Belum ada sesi jadwal untuk kelas ini bulan ini
+                                  Belum ada sesi jadwal untuk kelas ini bulan
+                                  ini
                                 </p>
                               ) : (
                                 cls.schedules.map((slot: any, sIdx: number) => {
                                   const isPast = slot.date < today;
                                   const isToday = slot.date === today;
-                                  const bookingsCount = slot.bookings?.length || 0;
+                                  const bookingsCount =
+                                    slot.bookings?.length || 0;
 
                                   return (
                                     <div
                                       key={sIdx}
                                       className={`p-2.5 rounded-xl border transition-colors ${
                                         isToday
-                                          ? 'bg-emerald-50/90 border-emerald-200 shadow-2xs'
+                                          ? "bg-emerald-50/90 border-emerald-200 shadow-2xs"
                                           : isPast
-                                            ? 'bg-white/60 border-slate-200 opacity-60'
-                                            : 'bg-white border-slate-200'
+                                            ? "bg-white/60 border-slate-200 opacity-60"
+                                            : "bg-white border-slate-200"
                                       }`}
                                     >
                                       <div className="flex items-center justify-between gap-2 mb-1.5">
                                         <div className="flex items-center gap-2">
-                                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                            isToday
-                                              ? 'bg-emerald-500 animate-pulse'
-                                              : isPast
-                                                ? 'bg-slate-300'
-                                                : 'bg-brand-500'
-                                          }`} />
+                                          <div
+                                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                              isToday
+                                                ? "bg-emerald-500 animate-pulse"
+                                                : isPast
+                                                  ? "bg-slate-300"
+                                                  : "bg-brand-500"
+                                            }`}
+                                          />
                                           <span className="text-xs font-semibold text-slate-700">
                                             {formatShortDate(slot.date)}
                                           </span>
@@ -600,14 +722,18 @@ export function DashboardStatsPanel({
                                             </span>
                                           )}
                                         </div>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                                          bookingsCount >= (cls.max_quota || 4)
-                                            ? 'bg-red-50 text-red-600 border border-red-200'
-                                            : bookingsCount === 0
-                                              ? 'bg-slate-100 text-slate-400'
-                                              : 'bg-brand-50 text-brand-700 border border-brand-200'
-                                        }`}>
-                                          {bookingsCount}/{cls.max_quota || 4} Terisi
+                                        <span
+                                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                            bookingsCount >=
+                                            (cls.max_quota || 4)
+                                              ? "bg-red-50 text-red-600 border border-red-200"
+                                              : bookingsCount === 0
+                                                ? "bg-slate-100 text-slate-400"
+                                                : "bg-brand-50 text-brand-700 border border-brand-200"
+                                          }`}
+                                        >
+                                          {bookingsCount}/{cls.max_quota || 4}{" "}
+                                          Terisi
                                         </span>
                                       </div>
 
@@ -619,7 +745,9 @@ export function DashboardStatsPanel({
                                       ) : (
                                         <div className="flex flex-wrap gap-1.5 pl-3.5 mt-1.5">
                                           {slot.bookings.map((b: any) => {
-                                            const hex = b.student?.label?.hex_color || "#94a3b8";
+                                            const hex =
+                                              b.student?.label?.hex_color ||
+                                              "#94a3b8";
                                             return (
                                               <span
                                                 key={b.student_id}
@@ -633,7 +761,10 @@ export function DashboardStatsPanel({
                                                     (CG)
                                                   </span>
                                                 )}
-                                                <span>{b.student?.nickname || b.student?.name}</span>
+                                                <span>
+                                                  {b.student?.nickname ||
+                                                    b.student?.name}
+                                                </span>
                                               </span>
                                             );
                                           })}
@@ -650,10 +781,10 @@ export function DashboardStatsPanel({
                     );
                   })}
                 </div>
-              ) : activeTab === 'CG' ? (
+              ) : activeTab === "CG" ? (
                 /* Render CG Students - Split into Belum Terlewat & Sudah Terlewat */
                 <div>
-                  {cgFilter === 'ALL' ? (
+                  {cgFilter === "ALL" ? (
                     <div>
                       {/* Section 1: Belum Terlewat */}
                       <div className="bg-amber-50/80 border-b border-amber-200/80 px-4 py-2 flex items-center justify-between sticky top-0 z-10 backdrop-blur-xs">
@@ -689,7 +820,7 @@ export function DashboardStatsPanel({
                         </div>
                       )}
                     </div>
-                  ) : cgFilter === 'UPCOMING' ? (
+                  ) : cgFilter === "UPCOMING" ? (
                     upcomingStudents.length === 0 ? (
                       <div className="py-12 text-center text-xs text-slate-400 font-medium">
                         Tidak ada siswa CG yang belum terlewat
@@ -699,16 +830,14 @@ export function DashboardStatsPanel({
                         {upcomingStudents.map(renderStudentItem)}
                       </div>
                     )
+                  ) : passedStudents.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-slate-400 font-medium">
+                      Tidak ada siswa CG yang sudah terlewat
+                    </div>
                   ) : (
-                    passedStudents.length === 0 ? (
-                      <div className="py-12 text-center text-xs text-slate-400 font-medium">
-                        Tidak ada siswa CG yang sudah terlewat
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-slate-100">
-                        {passedStudents.map(renderStudentItem)}
-                      </div>
-                    )
+                    <div className="divide-y divide-slate-100">
+                      {passedStudents.map(renderStudentItem)}
+                    </div>
                   )}
                 </div>
               ) : (
@@ -724,4 +853,3 @@ export function DashboardStatsPanel({
     </>
   );
 }
-
