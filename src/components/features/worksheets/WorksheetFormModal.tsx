@@ -70,7 +70,12 @@ export function WorksheetFormModal({
   const [materi, setMateri] = useState(initialData?.materi || "");
 
   // Attendance Status State ('HADIR' | 'IJIN' | 'SAKIT' | 'LIBUR' | 'LIBUR_HARI_BESAR')
-  type AttendanceStatus = "HADIR" | "IJIN" | "SAKIT" | "LIBUR" | "LIBUR_HARI_BESAR";
+  type AttendanceStatus =
+    | "HADIR"
+    | "IJIN"
+    | "SAKIT"
+    | "LIBUR"
+    | "LIBUR_HARI_BESAR";
   const [attendanceStatus, setAttendanceStatus] = useState<AttendanceStatus>(
     () => {
       const t = initialData?.title || "";
@@ -99,32 +104,7 @@ export function WorksheetFormModal({
     }
   }, [isStudentDropdownOpen]);
 
-  // Custom Bulan Ke Dropdown State
-  const [isBulanKeDropdownOpen, setIsBulanKeDropdownOpen] = useState(false);
-  const bulanKeDropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent | TouchEvent) {
-      if (
-        studentDropdownRef.current &&
-        !studentDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsStudentDropdownOpen(false);
-      }
-      if (
-        bulanKeDropdownRef.current &&
-        !bulanKeDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsBulanKeDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
-    };
-  }, []);
+  // Cleanup: Remove unused Bulan Ke dropdown state since we merged inputs
 
   const filteredStudents = useMemo(() => {
     const sorted = [...students].sort((a, b) =>
@@ -154,10 +134,47 @@ export function WorksheetFormModal({
     initialData?.rekomendasi_rumah || "",
   );
   const [ttdGuru, setTtdGuru] = useState(initialData?.ttd_guru || "");
-  const [bulanKe, setBulanKe] = useState(
-    initialData?.bulan_ke?.toString() || "",
-  );
-  const [isManualBulanKe, setIsManualBulanKe] = useState(false);
+
+  // Note: bulanKe state removed - now handled by auto-calculated logic only
+
+  // Track selected student details and allow level change
+  const [selectedStudentLabel, setSelectedStudentLabel] = useState<any>(null);
+  const [currentMateriLevel, setCurrentMateriLevel] = useState<string>("");
+
+  // State for Bulan Ke - Dropdown + Manual
+  const [bulanKe, setBulanKe] = useState<string>("");
+  const [manualBulanKe, setManualBulanKe] = useState<string>("");
+
+  // Sync manual and dropdown if one is set
+  useEffect(() => {
+    if (manualBulanKe && !isNaN(parseInt(manualBulanKe, 10))) {
+      setBulanKe(manualBulanKe);
+    } else if (!manualBulanKe && !bulanKe) {
+      // Keep both empty if both are cleared
+    }
+  }, [manualBulanKe]);
+
+  // Custom Bulan Ke dropdown state
+  const [isBulanKeDropdownOpen, setIsBulanKeDropdownOpen] = useState(false);
+  const bulanKeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside for Bulan Ke dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (
+        bulanKeDropdownRef.current &&
+        !bulanKeDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsBulanKeDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, []);
 
   const prevStudentIdRef = useRef(studentId);
 
@@ -169,16 +186,21 @@ export function WorksheetFormModal({
         value: "1",
         hasHistory: false,
         isAuto: false,
-        reason: "Belum ada riwayat lembar perkembangan (Dapat diisi manual di awal, misal: Bulan ke-1, 2, atau 3).",
+        reason:
+          "Belum ada riwayat lembar perkembangan (Dapat diisi manual di awal, misal: Bulan ke-1, 2, atau 3).",
       };
     }
 
     // Filter worksheets for selected student (excluding current record if editing)
     const studentWorksheets = worksheets.filter((w) => {
-      const matchStudent = w.student_id === activeId || w.student?.id === activeId;
+      const matchStudent =
+        w.student_id === activeId || w.student?.id === activeId;
       const isNotSelf = !isEditing || w.id !== initialData?.id;
       const hasDate = !!(w.worksheet_date || w.created_at);
-      const hasBulanKe = w.bulan_ke !== null && w.bulan_ke !== undefined && !isNaN(parseInt(w.bulan_ke, 10));
+      const hasBulanKe =
+        w.bulan_ke !== null &&
+        w.bulan_ke !== undefined &&
+        !isNaN(parseInt(w.bulan_ke, 10));
       return matchStudent && isNotSelf && hasDate && hasBulanKe;
     });
 
@@ -187,7 +209,8 @@ export function WorksheetFormModal({
         value: "1",
         hasHistory: false,
         isAuto: false,
-        reason: "Belum ada riwayat lembar perkembangan (Dapat diisi manual di awal, misal: Bulan ke-1, 2, atau 3).",
+        reason:
+          "Belum ada riwayat lembar perkembangan (Dapat diisi manual di awal, misal: Bulan ke-1, 2, atau 3).",
       };
     }
 
@@ -199,7 +222,9 @@ export function WorksheetFormModal({
     });
 
     const earliest = sorted[0];
-    const earliestIso = parseIndonesianDateToISO(earliest.worksheet_date || earliest.created_at);
+    const earliestIso = parseIndonesianDateToISO(
+      earliest.worksheet_date || earliest.created_at,
+    );
     const earliestMatch = earliestIso.match(/^(\d{4})-(\d{2})/);
 
     const currentIso = parseIndonesianDateToISO(worksheetDate);
@@ -221,12 +246,24 @@ export function WorksheetFormModal({
     const currentYear = parseInt(currentMatch[1], 10);
     const currentMonth = parseInt(currentMatch[2], 10);
 
-    const totalMonthDiff = (currentYear - startYear) * 12 + (currentMonth - startMonth);
+    const totalMonthDiff =
+      (currentYear - startYear) * 12 + (currentMonth - startMonth);
     const calculated = Math.max(1, startBulanKe + totalMonthDiff);
 
     const MONTH_NAMES_SHORT = [
-      "", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
-      "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+      "",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
     ];
     const earliestMonthName = MONTH_NAMES_SHORT[startMonth] || "";
     const earliestLabel = `${earliestMonthName} ${startYear}`;
@@ -248,27 +285,11 @@ export function WorksheetFormModal({
     };
   }, [studentId, initialData, worksheets, worksheetDate, isEditing]);
 
-  // Reset manual override flag whenever selected student changes
-  useEffect(() => {
-    if (prevStudentIdRef.current !== studentId) {
-      prevStudentIdRef.current = studentId;
-      setIsManualBulanKe(false);
-    }
-  }, [studentId]);
+  // Note: Removed isManualBulanKe useEffect since month-ke auto-calculated only
 
   const isBulanKeDisabled = !isEditing && autoCalculatedBulanKeInfo.hasHistory;
 
-  // Sync bulanKe state with autoCalculatedBulanKeInfo
-  useEffect(() => {
-    if (!isEditing) {
-      if (autoCalculatedBulanKeInfo.hasHistory) {
-        setBulanKe(autoCalculatedBulanKeInfo.value);
-        setIsManualBulanKe(false);
-      } else if (!isManualBulanKe) {
-        setBulanKe(initialData?.bulan_ke?.toString() || autoCalculatedBulanKeInfo.value || "1");
-      }
-    }
-  }, [autoCalculatedBulanKeInfo, isEditing, isManualBulanKe, initialData?.bulan_ke]);
+  // Note: Removed sync useEffect - bulanKe is now always auto-calculated
 
   const handleAttendanceChange = (status: AttendanceStatus) => {
     setAttendanceStatus(status);
@@ -381,6 +402,23 @@ export function WorksheetFormModal({
     }
   };
 
+  // Track student label changes and sync with active student
+  useEffect(() => {
+    if (activeStudent) {
+      const lbl = activeStudent.label;
+      const labelObj = Array.isArray(lbl) ? lbl[0] : lbl || null;
+      setSelectedStudentLabel(labelObj);
+
+      // Update current Materi level when student changes
+      if (labelObj?.main_level && labelObj.sub_level) {
+        setCurrentMateriLevel(`${labelObj.main_level} - ${labelObj.sub_level}`);
+      }
+    } else {
+      setSelectedStudentLabel(null);
+      setCurrentMateriLevel("");
+    }
+  }, [activeStudent]);
+
   // Dynamic template lists per category
   // Filter materi by selected level (or student's level)
   const activeStudentLabel = activeStudent?.label;
@@ -477,8 +515,8 @@ export function WorksheetFormModal({
       const tLabels = Array.isArray(t.label)
         ? t.label
         : t.label
-        ? [t.label]
-        : [];
+          ? [t.label]
+          : [];
       const tLabelIds = new Set<string>();
       if (t.label_id) tLabelIds.add(t.label_id);
       tLabels.forEach((l: any) => {
@@ -516,9 +554,7 @@ export function WorksheetFormModal({
   }, [filteredTemplatesByLevel]);
 
   const pemahamanTemplates = useMemo(() => {
-    return filteredTemplatesByLevel.filter(
-      (t) => t.category === "pemahaman",
-    );
+    return filteredTemplatesByLevel.filter((t) => t.category === "pemahaman");
   }, [filteredTemplatesByLevel]);
 
   const rumahTemplates = useMemo(() => {
@@ -751,7 +787,26 @@ export function WorksheetFormModal({
       return;
     }
 
-    const effectiveBulanKe = bulanKe || "1";
+    // Use auto-calculated bulan ke value or default to '1'
+    let effectiveBulanKe = isEditing
+      ? initialData?.bulan_ke?.toString() || "1"
+      : autoCalculatedBulanKeInfo.hasHistory
+        ? autoCalculatedBulanKeInfo.value
+        : "1";
+
+    // Override if user selected from dropdown
+    if (bulanKe) {
+      const num = parseInt(bulanKe, 10);
+      if (num >= 1 && num <= 10) {
+        effectiveBulanKe = bulanKe;
+      }
+    } else if (manualBulanKe) {
+      // Override if user typed manually
+      const num = parseInt(manualBulanKe, 10);
+      if (num >= 1 && num <= 10) {
+        effectiveBulanKe = manualBulanKe;
+      }
+    }
 
     const formattedKegiatan = kegiatanItems
       .map((item) => item.trim())
@@ -773,7 +828,10 @@ export function WorksheetFormModal({
       formData.append("student_id", effectiveStudentId);
       formData.append("title", finalTitle);
       formData.append("description", description.trim());
-      formData.append("worksheet_date", parseIndonesianDateToISO(worksheetDate));
+      formData.append(
+        "worksheet_date",
+        parseIndonesianDateToISO(worksheetDate),
+      );
       formData.append("gdrive_link", gdriveLink.trim());
       formData.append("materi", materi.trim());
       formData.append("kegiatan", formattedKegiatan);
@@ -1046,126 +1104,33 @@ export function WorksheetFormModal({
               </div>
             </div>
 
-            {/* Date & Bulan Ke Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-                  Tanggal Sesi <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={/^\d{4}-\d{2}-\d{2}$/.test(worksheetDate) ? worksheetDate : ""}
-                  onChange={(e) => setWorksheetDate(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs"
-                />
-                <input
-                  type="text"
-                  value={worksheetDate}
-                  onChange={(e) => setWorksheetDate(e.target.value)}
-                  placeholder="Atau ketik manual: 16 Agustus 2026 (Tanggal Bulan Tahun)..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none placeholder:text-slate-400 shadow-2xs"
-                />
-                <span className="text-[10px] text-slate-400 block">
-                  💡 Format manual: <b>Tanggal Bulan Tahun</b> (contoh: 16 Agustus 2026 atau 16/08/2026).
-                </span>
-              </div>
-
-              <div className="relative" ref={bulanKeDropdownRef}>
-                <div className="flex items-center justify-between gap-1 mb-1">
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-                    Bulan ke- <span className="text-red-500">*</span>
-                  </label>
-                  {isBulanKeDisabled ? (
-                    <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1">
-                      🔒 Otomatis Terkunci
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-extrabold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded-full border border-sky-200 dark:border-sky-800/60 flex items-center gap-1">
-                      ✏️ Mode Manual (Siswa Baru)
-                    </span>
-                  )}
-                </div>
-
-                {isBulanKeDisabled ? (
-                  <div className="w-full flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-bold shadow-xs cursor-not-allowed opacity-90">
-                    <span className="truncate flex items-center gap-1.5">
-                      <span>🔒 Bulan ke-{bulanKe || autoCalculatedBulanKeInfo.value}</span>
-                      <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                        (Otomatis Meneruskan)
-                      </span>
-                    </span>
-                    <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-md">
-                      Terkunci
-                    </span>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setIsBulanKeDropdownOpen(!isBulanKeDropdownOpen)
-                    }
-                    className="w-full flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-xl border border-sky-300 dark:border-sky-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:ring-2 focus:ring-sky-500 focus:outline-none shadow-xs transition-colors hover:bg-sky-50/50 dark:hover:bg-slate-700/80 cursor-pointer"
-                  >
-                    <span className="truncate flex items-center gap-1.5">
-                      <span>📅 {bulanKe ? `Bulan ke-${bulanKe}` : "-- Pilih Bulan --"}</span>
-                      {isManualBulanKe && (
-                        <span className="text-[10px] font-semibold text-sky-600 dark:text-sky-400">
-                          (Manual)
-                        </span>
-                      )}
-                    </span>
-                    <Icons.chevronDown
-                      className={`h-3.5 w-3.5 text-sky-600 dark:text-sky-400 shrink-0 transition-transform duration-200 ${
-                        isBulanKeDropdownOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                )}
-
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-1">
-                  {isBulanKeDropdownOpen ? (
-                    "💡 Silakan pilih Bulan ke- awal secara manual untuk siswa baru ini."
-                  ) : isBulanKeDisabled ? (
-                    `🔒 ${autoCalculatedBulanKeInfo.reason} (Dikunci otomatis untuk konsistensi data).`
-                  ) : (
-                    "💡 Belum ada riwayat perkembangan. Silakan tentukan Bulan ke- awal secara manual."
-                  )}
-                </span>
-
-                {/* Custom Popover for Manual Bulan Ke */}
-                {!isBulanKeDisabled && isBulanKeDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150 max-h-56 overflow-y-auto custom-scrollbar">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].map((m) => {
-                      const isSel = bulanKe === m.toString();
-                      return (
-                        <button
-                          key={m}
-                          type="button"
-                          onClick={() => {
-                            setBulanKe(m.toString());
-                            setIsManualBulanKe(true);
-                            setIsBulanKeDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
-                            isSel
-                              ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 font-extrabold border border-sky-200 dark:border-sky-800/50"
-                              : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <span>📅 Bulan ke-{m}</span>
-                          </div>
-                          {isSel && (
-                            <span className="text-sky-600 dark:text-sky-400 font-bold shrink-0 text-xs">
-                              ✓
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+            {/* Date Input - Single Field */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                Tanggal *
+              </label>
+              <input
+                type="date"
+                value={
+                  /^\d{4}-\d{2}-\d{2}$/.test(worksheetDate)
+                    ? worksheetDate.substring(2, 4) +
+                      "-" +
+                      worksheetDate.substring(5, 7) +
+                      "-" +
+                      worksheetDate.substring(0, 4)
+                    : ""
+                }
+                onChange={(e) => {
+                  const day = e.target.value.slice(0, 2);
+                  const month = e.target.value.slice(3, 5);
+                  const year = e.target.value.slice(6, 10);
+                  setWorksheetDate(`${year}-${month}-${day}`);
+                }}
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs"
+              />
+              <span className="text-[10px] text-slate-400 block">
+                💡 Pilih tanggal dari kalender (format: DD-MM-YYYY)
+              </span>
             </div>
 
             {/* Teacher Name */}
@@ -1253,6 +1218,73 @@ export function WorksheetFormModal({
                 />
               )}
             </div>
+
+            {/* Bulan Ke - Dropdown 1-10 + Manual */}
+            <div className="space-y-1.5" ref={bulanKeDropdownRef}>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                Bulan ke- <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setIsBulanKeDropdownOpen(!isBulanKeDropdownOpen)
+                    }
+                    className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border bg-white dark:bg-slate-800 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700/80 cursor-pointer text-left ${
+                      bulanKe
+                        ? "border-sky-300 dark:border-sky-700 text-sky-900 dark:text-sky-300"
+                        : "border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                    }`}
+                  >
+                    <span>
+                      {bulanKe ? `📅 Bulan ke-${bulanKe}` : "-- Pilih Bulan --"}
+                    </span>
+                    <Icons.chevronDown
+                      className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${isBulanKeDropdownOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {isBulanKeDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-2 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150 max-h-60 overflow-y-auto custom-scrollbar">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => {
+                            setBulanKe(num.toString());
+                            setManualBulanKe("");
+                            setIsBulanKeDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                            bulanKe === num.toString()
+                              ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800"
+                              : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          }`}
+                        >
+                          📅 Bulan ke-{num}
+                          {bulanKe === num.toString() && (
+                            <span className="text-sky-600 shrink-0 text-xs font-bold">
+                              ✓
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="number"
+                  value={manualBulanKe}
+                  onChange={(e) => setManualBulanKe(e.target.value)}
+                  placeholder="Manual"
+                  className="w-24 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs placeholder:text-slate-400"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400 block">
+                💡 Pilih dari dropdown atau ketik manual (max 10)
+              </span>
+            </div>
           </div>
 
           {/* ── SECTION 2: Data Perkembangan & Catatan Evaluasi Anak ── */}
@@ -1305,15 +1337,32 @@ export function WorksheetFormModal({
                     <span
                       className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border shrink-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                       style={{
-                        borderColor: `${selectedLevelObj.hex_color || '#0284c7'}80`,
+                        borderColor: `${selectedLevelObj.hex_color || "#0284c7"}80`,
                       }}
                     >
                       <span
                         className="w-2 h-2 rounded-full shrink-0 border border-black/10"
-                        style={{ backgroundColor: selectedLevelObj.hex_color || '#0284c7' }}
+                        style={{
+                          backgroundColor:
+                            selectedLevelObj.hex_color || "#0284c7",
+                        }}
                       />
-                      Level: {selectedLevelObj.main_level} {selectedLevelObj.sub_level}
+                      Level: {selectedLevelObj.main_level}{" "}
+                      {selectedLevelObj.sub_level}
                     </span>
+                  )}
+
+                  {/* Current Student Level Indicator */}
+                  {selectedStudentLabel && (
+                    <div className="text-xs">
+                      <span className="font-semibold text-slate-600 dark:text-slate-400">
+                        📚 Siswa Level:
+                      </span>{" "}
+                      <span className="font-bold text-sky-700 dark:text-sky-400">
+                        {selectedStudentLabel.main_level} -{" "}
+                        {selectedStudentLabel.sub_level}
+                      </span>
+                    </div>
                   )}
                 </div>
 
@@ -1328,7 +1377,9 @@ export function WorksheetFormModal({
                       type="button"
                       disabled={isAbsent}
                       onClick={() =>
-                        setOpenDropdown(openDropdown === "level" ? null : "level")
+                        setOpenDropdown(
+                          openDropdown === "level" ? null : "level",
+                        )
                       }
                       className="w-full sm:w-auto flex items-center justify-between gap-2.5 px-3 py-2 rounded-xl border border-sky-300 dark:border-sky-700 bg-white dark:bg-slate-900 text-xs font-extrabold shadow-xs hover:border-sky-400 cursor-pointer min-w-[210px] text-left"
                     >
@@ -1390,7 +1441,9 @@ export function WorksheetFormModal({
                         <div className="max-h-60 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
                           {/* Option: Semua Level */}
                           {(!levelSearch.trim() ||
-                            "semua level".includes(levelSearch.toLowerCase())) && (
+                            "semua level".includes(
+                              levelSearch.toLowerCase(),
+                            )) && (
                             <button
                               type="button"
                               onClick={() => {
@@ -1411,7 +1464,9 @@ export function WorksheetFormModal({
                                 Semua Level
                               </span>
                               {selectedLevelId === "ALL" && (
-                                <span className="text-sky-600 font-extrabold">✓</span>
+                                <span className="text-sky-600 font-extrabold">
+                                  ✓
+                                </span>
                               )}
                             </button>
                           )}
@@ -1468,7 +1523,11 @@ export function WorksheetFormModal({
                 {!selectedLevelId ? (
                   <div className="p-3.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 text-amber-800 dark:text-amber-200 text-xs font-semibold flex items-center gap-2.5 shadow-2xs">
                     <span className="text-base shrink-0">💡</span>
-                    <span>Silakan <strong>Pilih Level Materi</strong> terlebih dahulu di atas untuk menampilkan pilihan materi/soal yang sesuai.</span>
+                    <span>
+                      Silakan <strong>Pilih Level Materi</strong> terlebih
+                      dahulu di atas untuk menampilkan pilihan materi/soal yang
+                      sesuai.
+                    </span>
                   </div>
                 ) : (
                   <div className="relative">
@@ -1492,82 +1551,121 @@ export function WorksheetFormModal({
                       />
                     </button>
 
-                  {openDropdown === "materi" && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
-                      {/* Search input for Materi */}
-                      <div className="p-1">
-                        <input
-                          ref={materiSearchInputRef}
-                          type="text"
-                          value={materiSearch}
-                          onChange={(e) => setMateriSearch(e.target.value)}
-                          placeholder="🔍 Cari template materi..."
-                          className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-sky-500 focus:outline-none font-medium"
-                          onClick={(e) => e.stopPropagation()}
-                          autoFocus
-                        />
-                      </div>
+                    {openDropdown === "materi" && (
+                      <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
+                        {/* Search input for Materi */}
+                        <div className="p-1">
+                          <input
+                            ref={materiSearchInputRef}
+                            type="text"
+                            value={materiSearch}
+                            onChange={(e) => setMateriSearch(e.target.value)}
+                            placeholder="🔍 Cari template materi..."
+                            className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-sky-500 focus:outline-none font-medium"
+                            onClick={(e) => e.stopPropagation()}
+                            autoFocus
+                          />
+                        </div>
 
-                      <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                        {filteredMateriTemplates.length === 0 ? (
-                          <div className="py-4 text-center text-xs text-slate-400 italic space-y-1">
-                            <div>Tidak ada materi untuk level ini.</div>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedLevelId("ALL")}
-                              className="text-sky-600 dark:text-sky-400 font-bold underline cursor-pointer hover:text-sky-700"
-                            >
-                              Tampilkan Semua Level
-                            </button>
-                          </div>
-                        ) : (
-                          filteredMateriTemplates.map((t) => {
-                            const isSel = smartMateriText === t.title;
-                            const tplLabel = Array.isArray(t.label)
-                              ? t.label[0]
-                              : t.label;
-                            return (
+                        <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                          {filteredMateriTemplates.length === 0 ? (
+                            <div className="py-4 text-center text-xs text-slate-400 italic space-y-1">
+                              <div>Tidak ada materi untuk level ini.</div>
                               <button
-                                key={t.id}
                                 type="button"
-                                onClick={() => {
-                                  setSmartMateriText(t.title);
-                                  setMateri(t.title);
-                                  setOpenDropdown(null);
-                                }}
-                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
-                                  isSel
-                                    ? "bg-sky-100 dark:bg-sky-900/60 text-sky-900 dark:text-sky-200 font-extrabold"
-                                    : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
-                                }`}
+                                onClick={() => setSelectedLevelId("ALL")}
+                                className="text-sky-600 dark:text-sky-400 font-bold underline cursor-pointer hover:text-sky-700"
                               >
-                                <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-                                  <span className="break-words whitespace-normal leading-snug">
-                                    📚 {t.title}
-                                  </span>
-                                  {tplLabel && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
-                                      <span
-                                        className="w-2 h-2 rounded-full shrink-0 border border-black/10"
-                                        style={{ backgroundColor: tplLabel.hex_color || "#0284c7" }}
-                                      />
-                                      Level: {tplLabel.main_level} {tplLabel.sub_level}
+                                Tampilkan Semua Level
+                              </button>
+                            </div>
+                          ) : (
+                            filteredMateriTemplates.map((t) => {
+                              const isSel = smartMateriText === t.title;
+                              const tplLabel = Array.isArray(t.label)
+                                ? t.label[0]
+                                : t.label;
+                              const shouldSwitchLevel =
+                                selectedStudentLabel &&
+                                tplLabel &&
+                                tplLabel.id !== selectedStudentLabel.id;
+
+                              return (
+                                <button
+                                  key={t.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSmartMateriText(t.title);
+                                    setMateri(t.title);
+                                    setOpenDropdown(null);
+
+                                    // If student level differs from material level, ask to switch
+                                    if (
+                                      shouldSwitchLevel &&
+                                      selectedStudentLabel &&
+                                      tplLabel
+                                    ) {
+                                      if (
+                                        confirm(
+                                          `Materi ini untuk level ${tplLabel.main_level} - ${tplLabel.sub_level}, ` +
+                                            `tetapi siswa berada di level ${selectedStudentLabel.main_level} - ${selectedStudentLabel.sub_level}. ` +
+                                            `Ganti level materi ke level siswa?`,
+                                        )
+                                      ) {
+                                        setSelectedLevelId(
+                                          selectedStudentLabel.id,
+                                        );
+                                      }
+                                    }
+                                  }}
+                                  className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
+                                    isSel
+                                      ? "bg-sky-100 dark:bg-sky-900/60 text-sky-900 dark:text-sky-200 font-extrabold"
+                                      : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                                  }`}
+                                >
+                                  <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+                                    <span className="break-words whitespace-normal leading-snug">
+                                      📚 {t.title}
+                                    </span>
+                                    {tplLabel && (
+                                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                                        <span
+                                          className="w-2 h-2 rounded-full shrink-0 border border-black/10"
+                                          style={{
+                                            backgroundColor:
+                                              tplLabel.hex_color || "#0284c7",
+                                          }}
+                                        />
+                                        Level: {tplLabel.main_level}{" "}
+                                        {tplLabel.sub_level}
+                                      </span>
+                                    )}
+                                    {shouldSwitchLevel && (
+                                      <div className="mt-1 flex items-center gap-1 text-[10px]">
+                                        <span className="px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 font-bold">
+                                          👉 Switch to:
+                                        </span>
+                                        <span className="font-bold text-sky-700 dark:text-sky-400">
+                                          {selectedStudentLabel.main_level} -{" "}
+                                          {selectedStudentLabel.sub_level}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {isSel && (
+                                    <span className="text-sky-600 shrink-0 text-xs font-bold mt-0.5">
+                                      ✓
                                     </span>
                                   )}
-                                </div>
-                                {isSel && (
-                                  <span className="text-sky-600 shrink-0 text-xs font-bold mt-0.5">
-                                    ✓
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })
-                        )}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Direct Text Input for Materi */}
@@ -2129,223 +2227,226 @@ export function WorksheetFormModal({
           </div>
 
           {/* ── SECTION 5: Live Preview Tampilan Portal Orang Tua ── */}
-          <div className="rounded-2xl border-2 border-indigo-200 dark:border-indigo-900/80 bg-indigo-50/40 dark:bg-indigo-950/20 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-[11px] font-extrabold shrink-0">
-                  5
-                </span>
-                <div>
-                  <span className="text-xs font-extrabold text-indigo-950 dark:text-indigo-200 uppercase tracking-wider block">
-                    👁️ Preview Tampilan Portal Orang Tua
+          <div className="rounded-2xl border-2 border-indigo-200 dark:border-indigo-900/80 bg-indigo-50/40 dark:bg-indigo-950/20 p-3 sm:p-4 space-y-2 sm:space-y-3">
+            {/* Scrollable container for preview on mobile to prevent ngeblok */}
+            <div className="max-h-[65vh] sm:max-h-none overflow-y-auto custom-scrollbar rounded-xl border border-indigo-200/50 dark:border-indigo-900/50 px-2 sm:px-3 pb-2 sm:pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-[11px] font-extrabold shrink-0">
+                    5
                   </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                    Tampilan persis yang akan dilihat oleh Orang Tua (
-                    {activeStudentName})
-                  </span>
+                  <div>
+                    <span className="text-xs font-extrabold text-indigo-950 dark:text-indigo-200 uppercase tracking-wider block">
+                      👁️ Preview Tampilan Portal Orang Tua
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                      Tampilan persis yang akan dilihat oleh Orang Tua (
+                      {activeStudentName})
+                    </span>
+                  </div>
                 </div>
+                <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/60 px-2.5 py-1 rounded-full border border-indigo-200 dark:border-indigo-800 shrink-0">
+                  Live Preview
+                </span>
               </div>
-              <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/60 px-2.5 py-1 rounded-full border border-indigo-200 dark:border-indigo-800 shrink-0">
-                Live Preview
-              </span>
-            </div>
 
-            {/* Container Matching DailyWorksheetSessionItem */}
-            <div
-              className={`rounded-2xl border-2 overflow-hidden shadow-sm space-y-0 ${
-                attendanceStatus === "SAKIT"
-                  ? "bg-red-50/40 dark:bg-red-950/20 border-red-500/80 dark:border-red-600"
-                  : attendanceStatus === "IJIN"
-                    ? "bg-amber-50/40 dark:bg-amber-950/20 border-amber-400 dark:border-amber-700"
-                    : attendanceStatus === "LIBUR_HARI_BESAR"
-                      ? "bg-purple-50/40 dark:bg-purple-950/20 border-purple-400 dark:border-purple-700"
-                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-              }`}
-            >
-              {/* Header Bar */}
+              {/* Container Matching DailyWorksheetSessionItem */}
               <div
-                className={`px-4 py-3 border-b ${
+                className={`rounded-2xl border-2 overflow-hidden shadow-sm space-y-0 ${
                   attendanceStatus === "SAKIT"
-                    ? "bg-red-100 dark:bg-red-950/90 border-red-200 dark:border-red-900/60"
+                    ? "bg-red-50/40 dark:bg-red-950/20 border-red-500/80 dark:border-red-600"
                     : attendanceStatus === "IJIN"
-                      ? "bg-amber-100 dark:bg-amber-950/90 border-amber-200 dark:border-amber-900/60"
+                      ? "bg-amber-50/40 dark:bg-amber-950/20 border-amber-400 dark:border-amber-700"
                       : attendanceStatus === "LIBUR_HARI_BESAR"
-                        ? "bg-purple-100 dark:bg-purple-950/90 border-purple-200 dark:border-purple-900/60"
-                        : "bg-slate-100/90 dark:bg-slate-800/90 border-slate-200 dark:border-slate-800"
+                        ? "bg-purple-50/40 dark:bg-purple-950/20 border-purple-400 dark:border-purple-700"
+                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                 }`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1.5 text-xs font-medium flex-1">
-                    <div className="grid grid-cols-[90px_auto_1fr] gap-x-1.5 items-baseline">
-                      <span className="font-bold uppercase text-[10px] text-slate-500 tracking-wider">
-                        Hari/tgl
-                      </span>
-                      <span className="font-extrabold text-slate-700">:</span>
-                      <span className="font-extrabold text-slate-900 dark:text-white">
-                        {formatShortDate(worksheetDate)}
-                      </span>
+                {/* Header Bar */}
+                <div
+                  className={`px-4 py-3 border-b ${
+                    attendanceStatus === "SAKIT"
+                      ? "bg-red-100 dark:bg-red-950/90 border-red-200 dark:border-red-900/60"
+                      : attendanceStatus === "IJIN"
+                        ? "bg-amber-100 dark:bg-amber-950/90 border-amber-200 dark:border-amber-900/60"
+                        : attendanceStatus === "LIBUR_HARI_BESAR"
+                          ? "bg-purple-100 dark:bg-purple-950/90 border-purple-200 dark:border-purple-900/60"
+                          : "bg-slate-100/90 dark:bg-slate-800/90 border-slate-200 dark:border-slate-800"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1.5 text-xs font-medium flex-1">
+                      <div className="grid grid-cols-[90px_auto_1fr] gap-x-1.5 items-baseline">
+                        <span className="font-bold uppercase text-[10px] text-slate-500 tracking-wider">
+                          Hari/tgl
+                        </span>
+                        <span className="font-extrabold text-slate-700">:</span>
+                        <span className="font-extrabold text-slate-900 dark:text-white">
+                          {formatShortDate(worksheetDate)}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-[90px_auto_1fr] gap-x-1.5 items-baseline">
+                        <span className="font-bold uppercase text-[10px] text-slate-500 tracking-wider">
+                          Materi
+                        </span>
+                        <span className="font-extrabold text-slate-700">:</span>
+                        <span className="font-bold text-brand-600 dark:text-brand-400">
+                          {materi || title || "-"}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-[90px_auto_1fr] gap-x-1.5 items-baseline">
+                        <span className="font-bold uppercase text-[10px] text-slate-500 tracking-wider">
+                          Pembimbing
+                        </span>
+                        <span className="font-extrabold text-slate-700">:</span>
+                        <span className="font-extrabold italic text-slate-900 dark:text-white">
+                          {ttdGuru || "-"}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-[90px_auto_1fr] gap-x-1.5 items-baseline">
-                      <span className="font-bold uppercase text-[10px] text-slate-500 tracking-wider">
-                        Materi
+                    {/* Status Badges */}
+                    {attendanceStatus === "SAKIT" && (
+                      <span className="px-3 py-1 rounded-full bg-red-600 text-white text-xs font-black tracking-wider shadow-xs shrink-0 flex items-center gap-1.5">
+                        🤒 SAKIT
                       </span>
-                      <span className="font-extrabold text-slate-700">:</span>
-                      <span className="font-bold text-brand-600 dark:text-brand-400">
-                        {materi || title || "-"}
+                    )}
+                    {attendanceStatus === "IJIN" && (
+                      <span className="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-black tracking-wider shadow-xs shrink-0 flex items-center gap-1.5">
+                        📩 IJIN
                       </span>
-                    </div>
+                    )}
+                    {attendanceStatus === "LIBUR_HARI_BESAR" && (
+                      <span className="px-3 py-1 rounded-full bg-purple-600 text-white text-xs font-black tracking-wider shadow-xs shrink-0 flex items-center gap-1.5">
+                        🎉 LIBUR
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-                    <div className="grid grid-cols-[90px_auto_1fr] gap-x-1.5 items-baseline">
-                      <span className="font-bold uppercase text-[10px] text-slate-500 tracking-wider">
-                        Pembimbing
-                      </span>
-                      <span className="font-extrabold text-slate-700">:</span>
-                      <span className="font-extrabold italic text-slate-900 dark:text-white">
-                        {ttdGuru || "-"}
+                {/* 2-Column Table */}
+                <div className="overflow-x-auto touch-pan-x">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr
+                        className={
+                          attendanceStatus === "SAKIT"
+                            ? "bg-red-600 text-white font-extrabold uppercase tracking-wider text-center"
+                            : attendanceStatus === "IJIN"
+                              ? "bg-amber-500 text-white font-extrabold uppercase tracking-wider text-center"
+                              : attendanceStatus === "LIBUR_HARI_BESAR"
+                                ? "bg-purple-600 text-white font-extrabold uppercase tracking-wider text-center"
+                                : "bg-[#00A3E0] dark:bg-sky-700 text-white font-extrabold uppercase tracking-wider text-center"
+                        }
+                      >
+                        <th className="py-2.5 px-4 min-w-[130px] border-r border-white/20 text-left">
+                          Kegiatan
+                        </th>
+                        <th className="py-2.5 px-4 min-w-[130px] text-left">
+                          Hasil belajar
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+                        <td className="py-3 px-4 font-medium border-r border-slate-200 dark:border-slate-800 align-top">
+                          {kegiatanItems.filter((i) => i.trim()).length > 0 ? (
+                            kegiatanItems
+                              .filter((i) => i.trim())
+                              .map((line, i) => (
+                                <div
+                                  key={i}
+                                  className="flex items-start gap-1.5 leading-relaxed"
+                                >
+                                  <span className="text-sky-500 font-bold shrink-0 mt-0.5">
+                                    -
+                                  </span>
+                                  <span>{formatAnandaLine(line)}</span>
+                                </div>
+                              ))
+                          ) : (
+                            <span className="text-slate-400 italic">
+                              - Belum diisi -
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 font-medium align-top">
+                          {hasilBelajarItems.filter((i) => i.trim()).length >
+                          0 ? (
+                            hasilBelajarItems
+                              .filter((i) => i.trim())
+                              .map((line, i) => (
+                                <div
+                                  key={i}
+                                  className="flex items-start gap-1.5 leading-relaxed"
+                                >
+                                  <span className="text-sky-500 font-bold shrink-0 mt-0.5">
+                                    -
+                                  </span>
+                                  <span>{formatAnandaLine(line)}</span>
+                                </div>
+                              ))
+                          ) : (
+                            <span className="text-slate-400 italic">
+                              - Belum diisi -
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Action Bar (File link if present) */}
+                {gdriveLink && (
+                  <div className="flex items-center justify-between px-4 py-2 border-t bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold shadow-2xs">
+                        📄 Lihat File
                       </span>
                     </div>
                   </div>
+                )}
 
-                  {/* Status Badges */}
-                  {attendanceStatus === "SAKIT" && (
-                    <span className="px-3 py-1 rounded-full bg-red-600 text-white text-xs font-black tracking-wider shadow-xs shrink-0 flex items-center gap-1.5">
-                      🤒 SAKIT
+                {/* Rekomendasi di Rumah (if filled) */}
+                {rekomendasiRumah && (
+                  <div className="p-3 border-t text-xs bg-amber-50/70 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/40">
+                    <span className="font-extrabold mr-2 text-amber-800 dark:text-amber-300">
+                      🏡 Rekomendasi di Rumah:
                     </span>
-                  )}
-                  {attendanceStatus === "IJIN" && (
-                    <span className="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-black tracking-wider shadow-xs shrink-0 flex items-center gap-1.5">
-                      📩 IJIN
-                    </span>
-                  )}
-                  {attendanceStatus === "LIBUR_HARI_BESAR" && (
-                    <span className="px-3 py-1 rounded-full bg-purple-600 text-white text-xs font-black tracking-wider shadow-xs shrink-0 flex items-center gap-1.5">
-                      🎉 LIBUR
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* 2-Column Table */}
-              <div className="overflow-x-auto touch-pan-x">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr
-                      className={
-                        attendanceStatus === "SAKIT"
-                          ? "bg-red-600 text-white font-extrabold uppercase tracking-wider text-center"
-                          : attendanceStatus === "IJIN"
-                            ? "bg-amber-500 text-white font-extrabold uppercase tracking-wider text-center"
-                            : attendanceStatus === "LIBUR_HARI_BESAR"
-                              ? "bg-purple-600 text-white font-extrabold uppercase tracking-wider text-center"
-                              : "bg-[#00A3E0] dark:bg-sky-700 text-white font-extrabold uppercase tracking-wider text-center"
-                      }
-                    >
-                      <th className="py-2.5 px-4 min-w-[130px] border-r border-white/20 text-left">
-                        Kegiatan
-                      </th>
-                      <th className="py-2.5 px-4 min-w-[130px] text-left">
-                        Hasil belajar
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                      <td className="py-3 px-4 font-medium border-r border-slate-200 dark:border-slate-800 align-top">
-                        {kegiatanItems.filter((i) => i.trim()).length > 0 ? (
-                          kegiatanItems
-                            .filter((i) => i.trim())
-                            .map((line, i) => (
-                              <div
-                                key={i}
-                                className="flex items-start gap-1.5 leading-relaxed"
-                              >
-                                <span className="text-sky-500 font-bold shrink-0 mt-0.5">
-                                  -
-                                </span>
-                                <span>{formatAnandaLine(line)}</span>
-                              </div>
-                            ))
-                        ) : (
-                          <span className="text-slate-400 italic">
-                            - Belum diisi -
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 font-medium align-top">
-                        {hasilBelajarItems.filter((i) => i.trim()).length >
-                        0 ? (
-                          hasilBelajarItems
-                            .filter((i) => i.trim())
-                            .map((line, i) => (
-                              <div
-                                key={i}
-                                className="flex items-start gap-1.5 leading-relaxed"
-                              >
-                                <span className="text-sky-500 font-bold shrink-0 mt-0.5">
-                                  -
-                                </span>
-                                <span>{formatAnandaLine(line)}</span>
-                              </div>
-                            ))
-                        ) : (
-                          <span className="text-slate-400 italic">
-                            - Belum diisi -
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Action Bar (File link if present) */}
-              {gdriveLink && (
-                <div className="flex items-center justify-between px-4 py-2 border-t bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold shadow-2xs">
-                      📄 Lihat File
+                    <span className="text-slate-700 dark:text-slate-300 font-medium">
+                      {rekomendasiRumah}
                     </span>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Rekomendasi di Rumah (if filled) */}
-              {rekomendasiRumah && (
-                <div className="p-3 border-t text-xs bg-amber-50/70 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/40">
-                  <span className="font-extrabold mr-2 text-amber-800 dark:text-amber-300">
-                    🏡 Rekomendasi di Rumah:
-                  </span>
-                  <span className="text-slate-700 dark:text-slate-300 font-medium">
-                    {rekomendasiRumah}
-                  </span>
-                </div>
-              )}
-
-              {/* Catatan Guru (if filled) */}
-              {catatanGuru && (
-                <div className="p-3 border-t text-xs bg-sky-50/70 dark:bg-sky-950/30 border-sky-100 dark:border-sky-900/40">
-                  <span className="font-extrabold mr-2 text-sky-800 dark:text-sky-300">
-                    ✍️ Catatan Guru:
-                  </span>
-                  <span className="text-slate-700 dark:text-slate-300 font-medium">
-                    {catatanGuru}
-                  </span>
-                </div>
-              )}
-
-              {/* Box Saran Ortu */}
-              <div className="p-3.5 border-t-2 bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/80">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                    <span>💬 SARAN :</span>
-                    <span className="text-[11px] font-normal lowercase text-emerald-600 dark:text-emerald-400">
-                      (masukan / tanggapan orang tua)
+                {/* Catatan Guru (if filled) */}
+                {catatanGuru && (
+                  <div className="p-3 border-t text-xs bg-sky-50/70 dark:bg-sky-950/30 border-sky-100 dark:border-sky-900/40">
+                    <span className="font-extrabold mr-2 text-sky-800 dark:text-sky-300">
+                      ✍️ Catatan Guru:
                     </span>
-                  </span>
-                </div>
-                <div className="text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-white/90 dark:bg-slate-900/90 border border-emerald-300 dark:border-emerald-800/60 px-3 py-1.5 rounded-xl inline-flex items-center gap-1.5">
-                  <span>+ Tambah Saran / Masukan</span>
+                    <span className="text-slate-700 dark:text-slate-300 font-medium">
+                      {catatanGuru}
+                    </span>
+                  </div>
+                )}
+
+                {/* Box Saran Ortu */}
+                <div className="p-3.5 border-t-2 bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/80">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                      <span>💬 SARAN :</span>
+                      <span className="text-[11px] font-normal lowercase text-emerald-600 dark:text-emerald-400">
+                        (masukan / tanggapan orang tua)
+                      </span>
+                    </span>
+                  </div>
+                  <div className="text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-white/90 dark:bg-slate-900/90 border border-emerald-300 dark:border-emerald-800/60 px-3 py-1.5 rounded-xl inline-flex items-center gap-1.5">
+                    <span>+ Tambah Saran / Masukan</span>
+                  </div>
                 </div>
               </div>
             </div>

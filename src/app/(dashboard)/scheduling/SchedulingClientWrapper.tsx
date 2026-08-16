@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import {
@@ -399,9 +399,28 @@ export function SchedulingClientWrapper({
   };
 
   const selectedStudent = students.find((s) => s.id === studentId);
-  const filteredStudents = students.filter((s) =>
-    s.name.toLowerCase().includes(studentSearchQuery.toLowerCase()),
-  );
+  const filteredStudents = useMemo(() => {
+    let result = students;
+
+    // Filter based on search query
+    if (studentSearchQuery.trim()) {
+      result = students.filter((s) =>
+        s.name.toLowerCase().includes(studentSearchQuery.toLowerCase()),
+      );
+    }
+
+    // Sort alphabetically by name (ABC) - primary sort
+    // If names are same, sort by nickname as fallback
+    return result.sort((a, b) => {
+      const nameCompare = a.name.localeCompare(b.name, "id");
+      if (nameCompare !== 0) return nameCompare;
+
+      // If names are equal, compare nicknames
+      const nickA = a.nickname || "";
+      const nickB = b.nickname || "";
+      return nickA.localeCompare(nickB, "id");
+    });
+  }, [students, studentSearchQuery]);
 
   return (
     <>
@@ -891,7 +910,9 @@ export function SchedulingClientWrapper({
                                     )
                                   : null;
                                 const isFull = rem !== null && rem <= 0;
-                                const endHour = String(parseInt(t.split(":")[0], 10) + 1).padStart(2, "0");
+                                const endHour = String(
+                                  parseInt(t.split(":")[0], 10) + 1,
+                                ).padStart(2, "0");
                                 const labelText =
                                   rem !== null
                                     ? isFull
@@ -924,7 +945,13 @@ export function SchedulingClientWrapper({
                           </div>
                         </div>
 
-                        <div className={autoSchedules.length > 1 ? "md:col-span-3" : "md:col-span-4"}>
+                        <div
+                          className={
+                            autoSchedules.length > 1
+                              ? "md:col-span-3"
+                              : "md:col-span-4"
+                          }
+                        >
                           <div className="flex items-center justify-between mb-1.5 px-1">
                             <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                               🏫 Tipe Kelas
@@ -1034,7 +1061,8 @@ export function SchedulingClientWrapper({
             >
               <div className="bg-slate-50 dark:bg-slate-800/50 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
                 <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                  <Icons.calendar className="w-4 h-4 text-brand-500" /> Langkah 2: Pilih Sesi Manual
+                  <Icons.calendar className="w-4 h-4 text-brand-500" /> Langkah
+                  2: Pilih Sesi Manual
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1105,7 +1133,9 @@ export function SchedulingClientWrapper({
                             ? getRemainingSlots(manualDate, t, manualClassId)
                             : null;
                           const isFull = rem !== null && rem <= 0;
-                          const endHour = String(parseInt(t.split(":")[0], 10) + 1).padStart(2, "0");
+                          const endHour = String(
+                            parseInt(t.split(":")[0], 10) + 1,
+                          ).padStart(2, "0");
                           const labelText =
                             rem !== null
                               ? isFull

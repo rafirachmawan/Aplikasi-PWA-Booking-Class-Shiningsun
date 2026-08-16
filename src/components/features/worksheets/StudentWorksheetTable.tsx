@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Icons } from "@/components/ui/icons";
 import { formatShortDate, calculateStudentPoints } from "@/lib/dateUtils";
-import { getGDriveDirectLink } from "@/lib/gdriveUtils";
+import { getGDriveDirectLink, getGDrivePreviewLink } from "@/lib/gdriveUtils";
 import { updateSingleWorksheetParentFeedback } from "@/lib/actions";
 
 interface StudentWorksheetTableProps {
@@ -16,7 +16,11 @@ interface StudentWorksheetTableProps {
   onAddRow?: (studentId: string, bulanKe?: number) => void;
   onEditRow?: (worksheet: any) => void;
   onDeleteRow?: (worksheetId: string) => void;
-  onDeleteSheet?: (studentId: string, bulanKe: number | null, studentName: string) => void;
+  onDeleteSheet?: (
+    studentId: string,
+    bulanKe: number | null,
+    studentName: string,
+  ) => void;
   onSetPin?: (student: any) => void;
 }
 
@@ -77,7 +81,10 @@ function formatDateIndonesian(dateStr?: string | null): string {
   }
 }
 
-function parseParentFeedback(rawText: string | null | undefined, fallbackDate?: string): ParentFeedbackItem[] {
+function parseParentFeedback(
+  rawText: string | null | undefined,
+  fallbackDate?: string,
+): ParentFeedbackItem[] {
   if (!rawText || !rawText.trim()) return [];
   const trimmed = rawText.trim();
 
@@ -97,9 +104,15 @@ function parseParentFeedback(rawText: string | null | undefined, fallbackDate?: 
     }
   }
 
-  const lines = trimmed.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = trimmed
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   return lines.map((line) => {
-    let cleanLine = line.startsWith("-") || line.startsWith("•") ? line.substring(1).trim() : line;
+    let cleanLine =
+      line.startsWith("-") || line.startsWith("•")
+        ? line.substring(1).trim()
+        : line;
     const colonIdx = cleanLine.indexOf(":");
     if (colonIdx > 0 && colonIdx < 25) {
       const possibleDate = cleanLine.substring(0, colonIdx).trim();
@@ -115,7 +128,9 @@ function parseParentFeedback(rawText: string | null | undefined, fallbackDate?: 
   });
 }
 
-{/* Component untuk setiap sesi harian (Per Hari) */}
+{
+  /* Component untuk setiap sesi harian (Per Hari) */
+}
 function DailyWorksheetSessionItem({
   item,
   isParentView,
@@ -128,13 +143,18 @@ function DailyWorksheetSessionItem({
   onDeleteRow?: (id: string) => void;
 }) {
   const [feedbackList, setFeedbackList] = useState<ParentFeedbackItem[]>(() =>
-    parseParentFeedback(item.catatan_ortu, formatShortDate(item.worksheet_date))
+    parseParentFeedback(
+      item.catatan_ortu,
+      formatShortDate(item.worksheet_date),
+    ),
   );
   const [newInputText, setNewInputText] = useState("");
   const [isEditingFeedback, setIsEditingFeedback] = useState(false);
   const [isSavingFeedback, setIsSavingFeedback] = useState(false);
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
-  const [itemToDeleteIndex, setItemToDeleteIndex] = useState<number | null>(null);
+  const [itemToDeleteIndex, setItemToDeleteIndex] = useState<number | null>(
+    null,
+  );
 
   const handleAddFeedbackItem = async () => {
     if (!newInputText.trim()) return;
@@ -162,8 +182,11 @@ function DailyWorksheetSessionItem({
 
   const handleConfirmDeleteFeedbackItem = async () => {
     if (itemToDeleteIndex === null) return;
-    const updatedList = feedbackList.filter((_, idx) => idx !== itemToDeleteIndex);
-    const serialized = updatedList.length > 0 ? JSON.stringify(updatedList) : null;
+    const updatedList = feedbackList.filter(
+      (_, idx) => idx !== itemToDeleteIndex,
+    );
+    const serialized =
+      updatedList.length > 0 ? JSON.stringify(updatedList) : null;
 
     try {
       setIsSavingFeedback(true);
@@ -180,51 +203,53 @@ function DailyWorksheetSessionItem({
   };
 
   // Status Detection for visual themes (Sakit -> Red, Ijin -> Amber, Libur -> Purple)
-  const statusStr = `${item.materi || ""} ${item.title || ""} ${item.kegiatan || ""} ${item.hasil_belajar || ""} ${item.description || ""} ${item.catatan_guru || ""}`.toLowerCase();
+  const statusStr =
+    `${item.materi || ""} ${item.title || ""} ${item.kegiatan || ""} ${item.hasil_belajar || ""} ${item.description || ""} ${item.catatan_guru || ""}`.toLowerCase();
   const isSakit = statusStr.includes("sakit");
-  const isIjin = !isSakit && (statusStr.includes("ijin") || statusStr.includes("izin"));
+  const isIjin =
+    !isSakit && (statusStr.includes("ijin") || statusStr.includes("izin"));
   const isLibur = !isSakit && !isIjin && statusStr.includes("libur");
 
   // Dynamic style classes based on status
   const containerClass = isSakit
     ? "bg-red-50/40 dark:bg-red-950/20 rounded-2xl border-2 border-red-500/80 dark:border-red-600 overflow-hidden shadow-sm space-y-0"
     : isIjin
-    ? "bg-amber-50/40 dark:bg-amber-950/20 rounded-2xl border-2 border-amber-400 dark:border-amber-700 overflow-hidden shadow-sm space-y-0"
-    : isLibur
-    ? "bg-purple-50/40 dark:bg-purple-950/20 rounded-2xl border-2 border-purple-400 dark:border-purple-700 overflow-hidden shadow-sm space-y-0"
-    : "bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm space-y-0";
+      ? "bg-amber-50/40 dark:bg-amber-950/20 rounded-2xl border-2 border-amber-400 dark:border-amber-700 overflow-hidden shadow-sm space-y-0"
+      : isLibur
+        ? "bg-purple-50/40 dark:bg-purple-950/20 rounded-2xl border-2 border-purple-400 dark:border-purple-700 overflow-hidden shadow-sm space-y-0"
+        : "bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm space-y-0";
 
   const headerBarClass = isSakit
     ? "bg-red-100 dark:bg-red-950/90 px-4 py-3 border-b border-red-200 dark:border-red-900/60"
     : isIjin
-    ? "bg-amber-100 dark:bg-amber-950/90 px-4 py-3 border-b border-amber-200 dark:border-amber-900/60"
-    : isLibur
-    ? "bg-purple-100 dark:bg-purple-950/90 px-4 py-3 border-b border-purple-200 dark:border-purple-900/60"
-    : "bg-slate-100/90 dark:bg-slate-800/90 px-4 py-3 border-b border-slate-200 dark:border-slate-800";
+      ? "bg-amber-100 dark:bg-amber-950/90 px-4 py-3 border-b border-amber-200 dark:border-amber-900/60"
+      : isLibur
+        ? "bg-purple-100 dark:bg-purple-950/90 px-4 py-3 border-b border-purple-200 dark:border-purple-900/60"
+        : "bg-slate-100/90 dark:bg-slate-800/90 px-4 py-3 border-b border-slate-200 dark:border-slate-800";
 
   const tableHeaderClass = isSakit
     ? "bg-red-600 dark:bg-red-700 text-white font-extrabold uppercase tracking-wider text-center border-b border-red-500"
     : isIjin
-    ? "bg-amber-500 dark:bg-amber-600 text-white font-extrabold uppercase tracking-wider text-center border-b border-amber-500"
-    : isLibur
-    ? "bg-purple-600 dark:bg-purple-700 text-white font-extrabold uppercase tracking-wider text-center border-b border-purple-500"
-    : "bg-[#00A3E0] dark:bg-sky-700 text-white font-extrabold uppercase tracking-wider text-center border-b border-sky-600";
+      ? "bg-amber-500 dark:bg-amber-600 text-white font-extrabold uppercase tracking-wider text-center border-b border-amber-500"
+      : isLibur
+        ? "bg-purple-600 dark:bg-purple-700 text-white font-extrabold uppercase tracking-wider text-center border-b border-purple-500"
+        : "bg-[#00A3E0] dark:bg-sky-700 text-white font-extrabold uppercase tracking-wider text-center border-b border-sky-600";
 
   const tableBodyClass = isSakit
     ? "bg-red-50/60 dark:bg-red-950/40 text-slate-900 dark:text-slate-100"
     : isIjin
-    ? "bg-amber-50/60 dark:bg-amber-950/40 text-slate-900 dark:text-slate-100"
-    : isLibur
-    ? "bg-purple-50/60 dark:bg-purple-950/40 text-slate-900 dark:text-slate-100"
-    : "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100";
+      ? "bg-amber-50/60 dark:bg-amber-950/40 text-slate-900 dark:text-slate-100"
+      : isLibur
+        ? "bg-purple-50/60 dark:bg-purple-950/40 text-slate-900 dark:text-slate-100"
+        : "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100";
 
   const bulletColorClass = isSakit
     ? "text-red-600 dark:text-red-400 font-bold shrink-0 mt-0.5"
     : isIjin
-    ? "text-amber-600 dark:text-amber-400 font-bold shrink-0 mt-0.5"
-    : isLibur
-    ? "text-purple-600 dark:text-purple-400 font-bold shrink-0 mt-0.5"
-    : "text-sky-500 font-bold shrink-0 mt-0.5";
+      ? "text-amber-600 dark:text-amber-400 font-bold shrink-0 mt-0.5"
+      : isLibur
+        ? "text-purple-600 dark:text-purple-400 font-bold shrink-0 mt-0.5"
+        : "text-sky-500 font-bold shrink-0 mt-0.5";
 
   return (
     <div className={containerClass}>
@@ -233,30 +258,46 @@ function DailyWorksheetSessionItem({
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1.5 text-xs sm:text-sm font-medium flex-1">
             <div className="grid grid-cols-[100px_auto_1fr] gap-x-1.5 items-baseline">
-              <span className={`font-bold uppercase text-[10px] sm:text-[11px] tracking-wider ${isSakit ? "text-red-800 dark:text-red-300" : isIjin ? "text-amber-800 dark:text-amber-300" : isLibur ? "text-purple-800 dark:text-purple-300" : "text-slate-600 dark:text-slate-400"}`}>
+              <span
+                className={`font-bold uppercase text-[10px] sm:text-[11px] tracking-wider ${isSakit ? "text-red-800 dark:text-red-300" : isIjin ? "text-amber-800 dark:text-amber-300" : isLibur ? "text-purple-800 dark:text-purple-300" : "text-slate-600 dark:text-slate-400"}`}
+              >
                 Hari/tgl
               </span>
-              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
-              <span className={`font-extrabold ${isSakit ? "text-red-950 dark:text-red-100" : "text-slate-900 dark:text-white"}`}>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">
+                :
+              </span>
+              <span
+                className={`font-extrabold ${isSakit ? "text-red-950 dark:text-red-100" : "text-slate-900 dark:text-white"}`}
+              >
                 {formatShortDate(item.worksheet_date)}
               </span>
             </div>
 
             <div className="grid grid-cols-[100px_auto_1fr] gap-x-1.5 items-baseline">
-              <span className={`font-bold uppercase text-[10px] sm:text-[11px] tracking-wider ${isSakit ? "text-red-800 dark:text-red-300" : isIjin ? "text-amber-800 dark:text-amber-300" : isLibur ? "text-purple-800 dark:text-purple-300" : "text-slate-600 dark:text-slate-400"}`}>
+              <span
+                className={`font-bold uppercase text-[10px] sm:text-[11px] tracking-wider ${isSakit ? "text-red-800 dark:text-red-300" : isIjin ? "text-amber-800 dark:text-amber-300" : isLibur ? "text-purple-800 dark:text-purple-300" : "text-slate-600 dark:text-slate-400"}`}
+              >
                 Materi
               </span>
-              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
-              <span className={`font-bold ${isSakit ? "text-red-700 dark:text-red-300" : isIjin ? "text-amber-700 dark:text-amber-300" : isLibur ? "text-purple-700 dark:text-purple-300" : "text-brand-600 dark:text-brand-400"}`}>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">
+                :
+              </span>
+              <span
+                className={`font-bold ${isSakit ? "text-red-700 dark:text-red-300" : isIjin ? "text-amber-700 dark:text-amber-300" : isLibur ? "text-purple-700 dark:text-purple-300" : "text-brand-600 dark:text-brand-400"}`}
+              >
                 {item.materi || item.title || "-"}
               </span>
             </div>
 
             <div className="grid grid-cols-[100px_auto_1fr] gap-x-1.5 items-baseline">
-              <span className={`font-bold uppercase text-[10px] sm:text-[11px] tracking-wider ${isSakit ? "text-red-800 dark:text-red-300" : isIjin ? "text-amber-800 dark:text-amber-300" : isLibur ? "text-purple-800 dark:text-purple-300" : "text-slate-600 dark:text-slate-400"}`}>
+              <span
+                className={`font-bold uppercase text-[10px] sm:text-[11px] tracking-wider ${isSakit ? "text-red-800 dark:text-red-300" : isIjin ? "text-amber-800 dark:text-amber-300" : isLibur ? "text-purple-800 dark:text-purple-300" : "text-slate-600 dark:text-slate-400"}`}
+              >
                 Pembimbing
               </span>
-              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">
+                :
+              </span>
               <span className="font-extrabold italic text-slate-900 dark:text-white">
                 {item.ttd_guru || "-"}
               </span>
@@ -282,7 +323,6 @@ function DailyWorksheetSessionItem({
         </div>
       </div>
 
-
       {/* 2. 2-Column Table (Kegiatan | Hasil belajar) */}
       <div className="overflow-x-auto touch-pan-x">
         <table className="w-full text-left border-collapse text-xs sm:text-sm">
@@ -300,22 +340,34 @@ function DailyWorksheetSessionItem({
             <tr className={tableBodyClass}>
               {/* Kegiatan */}
               <td className="py-3.5 px-4 font-medium border-r border-slate-200/80 dark:border-slate-800/80 align-top">
-                {(item.kegiatan || "-").split("\n").filter(Boolean).map((line: string, i: number) => (
-                  <div key={i} className="flex items-start gap-1.5 leading-relaxed">
-                    <span className={bulletColorClass}>-</span>
-                    <span>{formatAnandaLine(line)}</span>
-                  </div>
-                ))}
+                {(item.kegiatan || "-")
+                  .split("\n")
+                  .filter(Boolean)
+                  .map((line: string, i: number) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-1.5 leading-relaxed"
+                    >
+                      <span className={bulletColorClass}>-</span>
+                      <span>{formatAnandaLine(line)}</span>
+                    </div>
+                  ))}
               </td>
 
               {/* Hasil Belajar */}
               <td className="py-3.5 px-4 font-medium align-top">
-                {((item.hasil_belajar || item.description || "-")).split("\n").filter(Boolean).map((line: string, i: number) => (
-                  <div key={i} className="flex items-start gap-1.5 leading-relaxed">
-                    <span className={bulletColorClass}>-</span>
-                    <span>{formatAnandaLine(line)}</span>
-                  </div>
-                ))}
+                {(item.hasil_belajar || item.description || "-")
+                  .split("\n")
+                  .filter(Boolean)
+                  .map((line: string, i: number) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-1.5 leading-relaxed"
+                    >
+                      <span className={bulletColorClass}>-</span>
+                      <span>{formatAnandaLine(line)}</span>
+                    </div>
+                  ))}
               </td>
             </tr>
           </tbody>
@@ -324,26 +376,42 @@ function DailyWorksheetSessionItem({
 
       {/* Action Bar (File + Edit/Delete) */}
       {(!isParentView || item.gdrive_link) && (
-        <div className={`flex items-center justify-between px-4 py-2 border-t ${
-          isSakit
-            ? "bg-red-100/60 dark:bg-red-950/50 border-red-200 dark:border-red-900/60"
-            : isIjin
-            ? "bg-amber-100/60 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900/60"
-            : isLibur
-            ? "bg-purple-100/60 dark:bg-purple-950/50 border-purple-200 dark:border-purple-900/60"
-            : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800"
-        }`}>
+        <div
+          className={`flex items-center justify-between px-4 py-2 border-t ${
+            isSakit
+              ? "bg-red-100/60 dark:bg-red-950/50 border-red-200 dark:border-red-900/60"
+              : isIjin
+                ? "bg-amber-100/60 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900/60"
+                : isLibur
+                  ? "bg-purple-100/60 dark:bg-purple-950/50 border-purple-200 dark:border-purple-900/60"
+                  : "bg-slate-50/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800"
+          }`}
+        >
           <div className="flex items-center gap-2">
             {item.gdrive_link && (
-              <a
-                href={getGDriveDirectLink(item.gdrive_link)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold hover:bg-emerald-700 transition-all shadow-xs cursor-pointer"
-                title="Unduh / Lihat File GDrive"
-              >
-                📄 Lihat File
-              </a>
+              <>
+                {/* Tombol untuk Preview File (Lihat tanpa download) */}
+                <a
+                  href={getGDrivePreviewLink(item.gdrive_link)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold hover:bg-emerald-700 transition-all shadow-xs cursor-pointer"
+                  title="Lihat File GDrive (preview di browser)"
+                >
+                  📄 Lihat File
+                </a>
+
+                {/* Tombol terpisah untuk Download langsung */}
+                <a
+                  href={getGDriveDirectLink(item.gdrive_link)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-600 text-white text-[11px] font-bold hover:bg-slate-700 transition-all shadow-xs cursor-pointer"
+                  title="Download File Langsung"
+                >
+                  ⬇️ Unduh
+                </a>
+              </>
             )}
           </div>
 
@@ -374,12 +442,16 @@ function DailyWorksheetSessionItem({
 
       {/* Rekomendasi di Rumah Opsional jika ada */}
       {item.rekomendasi_rumah && (
-        <div className={`p-3 border-t text-xs ${
-          isSakit
-            ? "bg-red-100/70 dark:bg-red-950/60 border-red-200 dark:border-red-900/70"
-            : "bg-amber-50/70 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/40"
-        }`}>
-          <span className={`font-extrabold mr-2 ${isSakit ? "text-red-900 dark:text-red-300" : "text-amber-800 dark:text-amber-300"}`}>
+        <div
+          className={`p-3 border-t text-xs ${
+            isSakit
+              ? "bg-red-100/70 dark:bg-red-950/60 border-red-200 dark:border-red-900/70"
+              : "bg-amber-50/70 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/40"
+          }`}
+        >
+          <span
+            className={`font-extrabold mr-2 ${isSakit ? "text-red-900 dark:text-red-300" : "text-amber-800 dark:text-amber-300"}`}
+          >
             🏡 Rekomendasi di Rumah:
           </span>
           <span className="text-slate-700 dark:text-slate-300 font-medium">
@@ -390,12 +462,16 @@ function DailyWorksheetSessionItem({
 
       {/* Catatan Guru Opsional jika ada */}
       {item.catatan_guru && (
-        <div className={`p-3 border-t text-xs ${
-          isSakit
-            ? "bg-red-100/70 dark:bg-red-950/60 border-red-200 dark:border-red-900/70"
-            : "bg-sky-50/70 dark:bg-sky-950/30 border-sky-100 dark:border-sky-900/40"
-        }`}>
-          <span className={`font-extrabold mr-2 ${isSakit ? "text-red-900 dark:text-red-300" : "text-sky-800 dark:text-sky-300"}`}>
+        <div
+          className={`p-3 border-t text-xs ${
+            isSakit
+              ? "bg-red-100/70 dark:bg-red-950/60 border-red-200 dark:border-red-900/70"
+              : "bg-sky-50/70 dark:bg-sky-950/30 border-sky-100 dark:border-sky-900/40"
+          }`}
+        >
+          <span
+            className={`font-extrabold mr-2 ${isSakit ? "text-red-900 dark:text-red-300" : "text-sky-800 dark:text-sky-300"}`}
+          >
             ✍️ Catatan Guru:
           </span>
           <span className="text-slate-700 dark:text-slate-300 font-medium">
@@ -405,19 +481,29 @@ function DailyWorksheetSessionItem({
       )}
 
       {/* 3. SARAN ORANG TUA PER HARI (MATCHING SKETCH "Saran :" PER SESI) */}
-      <div className={`p-3.5 sm:p-4 border-t-2 ${
-        isSakit
-          ? "bg-red-50/80 dark:bg-red-950/40 border-red-300 dark:border-red-800/80"
-          : "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/80"
-      }`}>
+      <div
+        className={`p-3.5 sm:p-4 border-t-2 ${
+          isSakit
+            ? "bg-red-50/80 dark:bg-red-950/40 border-red-300 dark:border-red-800/80"
+            : "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/80"
+        }`}
+      >
         <div className="flex items-center justify-between mb-2">
-          <span className={`text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 ${
-            isSakit ? "text-red-900 dark:text-red-300" : "text-emerald-800 dark:text-emerald-300"
-          }`}>
+          <span
+            className={`text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 ${
+              isSakit
+                ? "text-red-900 dark:text-red-300"
+                : "text-emerald-800 dark:text-emerald-300"
+            }`}
+          >
             <span>💬 SARAN :</span>
-            <span className={`text-[11px] font-normal lowercase ${
-              isSakit ? "text-red-700 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
-            }`}>
+            <span
+              className={`text-[11px] font-normal lowercase ${
+                isSakit
+                  ? "text-red-700 dark:text-red-400"
+                  : "text-emerald-600 dark:text-emerald-400"
+              }`}
+            >
               (masukan / tanggapan orang tua)
             </span>
           </span>
@@ -437,12 +523,16 @@ function DailyWorksheetSessionItem({
                 className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 bg-white/95 dark:bg-slate-900/95 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800/50 flex items-start justify-between gap-2 shadow-2xs"
               >
                 <div className="flex items-start gap-2 flex-1 min-w-0">
-                  <span className="font-extrabold text-emerald-600 dark:text-emerald-400 shrink-0 pt-0.5">•</span>
+                  <span className="font-extrabold text-emerald-600 dark:text-emerald-400 shrink-0 pt-0.5">
+                    •
+                  </span>
                   <div className="flex-1 min-w-0">
                     <span className="inline-block text-[10px] font-extrabold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-300/60 dark:border-emerald-800/60 mr-2">
                       {fb.date}
                     </span>
-                    <span className="leading-relaxed font-medium break-words">{fb.text}</span>
+                    <span className="leading-relaxed font-medium break-words">
+                      {fb.text}
+                    </span>
                   </div>
                 </div>
                 {isParentView && (
@@ -461,7 +551,9 @@ function DailyWorksheetSessionItem({
           </div>
         ) : (
           <p className="text-xs text-slate-400 italic mb-2">
-            {isParentView ? "Belum ada saran/masukan untuk hari ini." : "Belum ada saran dari orang tua untuk hari ini."}
+            {isParentView
+              ? "Belum ada saran/masukan untuk hari ini."
+              : "Belum ada saran dari orang tua untuk hari ini."}
           </p>
         )}
 
@@ -471,7 +563,10 @@ function DailyWorksheetSessionItem({
             {isEditingFeedback ? (
               <div className="space-y-2 pt-2 border-t border-emerald-200/70 dark:border-emerald-900/70 no-print-action">
                 <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300 font-bold">
-                  <span>Tulis Saran / Masukan Hari Ini ({formatShortDate(item.worksheet_date)}):</span>
+                  <span>
+                    Tulis Saran / Masukan Hari Ini (
+                    {formatShortDate(item.worksheet_date)}):
+                  </span>
                 </div>
                 <textarea
                   rows={2}
@@ -582,10 +677,14 @@ export function StudentWorksheetTable({
   const currentBulanKe =
     bulanKe !== undefined && bulanKe !== null
       ? bulanKe
-      : worksheets.find((w) => w.bulan_ke != null)?.bulan_ke ?? null;
+      : (worksheets.find((w) => w.bulan_ke != null)?.bulan_ke ?? null);
 
-  const latestMonth = currentBulanKe ?? [...worksheets].reverse().find((w) => w.bulan_ke != null)?.bulan_ke;
-  const firstLetter = student?.name ? student.name.charAt(0).toUpperCase() : "S";
+  const latestMonth =
+    currentBulanKe ??
+    [...worksheets].reverse().find((w) => w.bulan_ke != null)?.bulan_ke;
+  const firstLetter = student?.name
+    ? student.name.charAt(0).toUpperCase()
+    : "S";
 
   const handleDownloadPdf = async () => {
     if (isDownloadingPdf) return;
@@ -729,7 +828,6 @@ export function StudentWorksheetTable({
       {/* 1. HEADER SECTION (MATCHING SKETCH IDENTITAS SISWA)          */}
       {/* ============================================================ */}
       <div className="p-5 sm:p-7 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-        
         {/* Top Header Row: PP (Photo Box) + Student Main Info */}
         <div className="flex items-start gap-4 sm:gap-6">
           {/* Photo / Logo Box */}
@@ -759,7 +857,9 @@ export function StudentWorksheetTable({
               <span className="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] sm:text-xs tracking-wider">
                 Nama lengkap
               </span>
-              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">
+                :
+              </span>
               <span className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base leading-snug">
                 {student?.name || "-"}
               </span>
@@ -769,7 +869,9 @@ export function StudentWorksheetTable({
               <span className="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] sm:text-xs tracking-wider">
                 Nama panggilan
               </span>
-              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">
+                :
+              </span>
               <span className="font-bold text-slate-800 dark:text-slate-200">
                 {student?.nickname || "-"}
               </span>
@@ -779,7 +881,9 @@ export function StudentWorksheetTable({
               <span className="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] sm:text-xs tracking-wider">
                 Tgl lahir
               </span>
-              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">
+                :
+              </span>
               <span className="font-semibold text-slate-700 dark:text-slate-300">
                 {formatDateIndonesian(student?.date_of_birth)}
               </span>
@@ -789,7 +893,9 @@ export function StudentWorksheetTable({
               <span className="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] sm:text-xs tracking-wider">
                 Usia
               </span>
-              <span className="font-extrabold text-slate-700 dark:text-slate-300">:</span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">
+                :
+              </span>
               <span className="font-bold text-brand-600 dark:text-brand-400">
                 {calculateAge(student?.date_of_birth)}
               </span>
@@ -797,54 +903,79 @@ export function StudentWorksheetTable({
           </div>
         </div>
 
-
-
         {/* Divider Line (Divider Sesuai Sketsa Gambar) */}
         <hr className="my-4 sm:my-5 border-slate-200 dark:border-slate-800" />
 
         {/* Bottom Info Grid Below Divider Line (Uniform Neutral Styling - Full Text Visibility) */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 text-xs text-slate-800 dark:text-slate-200 font-medium">
           <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between">
-            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Unit</span>
+            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Unit
+            </span>
             <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
-              {student?.branch?.name ? `ShiningSun ${student.branch.name}` : "ShiningSun"}
+              {student?.branch?.name
+                ? `ShiningSun ${student.branch.name}`
+                : "ShiningSun"}
             </span>
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between">
-            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Jadwal</span>
+            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Jadwal
+            </span>
             <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
               {student?.schedule || "-"}
             </span>
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between">
-            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Level</span>
+            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Level
+            </span>
             <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
-              {student?.label ? `${student.label.main_level} ${student.label.sub_level}` : "Tanpa Level"}
+              {student?.label
+                ? `${student.label.main_level} ${student.label.sub_level}`
+                : "Tanpa Level"}
             </span>
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between">
-            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Bulan Ke</span>
+            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Bulan Ke
+            </span>
             <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
-              {currentBulanKe != null ? `Bulan ke-${currentBulanKe}` : "Bulan ke-1"}
+              {currentBulanKe != null
+                ? `Bulan ke-${currentBulanKe}`
+                : "Bulan ke-1"}
             </span>
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between">
-            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Poin Kehadiran</span>
+            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Poin Kehadiran
+            </span>
             <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
               {student?.points !== undefined
                 ? student.points
-                : Math.max(0, calculateStudentPoints(worksheets) - (student?.redeemed_points || 0))} Poin
+                : Math.max(
+                    0,
+                    calculateStudentPoints(worksheets) -
+                      (student?.redeemed_points || 0),
+                  )}{" "}
+              Poin
             </span>
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between">
-            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</span>
+            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Status
+            </span>
             <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
-              {student?.status === 'REGISTERED' ? 'Siswa Reguler' : student?.status === 'CG' ? 'Coba Gratis' : 'Nonaktif'}
+              {student?.status === "REGISTERED"
+                ? "Siswa Reguler"
+                : student?.status === "CG"
+                  ? "Coba Gratis"
+                  : "Nonaktif"}
             </span>
           </div>
         </div>
@@ -887,25 +1018,59 @@ export function StudentWorksheetTable({
                 title="Download langsung file PDF laporan perkembangan siswa ini"
               >
                 {isDownloadingPdf ? (
-                  <svg className="animate-spin h-3.5 w-3.5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin h-3.5 w-3.5 text-indigo-600"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" x2="12" y1="15" y2="3"/>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" x2="12" y1="15" y2="3" />
                   </svg>
                 )}
-                <span className="whitespace-nowrap">{isDownloadingPdf ? "Memproses..." : "Download PDF"}</span>
+                <span className="whitespace-nowrap">
+                  {isDownloadingPdf ? "Memproses..." : "Download PDF"}
+                </span>
               </button>
             )}
 
             {!isParentView && onDeleteSheet && (
               <button
                 type="button"
-                onClick={() => onDeleteSheet(student.id, latestMonth ?? null, student.name || "Siswa")}
+                onClick={() =>
+                  onDeleteSheet(
+                    student.id,
+                    latestMonth ?? null,
+                    student.name || "Siswa",
+                  )
+                }
                 className="flex-1 sm:w-auto justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/60 border border-red-200 dark:border-red-900/50 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print-action"
                 title="Hapus Laporan Perkembangan Ini"
               >

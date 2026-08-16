@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { WorksheetFormModal } from "@/components/features/worksheets/WorksheetFormModal";
 import { StudentWorksheetTable } from "@/components/features/worksheets/StudentWorksheetTable";
-import { deleteWorksheet, deleteWorksheetMonth, updateStudentAccessPin } from "@/lib/actions";
+import {
+  deleteWorksheet,
+  deleteWorksheetMonth,
+  updateStudentAccessPin,
+} from "@/lib/actions";
 import { formatNumericDate, formatShortDate } from "@/lib/dateUtils";
 import { getGDrivePreviewLink, getGDriveDirectLink } from "@/lib/gdriveUtils";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -85,13 +89,29 @@ export function WorksheetClientWrapper({
   }, [students, selectedStudentId]);
 
   const filteredDropdownStudents = useMemo(() => {
-    if (!studentDropdownFilter.trim()) return students;
-    const query = studentDropdownFilter.toLowerCase();
-    return students.filter(
-      (s) =>
-        s.name.toLowerCase().includes(query) ||
-        (s.nickname && s.nickname.toLowerCase().includes(query))
-    );
+    let result = students;
+
+    // Filter based on search query
+    if (studentDropdownFilter.trim()) {
+      const query = studentDropdownFilter.toLowerCase();
+      result = students.filter(
+        (s) =>
+          s.name.toLowerCase().includes(query) ||
+          (s.nickname && s.nickname.toLowerCase().includes(query)),
+      );
+    }
+
+    // Sort alphabetically by name (ABC) - primary sort
+    // If names are same, sort by nickname as fallback
+    return result.sort((a, b) => {
+      const nameCompare = a.name.localeCompare(b.name, "id");
+      if (nameCompare !== 0) return nameCompare;
+
+      // If names are equal, compare nicknames
+      const nickA = a.nickname || "";
+      const nickB = b.nickname || "";
+      return nickA.localeCompare(nickB, "id");
+    });
   }, [students, studentDropdownFilter]);
 
   // Delete confirm modal state
@@ -109,7 +129,10 @@ export function WorksheetClientWrapper({
     setIsDeleting(true);
     try {
       if (deleteTarget.type === "sheet" && deleteTarget.studentId) {
-        await deleteWorksheetMonth(deleteTarget.studentId, deleteTarget.bulanKe ?? null);
+        await deleteWorksheetMonth(
+          deleteTarget.studentId,
+          deleteTarget.bulanKe ?? null,
+        );
       } else if (deleteTarget.type === "row" && deleteTarget.id) {
         await deleteWorksheet(deleteTarget.id);
       }
@@ -123,8 +146,6 @@ export function WorksheetClientWrapper({
     }
   };
 
-
-
   // PIN modal state
   const [pinModalStudent, setPinModalStudent] = useState<any>(null);
   const [newPin, setNewPin] = useState("");
@@ -137,7 +158,10 @@ export function WorksheetClientWrapper({
     if (!pinModalStudent) return;
     const studentName = pinModalStudent.name;
     const currentPin = pinModalStudent.access_pin || "123456";
-    const portalUrl = typeof window !== "undefined" ? `${window.location.origin}/portal-ortu` : "https://app.shiningsun.id/portal-ortu";
+    const portalUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/portal-ortu`
+        : "https://app.shiningsun.id/portal-ortu";
 
     const text = `Halo Bapak/Ibu, berikut informasi akses Portal Mandiri Orang Tua ShiningSun untuk siswa *${studentName}*:\n\n🌐 Link Portal: ${portalUrl}\n👤 Nama Siswa: ${studentName}\n🔑 PIN Akses: ${currentPin}\n\nSilakan gunakan Nama & PIN di atas untuk memantau laporan perkembangan dan jadwal kelas anak. Terima kasih!`;
 
@@ -251,7 +275,9 @@ export function WorksheetClientWrapper({
         .replace(/_+/g, "_");
 
       const dateRangeStr =
-        startDate || endDate ? `_${startDate || "Awal"}_sd_${endDate || "Akhir"}` : "";
+        startDate || endDate
+          ? `_${startDate || "Awal"}_sd_${endDate || "Akhir"}`
+          : "";
       pdf.save(`Laporan_Perkembangan_${safeFileName}${dateRangeStr}.pdf`);
     } catch (error) {
       console.error("Failed to generate PDF:", error);
@@ -274,19 +300,23 @@ export function WorksheetClientWrapper({
 
   // Group worksheets by student_id + bulan_ke (each month = separate card/table)
   const groupedWorksheets = useMemo(() => {
-    const map = new Map<string, { student: any; bulanKe: number | null; worksheets: any[] }>();
+    const map = new Map<
+      string,
+      { student: any; bulanKe: number | null; worksheets: any[] }
+    >();
 
     filteredWorksheets.forEach((w) => {
       const sId = w.student_id;
       const bk = w.bulan_ke ?? null;
-      const groupKey = `${sId}_${bk ?? 'none'}`;
+      const groupKey = `${sId}_${bk ?? "none"}`;
 
       if (!map.has(groupKey)) {
         const fullStudent = students.find((s) => s.id === sId);
         const studentObj = {
           ...(fullStudent || {}),
           ...(w.student || {}),
-          date_of_birth: w.student?.date_of_birth || fullStudent?.date_of_birth || null,
+          date_of_birth:
+            w.student?.date_of_birth || fullStudent?.date_of_birth || null,
         };
         map.set(groupKey, { student: studentObj, bulanKe: bk, worksheets: [] });
       }
@@ -295,10 +325,19 @@ export function WorksheetClientWrapper({
     });
 
     // If specific student selected in filter and has 0 filtered worksheets, still render their empty table
-    if (selectedStudentId && selectedStudentId !== "" && selectedStudentId !== "__none__" && !Array.from(map.values()).some(g => g.student.id === selectedStudentId)) {
+    if (
+      selectedStudentId &&
+      selectedStudentId !== "" &&
+      selectedStudentId !== "__none__" &&
+      !Array.from(map.values()).some((g) => g.student.id === selectedStudentId)
+    ) {
       const studentObj = students.find((s) => s.id === selectedStudentId);
       if (studentObj) {
-        map.set(`${selectedStudentId}_none`, { student: studentObj, bulanKe: null, worksheets: [] });
+        map.set(`${selectedStudentId}_none`, {
+          student: studentObj,
+          bulanKe: null,
+          worksheets: [],
+        });
       }
     }
 
@@ -311,8 +350,6 @@ export function WorksheetClientWrapper({
     });
   }, [filteredWorksheets, selectedStudentId, students]);
 
-
-
   const handleUpdatePin = async () => {
     if (!pinModalStudent || !newPin) return;
     setPinMsg({ error: "", success: "" });
@@ -320,7 +357,10 @@ export function WorksheetClientWrapper({
     try {
       await updateStudentAccessPin(pinModalStudent.id, newPin);
       pinModalStudent.access_pin = newPin.trim();
-      setPinMsg({ error: "", success: "PIN Akses Orang Tua berhasil diperbarui!" });
+      setPinMsg({
+        error: "",
+        success: "PIN Akses Orang Tua berhasil diperbarui!",
+      });
       setTimeout(() => {
         setPinModalStudent(null);
         setNewPin("");
@@ -336,7 +376,6 @@ export function WorksheetClientWrapper({
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
       {/* Access PIN Manager Modal */}
       {pinModalStudent && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -356,7 +395,10 @@ export function WorksheetClientWrapper({
                     PIN Portal Orang Tua
                   </h3>
                   <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
-                    Siswa: <span className="text-brand-600 dark:text-brand-400 font-bold">{pinModalStudent.name}</span>
+                    Siswa:{" "}
+                    <span className="text-brand-600 dark:text-brand-400 font-bold">
+                      {pinModalStudent.name}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -384,11 +426,17 @@ export function WorksheetClientWrapper({
                   onClick={handleCopyWaInfo}
                   className="px-3 py-2 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/50 transition-all flex items-center gap-1.5 shadow-xs active:scale-95 cursor-pointer"
                 >
-                  <span>{pinCopiedWa ? "✅ Info Tersalin!" : "📋 Salin Info WA"}</span>
+                  <span>
+                    {pinCopiedWa ? "✅ Info Tersalin!" : "📋 Salin Info WA"}
+                  </span>
                 </button>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
-                Digunakan Orang Tua untuk masuk ke portal <strong className="text-slate-700 dark:text-slate-300">/portal-ortu</strong> menggunakan Nama Siswa.
+                Digunakan Orang Tua untuk masuk ke portal{" "}
+                <strong className="text-slate-700 dark:text-slate-300">
+                  /portal-ortu
+                </strong>{" "}
+                menggunakan Nama Siswa.
               </p>
             </div>
 
@@ -425,13 +473,39 @@ export function WorksheetClientWrapper({
                   title={showPinModal ? "Sembunyikan PIN" : "Tampilkan PIN"}
                 >
                   {showPinModal ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                      />
                     </svg>
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
                     </svg>
                   )}
                 </button>
@@ -493,7 +567,8 @@ export function WorksheetClientWrapper({
               )}
             </h2>
             <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
-              Catat laporan perkembangan, tugas, dan tautan file Google Drive yang dapat diakses oleh Orang Tua.
+              Catat laporan perkembangan, tugas, dan tautan file Google Drive
+              yang dapat diakses oleh Orang Tua.
             </p>
           </div>
 
@@ -504,7 +579,7 @@ export function WorksheetClientWrapper({
               setIsModalOpen(true);
             }}
             className="inline-flex items-center gap-x-2 rounded-xl bg-white text-brand-700 px-5 py-3 text-sm font-bold shadow-md hover:bg-brand-50 focus-visible:outline-none shrink-0 w-full sm:w-auto justify-center transition-all active:scale-95 cursor-pointer"
-            style={{ color: '#1d4ed8', backgroundColor: 'white' }}
+            style={{ color: "#1d4ed8", backgroundColor: "white" }}
           >
             <Icons.add className="-ml-0.5 h-5 w-5" />
             Tambah Laporan Perkembangan
@@ -539,73 +614,75 @@ export function WorksheetClientWrapper({
             <Icons.users className="h-5 w-5 text-slate-400" />
           </div>
 
-            {/* Dropdown Menu (Always Opens Downwards) */}
-            {isStudentDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 animate-in fade-in slide-in-from-top-2 duration-150 space-y-1.5">
-                {/* Quick Search inside dropdown */}
-                <div className="p-1">
-                  <input
-                    ref={studentSearchInputRef}
-                    type="text"
-                    value={studentDropdownFilter}
-                    onChange={(e) => setStudentDropdownFilter(e.target.value)}
-                    placeholder="🔍 Cari nama siswa..."
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium"
-                    onClick={(e) => e.stopPropagation()}
-                    autoFocus
-                  />
-                </div>
-
-                <div className="max-h-64 overflow-y-auto space-y-0.5 pr-1 custom-scrollbar">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedStudentId("");
-                      setIsStudentDropdownOpen(false);
-                      setStudentDropdownFilter("");
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
-                      selectedStudentId === ""
-                        ? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 font-bold"
-                        : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    <span>✨ Semua Siswa ({students.length})</span>
-                    {selectedStudentId === "" && <span>✓</span>}
-                  </button>
-
-                  {filteredDropdownStudents.length === 0 ? (
-                    <div className="py-3 text-center text-xs text-slate-400 italic">
-                      Tidak ada siswa yang cocok.
-                    </div>
-                  ) : (
-                    filteredDropdownStudents.map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedStudentId(s.id);
-                          setIsStudentDropdownOpen(false);
-                          setStudentDropdownFilter("");
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors flex items-center justify-between cursor-pointer ${
-                          selectedStudentId === s.id
-                            ? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 font-bold"
-                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium"
-                        }`}
-                      >
-                        <span className="truncate">
-                          👤 {s.name} {s.nickname ? `(${s.nickname})` : ""}
-                        </span>
-                        {selectedStudentId === s.id && <span className="font-bold">✓</span>}
-                      </button>
-                    ))
-                  )}
-                </div>
+          {/* Dropdown Menu (Always Opens Downwards) */}
+          {isStudentDropdownOpen && (
+            <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 animate-in fade-in slide-in-from-top-2 duration-150 space-y-1.5">
+              {/* Quick Search inside dropdown */}
+              <div className="p-1">
+                <input
+                  ref={studentSearchInputRef}
+                  type="text"
+                  value={studentDropdownFilter}
+                  onChange={(e) => setStudentDropdownFilter(e.target.value)}
+                  placeholder="🔍 Cari nama siswa..."
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium"
+                  onClick={(e) => e.stopPropagation()}
+                  autoFocus
+                />
               </div>
-            )}
-          </div>
+
+              <div className="max-h-64 overflow-y-auto space-y-0.5 pr-1 custom-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedStudentId("");
+                    setIsStudentDropdownOpen(false);
+                    setStudentDropdownFilter("");
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                    selectedStudentId === ""
+                      ? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 font-bold"
+                      : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <span>✨ Semua Siswa ({students.length})</span>
+                  {selectedStudentId === "" && <span>✓</span>}
+                </button>
+
+                {filteredDropdownStudents.length === 0 ? (
+                  <div className="py-3 text-center text-xs text-slate-400 italic">
+                    Tidak ada siswa yang cocok.
+                  </div>
+                ) : (
+                  filteredDropdownStudents.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedStudentId(s.id);
+                        setIsStudentDropdownOpen(false);
+                        setStudentDropdownFilter("");
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors flex items-center justify-between cursor-pointer ${
+                        selectedStudentId === s.id
+                          ? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 font-bold"
+                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium"
+                      }`}
+                    >
+                      <span className="truncate">
+                        👤 {s.name} {s.nickname ? `(${s.nickname})` : ""}
+                      </span>
+                      {selectedStudentId === s.id && (
+                        <span className="font-bold">✓</span>
+                      )}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
+      </div>
 
       {/* Date Range Filter & Single Download PDF Control Panel (Same as Portal Ortu) */}
       {selectedStudentId !== "__none__" && (
@@ -714,9 +791,7 @@ export function WorksheetClientWrapper({
                     <polyline points="7 10 12 15 17 10" />
                     <line x1="12" x2="12" y1="15" y2="3" />
                   </svg>
-                  <span>
-                    Download PDF ({filteredWorksheets.length} Sesi)
-                  </span>
+                  <span>Download PDF ({filteredWorksheets.length} Sesi)</span>
                 </>
               )}
             </button>
@@ -731,9 +806,12 @@ export function WorksheetClientWrapper({
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-2xl">
               👤
             </div>
-            <h3 className="text-base font-bold text-slate-800 dark:text-white">Pilih Siswa Terlebih Dahulu</h3>
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">
+              Pilih Siswa Terlebih Dahulu
+            </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-              Silakan pilih siswa dari dropdown di atas untuk melihat atau menambahkan laporan perkembangan.
+              Silakan pilih siswa dari dropdown di atas untuk melihat atau
+              menambahkan laporan perkembangan.
             </p>
           </div>
         ) : groupedWorksheets.length === 0 ? (
@@ -741,42 +819,49 @@ export function WorksheetClientWrapper({
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400">
               <Icons.edit className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-800 dark:text-white">Belum Ada Laporan Perkembangan Siswa</h3>
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">
+              Belum Ada Laporan Perkembangan Siswa
+            </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-              Klik tombol &quot;Tambah Laporan Perkembangan&quot; untuk mulai mencatat evaluasi perkembangan siswa.
+              Klik tombol &quot;Tambah Laporan Perkembangan&quot; untuk mulai
+              mencatat evaluasi perkembangan siswa.
             </p>
           </div>
         ) : (
-          groupedWorksheets.map(({ student, bulanKe, worksheets: studentWsList }) => (
-            <StudentWorksheetTable
-              key={`${student.id}_${bulanKe ?? 'none'}`}
-              student={student}
-              worksheets={studentWsList}
-              bulanKe={bulanKe}
-              hideDownloadBtn={true}
-              onAddRow={(studentId, bk) => {
-                setEditingWorksheet({ student_id: studentId, bulan_ke: bk });
-                setIsModalOpen(true);
-              }}
-              onEditRow={(ws) => {
-                setEditingWorksheet(ws);
-                setIsModalOpen(true);
-              }}
-              onDeleteRow={(wsId) => setDeleteTarget({ type: "row", id: wsId })}
-              onDeleteSheet={(sId, bk, sName) =>
-                setDeleteTarget({
-                  type: "sheet",
-                  studentId: sId,
-                  bulanKe: bk,
-                  studentName: sName,
-                })
-              }
-              onSetPin={(s) => {
-                setPinModalStudent(s);
-                setNewPin(s.access_pin || "123456");
-              }}
-            />
-          ))
+          groupedWorksheets.map(
+            ({ student, bulanKe, worksheets: studentWsList }) => (
+              <StudentWorksheetTable
+                key={`${student.id}_${bulanKe ?? "none"}`}
+                student={student}
+                worksheets={studentWsList}
+                bulanKe={bulanKe}
+                hideDownloadBtn={true}
+                onAddRow={(studentId, bk) => {
+                  setEditingWorksheet({ student_id: studentId, bulan_ke: bk });
+                  setIsModalOpen(true);
+                }}
+                onEditRow={(ws) => {
+                  setEditingWorksheet(ws);
+                  setIsModalOpen(true);
+                }}
+                onDeleteRow={(wsId) =>
+                  setDeleteTarget({ type: "row", id: wsId })
+                }
+                onDeleteSheet={(sId, bk, sName) =>
+                  setDeleteTarget({
+                    type: "sheet",
+                    studentId: sId,
+                    bulanKe: bk,
+                    studentName: sName,
+                  })
+                }
+                onSetPin={(s) => {
+                  setPinModalStudent(s);
+                  setNewPin(s.access_pin || "123456");
+                }}
+              />
+            ),
+          )
         )}
       </div>
 
@@ -821,17 +906,23 @@ export function WorksheetClientWrapper({
                   <>
                     Apakah Anda yakin ingin menghapus{" "}
                     <strong className="text-slate-800 dark:text-slate-200">
-                      Laporan Perkembangan {deleteTarget.bulanKe != null ? `Bulan ke-${deleteTarget.bulanKe}` : ""}
+                      Laporan Perkembangan{" "}
+                      {deleteTarget.bulanKe != null
+                        ? `Bulan ke-${deleteTarget.bulanKe}`
+                        : ""}
                     </strong>{" "}
                     untuk siswa{" "}
                     <strong className="text-slate-800 dark:text-slate-200">
                       {deleteTarget.studentName}
                     </strong>
-                    ? Seluruh baris data evaluasi pada laporan ini akan dihapus secara permanen.
+                    ? Seluruh baris data evaluasi pada laporan ini akan dihapus
+                    secara permanen.
                   </>
                 ) : (
                   <>
-                    Apakah Anda yakin ingin menghapus baris evaluasi perkembangan ini? Data yang dihapus tidak dapat dikembalikan.
+                    Apakah Anda yakin ingin menghapus baris evaluasi
+                    perkembangan ini? Data yang dihapus tidak dapat
+                    dikembalikan.
                   </>
                 )}
               </p>
@@ -855,9 +946,25 @@ export function WorksheetClientWrapper({
               >
                 {isDeleting ? (
                   <>
-                    <svg className="animate-spin h-4 w-4 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin h-4 w-4 text-white shrink-0"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     <span>Menghapus...</span>
                   </>

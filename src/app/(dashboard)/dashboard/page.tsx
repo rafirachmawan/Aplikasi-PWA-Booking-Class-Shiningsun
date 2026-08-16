@@ -83,7 +83,7 @@ export default async function DashboardPage() {
           <div className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="rounded-xl p-2.5 bg-gradient-to-br from-brand-500 via-brand-600 to-indigo-600 text-white shadow-md shrink-0">
+                <div className="rounded-xl p-2.5 bg-linear-to-br from-brand-500 via-brand-600 to-indigo-600 text-white shadow-md shrink-0">
                   <svg
                     className="h-5 w-5"
                     xmlns="http://www.w3.org/2000/svg"
@@ -149,7 +149,7 @@ export default async function DashboardPage() {
       ) : (
         <>
           {/* Hero Banner */}
-          <div className="rounded-2xl bg-gradient-to-br from-brand-600 via-brand-600 to-indigo-700 dark:from-brand-700 dark:via-brand-800 dark:to-indigo-950 p-6 shadow-xl border border-brand-500/30 relative overflow-hidden">
+          <div className="rounded-2xl bg-linear-to-br from-brand-600 via-brand-600 to-indigo-700 dark:from-brand-700 dark:via-brand-800 dark:to-indigo-950 p-6 shadow-xl border border-brand-500/30 relative overflow-hidden">
             {/* Background decoration */}
             <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
             <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-indigo-500/20 rounded-full blur-2xl"></div>
