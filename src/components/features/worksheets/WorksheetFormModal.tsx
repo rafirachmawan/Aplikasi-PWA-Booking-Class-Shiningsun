@@ -177,8 +177,6 @@ export function WorksheetFormModal({
   }, []);
 
   const prevStudentIdRef = useRef(studentId);
-
-  // Automatic Bulan Ke Calculation Logic
   const autoCalculatedBulanKeInfo = useMemo(() => {
     const activeId = studentId || initialData?.student_id;
     if (!activeId || !worksheets || worksheets.length === 0) {
@@ -675,6 +673,16 @@ export function WorksheetFormModal({
   const [levelSearch, setLevelSearch] = useState("");
   const levelSearchInputRef = useRef<HTMLInputElement>(null);
 
+  // Date Input with Manual Text Entry
+  const [worksheetDateInput, setWorksheetDateInput] = useState(
+    isEditing ? initialData?.worksheet_date || "" : "",
+  );
+
+  // Hidden date input for native calendar picker
+  const [isCalendarPickerOpen, setIsCalendarPickerOpen] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
+  const calendarPickerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (openDropdown === "guru") {
       setTimeout(() => {
@@ -717,6 +725,148 @@ export function WorksheetFormModal({
         `${lvl.main_level} ${lvl.sub_level}`.toLowerCase().includes(q),
     );
   }, [availableLevels, levelSearch]);
+
+  // Sync worksheetDateInput with selected date display
+  useEffect(() => {
+    if (isEditing && initialData?.worksheet_date) {
+      setWorksheetDateInput(initialData.worksheet_date);
+    }
+  }, [initialData, isEditing]);
+
+  // Handle click outside for Calendar Picker (after all state declarations)
+  useEffect(() => {
+    function handleCalendarClickOutside(event: MouseEvent | TouchEvent) {
+      if (
+        calendarPickerRef.current &&
+        !calendarPickerRef.current.contains(event.target as Node)
+      ) {
+        setIsCalendarPickerOpen(false);
+      }
+    }
+
+    const cleanup = () => {
+      document.removeEventListener("mousedown", handleCalendarClickOutside);
+      document.removeEventListener("touchstart", handleCalendarClickOutside);
+    };
+
+    if (isCalendarPickerOpen) {
+      document.addEventListener("mousedown", handleCalendarClickOutside);
+      document.addEventListener("touchstart", handleCalendarClickOutside);
+    }
+
+    return cleanup;
+  }, [isCalendarPickerOpen]);
+
+  // Focus hidden date input when calendar icon clicked
+  useEffect(() => {
+    if (dateInputRef.current && isCalendarPickerOpen) {
+      setTimeout(() => {
+        dateInputRef.current?.focus();
+        dateInputRef.current?.showPicker?.();
+      }, 50);
+    }
+  }, [isCalendarPickerOpen]);
+
+  // Helper function to parse Indonesian date format
+  const formatDateForIndonesianDisplay = (dateISO: string): string => {
+    const date = new Date(dateISO);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  // Custom calendar date picker states
+  const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(
+    new Date().getMonth(),
+  );
+  const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(
+    new Date().getFullYear(),
+  );
+
+  const workSheetDateDisplay = useMemo(() => {
+    if (!worksheetDateInput.trim()) return "";
+
+    try {
+      const parsed = parseIndonesianDateToISO(worksheetDateInput);
+      if (parsed && !isNaN(new Date(parsed).getTime())) {
+        return formatDateForIndonesianDisplay(parsed);
+      }
+    } catch (e) {
+      console.log("Date parsing error:", e);
+    }
+
+    // If parsing fails, show original input
+    return worksheetDateInput;
+  }, [worksheetDateInput]);
+
+  // Generate calendar days
+  const getCalendarDays = () => {
+    const firstDayOfMonth = new Date(
+      currentCalendarYear,
+      currentCalendarMonth,
+      1,
+    );
+    const lastDayOfMonth = new Date(
+      currentCalendarYear,
+      currentCalendarMonth + 1,
+      0,
+    );
+    const daysInMonth = lastDayOfMonth.getDate();
+    const startingDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
+
+    const days = [];
+
+    // Empty cells for days before the first of the month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(<div key={`empty-${i}`} className="w-8 h-8" />);
+    }
+
+    // Days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const isSelected = worksheetDateInput.match(/^\d{4}-\d{2}-\d{2}$/)
+        ? `${currentCalendarYear}-${String(currentCalendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}` ===
+          worksheetDateInput
+        : false;
+
+      days.push(
+        <button
+          key={day}
+          type="button"
+          onClick={() => {
+            const newDate = `${currentCalendarYear}-${String(currentCalendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+            setWorksheetDateInput(newDate);
+            setIsCalendarPickerOpen(false);
+          }}
+          className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
+            isSelected
+              ? "bg-brand-600 text-white shadow-md"
+              : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+          }`}
+        >
+          {day}
+        </button>,
+      );
+    }
+
+    return days;
+  };
+
+  // Month names in Indonesian
+  const MONTH_NAMES = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+  ];
 
   const selectedKegiatan = defaultKegiatanOptions.find(
     (o) => o.id === smartKegiatanId,
@@ -830,7 +980,7 @@ export function WorksheetFormModal({
       formData.append("description", description.trim());
       formData.append(
         "worksheet_date",
-        parseIndonesianDateToISO(worksheetDate),
+        parseIndonesianDateToISO(worksheetDateInput || getTodayISO()),
       );
       formData.append("gdrive_link", gdriveLink.trim());
       formData.append("materi", materi.trim());
@@ -1104,32 +1254,120 @@ export function WorksheetFormModal({
               </div>
             </div>
 
-            {/* Date Input - Single Field */}
+            {/* Date Input - Text with Calendar Picker */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
                 Tanggal *
               </label>
-              <input
-                type="date"
-                value={
-                  /^\d{4}-\d{2}-\d{2}$/.test(worksheetDate)
-                    ? worksheetDate.substring(2, 4) +
-                      "-" +
-                      worksheetDate.substring(5, 7) +
-                      "-" +
-                      worksheetDate.substring(0, 4)
-                    : ""
-                }
-                onChange={(e) => {
-                  const day = e.target.value.slice(0, 2);
-                  const month = e.target.value.slice(3, 5);
-                  const year = e.target.value.slice(6, 10);
-                  setWorksheetDate(`${year}-${month}-${day}`);
-                }}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={workSheetDateDisplay}
+                  onChange={(e) => setWorksheetDateInput(e.target.value)}
+                  placeholder="dd/mm/yyyy atau 16 Agustus 2026"
+                  className="w-full px-3 py-2.5 pr-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsCalendarPickerOpen(true)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer"
+                  title="Pilih dari kalender"
+                >
+                  <Icons.calendar className="w-4 h-4" />
+                </button>
+
+                {/* Custom calendar date picker (mobile-friendly) */}
+                {isCalendarPickerOpen && (
+                  <div
+                    ref={calendarPickerRef}
+                    className="absolute z-[200] mt-2 w-72 max-w-[90vw] bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-4 animate-in fade-in slide-in-from-top-2 duration-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Calendar Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-bold text-sm text-slate-700 dark:text-slate-300">
+                        {MONTH_NAMES[currentCalendarMonth]}{" "}
+                        {currentCalendarYear}
+                      </h4>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (currentCalendarMonth === 0) {
+                              setCurrentCalendarMonth(11);
+                              setCurrentCalendarYear(currentCalendarYear - 1);
+                            } else {
+                              setCurrentCalendarMonth(currentCalendarMonth - 1);
+                            }
+                          }}
+                          className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 19l-7-7 7-7"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (currentCalendarMonth === 11) {
+                              setCurrentCalendarMonth(0);
+                              setCurrentCalendarYear(currentCalendarYear + 1);
+                            } else {
+                              setCurrentCalendarMonth(currentCalendarMonth + 1);
+                            }
+                          }}
+                          className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Calendar Grid */}
+                    <div className="grid grid-cols-7 gap-1">
+                      {/* Day Headers */}
+                      {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map(
+                        (day) => (
+                          <div
+                            key={day}
+                            className="text-[10px] font-bold text-slate-500 dark:text-slate-400 text-center py-1"
+                          >
+                            {day}
+                          </div>
+                        ),
+                      )}
+
+                      {/* Days */}
+                      {getCalendarDays()}
+                    </div>
+                  </div>
+                )}
+              </div>
               <span className="text-[10px] text-slate-400 block">
-                💡 Pilih tanggal dari kalender (format: DD-MM-YYYY)
+                💡 Ketik manual atau pilih dari kalender (format: DD-MM-YYYY
+                atau DD Bulan YYYY)
               </span>
             </div>
 
