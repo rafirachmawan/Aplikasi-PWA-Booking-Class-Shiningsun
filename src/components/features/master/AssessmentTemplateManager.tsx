@@ -536,7 +536,12 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
 
                     {/* Popover Dropdown List */}
                     {isLabelDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setIsLabelDropdownOpen(false)}
+                        />
+                        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
                         {/* Quick action bar */}
                         <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100 dark:border-slate-800/80 px-1">
                           <button
@@ -616,6 +621,7 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                           );
                         })}
                       </div>
+                    </>
                     )}
                   </div>
 
@@ -764,74 +770,80 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
 
                   {/* Custom Popover List */}
                   {isFilterLevelDropdownOpen && (
-                    <div className="absolute top-full right-0 sm:left-0 mt-1.5 z-50 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 space-y-1 max-h-64 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
-                      {/* Option: Semua Level */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedFilterLabelId("");
-                          setIsFilterLevelDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                          !selectedFilterLabelId
-                            ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300"
-                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                        }`}
-                      >
-                        <span>🎯 Semua Level</span>
-                        {!selectedFilterLabelId && <span className="text-sky-600 font-bold">✓</span>}
-                      </button>
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsFilterLevelDropdownOpen(false)}
+                      />
+                      <div className="absolute top-full left-0 mt-1.5 z-50 w-64 max-w-[calc(100vw-2.5rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 space-y-1 max-h-64 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+                        {/* Option: Semua Level */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedFilterLabelId("");
+                            setIsFilterLevelDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                            !selectedFilterLabelId
+                              ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300"
+                              : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          }`}
+                        >
+                          <span>🎯 Semua Level</span>
+                          {!selectedFilterLabelId && <span className="text-sky-600 font-bold">✓</span>}
+                        </button>
 
-                      {/* Option: Materi Bebas (Global) */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedFilterLabelId("GLOBAL");
-                          setIsFilterLevelDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                          selectedFilterLabelId === "GLOBAL"
-                            ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300"
-                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                        }`}
-                      >
-                        <span>🌐 Materi Bebas (Global)</span>
-                        {selectedFilterLabelId === "GLOBAL" && <span className="text-sky-600 font-bold">✓</span>}
-                      </button>
+                        {/* Option: Materi Bebas (Global) */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedFilterLabelId("GLOBAL");
+                            setIsFilterLevelDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                            selectedFilterLabelId === "GLOBAL"
+                              ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300"
+                              : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          }`}
+                        >
+                          <span>🌐 Materi Bebas (Global)</span>
+                          {selectedFilterLabelId === "GLOBAL" && <span className="text-sky-600 font-bold">✓</span>}
+                        </button>
 
-                      <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+                        <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
 
-                      {/* List of Levels with Colorful Dots */}
-                      {labels.map((lbl) => {
-                        const isSel = selectedFilterLabelId === lbl.id;
-                        return (
-                          <button
-                            key={lbl.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedFilterLabelId(lbl.id);
-                              setIsFilterLevelDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                              isSel
-                                ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300"
-                                : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                            }`}
-                          >
-                            <span className="flex items-center gap-2.5 min-w-0">
-                              <span
-                                className="w-3 h-3 rounded-full shrink-0 shadow-2xs border border-black/10"
-                                style={{ backgroundColor: lbl.hex_color || "#0ea5e9" }}
-                              />
-                              <span className="truncate">
-                                {lbl.main_level} - {lbl.sub_level}
+                        {/* List of Levels with Colorful Dots */}
+                        {labels.map((lbl) => {
+                          const isSel = selectedFilterLabelId === lbl.id;
+                          return (
+                            <button
+                              key={lbl.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedFilterLabelId(lbl.id);
+                                setIsFilterLevelDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                                isSel
+                                  ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300"
+                                  : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              }`}
+                            >
+                              <span className="flex items-center gap-2.5 min-w-0">
+                                <span
+                                  className="w-3 h-3 rounded-full shrink-0 shadow-2xs border border-black/10"
+                                  style={{ backgroundColor: lbl.hex_color || "#0ea5e9" }}
+                                />
+                                <span className="truncate">
+                                  {lbl.main_level} - {lbl.sub_level}
+                                </span>
                               </span>
-                            </span>
-                            {isSel && <span className="text-sky-600 shrink-0 font-bold">✓</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
+                              {isSel && <span className="text-sky-600 shrink-0 font-bold">✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
                   )}
                 </div>
 
