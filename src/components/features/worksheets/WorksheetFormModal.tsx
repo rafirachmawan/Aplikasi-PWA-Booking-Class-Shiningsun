@@ -141,7 +141,7 @@ export function WorksheetFormModal({
   const [selectedStudentLabel, setSelectedStudentLabel] = useState<any>(null);
   const [currentMateriLevel, setCurrentMateriLevel] = useState<string>("");
 
-  // State for Bulan Ke - Dropdown + Manual
+  // State for Bulan Ke - Dropdown + Manual (empty initially, auto-filled in useEffect after useMemo)
   const [bulanKe, setBulanKe] = useState<string>("");
   const [manualBulanKe, setManualBulanKe] = useState<string>("");
 
@@ -153,6 +153,78 @@ export function WorksheetFormModal({
       // Keep both empty if both are cleared
     }
   }, [manualBulanKe]);
+
+  // Auto-fill bulan ke when student changes (triggered after component mounts)
+  useEffect(() => {
+    if (!isEditing) {
+      const currentISO = parseIndonesianDateToISO(
+        worksheetDateInput || getTodayISO(),
+      );
+
+      // Find worksheets for current student
+      if (studentId && worksheets && worksheets.length > 0) {
+        const studentWorksheets = worksheets.filter((w) => {
+          return w.student_id === studentId || w.student?.id === studentId;
+        });
+
+        if (studentWorksheets.length > 0) {
+          // Get the earliest worksheet with bulan_ke
+          const sorted = [...studentWorksheets].sort((a, b) => {
+            const dateA = parseIndonesianDateToISO(
+              a.worksheet_date || a.created_at,
+            );
+            const dateB = parseIndonesianDateToISO(
+              b.worksheet_date || b.created_at,
+            );
+            return dateA.localeCompare(dateB);
+          });
+
+          const firstWithBulanKe = sorted.find(
+            (w) => w.bulan_ke !== null && !isNaN(parseInt(w.bulan_ke, 10)),
+          );
+
+          if (firstWithBulanKe) {
+            // Student has riwayat - calculate and auto-fill
+            const startMonth = parseInt(
+              firstWithBulanKe.bulan_ke.toString(),
+              10,
+            );
+            const startDate = new Date(
+              parseIndonesianDateToISO(firstWithBulanKe.worksheet_date),
+            );
+            const currentDate = new Date(currentISO);
+
+            // Calculate month difference
+            const diffMonths =
+              (currentDate.getFullYear() - startDate.getFullYear()) * 12 +
+              (currentDate.getMonth() - startDate.getMonth());
+
+            const calculated = Math.max(1, startMonth + diffMonths);
+
+            setTimeout(() => {
+              setBulanKe(calculated <= 10 ? calculated.toString() : "");
+            }, 50);
+          } else {
+            // Student has no riwayat bulan_ke - clear existing values FIRST, then allow manual input
+            setTimeout(() => {
+              setBulanKe("");
+              setManualBulanKe("");
+            }, 50);
+          }
+        } else {
+          // No worksheets at all - clear existing values FIRST
+          setTimeout(() => {
+            setBulanKe("");
+            setManualBulanKe("");
+          }, 50);
+        }
+      } else {
+        // No student selected or data not ready - always clear
+        setBulanKe("");
+        setManualBulanKe("");
+      }
+    }
+  }, [studentId, isEditing]);
 
   // Custom Bulan Ke dropdown state
   const [isBulanKeDropdownOpen, setIsBulanKeDropdownOpen] = useState(false);
@@ -937,26 +1009,35 @@ export function WorksheetFormModal({
       return;
     }
 
-    // Use auto-calculated bulan ke value or default to '1'
-    let effectiveBulanKe = isEditing
-      ? initialData?.bulan_ke?.toString() || "1"
-      : autoCalculatedBulanKeInfo.hasHistory
-        ? autoCalculatedBulanKeInfo.value
-        : "1";
+    // Determine effectiveBulanKe based on user input or auto-calculation
+    let effectiveBulanKe = "";
 
-    // Override if user selected from dropdown
-    if (bulanKe) {
-      const num = parseInt(bulanKe, 10);
+    // Priority 1: User typed in manual field
+    if (manualBulanKe.trim()) {
+      const num = parseInt(manualBulanKe.trim(), 10);
       if (num >= 1 && num <= 10) {
-        effectiveBulanKe = bulanKe;
-      }
-    } else if (manualBulanKe) {
-      // Override if user typed manually
-      const num = parseInt(manualBulanKe, 10);
-      if (num >= 1 && num <= 10) {
-        effectiveBulanKe = manualBulanKe;
+        effectiveBulanKe = manualBulanKe.trim();
       }
     }
+
+    // Priority 2: User selected from dropdown
+    else if (bulanKe.trim()) {
+      const num = parseInt(bulanKe.trim(), 10);
+      if (num >= 1 && num <= 10) {
+        effectiveBulanKe = bulanKe.trim();
+      }
+    }
+
+    // Priority 3: Auto-calculate or use existing value
+    else {
+      effectiveBulanKe = isEditing
+        ? initialData?.bulan_ke?.toString() || "1"
+        : autoCalculatedBulanKeInfo.hasHistory
+          ? autoCalculatedBulanKeInfo.value
+          : "1";
+    }
+
+    console.log("📅 Bulan Ke Result:", effectiveBulanKe);
 
     const formattedKegiatan = kegiatanItems
       .map((item) => item.trim())
