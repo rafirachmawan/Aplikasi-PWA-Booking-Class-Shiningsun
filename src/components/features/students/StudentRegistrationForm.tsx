@@ -332,12 +332,12 @@ export function StudentRegistrationForm({
 
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
       {/* Modal Container */}
-      <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none">
+      <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none">
         <div className="w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-2xl bg-white dark:bg-slate-900 sm:rounded-2xl shadow-2xl pointer-events-auto flex flex-col animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-10 sm:zoom-in-95 duration-300">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-900 sm:rounded-t-2xl">
@@ -397,12 +397,12 @@ export function StudentRegistrationForm({
                   </svg>
                 </button>
                 <div
-                  className={`transition-all duration-300 ${showWaAutofill ? "max-h-[600px] opacity-100 p-4 border-t border-slate-200 dark:border-slate-800" : "max-h-0 opacity-0 pointer-events-none overflow-hidden"}`}
+                  className={`transition-all duration-300 ${showWaAutofill ? "max-h-150 opacity-100 p-4 border-t border-slate-200 dark:border-slate-800" : "max-h-0 opacity-0 pointer-events-none overflow-hidden"}`}
                 >
                   <textarea
                     rows={8}
                     onChange={handlePasteWA}
-                    className="block w-full min-h-[180px] rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 text-xs sm:text-sm placeholder:text-slate-400 font-mono leading-relaxed"
+                    className="block w-full min-h-45 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-slate-900 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 text-xs sm:text-sm placeholder:text-slate-400 font-mono leading-relaxed"
                     placeholder="Tempel (paste) format teks pendaftaran dari WhatsApp di sini..."
                   />
                 </div>
@@ -508,7 +508,7 @@ export function StudentRegistrationForm({
                       </button>
 
                       {isLevelOpen && (
-                        <div className="absolute z-50 mt-1 w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg max-h-[160px] overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1 duration-100">
+                        <div className="absolute z-50 mt-1 w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg max-h-40 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1 duration-100">
                           <button
                             type="button"
                             onClick={() => {

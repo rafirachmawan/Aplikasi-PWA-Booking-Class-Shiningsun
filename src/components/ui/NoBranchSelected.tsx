@@ -21,7 +21,7 @@ export function NoBranchSelected({ pageName = "halaman ini" }: NoBranchSelectedP
     <>
       {isNavigating && <LoadingSpinner usePortal={true} />}
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 p-8 sm:p-16 flex flex-col items-center justify-center text-center min-h-[50vh]">
+        <div className="rounded-3xl bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 p-8 sm:p-16 flex flex-col items-center justify-center text-center min-h-[50vh]">
           {/* Icon */}
           <div className="rounded-2xl p-4 bg-white dark:bg-slate-800 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 mb-6">
             <svg className="h-10 w-10 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

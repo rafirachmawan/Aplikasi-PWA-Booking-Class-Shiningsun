@@ -231,7 +231,7 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
 
       {/* Development Lock Protection Modal */}
       {showDevLockModal && devLockTarget && lockedRoutes[devLockTarget] && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div 
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setShowDevLockModal(false)}
@@ -288,7 +288,7 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
 
       {/* Super Admin Module Lock Settings Modal */}
       {showSuperAdminModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => !isSavingAll && setShowSuperAdminModal(false)}
@@ -418,7 +418,7 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
             onClick={(e) => handleActionClick(e, action)}
             className={`relative flex items-center space-x-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-xs transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:scale-98 ${action.borderHover} group cursor-pointer`}
           >
-            <div className={`flex-shrink-0 rounded-xl p-3 ${action.bg} transition-transform duration-300 group-hover:scale-110 shadow-xs`}>
+            <div className={`shrink-0 rounded-xl p-3 ${action.bg} transition-transform duration-300 group-hover:scale-110 shadow-xs`}>
               <action.icon className={`h-5 w-5 ${action.color}`} aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">

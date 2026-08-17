@@ -151,7 +151,7 @@ export function Sidebar({
 
       {/* Development Lock Protection Modal */}
       {showDevLockModal && devLockTarget && lockedRoutes[devLockTarget] && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div 
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setShowDevLockModal(false)}
@@ -208,7 +208,7 @@ export function Sidebar({
 
       {/* Super Admin Module Lock Settings Modal */}
       {showSuperAdminModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => !isSavingAll && setShowSuperAdminModal(false)}

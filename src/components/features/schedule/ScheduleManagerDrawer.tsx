@@ -85,7 +85,7 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
 
       {/* Modal Konfirmasi Lock */}
       {lockConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"
             onClick={() => !isLocking && setLockConfirm(null)}
@@ -112,7 +112,7 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                 type="button"
                 onClick={() => setLockConfirm(null)}
                 disabled={isLocking}
-                className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 min-h-[44px]"
+                className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 min-h-11"
               >
                 Batal
               </button>
@@ -120,7 +120,7 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                 type="button"
                 onClick={() => executeLock(lockConfirm.slotId, lockConfirm.currentStatus)}
                 disabled={isLocking}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px]"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 min-h-11"
               >
                 {isLocking ? "Mengunci..." : "Ya, Kunci Sesi"}
               </button>
@@ -131,7 +131,7 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
 
       {/* Modal Konfirmasi Keluarkan Siswa */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"
             onClick={() => !isDeleting && setDeleteConfirm(null)}
@@ -151,7 +151,7 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                 type="button"
                 onClick={() => setDeleteConfirm(null)}
                 disabled={isDeleting}
-                className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 min-h-[44px]"
+                className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 min-h-11"
               >
                 Batal
               </button>
@@ -159,7 +159,7 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                 type="button"
                 onClick={executeCancelBooking}
                 disabled={isDeleting}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px]"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 min-h-11"
               >
                 {isDeleting ? "Memproses..." : "Ya, Keluarkan"}
               </button>
@@ -188,7 +188,7 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
             <button 
               type="button"
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-500 p-2.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="text-slate-400 hover:text-slate-500 p-2.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-h-11 min-w-11 flex items-center justify-center"
             >
               <Icons.close className="w-5 h-5" />
             </button>
@@ -230,7 +230,7 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                           type="button"
                           onClick={() => handleToggleLock(slot.id, slot.is_locked, slot.class.name, slot.time.substring(0, 5))}
                           title={slot.is_locked ? "Buka Gembok Sesi" : "Kunci Sesi Ini"}
-                          className={`p-2 rounded-md text-xs font-medium transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center ${
+                          className={`p-2 rounded-md text-xs font-medium transition-colors min-h-9 min-w-9 flex items-center justify-center ${
                             slot.is_locked 
                               ? "bg-red-100 text-red-700 hover:bg-red-200" 
                               : "bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800"
@@ -263,7 +263,7 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                               borderLeftColor: b.student.label.hex_color
                             } : {}}
                           >
-                            <span className="text-slate-900 dark:text-slate-100 font-extrabold truncate max-w-[200px] flex items-center gap-2">
+                            <span className="text-slate-900 dark:text-slate-100 font-extrabold truncate max-w-50 flex items-center gap-2">
                               {b.student?.label && (
                                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: b.student.label.hex_color }}></span>
                               )}
@@ -276,7 +276,7 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                               <button
                                 type="button"
                                 onClick={() => handleStudentClick({ ...b.student, id: b.student_id })}
-                                className="text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 p-2 rounded-md hover:bg-white/80 dark:hover:bg-slate-800 transition-colors shadow-xs min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer"
+                                className="text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 p-2 rounded-md hover:bg-white/80 dark:hover:bg-slate-800 transition-colors shadow-xs min-h-9 min-w-9 flex items-center justify-center cursor-pointer"
                                 title="Ganti Level Siswa"
                               >
                                 <Icons.edit className="w-4 h-4" />
@@ -290,7 +290,7 @@ export function ScheduleManagerDrawer({ onClose, selectedDate, classes, students
                                     studentName: b.student?.nickname || b.student?.name || "Siswa"
                                   });
                                 }}
-                                className="text-red-500 hover:bg-white dark:hover:bg-slate-800 p-2 rounded-md transition-colors shadow-sm min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer"
+                                className="text-red-500 hover:bg-white dark:hover:bg-slate-800 p-2 rounded-md transition-colors shadow-sm min-h-9 min-w-9 flex items-center justify-center cursor-pointer"
                                 title="Keluarkan"
                               >
                                 <Icons.close className="w-4 h-4" />

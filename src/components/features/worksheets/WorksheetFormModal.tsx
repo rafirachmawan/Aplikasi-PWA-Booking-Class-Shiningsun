@@ -1154,7 +1154,7 @@ export function WorksheetFormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -1164,7 +1164,7 @@ export function WorksheetFormModal({
       {/* Modal Card */}
       <div className="relative z-10 w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto sm:my-8">
         {/* Header: Premium Gradient Banner with Glass Icon */}
-        <div className="relative flex items-center justify-between p-4 sm:p-6 bg-gradient-to-r from-brand-600 via-sky-600 to-indigo-600 text-white overflow-hidden shadow-md">
+        <div className="relative flex items-center justify-between p-4 sm:p-6 bg-linear-to-r from-brand-600 via-sky-600 to-indigo-600 text-white overflow-hidden shadow-md">
           {/* Decorative glow */}
           <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -1343,7 +1343,7 @@ export function WorksheetFormModal({
 
             {/* Status Kehadiran Siswa */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
                 <span>Status Kehadiran Siswa</span>
                 {isAbsent && (
                   <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
@@ -1430,7 +1430,7 @@ export function WorksheetFormModal({
                 {isCalendarPickerOpen && (
                   <div
                     ref={calendarPickerRef}
-                    className="absolute z-[200] mt-2 w-72 max-w-[90vw] bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-4 animate-in fade-in slide-in-from-top-2 duration-200"
+                    className="absolute z-200 mt-2 w-72 max-w-[90vw] bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-4 animate-in fade-in slide-in-from-top-2 duration-200"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Calendar Header */}
@@ -1769,7 +1769,7 @@ export function WorksheetFormModal({
                           openDropdown === "level" ? null : "level",
                         )
                       }
-                      className="w-full sm:w-auto flex items-center justify-between gap-2.5 px-3 py-2 rounded-xl border border-sky-300 dark:border-sky-700 bg-white dark:bg-slate-900 text-xs font-extrabold shadow-xs hover:border-sky-400 cursor-pointer min-w-[210px] text-left"
+                      className="w-full sm:w-auto flex items-center justify-between gap-2.5 px-3 py-2 rounded-xl border border-sky-300 dark:border-sky-700 bg-white dark:bg-slate-900 text-xs font-extrabold shadow-xs hover:border-sky-400 cursor-pointer min-w-52.5 text-left"
                     >
                       <div className="flex items-center gap-2 truncate min-w-0">
                         {selectedLevelObj ? (
@@ -2013,7 +2013,7 @@ export function WorksheetFormModal({
                                   }`}
                                 >
                                   <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-                                    <span className="break-words whitespace-normal leading-snug">
+                                    <span className="wrap-break-word whitespace-normal leading-snug">
                                       📚 {t.title}
                                     </span>
                                     {tplLabel && (
@@ -2142,7 +2142,7 @@ export function WorksheetFormModal({
                                 : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                             }`}
                           >
-                            <span className="break-words whitespace-normal leading-snug">
+                            <span className="wrap-break-word whitespace-normal leading-snug">
                               {opt.num}.{" "}
                               {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
                             </span>
@@ -2252,7 +2252,7 @@ export function WorksheetFormModal({
                                 : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                             }`}
                           >
-                            <span className="break-words whitespace-normal leading-snug">
+                            <span className="wrap-break-word whitespace-normal leading-snug">
                               {opt.num}.{" "}
                               {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
                             </span>
@@ -2353,7 +2353,7 @@ export function WorksheetFormModal({
                                 : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                             }`}
                           >
-                            <span className="break-words whitespace-normal leading-snug">
+                            <span className="wrap-break-word whitespace-normal leading-snug">
                               {opt.num}.{" "}
                               {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
                             </span>
@@ -2430,7 +2430,7 @@ export function WorksheetFormModal({
                                 : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                             }`}
                           >
-                            <span className="break-words whitespace-normal leading-snug">
+                            <span className="wrap-break-word whitespace-normal leading-snug">
                               {opt.num}.{" "}
                               {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
                             </span>
@@ -2545,7 +2545,7 @@ export function WorksheetFormModal({
 
               {/* Preview Image */}
               {filePreviewUrl && (
-                <div className="relative inline-block mt-2 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm max-w-[200px]">
+                <div className="relative inline-block mt-2 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm max-w-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={filePreviewUrl}
@@ -2576,7 +2576,7 @@ export function WorksheetFormModal({
 
             {/* Google Drive Link */}
             <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1 flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1 flex items-center justify-between">
                 <span>
                   Link Google Drive (Otomatis terisi saat upload atau paste
                   manual):
@@ -2590,7 +2590,7 @@ export function WorksheetFormModal({
                 value={gdriveLink}
                 onChange={(e) => setGdriveLink(e.target.value)}
                 placeholder="https://drive.google.com/file/d/.../view"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none placeholder:text-slate-400 font-mono text-xs"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none placeholder:text-slate-400 font-mono"
               />
               {fileId ? (
                 <div className="mt-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 text-[11px] text-emerald-700 dark:text-emerald-400 flex items-center justify-between gap-2">
@@ -2729,10 +2729,10 @@ export function WorksheetFormModal({
                                 : "bg-[#00A3E0] dark:bg-sky-700 text-white font-extrabold uppercase tracking-wider text-center"
                         }
                       >
-                        <th className="py-2.5 px-4 min-w-[130px] border-r border-white/20 text-left">
+                        <th className="py-2.5 px-4 min-w-32.5 border-r border-white/20 text-left">
                           Kegiatan
                         </th>
-                        <th className="py-2.5 px-4 min-w-[130px] text-left">
+                        <th className="py-2.5 px-4 min-w-32.5 text-left">
                           Hasil belajar
                         </th>
                       </tr>

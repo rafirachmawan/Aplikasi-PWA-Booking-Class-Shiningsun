@@ -225,7 +225,7 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
 
       {/* Delete Confirmation Modal */}
       {deleteModal && templateToDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => !isDeleting && setDeleteModal(false)}
@@ -416,7 +416,7 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
 
       {/* Add / Edit Modal Popup */}
       {isAdding && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => {
@@ -429,7 +429,7 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
           />
           <div className="relative z-10 w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="relative flex items-center justify-between p-5 bg-gradient-to-r from-sky-600 to-indigo-600 text-white rounded-t-3xl">
+            <div className="relative flex items-center justify-between p-5 bg-linear-to-r from-sky-600 to-indigo-600 text-white rounded-t-3xl">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg">
                   {currentCategoryObj?.icon || "📋"}
@@ -725,7 +725,7 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
             {/* Filter by Level Custom Dropdown */}
             {activeTab === "materi" && labels.length > 0 && (
               <div className="flex items-center gap-2">
-                <div className="relative min-w-[170px] sm:w-56">
+                <div className="relative min-w-42.5 sm:w-56">
                   <button
                     type="button"
                     onClick={() => setIsFilterLevelDropdownOpen(!isFilterLevelDropdownOpen)}

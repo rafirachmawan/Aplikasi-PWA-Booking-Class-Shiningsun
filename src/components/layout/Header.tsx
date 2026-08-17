@@ -51,7 +51,7 @@ export function Header({ role, branchName }: HeaderProps) {
                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
              </svg>
-             <span className="text-brand-600 font-bold text-sm sm:text-base truncate max-w-[160px] sm:max-w-[220px]">{branchName || 'ShiningSun'}</span>
+             <span className="text-brand-600 font-bold text-sm sm:text-base truncate max-w-40 sm:max-w-55">{branchName || 'ShiningSun'}</span>
           </div>
         </div>
 
@@ -92,7 +92,7 @@ export function Header({ role, branchName }: HeaderProps) {
     </header>
 
     {showLogoutModal && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
           <div className="p-6">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/10 mb-4">

@@ -819,7 +819,7 @@ export function ParentDashboardClient({
 
       {/* Back Button Confirmation Modal */}
       {showBackConfirm && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm px-5 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/50 backdrop-blur-sm px-5 animate-in fade-in duration-150">
           <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 max-w-sm w-full space-y-5 animate-in zoom-in-95 duration-200">
             {/* Icon */}
             <div className="flex justify-center">
@@ -862,7 +862,7 @@ export function ParentDashboardClient({
 
       {/* Interactive Photo Crop Modal */}
       {showCropModal && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-99999 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
           <div className="bg-slate-900 text-white rounded-3xl shadow-2xl border border-slate-800 p-5 sm:p-7 max-w-md w-full space-y-5 animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -887,7 +887,7 @@ export function ParentDashboardClient({
             {/* Interactive Preview Container (260x260px) */}
             <div className="flex justify-center my-2">
               <div
-                className="relative w-[260px] h-[260px] rounded-full overflow-hidden border-4 border-brand-500 shadow-2xl bg-black cursor-grab active:cursor-grabbing select-none touch-none"
+                className="relative w-65 h-65 rounded-full overflow-hidden border-4 border-brand-500 shadow-2xl bg-black cursor-grab active:cursor-grabbing select-none touch-none"
                 onMouseDown={(e) => handleDragStart(e.clientX, e.clientY)}
                 onMouseMove={(e) => handleDragMove(e.clientX, e.clientY)}
                 onMouseUp={handleDragEnd}
@@ -990,7 +990,7 @@ export function ParentDashboardClient({
 
       {/* ── Change PIN Modal ── */}
       {showChangePinModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => !isSubmittingPin && setShowChangePinModal(false)}
@@ -1086,14 +1086,14 @@ export function ParentDashboardClient({
                   type="button"
                   disabled={isSubmittingPin}
                   onClick={() => setShowChangePinModal(false)}
-                  className="flex-1 py-2.5 px-4 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[44px]"
+                  className="flex-1 py-2.5 px-4 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-11"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingPin}
-                  className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-500/20 transition-all disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-500/20 transition-all disabled:opacity-50 min-h-11 flex items-center justify-center gap-2"
                 >
                   {isSubmittingPin ? (
                     <>
@@ -1112,7 +1112,7 @@ export function ParentDashboardClient({
 
       {/* ── Schedule Modal ── */}
       {showScheduleModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-200 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => setShowScheduleModal(false)}
@@ -1150,7 +1150,7 @@ export function ParentDashboardClient({
 
       {/* ── Points & Redemption History Modal ── */}
       {showPointsModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-200 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => setShowPointsModal(false)}

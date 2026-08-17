@@ -152,7 +152,7 @@ export function ResetDataSection({ isSuperadmin = false }: ResetDataSectionProps
 
       {/* Reset Modal Overlay */}
       {resetModal !== 'closed' && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div 
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={resetModal !== 'success' && resetModal !== 'error' ? closeResetModal : undefined}

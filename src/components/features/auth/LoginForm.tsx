@@ -179,7 +179,7 @@ export function LoginForm() {
                   isDropdownOpen 
                     ? "border-brand-500 ring-2 ring-brand-500/30 bg-white dark:bg-slate-900" 
                     : "border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600"
-                } transition-all min-h-[44px] sm:min-h-[48px] px-3.5 text-left cursor-pointer shadow-xs`}
+                } transition-all min-h-11 sm:min-h-12 px-3.5 text-left cursor-pointer shadow-xs`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="text-base shrink-0">
@@ -270,8 +270,8 @@ export function LoginForm() {
 
             {/* Email Input */}
             <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-15 transition duration-500 pointer-events-none"></div>
-              <div className="relative bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900 min-h-[44px]">
+              <div className="absolute -inset-0.5 bg-linear-to-r from-brand-500 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-15 transition duration-500 pointer-events-none"></div>
+              <div className="relative bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900 min-h-11">
                 <input
                   id="email"
                   name="email"
@@ -297,8 +297,8 @@ export function LoginForm() {
 
             {/* Password Input */}
             <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-15 transition duration-500 pointer-events-none"></div>
-              <div className="relative bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900 min-h-[44px]">
+              <div className="absolute -inset-0.5 bg-linear-to-r from-brand-500 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-15 transition duration-500 pointer-events-none"></div>
+              <div className="relative bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900 min-h-11">
                 <input
                   id="password"
                   name="password"
@@ -356,9 +356,9 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="relative w-full group overflow-hidden rounded-xl bg-brand-600 px-4 py-3 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 min-h-[44px] cursor-pointer"
+            className="relative w-full group overflow-hidden rounded-xl bg-brand-600 px-4 py-3 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 min-h-11 cursor-pointer"
           >
-            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-brand-400 via-brand-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+            <div className="absolute inset-0 w-full h-full bg-linear-to-r from-brand-400 via-brand-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
             <span className="relative flex items-center justify-center gap-2">
               {isSubmitting ? (
                 <>

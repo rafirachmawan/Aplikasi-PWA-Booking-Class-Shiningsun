@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function DashboardLoading() {
   return (
-    <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-white/60 dark:bg-slate-950/60 backdrop-blur-sm transition-all duration-300">
+    <div className="fixed inset-0 z-99999 flex flex-col items-center justify-center bg-white/60 dark:bg-slate-950/60 backdrop-blur-sm transition-all duration-300">
       <div className="relative flex items-center justify-center w-24 h-24">
         {/* Lingkaran Spinner */}
         <div className="absolute inset-0 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-brand-600 dark:border-t-brand-500 animate-spin"></div>

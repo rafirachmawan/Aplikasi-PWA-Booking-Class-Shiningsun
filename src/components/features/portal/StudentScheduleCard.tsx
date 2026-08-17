@@ -85,7 +85,7 @@ export function StudentScheduleCard({
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
                     {/* Calendar Badge */}
-                    <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-b from-brand-500/15 to-brand-500/5 dark:from-brand-500/25 dark:to-brand-500/10 text-brand-600 dark:text-brand-300 flex flex-col items-center justify-center shrink-0 border border-brand-500/20 shadow-2xs">
+                    <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-linear-to-b from-brand-500/15 to-brand-500/5 dark:from-brand-500/25 dark:to-brand-500/10 text-brand-600 dark:text-brand-300 flex flex-col items-center justify-center shrink-0 border border-brand-500/20 shadow-2xs">
                       <span className="text-[10px] font-extrabold uppercase tracking-wider leading-none text-brand-500">
                         {dayName}
                       </span>

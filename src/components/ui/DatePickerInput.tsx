@@ -37,7 +37,7 @@ export function DatePickerInput({
     <div className={`space-y-1.5 w-full ${className}`}>
       {/* 1. Date Picker Row */}
       <div className="relative inline-flex items-center w-full">
-        <div className="flex items-center justify-between w-full pointer-events-none px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs text-sm min-h-[44px]">
+        <div className="flex items-center justify-between w-full pointer-events-none px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs text-sm min-h-11">
           <span
             className={
               value

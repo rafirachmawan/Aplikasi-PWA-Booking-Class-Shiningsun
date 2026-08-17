@@ -331,7 +331,7 @@ export function ScheduleClientWrapper({
             <select
               value={filterClassId}
               onChange={(e) => setFilterClassId(e.target.value)}
-              className="appearance-none w-full bg-slate-50 dark:bg-slate-800 pl-4 pr-10 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer h-[42px]"
+              className="appearance-none w-full bg-slate-50 dark:bg-slate-800 pl-4 pr-10 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer h-10.5"
             >
               <option value="">-- Semua Kelas --</option>
               {classes.map((c) => (
@@ -367,7 +367,7 @@ export function ScheduleClientWrapper({
             <div className="flex items-center gap-2 w-full">
               <button
                 onClick={() => window.print()}
-                className="flex-1 sm:flex-none justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg border border-transparent shadow-sm flex items-center gap-2 h-[42px] font-medium text-sm transition-colors"
+                className="flex-1 sm:flex-none justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg border border-transparent shadow-sm flex items-center gap-2 h-10.5 font-medium text-sm transition-colors"
                 title="Export ke PDF (A4 Landscape)"
               >
                 <svg
@@ -390,7 +390,7 @@ export function ScheduleClientWrapper({
               <button
                 onClick={handleDownload}
                 disabled={isDownloading}
-                className="flex-1 sm:flex-none justify-center bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg border border-transparent shadow-sm flex items-center gap-2 h-[42px] font-medium text-sm transition-colors"
+                className="flex-1 sm:flex-none justify-center bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg border border-transparent shadow-sm flex items-center gap-2 h-10.5 font-medium text-sm transition-colors"
                 title="Download Jadwal (PDF)"
               >
                 {isDownloading ? (
@@ -440,7 +440,7 @@ export function ScheduleClientWrapper({
             <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1">
               Bulan
             </label>
-            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 justify-center h-[44px]">
+            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 justify-center h-11">
               {(() => {
                 const prevM = currentMonth === 1 ? 12 : currentMonth - 1;
                 const prevY =
@@ -452,7 +452,7 @@ export function ScheduleClientWrapper({
                   <>
                     <a
                       href={`/schedule?month=${prevM}&year=${prevY}`}
-                      className="min-w-[44px] h-[36px] flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 transition-all font-bold text-base cursor-pointer"
+                      className="min-w-11 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 transition-all font-bold text-base cursor-pointer"
                       title="Bulan Sebelumnya"
                     >
                       &larr;
@@ -463,7 +463,7 @@ export function ScheduleClientWrapper({
                     </span>
                     <a
                       href={`/schedule?month=${nextM}&year=${nextY}`}
-                      className="min-w-[44px] h-[36px] flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 transition-all font-bold text-base cursor-pointer"
+                      className="min-w-11 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 transition-all font-bold text-base cursor-pointer"
                       title="Bulan Berikutnya"
                     >
                       &rarr;
@@ -478,12 +478,12 @@ export function ScheduleClientWrapper({
             <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1">
               Minggu Ke
             </label>
-            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 justify-center h-[44px]">
+            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 justify-center h-11">
               <button
                 type="button"
                 onClick={() => setWeekIndex((i) => Math.max(0, i - 1))}
                 disabled={weekIndex === 0}
-                className="min-w-[44px] h-[36px] flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-base cursor-pointer"
+                className="min-w-11 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-base cursor-pointer"
                 title="Minggu Sebelumnya"
               >
                 &larr;
@@ -497,7 +497,7 @@ export function ScheduleClientWrapper({
                   setWeekIndex((i) => Math.min(weeks.length - 1, i + 1))
                 }
                 disabled={weekIndex >= weeks.length - 1}
-                className="min-w-[44px] h-[36px] flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-base cursor-pointer"
+                className="min-w-11 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-base cursor-pointer"
                 title="Minggu Berikutnya"
               >
                 &rarr;
@@ -593,10 +593,10 @@ export function ScheduleClientWrapper({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] border-collapse table-fixed">
+          <table className="w-full min-w-175 border-collapse table-fixed">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 border-b-2 border-slate-300 dark:border-slate-600">
-                <th className="w-[90px] px-2 py-2.5 text-[10px] lg:text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center border-b border-r border-slate-200 dark:border-slate-700">
+                <th className="w-22.5 px-2 py-2.5 text-[10px] lg:text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center border-b border-r border-slate-200 dark:border-slate-700">
                   Jam
                 </th>
                 {currentWeek.map((date, colIdx) => {
@@ -640,7 +640,7 @@ export function ScheduleClientWrapper({
                   key={time}
                   className="border-b-2 border-slate-200 dark:border-slate-700 last:border-b-0"
                 >
-                  <td className="px-2 py-3 text-center border-r-2 border-slate-300 dark:border-slate-600 align-top bg-slate-100/70 dark:bg-slate-800/50 w-[90px]">
+                  <td className="px-2 py-3 text-center border-r-2 border-slate-300 dark:border-slate-600 align-top bg-slate-100/70 dark:bg-slate-800/50 w-22.5">
                     <span className="text-[10px] lg:text-xs font-extrabold text-slate-700 dark:text-slate-300 whitespace-nowrap tracking-tight">
                       {range}
                     </span>
@@ -652,7 +652,7 @@ export function ScheduleClientWrapper({
                           key={colIdx}
                           className="border-r-2 last:border-r-0 border-slate-200 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-900/50"
                         >
-                          <div className="h-[72px]" />
+                          <div className="h-18" />
                         </td>
                       );
 
@@ -668,7 +668,7 @@ export function ScheduleClientWrapper({
                         onClick={() => setSelectedDate(dateString)}
                         className="px-1 py-1.5 border-r-2 last:border-r-0 border-slate-200 dark:border-slate-700 align-top cursor-pointer hover:bg-brand-50/50 dark:hover:bg-slate-800/30 transition-colors"
                       >
-                        <div className="h-[72px] overflow-y-auto">
+                        <div className="h-18 overflow-y-auto">
                           {slotsAtTime.length === 0 ? (
                             <div className="text-center py-2 text-[9px] text-slate-300 dark:text-slate-600 font-medium italic">
                               &mdash;

@@ -104,8 +104,8 @@ export function NotificationPermissionBanner() {
       <div
         className={`mb-4 rounded-2xl border p-3 sm:p-3.5 backdrop-blur-md flex items-center justify-between gap-3 shadow-xs transition-all duration-300 ${
           isActive
-            ? "bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 border-emerald-500/20"
-            : "bg-gradient-to-r from-amber-500/10 via-brand-500/10 to-indigo-500/10 border-amber-500/20"
+            ? "bg-linear-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 border-emerald-500/20"
+            : "bg-linear-to-r from-amber-500/10 via-brand-500/10 to-indigo-500/10 border-amber-500/20"
         }`}
       >
         {/* Left: Icon + Title + Badge */}

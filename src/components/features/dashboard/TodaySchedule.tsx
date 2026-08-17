@@ -113,9 +113,9 @@ export function TodaySchedule({
     <>
       {isLoading && <LoadingSpinner usePortal={true} />}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden">
-        <div className="px-5 py-4 bg-gradient-to-r from-slate-50/80 via-white to-slate-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/80 border-b border-slate-200/80 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="px-5 py-4 bg-linear-to-r from-slate-50/80 via-white to-slate-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/80 border-b border-slate-200/80 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-2xl p-2.5 bg-gradient-to-br from-brand-500 to-indigo-600 text-white shadow-md shadow-brand-500/20 shrink-0">
+            <div className="rounded-2xl p-2.5 bg-linear-to-br from-brand-500 to-indigo-600 text-white shadow-md shadow-brand-500/20 shrink-0">
               <Icons.calendar className="h-5 w-5" />
             </div>
             <div>
@@ -212,8 +212,8 @@ export function TodaySchedule({
             );
 
             return (
-              <div key={time} className="flex min-h-[56px]">
-                <div className="w-[80px] shrink-0 px-3 py-3 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 border-r-2 border-slate-300 dark:border-slate-600">
+              <div key={time} className="flex min-h-14">
+                <div className="w-20 shrink-0 px-3 py-3 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 border-r-2 border-slate-300 dark:border-slate-600">
                   <span className="text-xs font-extrabold text-slate-700 dark:text-slate-200">
                     {range}
                   </span>
@@ -272,7 +272,7 @@ export function TodaySchedule({
                                       type="button"
                                       onClick={() => handleStudentClick({ ...b.student, id: b.student_id })}
                                       title="Klik untuk ganti level siswa"
-                                      className="inline-flex items-center px-2 py-1 text-[11px] font-bold rounded-md text-slate-900 dark:text-slate-100 truncate max-w-[160px] shadow-xs border border-slate-300/80 dark:border-slate-600 cursor-pointer hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all group"
+                                      className="inline-flex items-center px-2 py-1 text-[11px] font-bold rounded-md text-slate-900 dark:text-slate-100 truncate max-w-40 shadow-xs border border-slate-300/80 dark:border-slate-600 cursor-pointer hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all group"
                                       style={{
                                         backgroundColor: `${hex}DD`,
                                         borderLeft: `4px solid ${hex}`,

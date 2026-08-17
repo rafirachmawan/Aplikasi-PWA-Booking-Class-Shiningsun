@@ -445,10 +445,10 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                   <div
                     className={`p-2 rounded-xl shadow-xs shrink-0 ${
                       activeTab === "REGISTERED"
-                        ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                        ? "bg-linear-to-br from-blue-500 to-blue-600 text-white"
                         : activeTab === "CG"
-                          ? "bg-gradient-to-br from-amber-400 to-amber-500 text-white"
-                          : "bg-gradient-to-br from-indigo-500 to-indigo-600 text-white"
+                          ? "bg-linear-to-br from-amber-400 to-amber-500 text-white"
+                          : "bg-linear-to-br from-indigo-500 to-indigo-600 text-white"
                     }`}
                   >
                     {activeTab === "REGISTERED" ? (
@@ -497,7 +497,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-3 border-t border-slate-200/60">
                 {/* Sub-filter dropdown for CG - Mobile friendly */}
                 {activeTab === "CG" ? (
-                  <div className="relative w-full sm:w-auto min-w-[140px]">
+                  <div className="relative w-full sm:w-auto min-w-35">
                     <select
                       value={cgFilter}
                       onChange={(e) =>
@@ -591,7 +591,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
             </div>
 
             {/* Panel Body */}
-            <div className="max-h-[420px] sm:max-h-[520px] overflow-y-auto overscroll-contain">
+            <div className="max-h-105 sm:max-h-130 overflow-y-auto overscroll-contain">
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
                   <div className="w-8 h-8 border-[3px] border-slate-200 border-t-brand-500 rounded-full animate-spin" />

@@ -84,7 +84,7 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
 
       {/* Delete Confirmation Modal */}
       {deleteModal && teacherToDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => !isDeleting && setDeleteModal(false)}
@@ -163,7 +163,7 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
 
       {/* Add / Edit Modal Popup */}
       {isAdding && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => {
@@ -176,7 +176,7 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
           />
           <div className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="relative flex items-center justify-between p-5 bg-gradient-to-r from-brand-600 to-sky-600 text-white">
+            <div className="relative flex items-center justify-between p-5 bg-linear-to-r from-brand-600 to-sky-600 text-white">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg">
                   👩‍🏫

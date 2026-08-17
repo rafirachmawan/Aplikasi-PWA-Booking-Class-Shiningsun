@@ -16,7 +16,7 @@ export function TeacherClientWrapper({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-600 via-sky-600 to-indigo-600 p-6 sm:p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-brand-600 via-sky-600 to-indigo-600 p-6 sm:p-8 text-white shadow-xl">
         <div className="relative z-10">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2">
             <span>Kelola Data Guru (Miss)</span>

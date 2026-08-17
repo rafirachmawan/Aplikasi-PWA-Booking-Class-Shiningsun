@@ -462,7 +462,7 @@ export function SchedulingClientWrapper({
               <div className="mb-6 flex items-center justify-between bg-white dark:bg-slate-900 p-2 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <a
                   href={`/scheduling?month=${prevM}&year=${prevY}`}
-                  className="px-3 py-2.5 sm:px-4 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all flex items-center gap-2 text-sm font-medium min-h-[44px] min-w-[44px] justify-center active:bg-slate-200 dark:active:bg-slate-700 cursor-pointer"
+                  className="px-3 py-2.5 sm:px-4 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all flex items-center gap-2 text-sm font-medium min-h-11 min-w-11 justify-center active:bg-slate-200 dark:active:bg-slate-700 cursor-pointer"
                   title="Bulan Sebelumnya"
                 >
                   <Icons.chevronLeft className="w-5 h-5 shrink-0" />
@@ -473,7 +473,7 @@ export function SchedulingClientWrapper({
                 </div>
                 <a
                   href={`/scheduling?month=${nextM}&year=${nextY}`}
-                  className="px-3 py-2.5 sm:px-4 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all flex items-center gap-2 text-sm font-medium min-h-[44px] min-w-[44px] justify-center active:bg-slate-200 dark:active:bg-slate-700 cursor-pointer"
+                  className="px-3 py-2.5 sm:px-4 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all flex items-center gap-2 text-sm font-medium min-h-11 min-w-11 justify-center active:bg-slate-200 dark:active:bg-slate-700 cursor-pointer"
                   title="Bulan Berikutnya"
                 >
                   <span className="hidden sm:inline">Bulan Berikutnya</span>
@@ -514,7 +514,7 @@ export function SchedulingClientWrapper({
                     setStudentSearchQuery(e.target.value);
                     if (!isOpenStudentDropdown) setIsOpenStudentDropdown(true);
                   }}
-                  className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-10 pr-24 py-3 text-slate-900 dark:text-white text-sm font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all cursor-pointer min-h-[48px]"
+                  className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-10 pr-24 py-3 text-slate-900 dark:text-white text-sm font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all cursor-pointer min-h-12"
                 />
 
                 <div className="absolute inset-y-0 right-0 pr-2 flex items-center gap-1">
@@ -545,7 +545,7 @@ export function SchedulingClientWrapper({
                         setStudentSearchQuery("");
                         setIsOpenStudentDropdown(false);
                       }}
-                      className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded-md transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
+                      className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded-md transition-colors min-h-10 min-w-10 flex items-center justify-center"
                       title="Hapus pilihan"
                     >
                       <Icons.close className="h-4 w-4" />
@@ -557,7 +557,7 @@ export function SchedulingClientWrapper({
                         setIsOpenStudentDropdown(!isOpenStudentDropdown);
                         if (!isOpenStudentDropdown) setStudentSearchQuery("");
                       }}
-                      className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 min-h-[40px] min-w-[40px] flex items-center justify-center"
+                      className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 min-h-10 min-w-10 flex items-center justify-center"
                     >
                       <svg
                         className={`h-4 w-4 transition-transform duration-200 ${isOpenStudentDropdown ? "rotate-180" : ""}`}
@@ -579,7 +579,7 @@ export function SchedulingClientWrapper({
               {isOpenStudentDropdown && (
                 <div className="absolute z-50 mt-1.5 w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-2 animate-in fade-in slide-in-from-top-1 duration-100">
                   {/* Options List */}
-                  <div className="max-h-[220px] overflow-y-auto space-y-1">
+                  <div className="max-h-55 overflow-y-auto space-y-1">
                     {filteredStudents.length === 0 ? (
                       <div className="px-3 py-3 text-xs text-slate-400 italic text-center">
                         Siswa tidak ditemukan
@@ -600,7 +600,7 @@ export function SchedulingClientWrapper({
                                 setIsOpenStudentDropdown(false);
                               }
                             }}
-                            className={`w-full px-3 py-2.5 text-xs text-left rounded-lg transition-colors flex items-center justify-between min-h-[44px] ${
+                            className={`w-full px-3 py-2.5 text-xs text-left rounded-lg transition-colors flex items-center justify-between min-h-11 ${
                               isInactive
                                 ? "opacity-60 cursor-not-allowed bg-slate-50 dark:bg-slate-800/30"
                                 : "hover:bg-brand-50/70 dark:hover:bg-brand-950/40 active:bg-brand-100 dark:active:bg-brand-900/60 cursor-pointer " +
@@ -899,7 +899,7 @@ export function SchedulingClientWrapper({
                                   e.target.value,
                                 )
                               }
-                              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
+                              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
                             >
                               {timeSlots.map((t) => {
                                 const rem = schedule.classId
@@ -968,7 +968,7 @@ export function SchedulingClientWrapper({
                                   e.target.value,
                                 )
                               }
-                              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
+                              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
                             >
                               <option value="" disabled>
                                 -- Pilih Tipe Kelas --
@@ -1123,7 +1123,7 @@ export function SchedulingClientWrapper({
                         required
                         value={manualTime}
                         onChange={(e) => setManualTime(e.target.value)}
-                        className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
+                        className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
                       >
                         <option value="" disabled>
                           -- Pilih Jam --
@@ -1176,7 +1176,7 @@ export function SchedulingClientWrapper({
                         required
                         value={manualClassId}
                         onChange={(e) => setManualClassId(e.target.value)}
-                        className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
+                        className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
                       >
                         <option value="" disabled>
                           -- Pilih Tipe Kelas --
@@ -1240,7 +1240,7 @@ export function SchedulingClientWrapper({
 
       {/* Custom Notification Modal */}
       {modalConfig.isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
             <div className="p-6 text-center">
               {modalConfig.type === "success" && (
@@ -1322,7 +1322,7 @@ export function SchedulingClientWrapper({
 
       {/* Edit Booking Modal */}
       {editModal.isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800 flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-900">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -1516,7 +1516,7 @@ export function SchedulingClientWrapper({
 
       {/* Delete Booking Confirmation Modal */}
       {deleteConfirm.isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
             <div className="p-6 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/10 mb-4">
@@ -1561,7 +1561,7 @@ export function SchedulingClientWrapper({
       )}
       {/* Bulk Delete Booking Confirmation Modal */}
       {bulkDeleteConfirm.isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
             <div className="p-6 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/10 mb-4">
@@ -1600,7 +1600,7 @@ export function SchedulingClientWrapper({
 
       {/* Copy To Next Month Modal */}
       {copyConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
             <div className="p-6 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-500/10 mb-4">

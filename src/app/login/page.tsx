@@ -15,7 +15,7 @@ export default function LoginPage() {
         </div>
         
         {/* Abstract Grid Overlay */}
-        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center mask-[linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
         {/* Top - Logo & Brand */}
         <div className="relative z-10 animate-in fade-in slide-in-from-top-8 duration-700">
@@ -23,7 +23,7 @@ export default function LoginPage() {
             <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl">
               <Image src="/logo.png" alt="Logo" width={36} height={36} className="object-contain" priority />
             </div>
-            <span className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 tracking-tight">
+            <span className="text-3xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-white to-white/70 tracking-tight">
               ShiningSun
             </span>
           </div>
@@ -40,7 +40,7 @@ export default function LoginPage() {
           </div>
           <h1 className="text-6xl font-bold text-white leading-[1.1] tracking-tight">
             Shiningsun Report <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-blue-400 to-indigo-400">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-400 via-blue-400 to-indigo-400">
               Cerdas, Ceria, Kreatif dan Mandiri
             </span>
           </h1>
@@ -74,15 +74,15 @@ export default function LoginPage() {
         {/* Mobile Full Background Ambient Glow (Seamless & Continuous) */}
         <div className="lg:hidden absolute inset-0 pointer-events-none overflow-hidden -z-10">
           {/* Top Radial Glow */}
-          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[140%] h-[550px] rounded-full bg-gradient-to-b from-brand-600/25 via-indigo-600/15 to-transparent blur-3xl" />
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[140%] h-137.5 rounded-full bg-linear-to-b from-brand-600/25 via-indigo-600/15 to-transparent blur-3xl" />
           {/* Bottom Ambient Accent */}
-          <div className="absolute -bottom-32 left-1/2 -translate-x-1/2 w-[120%] h-[400px] rounded-full bg-gradient-to-t from-blue-600/15 via-brand-600/10 to-transparent blur-3xl" />
+          <div className="absolute -bottom-32 left-1/2 -translate-x-1/2 w-[120%] h-100 rounded-full bg-linear-to-t from-blue-600/15 via-brand-600/10 to-transparent blur-3xl" />
           {/* Subtle Grid Overlay */}
-          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-15 [mask-image:linear-gradient(180deg,white_0%,transparent_100%)]" />
+          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-15 mask-[linear-gradient(180deg,white_0%,transparent_100%)]" />
         </div>
 
         {/* Top Spacer / Mobile Header & Form Wrapper */}
-        <div className="w-full max-w-[380px] mx-auto my-auto py-2 sm:py-0">
+        <div className="w-full max-w-95 mx-auto my-auto py-2 sm:py-0">
           
           {/* Mobile Logo & Welcome Header */}
           <div className="flex flex-col items-center mb-5 sm:mb-6 lg:hidden text-center">

@@ -328,10 +328,10 @@ function DailyWorksheetSessionItem({
         <table className="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
             <tr className={tableHeaderClass}>
-              <th className="py-2.5 px-4 min-w-[140px] border-r border-white/20 text-left">
+              <th className="py-2.5 px-4 min-w-35 border-r border-white/20 text-left">
                 Kegiatan
               </th>
-              <th className="py-2.5 px-4 min-w-[140px] text-left">
+              <th className="py-2.5 px-4 min-w-35 text-left">
                 Hasil belajar
               </th>
             </tr>
@@ -530,7 +530,7 @@ function DailyWorksheetSessionItem({
                     <span className="inline-block text-[10px] font-extrabold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-300/60 dark:border-emerald-800/60 mr-2">
                       {fb.date}
                     </span>
-                    <span className="leading-relaxed font-medium break-words">
+                    <span className="leading-relaxed font-medium wrap-break-word">
                       {fb.text}
                     </span>
                   </div>
@@ -912,7 +912,7 @@ export function StudentWorksheetTable({
             <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Unit
             </span>
-            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
+            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug wrap-break-word mt-1">
               {student?.branch?.name
                 ? `ShiningSun ${student.branch.name}`
                 : "ShiningSun"}
@@ -923,7 +923,7 @@ export function StudentWorksheetTable({
             <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Jadwal
             </span>
-            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
+            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug wrap-break-word mt-1">
               {student?.schedule || "-"}
             </span>
           </div>
@@ -932,7 +932,7 @@ export function StudentWorksheetTable({
             <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Level
             </span>
-            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
+            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug wrap-break-word mt-1">
               {student?.label
                 ? `${student.label.main_level} ${student.label.sub_level}`
                 : "Tanpa Level"}
@@ -943,7 +943,7 @@ export function StudentWorksheetTable({
             <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Bulan Ke
             </span>
-            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
+            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug wrap-break-word mt-1">
               {currentBulanKe != null
                 ? `Bulan ke-${currentBulanKe}`
                 : "Bulan ke-1"}
@@ -954,7 +954,7 @@ export function StudentWorksheetTable({
             <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Poin Kehadiran
             </span>
-            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
+            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug wrap-break-word mt-1">
               {student?.points !== undefined
                 ? student.points
                 : Math.max(
@@ -970,7 +970,7 @@ export function StudentWorksheetTable({
             <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Status
             </span>
-            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug break-words mt-1">
+            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-xs leading-snug wrap-break-word mt-1">
               {student?.status === "REGISTERED"
                 ? "Siswa Reguler"
                 : student?.status === "CG"

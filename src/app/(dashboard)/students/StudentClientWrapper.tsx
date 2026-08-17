@@ -182,7 +182,7 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
 
       {/* Custom Confirm Modal */}
       {confirmModal.isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div 
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => !isProcessing && setConfirmModal(prev => ({ ...prev, isOpen: false }))}
@@ -267,7 +267,7 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-x-2 rounded-xl bg-white text-brand-700 px-5 py-3 text-sm font-bold shadow-md hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white shrink-0 w-full sm:w-auto justify-center transition-all active:scale-95"
+            className="inline-flex items-center gap-x-2 rounded-xl bg-white text-brand-700 px-5 py-3 text-sm font-bold shadow-md hover:bg-brand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white shrink-0 w-full sm:w-auto justify-center transition-all active:scale-95"
             style={{ color: '#1d4ed8', backgroundColor: 'white' }}
           >
             <Icons.add className="-ml-0.5 h-5 w-5" aria-hidden="true" />
@@ -287,7 +287,7 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all h-[44px]"
+            className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all h-11"
             placeholder="Cari nama siswa..."
           />
         </div>
@@ -299,7 +299,7 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
             <select
               value={selectedLabelId}
               onChange={(e) => setSelectedLabelId(e.target.value)}
-              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
+              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
             >
               <option value="">✨ Semua Level / Tingkat</option>
               {labels.map((label) => (
@@ -323,7 +323,7 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
             <select
               value={selectedGender}
               onChange={(e) => setSelectedGender(e.target.value)}
-              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
+              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
             >
               <option value="">👥 Semua Jenis Kelamin</option>
               <option value="Laki-laki">👦 Laki-laki</option>
@@ -345,7 +345,7 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
             <select
               value={activeTab}
               onChange={(e) => setActiveTab(e.target.value)}
-              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-[44px] leading-tight truncate"
+              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
             >
               <option value="all">📋 Semua Siswa ({allCount})</option>
               <option value="reguler">✅ Reguler ({regulerCount})</option>
@@ -598,7 +598,7 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                   <button 
                     type="button"
                     onClick={() => handleToggleActive(person.id, person.name, person.status)}
-                    className={`flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg transition-colors text-center ring-1 min-h-[44px] flex items-center justify-center ${
+                    className={`flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg transition-colors text-center ring-1 min-h-11 flex items-center justify-center ${
                       person.status === 'INACTIVE' 
                         ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ring-emerald-200/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 dark:ring-emerald-900/30'
                         : 'bg-slate-50 text-slate-700 hover:bg-slate-100 ring-slate-200/50 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:ring-slate-700'
@@ -612,14 +612,14 @@ export function StudentClientWrapper({ initialStudents, labels, activeBranchName
                       setEditingStudent(person);
                       setIsModalOpen(true);
                     }}
-                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20 transition-colors text-center ring-1 ring-brand-200/50 dark:ring-brand-900/30 min-h-[44px] flex items-center justify-center"
+                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20 transition-colors text-center ring-1 ring-brand-200/50 dark:ring-brand-900/30 min-h-11 flex items-center justify-center"
                   >
                     Edit
                   </button>
                   <button 
                     type="button"
                     onClick={() => handleDelete(person.id, person.name)}
-                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors text-center ring-1 ring-red-200/50 dark:ring-red-900/30 min-h-[44px] flex items-center justify-center"
+                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors text-center ring-1 ring-red-200/50 dark:ring-red-900/30 min-h-11 flex items-center justify-center"
                   >
                     Hapus
                   </button>

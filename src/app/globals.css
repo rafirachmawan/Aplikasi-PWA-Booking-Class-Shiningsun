@@ -2,7 +2,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-brand-50:  #eff6ff;
+  --color-brand-50: #eff6ff;
   --color-brand-100: #dbeafe;
   --color-brand-200: #bfdbfe;
   --color-brand-300: #93c5fd;
@@ -14,15 +14,22 @@
   --color-brand-900: #1e3a8a;
   --color-brand-950: #172554;
 
-  --font-sans: 'Inter', sans-serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+/* Notification panel: viewport-anchored below header on mobile, parent-anchored dropdown on desktop */
+@utility notif-panel-position {
+  position: fixed;
+
+  @media (min-width: 40rem) {
+    position: absolute;
+  }
 }
 
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
 }
-
-
 
 body {
   background: var(--background);
@@ -35,6 +42,10 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-button, a, input, select, textarea {
+button,
+a,
+input,
+select,
+textarea {
   touch-action: manipulation;
 }

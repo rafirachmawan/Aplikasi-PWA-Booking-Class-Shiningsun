@@ -460,7 +460,7 @@ export function PointsClientWrapper({
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header Card */}
-      <div className="rounded-3xl bg-gradient-to-br from-brand-600 via-sky-600 to-indigo-700 p-6 sm:p-10 shadow-xl relative overflow-hidden">
+      <div className="rounded-3xl bg-linear-to-br from-brand-600 via-sky-600 to-indigo-700 p-6 sm:p-10 shadow-xl relative overflow-hidden">
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-sky-400 opacity-20 rounded-full blur-2xl pointer-events-none" />
 
@@ -568,7 +568,7 @@ export function PointsClientWrapper({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all h-[44px]"
+                className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all h-11"
                 placeholder="Cari nama siswa di leaderboard..."
               />
             </div>
@@ -579,7 +579,7 @@ export function PointsClientWrapper({
             <div className="grid grid-cols-3 gap-3 px-2">
               {/* 2nd Place */}
               <div className="flex flex-col items-center pt-6">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center text-2xl sm:text-3xl font-black text-white shadow-lg border-2 border-white dark:border-slate-700">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-linear-to-br from-slate-300 to-slate-400 flex items-center justify-center text-2xl sm:text-3xl font-black text-white shadow-lg border-2 border-white dark:border-slate-700">
                   🥈
                 </div>
                 <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-2 text-center leading-tight line-clamp-2">
@@ -593,7 +593,7 @@ export function PointsClientWrapper({
 
               {/* 1st Place */}
               <div className="flex flex-col items-center">
-                <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-3xl sm:text-4xl font-black text-white shadow-xl border-2 border-amber-300 relative">
+                <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-linear-to-br from-amber-400 to-amber-600 flex items-center justify-center text-3xl sm:text-4xl font-black text-white shadow-xl border-2 border-amber-300 relative">
                   👑
                   <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center text-[10px] font-black text-amber-900 border-2 border-white shadow-sm">
                     1
@@ -610,7 +610,7 @@ export function PointsClientWrapper({
 
               {/* 3rd Place */}
               <div className="flex flex-col items-center pt-8">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-amber-700 to-amber-800 flex items-center justify-center text-xl sm:text-2xl font-black text-white shadow-lg border-2 border-white dark:border-slate-700">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-linear-to-br from-amber-700 to-amber-800 flex items-center justify-center text-xl sm:text-2xl font-black text-white shadow-lg border-2 border-white dark:border-slate-700">
                   🥉
                 </div>
                 <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-2 text-center leading-tight line-clamp-2">
@@ -664,11 +664,11 @@ export function PointsClientWrapper({
                         <div
                           className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-sm sm:text-base font-black shrink-0 ${
                             rank === 1
-                              ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-md"
+                              ? "bg-linear-to-br from-amber-400 to-amber-600 text-white shadow-md"
                               : rank === 2
-                                ? "bg-gradient-to-br from-slate-300 to-slate-400 text-white shadow-sm"
+                                ? "bg-linear-to-br from-slate-300 to-slate-400 text-white shadow-sm"
                                 : rank === 3
-                                  ? "bg-gradient-to-br from-amber-700 to-amber-800 text-white shadow-sm"
+                                  ? "bg-linear-to-br from-amber-700 to-amber-800 text-white shadow-sm"
                                   : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
                           }`}
                         >
@@ -760,14 +760,14 @@ export function PointsClientWrapper({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all h-[44px]"
+                className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all h-11"
                 placeholder="Cari nama siswa..."
               />
             </div>
           </div>
 
           {/* Information Card */}
-          <div className="bg-gradient-to-r from-amber-500/10 via-orange-400/5 to-amber-500/10 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-4 sm:p-5 flex items-start gap-3 shadow-2xs">
+          <div className="bg-linear-to-r from-amber-500/10 via-orange-400/5 to-amber-500/10 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-4 sm:p-5 flex items-start gap-3 shadow-2xs">
             <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-xl shrink-0 border border-amber-200 dark:border-amber-800">
               💡
             </div>
@@ -951,7 +951,7 @@ export function PointsClientWrapper({
                 <button
                   type="button"
                   onClick={() => setIsHistoryStudentOpen(!isHistoryStudentOpen)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white flex items-center justify-between gap-2 h-[44px] hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-xs"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white flex items-center justify-between gap-2 h-11 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-xs"
                 >
                   <div className="flex items-center gap-2 truncate">
                     <span className="text-amber-500 font-bold">👤</span>
@@ -1080,7 +1080,7 @@ export function PointsClientWrapper({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all h-[44px]"
+                    className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all h-11"
                     placeholder="Cari materi, keterangan..."
                   />
                 </div>
@@ -1262,7 +1262,7 @@ export function PointsClientWrapper({
 
       {/* Modal 1: ACC Potong Poin Hadiah */}
       {selectedStudentForRedeem && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => !isSubmitting && setSelectedStudentForRedeem(null)}
@@ -1376,7 +1376,7 @@ export function PointsClientWrapper({
 
       {/* Modal 2: Tambah Poin Manual (Bonus / Lomba) */}
       {selectedStudentForAdd && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => !isSubmittingAdd && setSelectedStudentForAdd(null)}
@@ -1578,7 +1578,7 @@ export function PointsClientWrapper({
 
       {/* Modal Lock Akses Tambah Poin */}
       {showAddLockModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setShowAddLockModal(false)}
@@ -1687,14 +1687,14 @@ export function PointsClientWrapper({
           );
 
           return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
               <div
                 className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
                 onClick={() => setIsHistoryModalOpen(false)}
               />
               <div className="relative z-10 w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-sky-600 to-indigo-600 p-5 text-white shrink-0">
+                <div className="bg-linear-to-r from-sky-600 to-indigo-600 p-5 text-white shrink-0">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-extrabold flex items-center gap-2">

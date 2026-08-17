@@ -143,7 +143,7 @@ export function ChangeLabelModal({
             <button
               type="button"
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-500 p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="text-slate-400 hover:text-slate-500 p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-h-11 min-w-11 flex items-center justify-center"
             >
               <Icons.close className="w-4 h-4" />
             </button>
@@ -185,7 +185,7 @@ export function ChangeLabelModal({
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer min-h-[46px] ${
+                className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer min-h-11.5 ${
                   isDropdownOpen
                     ? "border-brand-500 ring-2 ring-brand-500/20 bg-white dark:bg-slate-900"
                     : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800"
@@ -213,7 +213,7 @@ export function ChangeLabelModal({
 
               {/* Collapsible Options List */}
               {isDropdownOpen && (
-                <div className="mt-2 bg-slate-50/90 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-2 space-y-1 max-h-[190px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200 shadow-inner">
+                <div className="mt-2 bg-slate-50/90 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-2 space-y-1 max-h-47.5 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200 shadow-inner">
                   <button
                     type="button"
                     onClick={() => {
@@ -275,7 +275,7 @@ export function ChangeLabelModal({
               <button
                 type="button"
                 onClick={handleOpenWorksheet}
-                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 font-bold text-xs transition-all cursor-pointer shadow-xs min-h-[44px]"
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 font-bold text-xs transition-all cursor-pointer shadow-xs min-h-11"
               >
                 <Icons.edit className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <span>Isi Laporan Perkembangan Siswa</span>
@@ -287,7 +287,7 @@ export function ChangeLabelModal({
                   router.push(`/worksheets?student_id=${student.id}`);
                   onClose();
                 }}
-                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 dark:hover:bg-sky-900/50 border border-sky-200 dark:border-sky-800/60 text-sky-800 dark:text-sky-300 font-bold text-xs transition-all cursor-pointer shadow-xs min-h-[44px]"
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 dark:hover:bg-sky-900/50 border border-sky-200 dark:border-sky-800/60 text-sky-800 dark:text-sky-300 font-bold text-xs transition-all cursor-pointer shadow-xs min-h-11"
               >
                 <Icons.fileText className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
                 <span>Lihat Perkembangan Siswa</span>
@@ -300,14 +300,14 @@ export function ChangeLabelModal({
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="flex-1 py-3 px-4 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[44px]"
+                className="flex-1 py-3 px-4 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-11"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 py-3 px-4 text-xs font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-700 transition-colors shadow-sm disabled:opacity-50 min-h-[44px]"
+                className="flex-1 py-3 px-4 text-xs font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-700 transition-colors shadow-sm disabled:opacity-50 min-h-11"
               >
                 Simpan Level
               </button>

@@ -51,7 +51,7 @@ export default function ParentLoginPage() {
         </div>
         
         {/* Abstract Grid Overlay */}
-        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center mask-[linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
         {/* Top - Logo & Brand */}
         <div className="relative z-10 animate-in fade-in slide-in-from-top-8 duration-700">
@@ -60,7 +60,7 @@ export default function ParentLoginPage() {
               <Image src="/logo.png" alt="Logo" width={38} height={38} className="object-contain" priority />
             </div>
             <div>
-              <span className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 tracking-tight block">
+              <span className="text-3xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-white to-white/70 tracking-tight block">
                 ShiningSun
               </span>
               <span className="text-xs font-bold text-brand-400 tracking-wider uppercase">
@@ -82,7 +82,7 @@ export default function ParentLoginPage() {
 
           <h1 className="text-5xl lg:text-6xl font-extrabold text-white leading-[1.1] tracking-tight">
             Pantau Perkembangan & <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-blue-400 to-indigo-400">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-400 via-blue-400 to-indigo-400">
               Jadwal Kelas Anak
             </span>
           </h1>
@@ -124,10 +124,10 @@ export default function ParentLoginPage() {
         <div className="lg:hidden absolute inset-0 w-full h-full -z-10 overflow-hidden">
           <div className="absolute -top-1/4 -left-1/4 w-[140%] h-[80%] rounded-full bg-brand-600/35 blur-[90px] mix-blend-screen animate-pulse" style={{ animationDuration: '8s' }} />
           <div className="absolute top-1/2 -right-1/4 w-[120%] h-[70%] rounded-full bg-indigo-500/25 blur-[80px] mix-blend-screen animate-pulse" style={{ animationDuration: '12s' }} />
-          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-25 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-25 mask-[linear-gradient(180deg,white,rgba(255,255,255,0))]" />
         </div>
 
-        <div className="w-full max-w-[420px] mx-auto my-auto py-2 sm:py-4">
+        <div className="w-full max-w-105 mx-auto my-auto py-2 sm:py-4">
           
           {/* Header - Brand & Title */}
           <div className="flex flex-col items-center lg:items-start text-center lg:text-left mb-6">
@@ -166,8 +166,8 @@ export default function ParentLoginPage() {
 
               {/* Student Name Input */}
               <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-15 transition duration-500 pointer-events-none"></div>
-                <div className="relative flex items-center bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900 min-h-[50px]">
+                <div className="absolute -inset-0.5 bg-linear-to-r from-brand-500 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-15 transition duration-500 pointer-events-none"></div>
+                <div className="relative flex items-center bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900 min-h-12.5">
                   <div className="pl-3.5 pr-1 text-slate-400 dark:text-slate-500 shrink-0 pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
@@ -199,8 +199,8 @@ export default function ParentLoginPage() {
 
               {/* PIN Input */}
               <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-15 transition duration-500 pointer-events-none"></div>
-                <div className="relative flex items-center bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900 min-h-[50px]">
+                <div className="absolute -inset-0.5 bg-linear-to-r from-brand-500 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-15 transition duration-500 pointer-events-none"></div>
+                <div className="relative flex items-center bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900 min-h-12.5">
                   <div className="pl-3.5 pr-1 text-slate-400 dark:text-slate-500 shrink-0 pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
@@ -232,7 +232,7 @@ export default function ParentLoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPin(!showPin)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 transition-colors rounded-lg flex items-center justify-center min-h-[36px] min-w-[36px]"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 transition-colors rounded-lg flex items-center justify-center min-h-9 min-w-9"
                   >
                     {showPin ? (
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -252,9 +252,9 @@ export default function ParentLoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="relative w-full group overflow-hidden rounded-xl bg-brand-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 min-h-[48px]"
+                className="relative w-full group overflow-hidden rounded-xl bg-brand-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 min-h-12"
               >
-                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-brand-400 via-brand-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                <div className="absolute inset-0 w-full h-full bg-linear-to-r from-brand-400 via-brand-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 <span className="relative flex items-center justify-center gap-2">
                   {isLoading ? (
                     <>
