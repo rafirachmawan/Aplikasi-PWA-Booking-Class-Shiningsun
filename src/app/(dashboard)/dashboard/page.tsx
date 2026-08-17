@@ -7,6 +7,7 @@ import {
   getBranchId,
   getClasses,
   getActiveBranchName,
+  getStudentRulesDocument,
 } from "@/lib/actions";
 import { TodaySchedule } from "@/components/features/dashboard/TodaySchedule";
 import { QuickAccessLinks } from "@/components/features/dashboard/QuickAccessLinks";
@@ -14,6 +15,7 @@ import { ResetDataSection } from "@/components/features/dashboard/ResetDataSecti
 import { BranchSelector } from "@/components/features/auth/BranchSelector";
 import { DashboardStatsPanel } from "@/components/features/dashboard/DashboardStatsPanel";
 import { NotificationPermissionBanner } from "@/components/features/notifications/NotificationPermissionBanner";
+import { StudentRulesSection } from "@/components/features/dashboard/StudentRulesSection";
 import { formatFullIndonesianDate } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +45,9 @@ export default async function DashboardPage() {
       getActiveBranchName(),
     ]);
   }
+
+  // Dokumen Peraturan Siswa terbaru (global, tidak tergantung cabang)
+  const rulesDocument = await getStudentRulesDocument();
 
   const stats = [
     {
@@ -221,6 +226,9 @@ export default async function DashboardPage() {
           <ResetDataSection isSuperadmin={isSuperadmin} />
         </>
       )}
+
+      {/* Peraturan Siswa — selalu di paling bawah dashboard */}
+      <StudentRulesSection initialDocument={rulesDocument} />
     </div>
   );
 }

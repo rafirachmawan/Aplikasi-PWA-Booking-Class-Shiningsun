@@ -1544,7 +1544,6 @@ export async function getWorksheetsByBranch() {
         *,
         student:students(id, name, nickname, gender, date_of_birth, status, access_pin, label_id, label:labels(id, main_level, sub_level, hex_color))
       `,
-
       )
       .order("worksheet_date", { ascending: true })
       .order("created_at", { ascending: true });
@@ -1816,8 +1815,7 @@ export async function verifyParentAccess(
   let students: any[] | null = null;
   let error: any = null;
 
-  const primaryRes = await supabaseServer.from("students")
-    .select(`
+  const primaryRes = await supabaseServer.from("students").select(`
       id, name, nickname, gender, date_of_birth, status, registration_date, access_pin,
       branch:branches(name),
       label:labels(id, main_level, sub_level, hex_color)
@@ -1827,8 +1825,7 @@ export async function verifyParentAccess(
   error = primaryRes.error;
 
   if (error) {
-    const fallbackRes = await supabaseServer.from("students")
-      .select(`
+    const fallbackRes = await supabaseServer.from("students").select(`
         id, name, nickname, gender, date_of_birth, status, registration_date,
         branch:branches(name),
         label:labels(id, main_level, sub_level, hex_color)
@@ -1845,19 +1842,20 @@ export async function verifyParentAccess(
 
   // Priority-based matching: exact match first, then partial match as fallback
   // This prevents "Rafi" from matching "Syafira" instead of the actual student named "Rafi"
-  
+
   // Helper: check if a student's PIN matches
   const pinMatches = (s: any) => (s.access_pin || "123456") === cleanPin;
 
   // 1. Exact nickname match (case-insensitive) — highest priority
-  let matchedStudent = students.find((s) =>
-    s.nickname && s.nickname.toLowerCase() === cleanSearch && pinMatches(s)
+  let matchedStudent = students.find(
+    (s) =>
+      s.nickname && s.nickname.toLowerCase() === cleanSearch && pinMatches(s),
   );
 
   // 2. Exact full name match (case-insensitive)
   if (!matchedStudent) {
-    matchedStudent = students.find((s) =>
-      s.name.toLowerCase() === cleanSearch && pinMatches(s)
+    matchedStudent = students.find(
+      (s) => s.name.toLowerCase() === cleanSearch && pinMatches(s),
     );
   }
 
@@ -1865,7 +1863,8 @@ export async function verifyParentAccess(
   if (!matchedStudent) {
     matchedStudent = students.find((s) => {
       const nameStartsWith = s.name.toLowerCase().startsWith(cleanSearch);
-      const nicknameStartsWith = s.nickname && s.nickname.toLowerCase().startsWith(cleanSearch);
+      const nicknameStartsWith =
+        s.nickname && s.nickname.toLowerCase().startsWith(cleanSearch);
       return (nameStartsWith || nicknameStartsWith) && pinMatches(s);
     });
   }
@@ -1887,7 +1886,7 @@ export async function verifyParentAccess(
 
   if (matchedStudent.status === "INACTIVE") {
     throw new Error(
-      "Akun siswa ini sedang Nonaktif. Silakan hubungi pihak admin sekolah."
+      "Akun siswa ini sedang Nonaktif. Silakan hubungi pihak admin sekolah.",
     );
   }
 
@@ -2241,10 +2240,7 @@ export async function updateTeacher(id: string, formData: FormData) {
 
 export async function deleteTeacher(id: string) {
   const supabaseServer = await createClient();
-  const { error } = await supabaseServer
-    .from("teachers")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabaseServer.from("teachers").delete().eq("id", id);
 
   if (error) {
     console.error("Error deleting teacher:", error);
@@ -2277,7 +2273,10 @@ export async function getAssessmentTemplates() {
     }
     return data || [];
   } catch (err: any) {
-    console.warn("Exception fetching assessment templates:", err?.message || err);
+    console.warn(
+      "Exception fetching assessment templates:",
+      err?.message || err,
+    );
     return [];
   }
 }
@@ -2288,7 +2287,10 @@ export async function createAssessmentTemplate(formData: FormData) {
   const materi = (formData.get("materi") as string) || "";
   const kegiatan = (formData.get("kegiatan") as string) || "";
   const hasil_belajar = (formData.get("hasil_belajar") as string) || "";
-  const labelIds = formData.getAll("label_id").map((item) => String(item)).filter(Boolean);
+  const labelIds = formData
+    .getAll("label_id")
+    .map((item) => String(item))
+    .filter(Boolean);
 
   if (!title || !title.trim()) {
     throw new Error("Judul / Isi Template wajib diisi.");
@@ -2309,11 +2311,22 @@ export async function createAssessmentTemplate(formData: FormData) {
       is_active: true,
     }));
 
-    let { error } = await supabaseServer.from("assessment_templates").insert(insertPayloads);
+    let { error } = await supabaseServer
+      .from("assessment_templates")
+      .insert(insertPayloads);
 
-    if (error && (error.message?.toLowerCase().includes("label_id") || error.code === "PGRST204" || error.code === "42703")) {
-      const fallbackPayloads = insertPayloads.map(({ label_id, ...rest }) => rest);
-      const retry = await supabaseServer.from("assessment_templates").insert(fallbackPayloads);
+    if (
+      error &&
+      (error.message?.toLowerCase().includes("label_id") ||
+        error.code === "PGRST204" ||
+        error.code === "42703")
+    ) {
+      const fallbackPayloads = insertPayloads.map(
+        ({ label_id, ...rest }) => rest,
+      );
+      const retry = await supabaseServer
+        .from("assessment_templates")
+        .insert(fallbackPayloads);
       error = retry.error;
     }
 
@@ -2334,11 +2347,20 @@ export async function createAssessmentTemplate(formData: FormData) {
       is_active: true,
     };
 
-    let { error } = await supabaseServer.from("assessment_templates").insert(insertPayload);
+    let { error } = await supabaseServer
+      .from("assessment_templates")
+      .insert(insertPayload);
 
-    if (error && (error.message?.toLowerCase().includes("label_id") || error.code === "PGRST204" || error.code === "42703")) {
+    if (
+      error &&
+      (error.message?.toLowerCase().includes("label_id") ||
+        error.code === "PGRST204" ||
+        error.code === "42703")
+    ) {
       delete insertPayload.label_id;
-      const retry = await supabaseServer.from("assessment_templates").insert(insertPayload);
+      const retry = await supabaseServer
+        .from("assessment_templates")
+        .insert(insertPayload);
       error = retry.error;
     }
 
@@ -2360,8 +2382,14 @@ export async function updateAssessmentTemplate(id: string, formData: FormData) {
   const materi = (formData.get("materi") as string) || "";
   const kegiatan = (formData.get("kegiatan") as string) || "";
   const hasil_belajar = (formData.get("hasil_belajar") as string) || "";
-  const labelIds = formData.getAll("label_id").map((item) => String(item)).filter(Boolean);
-  const idsToDelete = formData.getAll("ids").map((item) => String(item)).filter(Boolean);
+  const labelIds = formData
+    .getAll("label_id")
+    .map((item) => String(item))
+    .filter(Boolean);
+  const idsToDelete = formData
+    .getAll("ids")
+    .map((item) => String(item))
+    .filter(Boolean);
 
   if (!title || !title.trim()) {
     throw new Error("Judul / Isi Template wajib diisi.");
@@ -2372,7 +2400,10 @@ export async function updateAssessmentTemplate(id: string, formData: FormData) {
 
   // Delete all existing grouped records first
   const targetIds = idsToDelete.length > 0 ? idsToDelete : [id];
-  await supabaseServer.from("assessment_templates").delete().in("id", targetIds);
+  await supabaseServer
+    .from("assessment_templates")
+    .delete()
+    .in("id", targetIds);
 
   // Re-insert template records for selected level IDs
   if (labelIds.length > 1) {
@@ -2387,11 +2418,22 @@ export async function updateAssessmentTemplate(id: string, formData: FormData) {
       is_active: true,
     }));
 
-    let { error } = await supabaseServer.from("assessment_templates").insert(insertPayloads);
+    let { error } = await supabaseServer
+      .from("assessment_templates")
+      .insert(insertPayloads);
 
-    if (error && (error.message?.toLowerCase().includes("label_id") || error.code === "PGRST204" || error.code === "42703")) {
-      const fallbackPayloads = insertPayloads.map(({ label_id, ...rest }) => rest);
-      const retry = await supabaseServer.from("assessment_templates").insert(fallbackPayloads);
+    if (
+      error &&
+      (error.message?.toLowerCase().includes("label_id") ||
+        error.code === "PGRST204" ||
+        error.code === "42703")
+    ) {
+      const fallbackPayloads = insertPayloads.map(
+        ({ label_id, ...rest }) => rest,
+      );
+      const retry = await supabaseServer
+        .from("assessment_templates")
+        .insert(fallbackPayloads);
       error = retry.error;
     }
 
@@ -2412,11 +2454,20 @@ export async function updateAssessmentTemplate(id: string, formData: FormData) {
       is_active: true,
     };
 
-    let { error } = await supabaseServer.from("assessment_templates").insert(insertPayload);
+    let { error } = await supabaseServer
+      .from("assessment_templates")
+      .insert(insertPayload);
 
-    if (error && (error.message?.toLowerCase().includes("label_id") || error.code === "PGRST204" || error.code === "42703")) {
+    if (
+      error &&
+      (error.message?.toLowerCase().includes("label_id") ||
+        error.code === "PGRST204" ||
+        error.code === "42703")
+    ) {
       delete insertPayload.label_id;
-      const retry = await supabaseServer.from("assessment_templates").insert(insertPayload);
+      const retry = await supabaseServer
+        .from("assessment_templates")
+        .insert(insertPayload);
       error = retry.error;
     }
 
@@ -2482,9 +2533,13 @@ export async function redeemStudentPoints({
 
   if (error) {
     console.error("Error redeeming points:", error);
-    if (error.message.includes('relation "public.student_point_redemptions" does not exist')) {
+    if (
+      error.message.includes(
+        'relation "public.student_point_redemptions" does not exist',
+      )
+    ) {
       throw new Error(
-        "Tabel 'student_point_redemptions' belum dibuat di Supabase. Silakan jalankan file SQL 'supabase/student_point_redemptions.sql' pada Supabase SQL Editor."
+        "Tabel 'student_point_redemptions' belum dibuat di Supabase. Silakan jalankan file SQL 'supabase/student_point_redemptions.sql' pada Supabase SQL Editor.",
       );
     }
     throw new Error("Gagal memotong poin: " + error.message);
@@ -2526,9 +2581,13 @@ export async function addManualStudentPoints({
 
   if (error) {
     console.error("Error adding manual points:", error);
-    if (error.message.includes('relation "public.student_point_redemptions" does not exist')) {
+    if (
+      error.message.includes(
+        'relation "public.student_point_redemptions" does not exist',
+      )
+    ) {
       throw new Error(
-        "Tabel 'student_point_redemptions' belum dibuat di Supabase. Silakan jalankan file SQL 'supabase/student_point_redemptions.sql' pada Supabase SQL Editor."
+        "Tabel 'student_point_redemptions' belum dibuat di Supabase. Silakan jalankan file SQL 'supabase/student_point_redemptions.sql' pada Supabase SQL Editor.",
       );
     }
     throw new Error("Gagal menambah poin manual: " + error.message);
@@ -2547,10 +2606,12 @@ export async function getPointRedemptions(studentId?: string) {
   try {
     let query = supabaseServer
       .from("student_point_redemptions")
-      .select(`
+      .select(
+        `
         *,
         student:students(name, nickname)
-      `)
+      `,
+      )
       .order("created_at", { ascending: false });
 
     if (studentId) {
@@ -2576,7 +2637,8 @@ export async function getWorksheetAttendanceHistory() {
   try {
     let query = supabaseServer
       .from("student_worksheets")
-      .select(`
+      .select(
+        `
         id,
         student_id,
         title,
@@ -2585,7 +2647,8 @@ export async function getWorksheetAttendanceHistory() {
         bulan_ke,
         catatan_guru,
         student:students(name, nickname, branch_id)
-      `)
+      `,
+      )
       .order("created_at", { ascending: false });
 
     const { data, error } = await query;
@@ -2595,7 +2658,9 @@ export async function getWorksheetAttendanceHistory() {
 
     let filtered = data || [];
     if (activeBranchId && activeBranchId !== "ALL") {
-      filtered = filtered.filter((item: any) => item.student?.branch_id === activeBranchId);
+      filtered = filtered.filter(
+        (item: any) => item.student?.branch_id === activeBranchId,
+      );
     }
 
     return filtered.map((item: any) => {
@@ -2618,7 +2683,10 @@ export async function getWorksheetAttendanceHistory() {
   }
 }
 
-export async function updateStudentPhotoUrl(studentId: string, photoUrl: string) {
+export async function updateStudentPhotoUrl(
+  studentId: string,
+  photoUrl: string,
+) {
   try {
     const supabaseServer = await createClient();
     const { error } = await supabaseServer
@@ -2634,7 +2702,10 @@ export async function updateStudentPhotoUrl(studentId: string, photoUrl: string)
     return { success: true };
   } catch (e: any) {
     console.error("Error updating photo_url:", e);
-    return { success: false, error: e.message || "Gagal memperbarui foto profil" };
+    return {
+      success: false,
+      error: e.message || "Gagal memperbarui foto profil",
+    };
   }
 }
 
@@ -2643,7 +2714,9 @@ let memoryLockPasswords: Record<string, string> = {
   "/points": "123",
 };
 
-export async function getModuleLockPasswords(): Promise<Record<string, string>> {
+export async function getModuleLockPasswords(): Promise<
+  Record<string, string>
+> {
   const result: Record<string, string> = {
     ...memoryLockPasswords,
   };
@@ -2672,9 +2745,12 @@ export async function getModuleLockPasswords(): Promise<Record<string, string>> 
     if (!error && data && data.length > 0) {
       data.forEach((item: { key: string; value: string }) => {
         if (item.key === "lock_password_points") result["/points"] = item.value;
-        if (item.key === "lock_password_worksheets") result["/worksheets"] = item.value;
-        if (item.key === "lock_password_teachers") result["/teachers"] = item.value;
-        if (item.key === "lock_password_templates") result["/templates"] = item.value;
+        if (item.key === "lock_password_worksheets")
+          result["/worksheets"] = item.value;
+        if (item.key === "lock_password_teachers")
+          result["/teachers"] = item.value;
+        if (item.key === "lock_password_templates")
+          result["/templates"] = item.value;
       });
       Object.assign(memoryLockPasswords, result);
     }
@@ -2685,7 +2761,10 @@ export async function getModuleLockPasswords(): Promise<Record<string, string>> 
   return result;
 }
 
-export async function updateModuleLockPassword(routeKey: string, newPassword: string) {
+export async function updateModuleLockPassword(
+  routeKey: string,
+  newPassword: string,
+) {
   const cleanPass = newPassword ? newPassword.trim() : "";
   memoryLockPasswords[routeKey] = cleanPass;
 
@@ -2718,15 +2797,26 @@ export async function updateModuleLockPassword(routeKey: string, newPassword: st
       "/templates": "lock_password_templates",
     };
 
-    const keyName = dbKeyMap[routeKey] || `lock_password_${routeKey.replace('/', '')}`;
+    const keyName =
+      dbKeyMap[routeKey] || `lock_password_${routeKey.replace("/", "")}`;
     const supabaseServer = await createClient();
 
     const { error } = await supabaseServer
       .from("system_settings")
-      .upsert({ key: keyName, value: cleanPass, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      .upsert(
+        {
+          key: keyName,
+          value: cleanPass,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "key" },
+      );
 
     if (error) {
-      console.warn("system_settings table unavailable, saved to cookie/memory fallback:", error.message);
+      console.warn(
+        "system_settings table unavailable, saved to cookie/memory fallback:",
+        error.message,
+      );
     }
   } catch (e: any) {
     console.warn("DB error fallback:", e?.message);
@@ -2735,6 +2825,118 @@ export async function updateModuleLockPassword(routeKey: string, newPassword: st
   return true;
 }
 
+// ============================================
+// PERATURAN SISWA (Dokumen PDF)
+// ============================================
 
+/**
+ * Mengambil dokumen Peraturan Siswa terbaru (dipakai dashboard & portal ortu)
+ */
+export async function getStudentRulesDocument() {
+  try {
+    const supabaseServer = await createClient();
+    const { data, error } = await supabaseServer
+      .from("student_rules_documents")
+      .select("id, file_url, file_name, uploaded_at")
+      .order("uploaded_at", { ascending: false })
+      .limit(1);
 
+    if (error) {
+      console.warn(
+        "Notice fetching student rules document:",
+        error.message || error,
+      );
+      return null;
+    }
+    return data?.[0] || null;
+  } catch (e: any) {
+    console.warn("Exception fetching student rules document:", e?.message || e);
+    return null;
+  }
+}
 
+/**
+ * Menyimpan dokumen Peraturan Siswa baru (admin mengunggah via Google Drive)
+ */
+export async function saveStudentRulesDocument(
+  fileUrl: string,
+  fileName: string,
+) {
+  try {
+    const supabaseServer = await createClient();
+    const {
+      data: { user },
+    } = await supabaseServer.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        error: "Sesi admin tidak ditemukan. Silakan login ulang.",
+      };
+    }
+
+    const { data, error } = await supabaseServer
+      .from("student_rules_documents")
+      .insert({
+        file_url: fileUrl,
+        file_name: fileName,
+        uploaded_by: user.id,
+      })
+      .select("id, file_url, file_name, uploaded_at")
+      .single();
+
+    if (error) {
+      console.error("Error saving student rules document:", error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath("/portal-ortu/dashboard");
+    return { success: true, data };
+  } catch (e: any) {
+    console.error("Error saving student rules document:", e);
+    return {
+      success: false,
+      error: e.message || "Gagal menyimpan dokumen peraturan",
+    };
+  }
+}
+
+/**
+ * Menghapus dokumen Peraturan Siswa
+ */
+export async function deleteStudentRulesDocument(id: string) {
+  try {
+    const supabaseServer = await createClient();
+    const {
+      data: { user },
+    } = await supabaseServer.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        error: "Sesi admin tidak ditemukan. Silakan login ulang.",
+      };
+    }
+
+    const { error } = await supabaseServer
+      .from("student_rules_documents")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error deleting student rules document:", error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath("/portal-ortu/dashboard");
+    return { success: true };
+  } catch (e: any) {
+    console.error("Error deleting student rules document:", e);
+    return {
+      success: false,
+      error: e.message || "Gagal menghapus dokumen peraturan",
+    };
+  }
+}

@@ -5,10 +5,11 @@ import {
   getStudentScheduleHistory,
   getWorksheetsByStudent,
   getPointRedemptions,
+  getStudentRulesDocument,
 } from "@/lib/actions";
 import { ParentDashboardClient } from "@/components/features/portal/ParentDashboardClient";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default async function ParentDashboardPage() {
   const student = await getParentSessionStudent();
@@ -17,11 +18,18 @@ export default async function ParentDashboardPage() {
     redirect("/portal-ortu");
   }
 
-  const [upcomingSchedules, scheduleHistory, worksheets, redemptions] = await Promise.all([
+  const [
+    upcomingSchedules,
+    scheduleHistory,
+    worksheets,
+    redemptions,
+    rulesDocument,
+  ] = await Promise.all([
     getStudentUpcomingSchedule(student.id),
     getStudentScheduleHistory(student.id),
     getWorksheetsByStudent(student.id),
     getPointRedemptions(student.id),
+    getStudentRulesDocument(),
   ]);
 
   return (
@@ -31,6 +39,7 @@ export default async function ParentDashboardPage() {
       scheduleHistory={scheduleHistory}
       worksheets={worksheets}
       redemptions={redemptions}
+      rulesDocument={rulesDocument}
     />
   );
 }

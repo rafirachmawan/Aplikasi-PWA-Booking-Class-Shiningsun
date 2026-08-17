@@ -19,6 +19,12 @@ interface ParentDashboardClientProps {
   scheduleHistory: any[];
   worksheets: any[];
   redemptions?: any[];
+  rulesDocument?: {
+    id: string;
+    file_url: string;
+    file_name: string;
+    uploaded_at: string;
+  } | null;
 }
 
 export function ParentDashboardClient({
@@ -27,6 +33,7 @@ export function ParentDashboardClient({
   scheduleHistory,
   worksheets,
   redemptions = [],
+  rulesDocument = null,
 }: ParentDashboardClientProps) {
   const router = useRouter();
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -734,6 +741,63 @@ export function ParentDashboardClient({
             </div>
           </button>
         </div>
+
+        {/* Peraturan Siswa — dokumen PDF terbaru dari admin */}
+        {rulesDocument && (
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl p-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                  📖 Peraturan Siswa
+                </h3>
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Diperbarui {formatShortDate(rulesDocument.uploaded_at)}
+                </p>
+              </div>
+              <a
+                href={getGDrivePreviewLink(rulesDocument.file_url)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 active:scale-98 transition-all shadow-md shadow-brand-500/20"
+              >
+                <svg
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+                Lihat PDF
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* Info Penting — Red Card */}
         <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-start gap-3 shadow-xs">
