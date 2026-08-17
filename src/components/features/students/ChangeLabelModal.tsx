@@ -45,10 +45,14 @@ export function ChangeLabelModal({
   const [isWorksheetModalOpen, setIsWorksheetModalOpen] = useState(false);
   const [teachersList, setTeachersList] = useState<any[]>([]);
   const [templatesList, setTemplatesList] = useState<any[]>([]);
+  const [worksheetsList, setWorksheetsList] = useState<any[]>([]);
+  const [isLoadingWorksheetData, setIsLoadingWorksheetData] = useState(false);
 
   useEffect(() => {
     if (student) {
-      const labelObj = Array.isArray(student.label) ? student.label[0] : student.label;
+      const labelObj = Array.isArray(student.label)
+        ? student.label[0]
+        : student.label;
       const currentId = student.label_id || labelObj?.id || "";
       setSelectedLabelId(currentId);
       setIsDropdownOpen(false);
@@ -57,10 +61,14 @@ export function ChangeLabelModal({
 
   if (!isOpen || !student) return null;
 
-  const studentLabelObj = Array.isArray(student.label) ? student.label[0] : student.label;
+  const studentLabelObj = Array.isArray(student.label)
+    ? student.label[0]
+    : student.label;
   const selectedLabel =
     labels.find((l) => l.id === selectedLabelId) ||
-    (selectedLabelId && (selectedLabelId === student.label_id || selectedLabelId === studentLabelObj?.id)
+    (selectedLabelId &&
+    (selectedLabelId === student.label_id ||
+      selectedLabelId === studentLabelObj?.id)
       ? studentLabelObj
       : null);
 
@@ -73,32 +81,48 @@ export function ChangeLabelModal({
       onSuccess();
       onClose();
     } catch (error: any) {
-      setModalError("Gagal mengubah level siswa: " + (error?.message || "Terjadi kesalahan."));
+      setModalError(
+        "Gagal mengubah level siswa: " +
+          (error?.message || "Terjadi kesalahan."),
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleOpenWorksheet = async () => {
-    setIsWorksheetModalOpen(true);
-    if (teachersList.length === 0 || templatesList.length === 0) {
-      try {
-        const { getTeachers, getAssessmentTemplates } = await import("@/lib/actions");
-        const [tchs, tpls] = await Promise.all([getTeachers(), getAssessmentTemplates()]);
-        setTeachersList(tchs);
-        setTemplatesList(tpls);
-      } catch (err) {
-        console.error("Gagal mengambil data pendukung laporan:", err);
-      }
+    setIsLoadingWorksheetData(true);
+    try {
+      const { getTeachers, getAssessmentTemplates, getWorksheetsByStudent } =
+        await import("@/lib/actions");
+      const [tchs, tpls, ws] = await Promise.all([
+        teachersList.length === 0
+          ? getTeachers()
+          : Promise.resolve(teachersList),
+        templatesList.length === 0
+          ? getAssessmentTemplates()
+          : Promise.resolve(templatesList),
+        // Selalu ambil riwayat terbaru agar auto-hitung "bulan ke" sama dengan halaman worksheets
+        getWorksheetsByStudent(student.id),
+      ]);
+      setTeachersList(tchs);
+      setTemplatesList(tpls);
+      setWorksheetsList(ws);
+    } catch (err) {
+      console.error("Gagal mengambil data pendukung laporan:", err);
+    } finally {
+      setIsLoadingWorksheetData(false);
+      setIsWorksheetModalOpen(true);
     }
   };
 
   return (
     <>
       {isSubmitting && <LoadingSpinner usePortal={true} />}
-      
+      {isLoadingWorksheetData && <LoadingSpinner usePortal={true} />}
+
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
@@ -106,7 +130,6 @@ export function ChangeLabelModal({
       {/* Modal Container */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 pointer-events-auto overflow-hidden animate-in zoom-in-95 duration-200">
-          
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
             <div className="flex items-center gap-2">
@@ -141,9 +164,13 @@ export function ChangeLabelModal({
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-sm font-bold text-slate-900 dark:text-white flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
                   <Icons.users className="w-4 h-4 text-brand-500 shrink-0" />
-                  <span className="truncate">{student.nickname || student.name}</span>
+                  <span className="truncate">
+                    {student.nickname || student.name}
+                  </span>
                   {student.name && student.nickname && (
-                    <span className="text-xs font-normal text-slate-400 truncate">({student.name})</span>
+                    <span className="text-xs font-normal text-slate-400 truncate">
+                      ({student.name})
+                    </span>
                   )}
                 </div>
               </div>
@@ -167,7 +194,9 @@ export function ChangeLabelModal({
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span
                     className="w-3 h-3 rounded-full shrink-0 shadow-xs"
-                    style={{ backgroundColor: selectedLabel?.hex_color || "#94a3b8" }}
+                    style={{
+                      backgroundColor: selectedLabel?.hex_color || "#94a3b8",
+                    }}
                   />
                   <span className="truncate text-slate-800 dark:text-slate-100">
                     {selectedLabel
@@ -290,16 +319,19 @@ export function ChangeLabelModal({
       {/* Embedded Worksheet Form Modal for filling progress report directly */}
       {isWorksheetModalOpen && (
         <WorksheetFormModal
-          students={[{
-            id: student.id,
-            name: student.name,
-            nickname: student.nickname,
-            label: student.label,
-          }]}
+          students={[
+            {
+              id: student.id,
+              name: student.name,
+              nickname: student.nickname,
+              label: student.label,
+            },
+          ]}
           teachers={teachersList}
           templates={templatesList}
           labels={labels}
           initialData={{ student_id: student.id }}
+          worksheets={worksheetsList}
           onClose={() => setIsWorksheetModalOpen(false)}
           onSuccess={() => {
             setIsWorksheetModalOpen(false);

@@ -23,6 +23,7 @@ interface WorksheetFormModalProps {
   initialData?: any;
   worksheets?: any[];
   lockedStudentId?: string; // Student ID from dashboard - if present, dropdown is locked
+  currentDate?: string; // Optional: pass current date for calculation (default to today)
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -56,6 +57,7 @@ export function WorksheetFormModal({
   initialData,
   worksheets = [],
   lockedStudentId, // Student ID from dashboard - if present, dropdown is locked
+  currentDate, // Optional: pass current date for calculation (default to today)
   onClose,
   onSuccess,
 }: WorksheetFormModalProps) {
@@ -68,7 +70,20 @@ export function WorksheetFormModal({
   useEffect(() => {
     setEffectiveLockedStudentId(lockedStudentId || "");
   }, [lockedStudentId]);
-  const [studentId, setStudentId] = useState(initialData?.student_id || "");
+
+  // Initialize studentId from initialData OR from lockedStudentId if new entry
+  const initialStudentId =
+    initialData?.student_id || (isEditing ? "" : lockedStudentId);
+  const [studentId, setStudentId] = useState(initialStudentId || "");
+
+  // Force re-init studentId when lockedStudentId changes
+  useEffect(() => {
+    if (!initialData && lockedStudentId && studentId !== lockedStudentId) {
+      console.log("🔒 Student locked via parent, setting:", lockedStudentId);
+      setStudentId(lockedStudentId);
+    }
+  }, [lockedStudentId]);
+
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(
     initialData?.description || "",
@@ -168,8 +183,19 @@ export function WorksheetFormModal({
   useEffect(() => {
     if (!isEditing) {
       const currentISO = parseIndonesianDateToISO(
-        worksheetDateInput || getTodayISO(),
+        currentDate || worksheetDateInput || getTodayISO(), // Prioritize: prop > input > today
       );
+
+      console.log("🔍 Bulan Ke Calculation:", {
+        usingDateSource: currentDate
+          ? "prop"
+          : worksheetDateInput
+            ? "input"
+            : "today",
+        currentDate: currentISO,
+        studentId,
+        worksheetsCount: worksheets?.length,
+      });
 
       // Find worksheets for current student
       if (studentId && worksheets && worksheets.length > 0) {
@@ -202,14 +228,21 @@ export function WorksheetFormModal({
             const startDate = new Date(
               parseIndonesianDateToISO(firstWithBulanKe.worksheet_date),
             );
-            const currentDate = new Date(currentISO);
+            const calcDate = new Date(currentISO);
 
             // Calculate month difference
             const diffMonths =
-              (currentDate.getFullYear() - startDate.getFullYear()) * 12 +
-              (currentDate.getMonth() - startDate.getMonth());
+              (calcDate.getFullYear() - startDate.getFullYear()) * 12 +
+              (calcDate.getMonth() - startDate.getMonth());
 
             const calculated = Math.max(1, startMonth + diffMonths);
+
+            console.log("📊 Hasil Perhitungan:", {
+              startMonth,
+              startDate: firstWithBulanKe.worksheet_date,
+              diffMonths,
+              calculated,
+            });
 
             setTimeout(() => {
               setBulanKe(calculated <= 10 ? calculated.toString() : "");
@@ -235,6 +268,21 @@ export function WorksheetFormModal({
       }
     }
   }, [studentId, isEditing]);
+
+  // Trigger auto-fill on initial mount if lockedStudentId present and studentId already set
+  useEffect(() => {
+    if (isEditing) return; // Not applicable for edit mode
+
+    // Log when calculation is triggered
+    if (studentId && !bulanKe && !manualBulanKe) {
+      console.log("🔔 Bulan Ke auto-calculation triggered");
+      console.log({
+        studentId,
+        hasWorksheets: worksheets?.length > 0,
+        currentDate: worksheetDateInput || getTodayISO(),
+      });
+    }
+  }, []); // Only run once on mount - just logging
 
   // Custom Bulan Ke dropdown state
   const [isBulanKeDropdownOpen, setIsBulanKeDropdownOpen] = useState(false);
