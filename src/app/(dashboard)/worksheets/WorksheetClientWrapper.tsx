@@ -36,6 +36,9 @@ export function WorksheetClientWrapper({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorksheet, setEditingWorksheet] = useState<any>(null);
 
+  // Student lock state - when navigating from dashboard detail page (student_id URL param)
+  const [lockedStudentId, setLockedStudentId] = useState<string>("");
+
   // Date Range Filter & Single PDF Export State
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -73,13 +76,14 @@ export function WorksheetClientWrapper({
     };
   }, []);
 
-  // Sync URL searchParam student_id on load
+  // Sync URL searchParam student_id on load and lock if specified
   useEffect(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const studentIdParam = urlParams.get("student_id");
       if (studentIdParam) {
         setSelectedStudentId(studentIdParam);
+        setLockedStudentId(studentIdParam); // Lock student from dashboard
       }
     }
   }, []);
@@ -874,6 +878,7 @@ export function WorksheetClientWrapper({
           labels={labels}
           initialData={editingWorksheet}
           worksheets={initialWorksheets}
+          lockedStudentId={lockedStudentId}
           onClose={() => {
             setIsModalOpen(false);
             setEditingWorksheet(null);

@@ -22,6 +22,7 @@ interface WorksheetFormModalProps {
   labels?: any[];
   initialData?: any;
   worksheets?: any[];
+  lockedStudentId?: string; // Student ID from dashboard - if present, dropdown is locked
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -54,10 +55,19 @@ export function WorksheetFormModal({
   labels = [],
   initialData,
   worksheets = [],
+  lockedStudentId, // Student ID from dashboard - if present, dropdown is locked
   onClose,
   onSuccess,
 }: WorksheetFormModalProps) {
   const isEditing = !!initialData?.id;
+
+  // Sync with parent's locked student ID
+  const [effectiveLockedStudentId, setEffectiveLockedStudentId] = useState(
+    lockedStudentId || "",
+  );
+  useEffect(() => {
+    setEffectiveLockedStudentId(lockedStudentId || "");
+  }, [lockedStudentId]);
   const [studentId, setStudentId] = useState(initialData?.student_id || "");
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(
@@ -1167,10 +1177,21 @@ export function WorksheetFormModal({
                 </label>
                 <button
                   type="button"
-                  onClick={() =>
-                    setIsStudentDropdownOpen(!isStudentDropdownOpen)
-                  }
-                  className="w-full flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/80 cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!effectiveLockedStudentId && studentId) {
+                      // Locked - prevent any interaction
+                      return;
+                    }
+                    setIsStudentDropdownOpen(!isStudentDropdownOpen);
+                  }}
+                  disabled={!!(effectiveLockedStudentId && studentId)}
+                  className={`w-full flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl border bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:outline-none shadow-xs transition-colors ${
+                    effectiveLockedStudentId && studentId
+                      ? "bg-slate-100 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600 cursor-not-allowed opacity-60"
+                      : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/80 cursor-pointer"
+                  }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="w-6 h-6 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300 flex items-center justify-center font-extrabold text-xs shrink-0">
@@ -1189,8 +1210,8 @@ export function WorksheetFormModal({
                   />
                 </button>
 
-                {/* Dropdown Menu */}
-                {isStudentDropdownOpen && (
+                {/* Dropdown Menu - only show if not locked */}
+                {isStudentDropdownOpen && !effectiveLockedStudentId && (
                   <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="relative">
                       <Icons.search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
