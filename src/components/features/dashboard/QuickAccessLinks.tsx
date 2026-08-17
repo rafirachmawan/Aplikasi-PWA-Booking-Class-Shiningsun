@@ -4,80 +4,83 @@ import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { getModuleLockPasswords, updateModuleLockPassword } from "@/lib/actions";
+import {
+  getModuleLockPasswords,
+  updateModuleLockPassword,
+} from "@/lib/actions";
 
 const quickActions = [
   {
-    name: 'Jadwal Kelas',
-    description: 'Atur jadwal dan sesi pertemuan',
-    href: '/schedule',
+    name: "Jadwal Kelas",
+    description: "Atur jadwal dan sesi pertemuan",
+    href: "/schedule",
     icon: Icons.calendar,
-    color: 'text-emerald-600 dark:text-emerald-400',
-    bg: 'bg-emerald-50 dark:bg-emerald-500/10',
-    borderHover: 'hover:border-emerald-200 dark:hover:border-emerald-800',
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-50 dark:bg-emerald-500/10",
+    borderHover: "hover:border-emerald-200 dark:hover:border-emerald-800",
   },
   {
-    name: 'Penjadwalan Siswa',
-    description: 'Plotting kelas & jadwal siswa',
-    href: '/scheduling',
+    name: "Penjadwalan Siswa",
+    description: "Plotting kelas & jadwal siswa",
+    href: "/scheduling",
     icon: Icons.users,
-    color: 'text-indigo-600 dark:text-indigo-400',
-    bg: 'bg-indigo-50 dark:bg-indigo-500/10',
-    borderHover: 'hover:border-indigo-200 dark:hover:border-indigo-800',
+    color: "text-indigo-600 dark:text-indigo-400",
+    bg: "bg-indigo-50 dark:bg-indigo-500/10",
+    borderHover: "hover:border-indigo-200 dark:hover:border-indigo-800",
   },
   {
-    name: 'Kelola Siswa',
-    description: 'Kelola data dan status siswa',
-    href: '/students',
+    name: "Kelola Siswa",
+    description: "Kelola data dan status siswa",
+    href: "/students",
     icon: Icons.users,
-    color: 'text-blue-600 dark:text-blue-400',
-    bg: 'bg-blue-50 dark:bg-blue-500/10',
-    borderHover: 'hover:border-blue-200 dark:hover:border-blue-800',
+    color: "text-blue-600 dark:text-blue-400",
+    bg: "bg-blue-50 dark:bg-blue-500/10",
+    borderHover: "hover:border-blue-200 dark:hover:border-blue-800",
   },
   {
-    name: 'Laporan Perkembangan',
-    description: 'Catatan & hasil belajar siswa',
-    href: '/worksheets',
+    name: "Laporan Perkembangan",
+    description: "Catatan & hasil belajar siswa",
+    href: "/worksheets",
     icon: Icons.edit,
-    color: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-50 dark:bg-amber-500/10',
-    borderHover: 'hover:border-amber-200 dark:hover:border-amber-800',
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-50 dark:bg-amber-500/10",
+    borderHover: "hover:border-amber-200 dark:hover:border-amber-800",
   },
   {
-    name: 'Poin Kehadiran',
-    description: 'Leaderboard & katalog tukar hadiah',
-    href: '/points',
+    name: "Poin Kehadiran",
+    description: "Leaderboard & katalog tukar hadiah",
+    href: "/points",
     icon: Icons.star,
-    color: 'text-orange-600 dark:text-orange-400',
-    bg: 'bg-orange-50 dark:bg-orange-500/10',
-    borderHover: 'hover:border-orange-200 dark:hover:border-orange-800',
+    color: "text-orange-600 dark:text-orange-400",
+    bg: "bg-orange-50 dark:bg-orange-500/10",
+    borderHover: "hover:border-orange-200 dark:hover:border-orange-800",
   },
   {
-    name: 'Kelola Guru',
-    description: 'Kelola data guru & pengajar',
-    href: '/teachers',
+    name: "Kelola Guru",
+    description: "Kelola data guru & pengajar",
+    href: "/teachers",
     icon: Icons.userCheck,
-    color: 'text-teal-600 dark:text-teal-400',
-    bg: 'bg-teal-50 dark:bg-teal-500/10',
-    borderHover: 'hover:border-teal-200 dark:hover:border-teal-800',
+    color: "text-teal-600 dark:text-teal-400",
+    bg: "bg-teal-50 dark:bg-teal-500/10",
+    borderHover: "hover:border-teal-200 dark:hover:border-teal-800",
   },
   {
-    name: 'Template Penilaian',
-    description: 'Atur template evaluasi & catatan',
-    href: '/templates',
+    name: "Template Penilaian",
+    description: "Atur template evaluasi & catatan",
+    href: "/templates",
     icon: Icons.fileText,
-    color: 'text-rose-600 dark:text-rose-400',
-    bg: 'bg-rose-50 dark:bg-rose-500/10',
-    borderHover: 'hover:border-rose-200 dark:hover:border-rose-800',
+    color: "text-rose-600 dark:text-rose-400",
+    bg: "bg-rose-50 dark:bg-rose-500/10",
+    borderHover: "hover:border-rose-200 dark:hover:border-rose-800",
   },
   {
-    name: 'Master Data',
-    description: 'Kelola cabang, kelas, & label',
-    href: '/master',
+    name: "Master Data",
+    description: "Kelola cabang, kelas, & label",
+    href: "/master",
     icon: Icons.settings,
-    color: 'text-purple-600 dark:text-purple-400',
-    bg: 'bg-purple-50 dark:bg-purple-500/10',
-    borderHover: 'hover:border-purple-200 dark:hover:border-purple-800',
+    color: "text-purple-600 dark:text-purple-400",
+    bg: "bg-purple-50 dark:bg-purple-500/10",
+    borderHover: "hover:border-purple-200 dark:hover:border-purple-800",
   },
 ];
 
@@ -87,7 +90,9 @@ interface QuickAccessLinksProps {
   isSuperadmin?: boolean;
 }
 
-export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps) {
+export function QuickAccessLinks({
+  isSuperadmin = false,
+}: QuickAccessLinksProps) {
   const [isNavigating, setIsNavigating] = useState(false);
   const pathname = usePathname();
 
@@ -104,10 +109,14 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
 
   // Super Admin Password Management Modal State
   const [showSuperAdminModal, setShowSuperAdminModal] = useState(false);
-  const [superAdminPasswords, setSuperAdminPasswords] = useState<Record<string, string>>({
+  const [superAdminPasswords, setSuperAdminPasswords] = useState<
+    Record<string, string>
+  >({
     "/points": "123",
   });
-  const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
+  const [showPasswordMap, setShowPasswordMap] = useState<
+    Record<string, boolean>
+  >({});
   const [superAdminSuccessMsg, setSuperAdminSuccessMsg] = useState("");
   const [superAdminErrorMsg, setSuperAdminErrorMsg] = useState("");
   const [isSavingAll, setIsSavingAll] = useState(false);
@@ -131,7 +140,9 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
 
       setLockPasswords(updatedPasswords);
       setSuperAdminPasswords(updatedPasswords);
-      setSuperAdminSuccessMsg("Semua password modul berhasil disimpan dan sesi akses di-reset!");
+      setSuperAdminSuccessMsg(
+        "Semua password modul berhasil disimpan dan sesi akses di-reset!",
+      );
     } catch (err: any) {
       setSuperAdminErrorMsg(err?.message || "Gagal menyimpan password.");
     } finally {
@@ -167,7 +178,10 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
       : []),
   ];
 
-  const handleActionClick = (e: React.MouseEvent<HTMLAnchorElement>, action: any) => {
+  const handleActionClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    action: any,
+  ) => {
     if (action.isSuperAdminOnly) {
       e.preventDefault();
       setSuperAdminSuccessMsg("");
@@ -180,7 +194,9 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
     const lockInfo = lockedRoutes[href];
     if (lockInfo) {
       if (lockPasswords[href] === "") return;
-      const isUnlocked = typeof window !== "undefined" && sessionStorage.getItem(lockInfo.sessionKey) === "true";
+      const isUnlocked =
+        typeof window !== "undefined" &&
+        sessionStorage.getItem(lockInfo.sessionKey) === "true";
       if (!isUnlocked) {
         e.preventDefault();
         setDevLockTarget(href);
@@ -209,7 +225,9 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
         setShowDevLockModal(false);
         window.location.href = devLockTarget;
       } else {
-        setDevLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
+        setDevLockError(
+          "Password salah! Silakan periksa kembali atau hubungi SuperAdmin.",
+        );
       }
     } catch {
       const fallbackPassword = lockPasswords[devLockTarget] ?? "123";
@@ -220,7 +238,9 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
         setShowDevLockModal(false);
         window.location.href = devLockTarget;
       } else {
-        setDevLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
+        setDevLockError(
+          "Password salah! Silakan periksa kembali atau hubungi SuperAdmin.",
+        );
       }
     }
   };
@@ -232,7 +252,7 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
       {/* Development Lock Protection Modal */}
       {showDevLockModal && devLockTarget && lockedRoutes[devLockTarget] && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-          <div 
+          <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setShowDevLockModal(false)}
           />
@@ -244,7 +264,8 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
               Akses {lockedRoutes[devLockTarget].label} Dikunci
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-              Fitur ini masih dalam tahap pengembangan. Masukkan password untuk membuka akses modul ini.
+              Fitur ini masih dalam tahap pengembangan. Masukkan password untuk
+              membuka akses modul ini.
             </p>
 
             <form onSubmit={handleUnlockDevRoute} className="mt-5 space-y-4">
@@ -262,7 +283,9 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
                   className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent font-medium"
                 />
                 {devLockError && (
-                  <p className="text-xs text-red-500 font-semibold mt-2 animate-in fade-in">{devLockError}</p>
+                  <p className="text-xs text-red-500 font-semibold mt-2 animate-in fade-in">
+                    {devLockError}
+                  </p>
                 )}
               </div>
 
@@ -331,9 +354,17 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
 
             <div className="space-y-3.5 max-h-[60vh] overflow-y-auto pr-1">
               {[
-                { route: "/points", name: "Fitur Tambah Poin", icon: "⭐", desc: "Password akses untuk tombol Tambah Poin Manual" },
+                {
+                  route: "/points",
+                  name: "Fitur Tambah Poin",
+                  icon: "⭐",
+                  desc: "Password akses untuk tombol Tambah Poin Manual",
+                },
               ].map((item) => {
-                const currentVal = superAdminPasswords[item.route] ?? lockPasswords[item.route] ?? "123";
+                const currentVal =
+                  superAdminPasswords[item.route] ??
+                  lockPasswords[item.route] ??
+                  "123";
                 const isShowPass = !!showPasswordMap[item.route];
 
                 return (
@@ -343,7 +374,9 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-base sm:text-lg">{item.icon}</span>
+                        <span className="text-base sm:text-lg">
+                          {item.icon}
+                        </span>
                         <div>
                           <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                             {item.name}
@@ -418,8 +451,13 @@ export function QuickAccessLinks({ isSuperadmin = false }: QuickAccessLinksProps
             onClick={(e) => handleActionClick(e, action)}
             className={`relative flex items-center space-x-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-xs transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:scale-98 ${action.borderHover} group cursor-pointer`}
           >
-            <div className={`shrink-0 rounded-xl p-3 ${action.bg} transition-transform duration-300 group-hover:scale-110 shadow-xs`}>
-              <action.icon className={`h-5 w-5 ${action.color}`} aria-hidden="true" />
+            <div
+              className={`shrink-0 rounded-xl p-3 ${action.bg} transition-transform duration-300 group-hover:scale-110 shadow-xs`}
+            >
+              <action.icon
+                className={`h-5 w-5 ${action.color}`}
+                aria-hidden="true"
+              />
             </div>
             <div className="min-w-0 flex-1">
               <h4 className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors truncate">

@@ -331,9 +331,7 @@ function DailyWorksheetSessionItem({
               <th className="py-2.5 px-4 min-w-35 border-r border-white/20 text-left">
                 Kegiatan
               </th>
-              <th className="py-2.5 px-4 min-w-35 text-left">
-                Hasil belajar
-              </th>
+              <th className="py-2.5 px-4 min-w-35 text-left">Hasil belajar</th>
             </tr>
           </thead>
           <tbody>

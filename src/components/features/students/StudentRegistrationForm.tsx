@@ -115,9 +115,7 @@ export function StudentRegistrationForm({
   );
   const [dob, setDob] = useState(initialData ? initialData.date_of_birth : "");
   const [status, setStatus] = useState(initialData ? initialData.status : "CG");
-  const [gender, setGender] = useState(
-    initialData?.gender || ""
-  );
+  const [gender, setGender] = useState(initialData?.gender || "");
   const [labelId, setLabelId] = useState(
     initialData?.label_id ? initialData.label_id : "",
   );
@@ -214,7 +212,9 @@ export function StudentRegistrationForm({
       onSuccess();
       onClose();
     } catch (error: any) {
-      setFormError(`Gagal menyimpan data siswa: ${error?.message || "Silakan coba lagi."}`);
+      setFormError(
+        `Gagal menyimpan data siswa: ${error?.message || "Silakan coba lagi."}`,
+      );
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -233,10 +233,7 @@ export function StudentRegistrationForm({
       textLower.includes("cg")
     ) {
       setStatus("CG");
-    } else if (
-      textLower.includes("reguler") ||
-      textLower.includes("regular")
-    ) {
+    } else if (textLower.includes("reguler") || textLower.includes("regular")) {
       setStatus("REGISTERED");
     }
 
@@ -607,7 +604,9 @@ export function StudentRegistrationForm({
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() => setGender(gender === "Laki-laki" ? "" : "Laki-laki")}
+                        onClick={() =>
+                          setGender(gender === "Laki-laki" ? "" : "Laki-laki")
+                        }
                         className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
                           gender === "Laki-laki"
                             ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 ring-1 ring-blue-500"
@@ -618,7 +617,9 @@ export function StudentRegistrationForm({
                       </button>
                       <button
                         type="button"
-                        onClick={() => setGender(gender === "Perempuan" ? "" : "Perempuan")}
+                        onClick={() =>
+                          setGender(gender === "Perempuan" ? "" : "Perempuan")
+                        }
                         className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
                           gender === "Perempuan"
                             ? "border-pink-500 bg-pink-50 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400 ring-1 ring-pink-500"
@@ -774,6 +775,6 @@ export function StudentRegistrationForm({
         </div>
       </div>
     </>,
-    document.body
+    document.body,
   );
 }

@@ -7,7 +7,10 @@ import { Icons } from "../ui/icons";
 import { useSidebar } from "@/lib/SidebarContext";
 import { useEffect, useState, useRef } from "react";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
-import { getModuleLockPasswords, updateModuleLockPassword } from "@/lib/actions";
+import {
+  getModuleLockPasswords,
+  updateModuleLockPassword,
+} from "@/lib/actions";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Icons.home },
@@ -27,8 +30,8 @@ interface SidebarProps {
   role?: string | null;
 }
 
-export function Sidebar({ 
-  userName = "Admin", 
+export function Sidebar({
+  userName = "Admin",
   branchName = "Tidak Diketahui",
   role = null,
 }: SidebarProps) {
@@ -37,7 +40,8 @@ export function Sidebar({
   const [isNavigating, setIsNavigating] = useState(false);
 
   // Development Lock Modal State (for routes still in development)
-  const lockedRoutes: Record<string, { label: string; sessionKey: string }> = {};
+  const lockedRoutes: Record<string, { label: string; sessionKey: string }> =
+    {};
   const [showDevLockModal, setShowDevLockModal] = useState(false);
   const [devLockTarget, setDevLockTarget] = useState<string | null>(null);
   const [devLockPassword, setDevLockPassword] = useState("");
@@ -51,10 +55,14 @@ export function Sidebar({
 
   // Super Admin Password Management Modal
   const [showSuperAdminModal, setShowSuperAdminModal] = useState(false);
-  const [superAdminPasswords, setSuperAdminPasswords] = useState<Record<string, string>>({
+  const [superAdminPasswords, setSuperAdminPasswords] = useState<
+    Record<string, string>
+  >({
     "/points": "123",
   });
-  const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
+  const [showPasswordMap, setShowPasswordMap] = useState<
+    Record<string, boolean>
+  >({});
   const [superAdminSuccessMsg, setSuperAdminSuccessMsg] = useState("");
   const [superAdminErrorMsg, setSuperAdminErrorMsg] = useState("");
   const [isSavingAll, setIsSavingAll] = useState(false);
@@ -78,7 +86,9 @@ export function Sidebar({
 
       setLockPasswords(updatedPasswords);
       setSuperAdminPasswords(updatedPasswords);
-      setSuperAdminSuccessMsg("Semua password modul berhasil disimpan dan sesi akses di-reset!");
+      setSuperAdminSuccessMsg(
+        "Semua password modul berhasil disimpan dan sesi akses di-reset!",
+      );
     } catch (err: any) {
       setSuperAdminErrorMsg(err?.message || "Gagal menyimpan password.");
     } finally {
@@ -96,11 +106,16 @@ export function Sidebar({
   }, []);
 
   // Nav click protection for locked (in-development) routes
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleNavClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
     const lockInfo = lockedRoutes[href];
     if (lockInfo) {
       if (lockPasswords[href] === "") return;
-      const isUnlocked = typeof window !== "undefined" && sessionStorage.getItem(lockInfo.sessionKey) === "true";
+      const isUnlocked =
+        typeof window !== "undefined" &&
+        sessionStorage.getItem(lockInfo.sessionKey) === "true";
       if (!isUnlocked) {
         e.preventDefault();
         setDevLockTarget(href);
@@ -129,7 +144,9 @@ export function Sidebar({
         setShowDevLockModal(false);
         window.location.href = devLockTarget;
       } else {
-        setDevLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
+        setDevLockError(
+          "Password salah! Silakan periksa kembali atau hubungi SuperAdmin.",
+        );
       }
     } catch {
       const fallbackPassword = lockPasswords[devLockTarget] ?? "123";
@@ -140,7 +157,9 @@ export function Sidebar({
         setShowDevLockModal(false);
         window.location.href = devLockTarget;
       } else {
-        setDevLockError("Password salah! Silakan periksa kembali atau hubungi SuperAdmin.");
+        setDevLockError(
+          "Password salah! Silakan periksa kembali atau hubungi SuperAdmin.",
+        );
       }
     }
   };
@@ -152,7 +171,7 @@ export function Sidebar({
       {/* Development Lock Protection Modal */}
       {showDevLockModal && devLockTarget && lockedRoutes[devLockTarget] && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-          <div 
+          <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setShowDevLockModal(false)}
           />
@@ -164,7 +183,8 @@ export function Sidebar({
               Akses {lockedRoutes[devLockTarget].label} Dikunci
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-              Fitur ini masih dalam tahap pengembangan. Masukkan password untuk membuka akses modul ini.
+              Fitur ini masih dalam tahap pengembangan. Masukkan password untuk
+              membuka akses modul ini.
             </p>
 
             <form onSubmit={handleUnlockDevRoute} className="mt-5 space-y-4">
@@ -182,7 +202,9 @@ export function Sidebar({
                   className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent font-medium"
                 />
                 {devLockError && (
-                  <p className="text-xs text-red-500 font-semibold mt-2 animate-in fade-in">{devLockError}</p>
+                  <p className="text-xs text-red-500 font-semibold mt-2 animate-in fade-in">
+                    {devLockError}
+                  </p>
                 )}
               </div>
 
@@ -251,9 +273,17 @@ export function Sidebar({
 
             <div className="space-y-3.5 max-h-[60vh] overflow-y-auto pr-1">
               {[
-                { route: "/points", name: "Fitur Tambah Poin", icon: "⭐", desc: "Password akses untuk tombol Tambah Poin Manual" },
+                {
+                  route: "/points",
+                  name: "Fitur Tambah Poin",
+                  icon: "⭐",
+                  desc: "Password akses untuk tombol Tambah Poin Manual",
+                },
               ].map((item) => {
-                const currentVal = superAdminPasswords[item.route] ?? lockPasswords[item.route] ?? "123";
+                const currentVal =
+                  superAdminPasswords[item.route] ??
+                  lockPasswords[item.route] ??
+                  "123";
                 const isShowPass = !!showPasswordMap[item.route];
 
                 return (
@@ -263,7 +293,9 @@ export function Sidebar({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-base sm:text-lg">{item.icon}</span>
+                        <span className="text-base sm:text-lg">
+                          {item.icon}
+                        </span>
                         <div>
                           <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                             {item.name}
@@ -331,7 +363,7 @@ export function Sidebar({
       )}
 
       {/* Mobile backdrop - opens natively via CSS checkbox or JS state */}
-      <label 
+      <label
         htmlFor="sidebar-drawer-toggle"
         className={`fixed inset-0 z-40 bg-slate-900/80 backdrop-blur-sm lg:hidden transition-opacity cursor-pointer ${
           isOpen ? "block" : "hidden peer-checked/sidebar:block"
@@ -341,18 +373,20 @@ export function Sidebar({
       />
 
       {/* Sidebar Content */}
-      <div className={`
+      <div
+        className={`
         fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 lg:shadow-sm lg:pointer-events-auto lg:visible
         ${isOpen ? "translate-x-0 pointer-events-auto visible" : "-translate-x-full pointer-events-none invisible peer-checked/sidebar:translate-x-0 peer-checked/sidebar:pointer-events-auto peer-checked/sidebar:visible"}
-      `}>
+      `}
+      >
         <div className="flex h-16 shrink-0 items-center justify-between px-6 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center p-1 bg-white rounded-lg shadow-sm">
-              <Image 
-                src="/logo.png" 
-                alt="ShiningSun Logo" 
-                width={32} 
-                height={32} 
+              <Image
+                src="/logo.png"
+                alt="ShiningSun Logo"
+                width={32}
+                height={32}
                 className="object-contain"
                 priority
               />
@@ -362,21 +396,44 @@ export function Sidebar({
             </span>
           </div>
           {/* Close button for mobile - native HTML label */}
-          <label 
+          <label
             htmlFor="sidebar-drawer-toggle"
-            className="lg:hidden text-slate-400 hover:text-slate-500 cursor-pointer p-1" 
+            className="lg:hidden text-slate-400 hover:text-slate-500 cursor-pointer p-1"
             onClick={close}
           >
             <span className="sr-only">Tutup sidebar</span>
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </label>
         </div>
-        
+
         <nav className="flex flex-1 flex-col p-4 space-y-1 overflow-y-auto">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block px-3 mt-2">Menu</label>
-          {[...navigation, ...(role === 'SUPERADMIN' ? [{ name: "Kelola Akun", href: "/accounts", icon: Icons.settings }] : [])].map((item) => {
+          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block px-3 mt-2">
+            Menu
+          </label>
+          {[
+            ...navigation,
+            ...(role === "SUPERADMIN"
+              ? [
+                  {
+                    name: "Kelola Akun",
+                    href: "/accounts",
+                    icon: Icons.settings,
+                  },
+                ]
+              : []),
+          ].map((item) => {
             const isActive = pathname.startsWith(item.href);
             return (
               <a
@@ -400,17 +457,18 @@ export function Sidebar({
                   }`}
                 />
                 <span className="flex-1">{item.name}</span>
-                {lockedRoutes[item.href] && (lockPasswords[item.href] ?? "123") !== "" && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-300/40">
-                    🔒
-                  </span>
-                )}
+                {lockedRoutes[item.href] &&
+                  (lockPasswords[item.href] ?? "123") !== "" && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-300/40">
+                      🔒
+                    </span>
+                  )}
               </a>
             );
           })}
 
           {/* Khusus Super Admin Section */}
-          {role === 'SUPERADMIN' && (
+          {role === "SUPERADMIN" && (
             <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 space-y-1">
               <label className="text-[11px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2 block px-3 flex items-center gap-1.5">
                 <span>🛡️</span> Khusus Super Admin
@@ -426,7 +484,9 @@ export function Sidebar({
                 className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs sm:text-sm font-bold text-amber-800 bg-amber-50/90 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/60 transition-all duration-200 cursor-pointer shadow-2xs"
               >
                 <Icons.settings className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span className="flex-1 text-left truncate">Password Akses Modul</span>
+                <span className="flex-1 text-left truncate">
+                  Password Akses Modul
+                </span>
                 <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 dark:bg-amber-800 dark:text-amber-100 shrink-0">
                   🔑 PIN
                 </span>
@@ -434,25 +494,28 @@ export function Sidebar({
             </div>
           )}
         </nav>
-      
+
         {/* Bottom Section */}
         <div className="mt-auto">
-
           {/* User Profile Card */}
           <div className="p-4 border-t border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50">
               <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 shadow-sm border border-slate-200 dark:border-slate-700 bg-white flex items-center justify-center">
-                <Image 
-                  src="/logo.png" 
-                  alt="User Profile" 
-                  width={32} 
-                  height={32} 
+                <Image
+                  src="/logo.png"
+                  alt="User Profile"
+                  width={32}
+                  height={32}
                   className="object-cover"
                 />
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">{userName}</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{branchName}</span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                  {userName}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  {branchName}
+                </span>
               </div>
             </div>
           </div>

@@ -16,7 +16,10 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
 
   // Delete modal state
   const [deleteModal, setDeleteModal] = useState(false);
-  const [teacherToDelete, setTeacherToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [teacherToDelete, setTeacherToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -101,7 +104,8 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
               <strong className="text-slate-700 dark:text-slate-300">
                 "{teacherToDelete.name}"
               </strong>
-              ? Data guru ini tidak akan lagi muncul di dropdown pilihan laporan.
+              ? Data guru ini tidak akan lagi muncul di dropdown pilihan
+              laporan.
             </p>
 
             {deleteError && (
@@ -144,7 +148,8 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            Kelola nama-nama guru/pembimbing yang nantinya dapat dipilih langsung melalui dropdown saat pengisian Laporan Perkembangan.
+            Kelola nama-nama guru/pembimbing yang nantinya dapat dipilih
+            langsung melalui dropdown saat pengisian Laporan Perkembangan.
           </p>
         </div>
         <button
@@ -245,8 +250,8 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
                   {isSubmitting
                     ? "Menyimpan..."
                     : editingTeacher
-                    ? "✓ Simpan Perubahan"
-                    : "✓ Tambah Guru"}
+                      ? "✓ Simpan Perubahan"
+                      : "✓ Tambah Guru"}
                 </button>
               </div>
             </form>
@@ -255,7 +260,10 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
       )}
 
       {/* Teachers List */}
-      <ul role="list" className="divide-y divide-slate-100 dark:divide-slate-800">
+      <ul
+        role="list"
+        className="divide-y divide-slate-100 dark:divide-slate-800"
+      >
         {teachers.length === 0 ? (
           <li className="px-6 py-12 text-center">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-2xl">
@@ -265,7 +273,8 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
               Belum Ada Data Guru
             </p>
             <p className="text-xs text-slate-400 mt-1">
-              Klik tombol &quot;Tambah Guru&quot; di atas untuk menambahkan daftar nama guru/pembimbing.
+              Klik tombol &quot;Tambah Guru&quot; di atas untuk menambahkan
+              daftar nama guru/pembimbing.
             </p>
           </li>
         ) : (

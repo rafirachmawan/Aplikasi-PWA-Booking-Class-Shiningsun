@@ -27,7 +27,8 @@ export function TeacherClientWrapper({
             )}
           </h1>
           <p className="mt-2 text-xs sm:text-sm text-sky-100 max-w-2xl leading-relaxed">
-            Daftar guru yang Anda tambahkan di sini akan otomatis menjadi opsi pilihan dropdown pada saat pengisian Laporan Perkembangan Siswa.
+            Daftar guru yang Anda tambahkan di sini akan otomatis menjadi opsi
+            pilihan dropdown pada saat pengisian Laporan Perkembangan Siswa.
           </p>
         </div>
       </div>

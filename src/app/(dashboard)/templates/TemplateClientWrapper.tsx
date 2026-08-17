@@ -29,7 +29,9 @@ export function TemplateClientWrapper({
             )}
           </h1>
           <p className="mt-2 text-xs sm:text-sm text-sky-100 max-w-2xl leading-relaxed">
-            Buat template materi &amp; hasil penilaian standar yang dapat di-autofill secara otomatis ketika membuat Laporan Perkembangan Siswa.
+            Buat template materi &amp; hasil penilaian standar yang dapat
+            di-autofill secara otomatis ketika membuat Laporan Perkembangan
+            Siswa.
           </p>
         </div>
       </div>

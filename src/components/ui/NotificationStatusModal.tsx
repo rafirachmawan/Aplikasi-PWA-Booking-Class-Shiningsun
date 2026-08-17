@@ -31,8 +31,8 @@ export function NotificationStatusModal({
             isSuccess
               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
               : isError
-              ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
-              : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
           }`}
         >
           {isSuccess ? (
@@ -62,8 +62,8 @@ export function NotificationStatusModal({
             isSuccess
               ? "bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
               : isError
-              ? "bg-linear-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white"
-              : "bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                ? "bg-linear-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white"
+                : "bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
           }`}
         >
           Mengerti

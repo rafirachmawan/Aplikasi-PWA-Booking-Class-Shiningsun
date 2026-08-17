@@ -5,7 +5,10 @@ import { Icons } from "@/components/ui/icons";
 import { getSchedulesByDate } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ChangeLabelModal } from "@/components/features/students/ChangeLabelModal";
-import { formatFullIndonesianDate as formatIndonesianDate, formatNumericDate } from "@/lib/dateUtils";
+import {
+  formatFullIndonesianDate as formatIndonesianDate,
+  formatNumericDate,
+} from "@/lib/dateUtils";
 
 const FIXED_TIMES = [
   { time: "08:00", range: "08 - 09" },
@@ -270,7 +273,12 @@ export function TodaySchedule({
                                     <button
                                       key={b.student_id}
                                       type="button"
-                                      onClick={() => handleStudentClick({ ...b.student, id: b.student_id })}
+                                      onClick={() =>
+                                        handleStudentClick({
+                                          ...b.student,
+                                          id: b.student_id,
+                                        })
+                                      }
                                       title="Klik untuk ganti level siswa"
                                       className="inline-flex items-center px-2 py-1 text-[11px] font-bold rounded-md text-slate-900 dark:text-slate-100 truncate max-w-40 shadow-xs border border-slate-300/80 dark:border-slate-600 cursor-pointer hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all group"
                                       style={{
@@ -283,7 +291,9 @@ export function TodaySchedule({
                                           (CG)
                                         </span>
                                       )}
-                                      <span>{b.student?.nickname || b.student?.name}</span>
+                                      <span>
+                                        {b.student?.nickname || b.student?.name}
+                                      </span>
                                       <Icons.edit className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-slate-700 dark:text-slate-200 shrink-0" />
                                     </button>
                                   );

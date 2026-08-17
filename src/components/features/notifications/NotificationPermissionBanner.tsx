@@ -6,8 +6,13 @@ import { Icons } from "@/components/ui/icons";
 import { NotificationStatusModal } from "@/components/ui/NotificationStatusModal";
 
 export function NotificationPermissionBanner() {
-  const { permission, isSubscribed, isLoading, subscribeToPush, unsubscribeFromPush } =
-    usePushSubscription();
+  const {
+    permission,
+    isSubscribed,
+    isLoading,
+    subscribeToPush,
+    unsubscribeFromPush,
+  } = usePushSubscription();
 
   const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
@@ -67,7 +72,8 @@ export function NotificationPermissionBanner() {
 
   const handleTestNotification = async () => {
     try {
-      if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+      if (typeof window === "undefined" || !("serviceWorker" in navigator))
+        return;
       let reg = await navigator.serviceWorker.getRegistration();
       if (!reg) {
         reg = await navigator.serviceWorker.ready;
@@ -84,7 +90,8 @@ export function NotificationPermissionBanner() {
           isOpen: true,
           type: "success",
           title: "Tes Notifikasi Berhasil! 🔔",
-          message: "Notifikasi uji coba telah dikirim. Periksa panel notifikasi perangkat/HP Anda.",
+          message:
+            "Notifikasi uji coba telah dikirim. Periksa panel notifikasi perangkat/HP Anda.",
         });
       } else {
         throw new Error("Service Worker belum aktif");
@@ -94,7 +101,8 @@ export function NotificationPermissionBanner() {
         isOpen: true,
         type: "error",
         title: "Gagal Mengirim Notifikasi",
-        message: err?.message || "Tidak dapat memicu notifikasi pada perangkat ini.",
+        message:
+          err?.message || "Tidak dapat memicu notifikasi pada perangkat ini.",
       });
     }
   };

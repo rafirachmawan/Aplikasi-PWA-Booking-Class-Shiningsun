@@ -12,7 +12,14 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 type CategoryType = "materi" | "kegiatan" | "pemahaman" | "rumah" | "afirmasi";
 
-const CATEGORIES: { id: CategoryType; label: string; icon: string; desc: string; placeholderTitle: string; placeholderDesc: string }[] = [
+const CATEGORIES: {
+  id: CategoryType;
+  label: string;
+  icon: string;
+  desc: string;
+  placeholderTitle: string;
+  placeholderDesc: string;
+}[] = [
   {
     id: "materi",
     label: "Materi Yang Diajarkan",
@@ -55,7 +62,13 @@ const CATEGORIES: { id: CategoryType; label: string; icon: string; desc: string;
   },
 ];
 
-export function AssessmentTemplateManager({ templates, labels = [] }: { templates: any[]; labels?: any[] }) {
+export function AssessmentTemplateManager({
+  templates,
+  labels = [],
+}: {
+  templates: any[];
+  labels?: any[];
+}) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<CategoryType | null>(null);
 
@@ -70,7 +83,10 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
 
   // Delete modal state
   const [deleteModal, setDeleteModal] = useState(false);
-  const [templateToDelete, setTemplateToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [templateToDelete, setTemplateToDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -80,10 +96,15 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
   // Search & Level Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilterLabelId, setSelectedFilterLabelId] = useState("");
-  const [isFilterLevelDropdownOpen, setIsFilterLevelDropdownOpen] = useState(false);
+  const [isFilterLevelDropdownOpen, setIsFilterLevelDropdownOpen] =
+    useState(false);
 
-  const currentCategoryObj = activeTab ? CATEGORIES.find((c) => c.id === activeTab) : null;
-  const filteredTemplates = activeTab ? templates.filter((t) => (t.category || "kegiatan") === activeTab) : [];
+  const currentCategoryObj = activeTab
+    ? CATEGORIES.find((c) => c.id === activeTab)
+    : null;
+  const filteredTemplates = activeTab
+    ? templates.filter((t) => (t.category || "kegiatan") === activeTab)
+    : [];
 
   // Group templates with identical title & category into 1 single item for UI & edit operations
   const groupedTemplates = useMemo(() => {
@@ -109,7 +130,10 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
         };
       } else {
         groups[key].ids.push(tpl.id);
-        if (labelObj && !groups[key].labels.some((l: any) => l.id === labelObj.id)) {
+        if (
+          labelObj &&
+          !groups[key].labels.some((l: any) => l.id === labelObj.id)
+        ) {
           groups[key].labels.push(labelObj);
         }
         if (lId && !groups[key].label_ids.includes(lId)) {
@@ -125,13 +149,17 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
   const searchedAndFilteredTemplates = useMemo(() => {
     return groupedTemplates.filter((tpl) => {
       const q = searchQuery.toLowerCase().trim();
-      const matchesSearch = !q || (tpl.title || "").toLowerCase().includes(q) || (tpl.materi || "").toLowerCase().includes(q);
+      const matchesSearch =
+        !q ||
+        (tpl.title || "").toLowerCase().includes(q) ||
+        (tpl.materi || "").toLowerCase().includes(q);
 
       let matchesLevel = true;
       if (selectedFilterLabelId === "GLOBAL") {
         matchesLevel = !tpl.labels || tpl.labels.length === 0;
       } else if (selectedFilterLabelId) {
-        matchesLevel = tpl.label_ids && tpl.label_ids.includes(selectedFilterLabelId);
+        matchesLevel =
+          tpl.label_ids && tpl.label_ids.includes(selectedFilterLabelId);
       }
 
       return matchesSearch && matchesLevel;
@@ -281,7 +309,8 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
               <span>📝 Kelola Template Opsi Penilaian</span>
             </h3>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Atur opsi pilihan per-poin untuk memudahkan Miss menilai siswa cukup dengan 1-klik (Format 1/2/3/4 Client).
+              Atur opsi pilihan per-poin untuk memudahkan Miss menilai siswa
+              cukup dengan 1-klik (Format 1/2/3/4 Client).
             </p>
           </div>
 
@@ -361,7 +390,9 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
               />
               <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-72 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150 divide-y divide-slate-100 dark:divide-slate-800/60">
                 {CATEGORIES.map((cat) => {
-                  const count = templates.filter((t) => (t.category || "kegiatan") === cat.id).length;
+                  const count = templates.filter(
+                    (t) => (t.category || "kegiatan") === cat.id,
+                  ).length;
                   const isActive = activeTab === cat.id;
                   return (
                     <button
@@ -383,7 +414,9 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                       <div className="flex items-center gap-2.5 min-w-0 pr-2">
                         <span className="text-base shrink-0">{cat.icon}</span>
                         <div className="min-w-0">
-                          <div className={`text-xs ${isActive ? "text-sky-600 dark:text-sky-400 font-bold" : "text-slate-800 dark:text-slate-200 font-medium"} truncate`}>
+                          <div
+                            className={`text-xs ${isActive ? "text-sky-600 dark:text-sky-400 font-bold" : "text-slate-800 dark:text-slate-200 font-medium"} truncate`}
+                          >
                             {cat.label}
                           </div>
                           <div className="text-[11px] text-slate-400 truncate">
@@ -402,7 +435,9 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                           {count} Opsi
                         </span>
                         {isActive && (
-                          <span className="text-sky-600 font-bold text-xs">✓</span>
+                          <span className="text-sky-600 font-bold text-xs">
+                            ✓
+                          </span>
                         )}
                       </div>
                     </button>
@@ -436,7 +471,9 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                 </div>
                 <div>
                   <h3 className="text-sm font-extrabold uppercase tracking-wide">
-                    {editingTemplate ? "Edit Opsi Template" : "Tambah Opsi Template Baru"}
+                    {editingTemplate
+                      ? "Edit Opsi Template"
+                      : "Tambah Opsi Template Baru"}
                   </h3>
                   <p className="text-[11px] text-sky-100 font-medium">
                     Kategori: {currentCategoryObj?.label || "-"}
@@ -466,12 +503,16 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Teks / Judul Opsi Pilihan <span className="text-red-500">*</span>
+                  Teks / Judul Opsi Pilihan{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   required
                   type="text"
-                  placeholder={currentCategoryObj?.placeholderTitle || "Masukkan judul opsi"}
+                  placeholder={
+                    currentCategoryObj?.placeholderTitle ||
+                    "Masukkan judul opsi"
+                  }
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-4 py-2.5 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none placeholder:text-slate-400"
@@ -496,7 +537,9 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                     {/* Standard Single Row Dropdown Button */}
                     <button
                       type="button"
-                      onClick={() => setIsLabelDropdownOpen(!isLabelDropdownOpen)}
+                      onClick={() =>
+                        setIsLabelDropdownOpen(!isLabelDropdownOpen)
+                      }
                       className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold shadow-xs cursor-pointer text-left transition-all ${
                         isLabelDropdownOpen
                           ? "border-sky-500 ring-2 ring-sky-500/20 bg-white dark:bg-slate-900"
@@ -510,20 +553,28 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                           </span>
                         ) : selectedLabelIds.length === 1 ? (
                           (() => {
-                            const lbl = labels.find((l) => l.id === selectedLabelIds[0]);
+                            const lbl = labels.find(
+                              (l) => l.id === selectedLabelIds[0],
+                            );
                             return (
                               <span className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-100 truncate">
                                 <span
                                   className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
-                                  style={{ backgroundColor: lbl?.hex_color || "#94a3b8" }}
+                                  style={{
+                                    backgroundColor:
+                                      lbl?.hex_color || "#94a3b8",
+                                  }}
                                 />
-                                {lbl ? `${lbl.main_level} - ${lbl.sub_level}` : "1 Level Dipilih"}
+                                {lbl
+                                  ? `${lbl.main_level} - ${lbl.sub_level}`
+                                  : "1 Level Dipilih"}
                               </span>
                             );
                           })()
                         ) : (
                           <span className="font-extrabold text-sky-600 dark:text-sky-400 truncate">
-                            ✨ {selectedLabelIds.length} Level Terpilih (Klik untuk ubah)
+                            ✨ {selectedLabelIds.length} Level Terpilih (Klik
+                            untuk ubah)
                           </span>
                         )}
                       </div>
@@ -542,86 +593,93 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                           onClick={() => setIsLabelDropdownOpen(false)}
                         />
                         <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
-                        {/* Quick action bar */}
-                        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100 dark:border-slate-800/80 px-1">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedLabelIds([])}
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
-                              selectedLabelIds.length === 0
-                                ? "bg-sky-600 text-white shadow-xs"
-                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
-                            }`}
-                          >
-                            🌐 Semua Level
-                          </button>
-                          <div className="flex items-center gap-1">
+                          {/* Quick action bar */}
+                          <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100 dark:border-slate-800/80 px-1">
                             <button
                               type="button"
-                              onClick={() => setSelectedLabelIds(labels.map((l) => l.id))}
-                              className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300 hover:bg-sky-100 cursor-pointer"
-                            >
-                              ✓ Pilih Semua
-                            </button>
-                            {selectedLabelIds.length > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => setSelectedLabelIds([])}
-                                className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer"
-                              >
-                                Reset
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* List of selectable levels */}
-                        {labels.map((lbl) => {
-                          const isSel = selectedLabelIds.includes(lbl.id);
-                          return (
-                            <button
-                              key={lbl.id}
-                              type="button"
-                              onClick={() => {
-                                if (isSel) {
-                                  setSelectedLabelIds(
-                                    selectedLabelIds.filter((id) => id !== lbl.id)
-                                  );
-                                } else {
-                                  setSelectedLabelIds([...selectedLabelIds, lbl.id]);
-                                }
-                              }}
-                              className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
-                                isSel
-                                  ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 font-extrabold"
-                                  : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium"
+                              onClick={() => setSelectedLabelIds([])}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
+                                selectedLabelIds.length === 0
+                                  ? "bg-sky-600 text-white shadow-xs"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
                               }`}
                             >
-                              <span className="flex items-center gap-2.5 min-w-0">
-                                <input
-                                  type="checkbox"
-                                  checked={isSel}
-                                  readOnly
-                                  className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-700 cursor-pointer pointer-events-none"
-                                />
-                                <span
-                                  className="w-3 h-3 rounded-full shrink-0 shadow-xs"
-                                  style={{ backgroundColor: lbl.hex_color }}
-                                />
-                                <span className="truncate">
-                                  {lbl.main_level} - {lbl.sub_level}
-                                </span>
-                              </span>
-                              {isSel && (
-                                <span className="text-sky-600 shrink-0 text-xs font-bold">
-                                  ✓
-                                </span>
-                              )}
+                              🌐 Semua Level
                             </button>
-                          );
-                        })}
-                      </div>
-                    </>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedLabelIds(labels.map((l) => l.id))
+                                }
+                                className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300 hover:bg-sky-100 cursor-pointer"
+                              >
+                                ✓ Pilih Semua
+                              </button>
+                              {selectedLabelIds.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedLabelIds([])}
+                                  className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer"
+                                >
+                                  Reset
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* List of selectable levels */}
+                          {labels.map((lbl) => {
+                            const isSel = selectedLabelIds.includes(lbl.id);
+                            return (
+                              <button
+                                key={lbl.id}
+                                type="button"
+                                onClick={() => {
+                                  if (isSel) {
+                                    setSelectedLabelIds(
+                                      selectedLabelIds.filter(
+                                        (id) => id !== lbl.id,
+                                      ),
+                                    );
+                                  } else {
+                                    setSelectedLabelIds([
+                                      ...selectedLabelIds,
+                                      lbl.id,
+                                    ]);
+                                  }
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
+                                  isSel
+                                    ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 font-extrabold"
+                                    : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium"
+                                }`}
+                              >
+                                <span className="flex items-center gap-2.5 min-w-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSel}
+                                    readOnly
+                                    className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-700 cursor-pointer pointer-events-none"
+                                  />
+                                  <span
+                                    className="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                                    style={{ backgroundColor: lbl.hex_color }}
+                                  />
+                                  <span className="truncate">
+                                    {lbl.main_level} - {lbl.sub_level}
+                                  </span>
+                                </span>
+                                {isSel && (
+                                  <span className="text-sky-600 shrink-0 text-xs font-bold">
+                                    ✓
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
                     )}
                   </div>
 
@@ -631,7 +689,8 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
                         <span>ℹ️</span>
                         <span>
-                          <strong>Materi Bebas/Global:</strong> Materi ini akan langsung muncul untuk semua siswa di cabang Anda.
+                          <strong>Materi Bebas/Global:</strong> Materi ini akan
+                          langsung muncul untuk semua siswa di cabang Anda.
                         </span>
                       </p>
                     ) : (
@@ -639,7 +698,9 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                         <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
                           <span>📌</span>
                           <span>
-                            Materi ini otomatis terdaftar untuk <strong>{selectedLabelIds.length} level</strong> berikut:
+                            Materi ini otomatis terdaftar untuk{" "}
+                            <strong>{selectedLabelIds.length} level</strong>{" "}
+                            berikut:
                           </span>
                         </p>
                         <div className="flex flex-wrap gap-1">
@@ -653,7 +714,9 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                               >
                                 <span
                                   className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10"
-                                  style={{ backgroundColor: lbl.hex_color || "#3b82f6" }}
+                                  style={{
+                                    backgroundColor: lbl.hex_color || "#3b82f6",
+                                  }}
                                 />
                                 <span>
                                   {lbl.main_level} - {lbl.sub_level}
@@ -688,8 +751,8 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                   {isSubmitting
                     ? "Menyimpan..."
                     : editingTemplate
-                    ? "✓ Simpan Perubahan"
-                    : "✓ Tambah Opsi"}
+                      ? "✓ Simpan Perubahan"
+                      : "✓ Tambah Opsi"}
                 </button>
               </div>
             </form>
@@ -728,7 +791,9 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                 <div className="relative min-w-42.5 sm:w-56">
                   <button
                     type="button"
-                    onClick={() => setIsFilterLevelDropdownOpen(!isFilterLevelDropdownOpen)}
+                    onClick={() =>
+                      setIsFilterLevelDropdownOpen(!isFilterLevelDropdownOpen)
+                    }
                     className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs font-bold shadow-2xs cursor-pointer text-left transition-all ${
                       isFilterLevelDropdownOpen
                         ? "border-sky-500 ring-2 ring-sky-500/20 bg-white dark:bg-slate-900"
@@ -746,15 +811,21 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                         </span>
                       ) : (
                         (() => {
-                          const lbl = labels.find((l) => l.id === selectedFilterLabelId);
+                          const lbl = labels.find(
+                            (l) => l.id === selectedFilterLabelId,
+                          );
                           return (
                             <span className="flex items-center gap-2 truncate text-slate-800 dark:text-slate-100 font-bold">
                               <span
                                 className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs border border-black/10"
-                                style={{ backgroundColor: lbl?.hex_color || "#0ea5e9" }}
+                                style={{
+                                  backgroundColor: lbl?.hex_color || "#0ea5e9",
+                                }}
                               />
                               <span className="truncate">
-                                {lbl ? `${lbl.main_level} - ${lbl.sub_level}` : "Level Terpilih"}
+                                {lbl
+                                  ? `${lbl.main_level} - ${lbl.sub_level}`
+                                  : "Level Terpilih"}
                               </span>
                             </span>
                           );
@@ -763,7 +834,9 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                     </div>
                     <Icons.chevronDown
                       className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
-                        isFilterLevelDropdownOpen ? "rotate-180 text-sky-500" : ""
+                        isFilterLevelDropdownOpen
+                          ? "rotate-180 text-sky-500"
+                          : ""
                       }`}
                     />
                   </button>
@@ -790,7 +863,9 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                           }`}
                         >
                           <span>🎯 Semua Level</span>
-                          {!selectedFilterLabelId && <span className="text-sky-600 font-bold">✓</span>}
+                          {!selectedFilterLabelId && (
+                            <span className="text-sky-600 font-bold">✓</span>
+                          )}
                         </button>
 
                         {/* Option: Materi Bebas (Global) */}
@@ -807,7 +882,9 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                           }`}
                         >
                           <span>🌐 Materi Bebas (Global)</span>
-                          {selectedFilterLabelId === "GLOBAL" && <span className="text-sky-600 font-bold">✓</span>}
+                          {selectedFilterLabelId === "GLOBAL" && (
+                            <span className="text-sky-600 font-bold">✓</span>
+                          )}
                         </button>
 
                         <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
@@ -832,13 +909,19 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                               <span className="flex items-center gap-2.5 min-w-0">
                                 <span
                                   className="w-3 h-3 rounded-full shrink-0 shadow-2xs border border-black/10"
-                                  style={{ backgroundColor: lbl.hex_color || "#0ea5e9" }}
+                                  style={{
+                                    backgroundColor: lbl.hex_color || "#0ea5e9",
+                                  }}
                                 />
                                 <span className="truncate">
                                   {lbl.main_level} - {lbl.sub_level}
                                 </span>
                               </span>
-                              {isSel && <span className="text-sky-600 shrink-0 font-bold">✓</span>}
+                              {isSel && (
+                                <span className="text-sky-600 shrink-0 font-bold">
+                                  ✓
+                                </span>
+                              )}
                             </button>
                           );
                         })}
@@ -868,7 +951,8 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
           {/* Counter & Status Info */}
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-semibold px-0.5">
             <span>
-              Menampilkan <strong>{searchedAndFilteredTemplates.length}</strong> dari {groupedTemplates.length} Opsi
+              Menampilkan <strong>{searchedAndFilteredTemplates.length}</strong>{" "}
+              dari {groupedTemplates.length} Opsi
             </span>
             {(searchQuery || selectedFilterLabelId) && (
               <span className="text-sky-600 dark:text-sky-400 font-bold">
@@ -890,7 +974,8 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
               Pilih Kategori Penilaian
             </p>
             <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
-              Silakan pilih salah satu kategori di dropdown di atas untuk melihat dan mengelola opsi template penilaian.
+              Silakan pilih salah satu kategori di dropdown di atas untuk
+              melihat dan mengelola opsi template penilaian.
             </p>
           </div>
         ) : searchedAndFilteredTemplates.length === 0 ? (
@@ -904,7 +989,7 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
             <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
               {searchQuery || selectedFilterLabelId
                 ? "Coba ubah kata kunci pencarian atau filter level Anda."
-                : "Klik tombol \"Tambah Opsi Baru\" di atas untuk menambahkan materi baru."}
+                : 'Klik tombol "Tambah Opsi Baru" di atas untuk menambahkan materi baru.'}
             </p>
             {(searchQuery || selectedFilterLabelId) && (
               <button
@@ -935,7 +1020,7 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                       <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
                         {tpl.title}
                       </h4>
-                      
+
                       {/* Multi-Level Badges List */}
                       {activeTab === "materi" && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
@@ -947,9 +1032,14 @@ export function AssessmentTemplateManager({ templates, labels = [] }: { template
                               >
                                 <span
                                   className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs border border-black/10"
-                                  style={{ backgroundColor: labelObj.hex_color || "#0ea5e9" }}
+                                  style={{
+                                    backgroundColor:
+                                      labelObj.hex_color || "#0ea5e9",
+                                  }}
                                 />
-                                <span>{labelObj.main_level} - {labelObj.sub_level}</span>
+                                <span>
+                                  {labelObj.main_level} - {labelObj.sub_level}
+                                </span>
                               </span>
                             ))
                           ) : (

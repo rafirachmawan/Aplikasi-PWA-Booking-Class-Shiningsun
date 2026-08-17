@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { StudentScheduleCard } from "./StudentScheduleCard";
 import { StudentWorksheetTable } from "@/components/features/worksheets/StudentWorksheetTable";
-import { clearParentSession, updateStudentPhotoUrl, updateStudentAccessPin } from "@/lib/actions";
+import {
+  clearParentSession,
+  updateStudentPhotoUrl,
+  updateStudentAccessPin,
+} from "@/lib/actions";
 import { formatShortDate, calculateStudentPoints } from "@/lib/dateUtils";
 import { getGDriveDirectLink, getGDrivePreviewLink } from "@/lib/gdriveUtils";
 
@@ -45,11 +49,21 @@ export function ParentDashboardClient({
         const month = parseInt(parts[1], 10) - 1;
         const day = parseInt(parts[2], 10);
         const monthsIndo = [
-          "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-          "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+          "Januari",
+          "Februari",
+          "Maret",
+          "April",
+          "Mei",
+          "Juni",
+          "Juli",
+          "Agustus",
+          "September",
+          "Oktober",
+          "November",
+          "Desember",
         ];
         const formatted = `${day} ${monthsIndo[month] || ""} ${year}`;
-        
+
         const today = new Date();
         let age = today.getFullYear() - year;
         const mDiff = today.getMonth() - month;
@@ -75,9 +89,15 @@ export function ParentDashboardClient({
   const [showCropModal, setShowCropModal] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState<string>("");
   const [cropZoom, setCropZoom] = useState<number>(1);
-  const [cropOffset, setCropOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [cropOffset, setCropOffset] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
 
   // Change PIN modal state
   const [showChangePinModal, setShowChangePinModal] = useState(false);
@@ -106,7 +126,9 @@ export function ParentDashboardClient({
     setIsSubmittingPin(true);
     try {
       await updateStudentAccessPin(student.id, cleanNew);
-      setPinSuccessMsg("PIN Akses berhasil diperbarui! Admin juga telah mendapatkan PIN terbaru ini.");
+      setPinSuccessMsg(
+        "PIN Akses berhasil diperbarui! Admin juga telah mendapatkan PIN terbaru ini.",
+      );
       setTimeout(() => {
         setShowChangePinModal(false);
         setNewPin("");
@@ -126,7 +148,10 @@ export function ParentDashboardClient({
       setPhotoUrl(student.photo_url);
       if (typeof window !== "undefined" && student?.id) {
         try {
-          localStorage.setItem(`student_photo_${student.id}`, student.photo_url);
+          localStorage.setItem(
+            `student_photo_${student.id}`,
+            student.photo_url,
+          );
         } catch (e) {}
       }
     } else if (typeof window !== "undefined" && student?.id) {
@@ -222,7 +247,7 @@ export function ParentDashboardClient({
           0,
           0,
           OUTPUT_SIZE,
-          OUTPUT_SIZE
+          OUTPUT_SIZE,
         );
 
         const compressedBase64 = canvas.toDataURL("image/jpeg", 0.88);
@@ -230,7 +255,10 @@ export function ParentDashboardClient({
 
         if (typeof window !== "undefined" && student?.id) {
           try {
-            localStorage.setItem(`student_photo_${student.id}`, compressedBase64);
+            localStorage.setItem(
+              `student_photo_${student.id}`,
+              compressedBase64,
+            );
           } catch (e) {}
         }
 
@@ -336,7 +364,9 @@ export function ParentDashboardClient({
         .replace(/_+/g, "_");
 
       const dateRangeStr =
-        startDate || endDate ? `_${startDate || "Awal"}_sd_${endDate || "Akhir"}` : "";
+        startDate || endDate
+          ? `_${startDate || "Awal"}_sd_${endDate || "Akhir"}`
+          : "";
       pdf.save(`Laporan_Perkembangan_${safeFileName}${dateRangeStr}.pdf`);
     } catch (error) {
       console.error("Failed to generate PDF:", error);
@@ -397,14 +427,17 @@ export function ParentDashboardClient({
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  const firstLetter = student?.name ? student.name.charAt(0).toUpperCase() : "S";
-  const grossPoints = student?.gross_points ?? calculateStudentPoints(worksheets);
+  const firstLetter = student?.name
+    ? student.name.charAt(0).toUpperCase()
+    : "S";
+  const grossPoints =
+    student?.gross_points ?? calculateStudentPoints(worksheets);
   const redeemedPoints = student?.redeemed_points ?? 0;
-  const netPoints = student?.points ?? Math.max(0, grossPoints - redeemedPoints);
+  const netPoints =
+    student?.points ?? Math.max(0, grossPoints - redeemedPoints);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans pb-12">
-      
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 shadow-xs">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -435,7 +468,9 @@ export function ParentDashboardClient({
             className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/40 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <span>🚪</span>
-            <span className="hidden sm:inline">{isLoggingOut ? "Keluar..." : "Keluar / Ganti Akses"}</span>
+            <span className="hidden sm:inline">
+              {isLoggingOut ? "Keluar..." : "Keluar / Ganti Akses"}
+            </span>
             <span className="sm:hidden">{isLoggingOut ? "..." : "Keluar"}</span>
           </button>
         </div>
@@ -443,84 +478,91 @@ export function ParentDashboardClient({
 
       {/* Main Content Container */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 space-y-6">
-        
         {/* Student Profile Card (Clean Brand Blue Banner) */}
         <div className="rounded-3xl bg-brand-600 dark:bg-brand-700 border border-brand-500/40 p-5 sm:p-7 text-white shadow-xl space-y-4">
-
           {/* Top: Photo + Name + Nickname + Branch */}
           <div className="flex items-center gap-3.5 sm:gap-5">
-              {/* Hidden File Input */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handlePhotoChange}
-                accept="image/*"
-                className="hidden"
-              />
+            {/* Hidden File Input */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handlePhotoChange}
+              accept="image/*"
+              className="hidden"
+            />
 
-              {/* Student Photo / Logo Box (Interactive Upload) */}
-              <button
-                type="button"
-                onClick={handlePhotoClick}
-                disabled={isUploadingPhoto}
-                title="Klik untuk mengubah foto profil anak"
-                className="group relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white p-1 shrink-0 flex items-center justify-center shadow-md border-2 border-white/80 overflow-hidden cursor-pointer hover:opacity-95 active:scale-95 transition-all"
-              >
-                {photoUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={photoUrl}
-                    alt={student.name}
-                    className="w-full h-full object-cover rounded-xl"
-                  />
-                ) : (
-                  <Image
-                    src="/logo.png"
-                    alt="ShiningSun Logo"
-                    width={64}
-                    height={64}
-                    className="w-full h-full object-contain p-1"
-                    priority
-                  />
-                )}
+            {/* Student Photo / Logo Box (Interactive Upload) */}
+            <button
+              type="button"
+              onClick={handlePhotoClick}
+              disabled={isUploadingPhoto}
+              title="Klik untuk mengubah foto profil anak"
+              className="group relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white p-1 shrink-0 flex items-center justify-center shadow-md border-2 border-white/80 overflow-hidden cursor-pointer hover:opacity-95 active:scale-95 transition-all"
+            >
+              {photoUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={photoUrl}
+                  alt={student.name}
+                  className="w-full h-full object-cover rounded-xl"
+                />
+              ) : (
+                <Image
+                  src="/logo.png"
+                  alt="ShiningSun Logo"
+                  width={64}
+                  height={64}
+                  className="w-full h-full object-contain p-1"
+                  priority
+                />
+              )}
 
-                {/* Camera Overlay Icon */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white rounded-xl">
-                  <span className="text-base sm:text-lg">📷</span>
-                  <span className="text-[9px] font-bold uppercase tracking-tighter">Ubah</span>
-                </div>
-
-                {/* Mobile Camera Indicator Badge */}
-                <div className="absolute bottom-0 right-0 bg-brand-700 text-white w-5 h-5 rounded-tl-lg flex items-center justify-center text-[10px] shadow-xs sm:hidden">
-                  📷
-                </div>
-
-                {/* Uploading Spinner */}
-                {isUploadingPhoto && (
-                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white rounded-xl">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-              </button>
-
-              <div className="min-w-0 flex-1">
-                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight truncate">
-                  {student.name}
-                </h2>
-                <div className="flex items-center gap-1.5 flex-wrap text-xs mt-0.5">
-                  {student.nickname && (
-                    <span className="font-medium text-brand-100">
-                      Panggilan: <strong className="text-white font-bold">&quot;{student.nickname}&quot;</strong>
-                    </span>
-                  )}
-                  {student.branch?.name && (
-                    <>
-                      {student.nickname && <span className="text-brand-300/60">•</span>}
-                      <span className="font-semibold text-brand-100">📍 {student.branch.name}</span>
-                    </>
-                  )}
-                </div>
+              {/* Camera Overlay Icon */}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white rounded-xl">
+                <span className="text-base sm:text-lg">📷</span>
+                <span className="text-[9px] font-bold uppercase tracking-tighter">
+                  Ubah
+                </span>
               </div>
+
+              {/* Mobile Camera Indicator Badge */}
+              <div className="absolute bottom-0 right-0 bg-brand-700 text-white w-5 h-5 rounded-tl-lg flex items-center justify-center text-[10px] shadow-xs sm:hidden">
+                📷
+              </div>
+
+              {/* Uploading Spinner */}
+              {isUploadingPhoto && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white rounded-xl">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </button>
+
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight truncate">
+                {student.name}
+              </h2>
+              <div className="flex items-center gap-1.5 flex-wrap text-xs mt-0.5">
+                {student.nickname && (
+                  <span className="font-medium text-brand-100">
+                    Panggilan:{" "}
+                    <strong className="text-white font-bold">
+                      &quot;{student.nickname}&quot;
+                    </strong>
+                  </span>
+                )}
+                {student.branch?.name && (
+                  <>
+                    {student.nickname && (
+                      <span className="text-brand-300/60">•</span>
+                    )}
+                    <span className="font-semibold text-brand-100">
+                      📍 {student.branch.name}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Middle: Info Grid — DOB, Usia, Jadwal */}
@@ -532,10 +574,18 @@ export function ParentDashboardClient({
                     🎂
                   </div>
                   <div className="min-w-0 flex-1">
-                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Tanggal Lahir</span>
-                    <span className="font-bold text-slate-800 leading-snug block" suppressHydrationWarning>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                      Tanggal Lahir
+                    </span>
+                    <span
+                      className="font-bold text-slate-800 leading-snug block"
+                      suppressHydrationWarning
+                    >
                       {dobInfo.formatted}
-                      <span className="text-slate-400 font-semibold ml-1.5 inline-block" suppressHydrationWarning>
+                      <span
+                        className="text-slate-400 font-semibold ml-1.5 inline-block"
+                        suppressHydrationWarning
+                      >
                         ({dobInfo.age} thn)
                       </span>
                     </span>
@@ -562,22 +612,33 @@ export function ParentDashboardClient({
                       </span>
                     </div>
                     <div className="space-y-1.5">
-                      {student.schedule_detail.split(", ").map((item: string, idx: number) => {
-                        const spaceIdx = item.indexOf(" ");
-                        const dayName = spaceIdx !== -1 ? item.substring(0, spaceIdx) : item;
-                        const timeStr = spaceIdx !== -1 ? item.substring(spaceIdx + 1) : "";
-                        return (
-                          <div key={idx} className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                            <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" />
-                            <span className="w-16 shrink-0 text-slate-700">{dayName}</span>
-                            {timeStr && (
-                              <span className="text-[11px] font-bold text-brand-700 bg-brand-50/80 px-2 py-0.5 rounded-md border border-brand-100/80 font-mono tracking-tight">
-                                {timeStr}
+                      {student.schedule_detail
+                        .split(", ")
+                        .map((item: string, idx: number) => {
+                          const spaceIdx = item.indexOf(" ");
+                          const dayName =
+                            spaceIdx !== -1
+                              ? item.substring(0, spaceIdx)
+                              : item;
+                          const timeStr =
+                            spaceIdx !== -1 ? item.substring(spaceIdx + 1) : "";
+                          return (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-2 text-xs font-bold text-slate-800"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" />
+                              <span className="w-16 shrink-0 text-slate-700">
+                                {dayName}
                               </span>
-                            )}
-                          </div>
-                        );
-                      })}
+                              {timeStr && (
+                                <span className="text-[11px] font-bold text-brand-700 bg-brand-50/80 px-2 py-0.5 rounded-md border border-brand-100/80 font-mono tracking-tight">
+                                  {timeStr}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 </button>
@@ -591,11 +652,17 @@ export function ParentDashboardClient({
             <div className="bg-white text-slate-900 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md border border-white flex items-center gap-2">
               <span
                 className="w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ backgroundColor: student.label?.hex_color || '#16a34a' }}
+                style={{
+                  backgroundColor: student.label?.hex_color || "#16a34a",
+                }}
               />
-              <span className="text-slate-500 font-bold text-[11px] uppercase tracking-wider">Level:</span>
+              <span className="text-slate-500 font-bold text-[11px] uppercase tracking-wider">
+                Level:
+              </span>
               <span className="font-black text-brand-700 uppercase tracking-wide">
-                {student.label ? `${student.label.main_level} ${student.label.sub_level}` : "Belum Diatur"}
+                {student.label
+                  ? `${student.label.main_level} ${student.label.sub_level}`
+                  : "Belum Diatur"}
               </span>
             </div>
 
@@ -603,7 +670,11 @@ export function ParentDashboardClient({
             <span className="bg-white text-emerald-700 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md border border-white inline-flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
               <span>
-                {student.status === 'REGISTERED' ? 'Siswa Reguler' : student.status === 'CG' ? 'Coba Gratis' : 'Nonaktif'}
+                {student.status === "REGISTERED"
+                  ? "Siswa Reguler"
+                  : student.status === "CG"
+                    ? "Coba Gratis"
+                    : "Nonaktif"}
               </span>
             </span>
           </div>
@@ -641,11 +712,24 @@ export function ParentDashboardClient({
             <div className="flex items-center gap-2">
               {(student.redeemed_points || 0) > 0 && (
                 <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 shrink-0">
-                  Ditukar: <strong className="text-rose-600 font-extrabold">{student.redeemed_points}</strong>
+                  Ditukar:{" "}
+                  <strong className="text-rose-600 font-extrabold">
+                    {student.redeemed_points}
+                  </strong>
                 </span>
               )}
-              <svg className="w-5 h-5 text-slate-400 group-hover:text-amber-600 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              <svg
+                className="w-5 h-5 text-slate-400 group-hover:text-amber-600 transition-colors shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </div>
           </button>
@@ -655,7 +739,9 @@ export function ParentDashboardClient({
         <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-start gap-3 shadow-xs">
           <div className="text-lg shrink-0">⚠️</div>
           <div className="text-xs text-red-700 dark:text-red-300 leading-relaxed">
-            <strong>Info Poin Kehadiran:</strong> Siswa mendapatkan <strong>+1 Poin</strong> setiap kali masuk kelas. Hadiah dapat ditukarkan langsung melalui Admin/Tutor di tempat les.
+            <strong>Info Poin Kehadiran:</strong> Siswa mendapatkan{" "}
+            <strong>+1 Poin</strong> setiap kali masuk kelas. Hadiah dapat
+            ditukarkan langsung melalui Admin/Tutor di tempat les.
           </div>
         </div>
 
@@ -683,8 +769,18 @@ export function ParentDashboardClient({
               Ubah PIN login Portal Orang Tua. Perubahan langsung berlaku.
             </span>
           </div>
-          <svg className="w-5 h-5 text-slate-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          <svg
+            className="w-5 h-5 text-slate-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 5l7 7-7 7"
+            />
           </svg>
         </button>
 
@@ -739,7 +835,10 @@ export function ParentDashboardClient({
                 <div className="flex justify-end pt-0.5">
                   <button
                     type="button"
-                    onClick={() => { setStartDate(""); setEndDate(""); }}
+                    onClick={() => {
+                      setStartDate("");
+                      setEndDate("");
+                    }}
                     className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 underline cursor-pointer"
                   >
                     Reset Filter Tanggal
@@ -756,18 +855,44 @@ export function ParentDashboardClient({
               >
                 {isDownloadingPdf ? (
                   <>
-                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     <span>Memproses PDF...</span>
                   </>
                 ) : (
                   <>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" x2="12" y1="15" y2="3"/>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" x2="12" y1="15" y2="3" />
                     </svg>
                     <span>Download PDF ({filteredWorksheets.length} Sesi)</span>
                   </>
@@ -780,28 +905,31 @@ export function ParentDashboardClient({
           <div ref={printableRef} className="space-y-6">
             {filteredWorksheets.length === 0 ? (
               <div className="py-12 text-center text-slate-400 italic bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                Tidak ada data laporan perkembangan untuk rentang tanggal yang dipilih.
+                Tidak ada data laporan perkembangan untuk rentang tanggal yang
+                dipilih.
               </div>
             ) : (
               (() => {
                 const grouped = new Map<string, any[]>();
                 filteredWorksheets.forEach((w) => {
-                  const bk = w.bulan_ke ?? 'none';
+                  const bk = w.bulan_ke ?? "none";
                   const key = String(bk);
                   if (!grouped.has(key)) grouped.set(key, []);
                   grouped.get(key)!.push(w);
                 });
-                const sortedGroups = Array.from(grouped.entries()).sort((a, b) => {
-                  const aNum = a[0] === 'none' ? 0 : parseInt(a[0]);
-                  const bNum = b[0] === 'none' ? 0 : parseInt(b[0]);
-                  return aNum - bNum;
-                });
+                const sortedGroups = Array.from(grouped.entries()).sort(
+                  (a, b) => {
+                    const aNum = a[0] === "none" ? 0 : parseInt(a[0]);
+                    const bNum = b[0] === "none" ? 0 : parseInt(b[0]);
+                    return aNum - bNum;
+                  },
+                );
                 return sortedGroups.map(([bk, wsGroup]) => (
                   <StudentWorksheetTable
                     key={`parent_${student.id}_${bk}`}
                     student={{ ...student, photo_url: photoUrl }}
                     worksheets={wsGroup}
-                    bulanKe={bk === 'none' ? null : parseInt(bk, 10)}
+                    bulanKe={bk === "none" ? null : parseInt(bk, 10)}
                     isParentView={true}
                     hideDownloadBtn={true}
                   />
@@ -814,7 +942,10 @@ export function ParentDashboardClient({
 
       {/* Footer */}
       <footer className="mt-16 py-6 border-t border-slate-200/60 dark:border-slate-800 text-center text-xs text-slate-400">
-        <p>© {new Date().getFullYear()} ShiningSun Preschool & Academy. Portal Orang Tua & Rapor Digital.</p>
+        <p>
+          © {new Date().getFullYear()} ShiningSun Preschool & Academy. Portal
+          Orang Tua & Rapor Digital.
+        </p>
       </footer>
 
       {/* Back Button Confirmation Modal */}
@@ -834,7 +965,8 @@ export function ParentDashboardClient({
                 Keluar dari Portal?
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                Apakah Anda yakin ingin keluar dari Portal Orang Tua? Anda perlu memasukkan kode akses kembali untuk masuk.
+                Apakah Anda yakin ingin keluar dari Portal Orang Tua? Anda perlu
+                memasukkan kode akses kembali untuk masuk.
               </p>
             </div>
 
@@ -868,7 +1000,9 @@ export function ParentDashboardClient({
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <span className="text-xl">✂️</span>
-                <h3 className="text-base font-extrabold text-white">Atur & Potong Foto Profil</h3>
+                <h3 className="text-base font-extrabold text-white">
+                  Atur & Potong Foto Profil
+                </h3>
               </div>
               <button
                 type="button"
@@ -881,7 +1015,8 @@ export function ParentDashboardClient({
 
             {/* Instruction */}
             <p className="text-xs text-slate-300 text-center">
-              Geser posisi foto & atur perbesaran (zoom) agar sesuai dalam bingkai lingkaran.
+              Geser posisi foto & atur perbesaran (zoom) agar sesuai dalam
+              bingkai lingkaran.
             </p>
 
             {/* Interactive Preview Container (260x260px) */}
@@ -928,7 +1063,9 @@ export function ParentDashboardClient({
             <div className="space-y-2 bg-slate-800/70 p-3 rounded-2xl border border-slate-700/60">
               <div className="flex items-center justify-between text-xs font-bold text-slate-300">
                 <span>Perbesaran (Zoom):</span>
-                <span className="text-brand-400">{Math.round(cropZoom * 100)}%</span>
+                <span className="text-brand-400">
+                  {Math.round(cropZoom * 100)}%
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -1005,7 +1142,8 @@ export function ParentDashboardClient({
                 Ganti PIN Akses
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                PIN baru akan langsung berlaku untuk login Portal Orang Tua dan juga terupdate di sisi Admin.
+                PIN baru akan langsung berlaku untuk login Portal Orang Tua dan
+                juga terupdate di sisi Admin.
               </p>
             </div>
 
@@ -1026,7 +1164,10 @@ export function ParentDashboardClient({
 
               {/* New PIN */}
               <div>
-                <label htmlFor="newPin" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                <label
+                  htmlFor="newPin"
+                  className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                >
                   PIN Baru
                 </label>
                 <div className="relative">
@@ -1048,13 +1189,39 @@ export function ParentDashboardClient({
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 transition-colors rounded-lg"
                   >
                     {showPinText ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-4 h-4"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                        />
                       </svg>
                     ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-4 h-4"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
                       </svg>
                     )}
                   </button>
@@ -1063,7 +1230,10 @@ export function ParentDashboardClient({
 
               {/* Confirm PIN */}
               <div>
-                <label htmlFor="confirmPin" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                <label
+                  htmlFor="confirmPin"
+                  className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                >
                   Konfirmasi PIN Baru
                 </label>
                 <input
@@ -1125,8 +1295,12 @@ export function ParentDashboardClient({
                   📅
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Jadwal Kelas</h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Jadwal mendatang & riwayat kelas</p>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    Jadwal Kelas
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Jadwal mendatang & riwayat kelas
+                  </p>
                 </div>
               </div>
               <button
@@ -1163,8 +1337,12 @@ export function ParentDashboardClient({
                   ⭐
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Riwayat Poin</h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Rincian kehadiran & penukaran hadiah</p>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    Riwayat Poin
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Rincian kehadiran & penukaran hadiah
+                  </p>
                 </div>
               </div>
               <button
@@ -1213,8 +1391,12 @@ export function ParentDashboardClient({
                   <div className="flex items-center gap-2">
                     <span className="text-base">📋</span>
                     <div>
-                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">Poin Kehadiran</h4>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">+1 poin setiap hadir kelas</p>
+                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
+                        Poin Kehadiran
+                      </h4>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                        +1 poin setiap hadir kelas
+                      </p>
                     </div>
                   </div>
                   <span className="text-xs font-black text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-700">
@@ -1231,40 +1413,71 @@ export function ParentDashboardClient({
                       const attended = worksheets.filter((w) => {
                         const m = (w.materi || "").toLowerCase();
                         const t = (w.title || "").toLowerCase();
-                        const isAbsent = m.includes("tidak hadir") || m.includes("libur") || t.includes("tidak hadir") || t.includes("libur") || t.includes("ijin") || t.includes("sakit");
+                        const isAbsent =
+                          m.includes("tidak hadir") ||
+                          m.includes("libur") ||
+                          t.includes("tidak hadir") ||
+                          t.includes("libur") ||
+                          t.includes("ijin") ||
+                          t.includes("sakit");
                         return !isAbsent;
                       });
                       const absent = worksheets.filter((w) => {
                         const m = (w.materi || "").toLowerCase();
                         const t = (w.title || "").toLowerCase();
-                        return m.includes("tidak hadir") || m.includes("libur") || t.includes("tidak hadir") || t.includes("libur") || t.includes("ijin") || t.includes("sakit");
+                        return (
+                          m.includes("tidak hadir") ||
+                          m.includes("libur") ||
+                          t.includes("tidak hadir") ||
+                          t.includes("libur") ||
+                          t.includes("ijin") ||
+                          t.includes("sakit")
+                        );
                       });
                       return (
                         <>
                           {attended.map((w, idx) => (
-                            <div key={w.id || `att-${idx}`} className="px-4 py-2.5 flex items-center justify-between gap-2">
+                            <div
+                              key={w.id || `att-${idx}`}
+                              className="px-4 py-2.5 flex items-center justify-between gap-2"
+                            >
                               <div className="min-w-0 flex-1">
                                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
                                   {w.materi || w.title || "Kelas"}
                                 </span>
                                 <span className="text-[10px] text-slate-400">
-                                  {w.worksheet_date ? formatShortDate(w.worksheet_date) : w.created_at ? formatShortDate(w.created_at) : "-"}
+                                  {w.worksheet_date
+                                    ? formatShortDate(w.worksheet_date)
+                                    : w.created_at
+                                      ? formatShortDate(w.created_at)
+                                      : "-"}
                                 </span>
                               </div>
-                              <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 shrink-0">+1</span>
+                              <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 shrink-0">
+                                +1
+                              </span>
                             </div>
                           ))}
                           {absent.map((w, idx) => (
-                            <div key={w.id || `abs-${idx}`} className="px-4 py-2.5 flex items-center justify-between gap-2 opacity-50">
+                            <div
+                              key={w.id || `abs-${idx}`}
+                              className="px-4 py-2.5 flex items-center justify-between gap-2 opacity-50"
+                            >
                               <div className="min-w-0 flex-1">
                                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate block">
                                   {w.materi || w.title || "Tidak Hadir"}
                                 </span>
                                 <span className="text-[10px] text-slate-400">
-                                  {w.worksheet_date ? formatShortDate(w.worksheet_date) : w.created_at ? formatShortDate(w.created_at) : "-"}
+                                  {w.worksheet_date
+                                    ? formatShortDate(w.worksheet_date)
+                                    : w.created_at
+                                      ? formatShortDate(w.created_at)
+                                      : "-"}
                                 </span>
                               </div>
-                              <span className="text-[11px] font-bold text-slate-400 shrink-0">0</span>
+                              <span className="text-[11px] font-bold text-slate-400 shrink-0">
+                                0
+                              </span>
                             </div>
                           ))}
                         </>
@@ -1276,16 +1489,25 @@ export function ParentDashboardClient({
 
               {/* ── Section 2: Manual Poin (Bonus) ── */}
               {(() => {
-                const bonusItems = redemptions.filter((r) => (r.points_deducted || 0) < 0);
-                const totalBonus = bonusItems.reduce((sum, r) => sum + Math.abs(r.points_deducted || 0), 0);
+                const bonusItems = redemptions.filter(
+                  (r) => (r.points_deducted || 0) < 0,
+                );
+                const totalBonus = bonusItems.reduce(
+                  (sum, r) => sum + Math.abs(r.points_deducted || 0),
+                  0,
+                );
                 return (
                   <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-sky-50 dark:bg-sky-950/30 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-base">➕</span>
                         <div>
-                          <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">Manual Poin</h4>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400">Bonus poin dari Admin</p>
+                          <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
+                            Manual Poin
+                          </h4>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                            Bonus poin dari Admin
+                          </p>
                         </div>
                       </div>
                       <span className="text-xs font-black text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/40 px-2.5 py-1 rounded-lg border border-sky-200 dark:border-sky-700">
@@ -1301,13 +1523,18 @@ export function ParentDashboardClient({
                         bonusItems.map((item) => {
                           const pointsAmount = Math.abs(item.points_deducted);
                           return (
-                            <div key={item.id} className="px-4 py-2.5 flex items-center justify-between gap-2">
+                            <div
+                              key={item.id}
+                              className="px-4 py-2.5 flex items-center justify-between gap-2"
+                            >
                               <div className="min-w-0 flex-1">
                                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
                                   {item.reward_note || "Bonus Poin Manual"}
                                 </span>
                                 <span className="text-[10px] text-slate-400">
-                                  {item.created_at ? formatShortDate(item.created_at) : "-"}
+                                  {item.created_at
+                                    ? formatShortDate(item.created_at)
+                                    : "-"}
                                 </span>
                               </div>
                               <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800 shrink-0">
@@ -1324,16 +1551,25 @@ export function ParentDashboardClient({
 
               {/* ── Section 3: Penukaran Hadiah ── */}
               {(() => {
-                const redeemItems = redemptions.filter((r) => (r.points_deducted || 0) > 0);
-                const totalRedeemed = redeemItems.reduce((sum, r) => sum + (r.points_deducted || 0), 0);
+                const redeemItems = redemptions.filter(
+                  (r) => (r.points_deducted || 0) > 0,
+                );
+                const totalRedeemed = redeemItems.reduce(
+                  (sum, r) => sum + (r.points_deducted || 0),
+                  0,
+                );
                 return (
                   <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-rose-50 dark:bg-rose-950/30 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-base">🎁</span>
                         <div>
-                          <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">Penukaran Hadiah</h4>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400">Poin ditukar menjadi hadiah</p>
+                          <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
+                            Penukaran Hadiah
+                          </h4>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                            Poin ditukar menjadi hadiah
+                          </p>
                         </div>
                       </div>
                       <span className="text-xs font-black text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-900/40 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-700">
@@ -1349,13 +1585,18 @@ export function ParentDashboardClient({
                         redeemItems.map((item) => {
                           const pointsAmount = Math.abs(item.points_deducted);
                           return (
-                            <div key={item.id} className="px-4 py-2.5 flex items-center justify-between gap-2">
+                            <div
+                              key={item.id}
+                              className="px-4 py-2.5 flex items-center justify-between gap-2"
+                            >
                               <div className="min-w-0 flex-1">
                                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
                                   {item.reward_note || "Penukaran Hadiah"}
                                 </span>
                                 <span className="text-[10px] text-slate-400">
-                                  {item.created_at ? formatShortDate(item.created_at) : "-"}
+                                  {item.created_at
+                                    ? formatShortDate(item.created_at)
+                                    : "-"}
                                 </span>
                               </div>
                               <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800 shrink-0">

@@ -21,11 +21,12 @@ export function StudentScheduleCard({
   upcomingSchedules,
   scheduleHistory,
 }: StudentScheduleCardProps) {
-  const [activeTab, setActiveTab] = useState<"upcoming" | "history">("upcoming");
+  const [activeTab, setActiveTab] = useState<"upcoming" | "history">(
+    "upcoming",
+  );
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm p-4 sm:p-7 space-y-5 sm:space-y-6">
-      
       {/* Header & Tab Selector */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 border-b border-slate-100 dark:border-slate-800 pb-4">
         <div>
@@ -75,8 +76,8 @@ export function StudentScheduleCard({
             </div>
           ) : (
             upcomingSchedules.map((slot) => {
-              const dayName = formatShortDate(slot.date).split(',')[0];
-              const dateNum = new Date(slot.date).getDate() || '';
+              const dayName = formatShortDate(slot.date).split(",")[0];
+              const dateNum = new Date(slot.date).getDate() || "";
 
               return (
                 <div
@@ -104,7 +105,9 @@ export function StudentScheduleCard({
                           ⏰ {formatShortTime(slot.time)} WIB
                         </span>
                         <span className="hidden sm:inline">•</span>
-                        <span className="font-medium text-slate-600 dark:text-slate-300">{formatShortDate(slot.date)}</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                          {formatShortDate(slot.date)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -130,9 +133,12 @@ export function StudentScheduleCard({
             </div>
           ) : (
             scheduleHistory.map((slot, index) => {
-              const slotStr = `${slot.status || ""} ${slot.note || ""} ${slot.class?.name || ""}`.toLowerCase();
+              const slotStr =
+                `${slot.status || ""} ${slot.note || ""} ${slot.class?.name || ""}`.toLowerCase();
               const isSakit = slotStr.includes("sakit");
-              const isIjin = !isSakit && (slotStr.includes("ijin") || slotStr.includes("izin"));
+              const isIjin =
+                !isSakit &&
+                (slotStr.includes("ijin") || slotStr.includes("izin"));
 
               return (
                 <div
@@ -141,16 +147,18 @@ export function StudentScheduleCard({
                     isSakit
                       ? "bg-red-50/80 dark:bg-red-950/40 border-red-300 dark:border-red-800"
                       : isIjin
-                      ? "bg-amber-50/80 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800"
-                      : "bg-slate-50/60 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800/60"
+                        ? "bg-amber-50/80 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800"
+                        : "bg-slate-50/60 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800/60"
                   }`}
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs ${
-                      isSakit
-                        ? "bg-red-200/80 dark:bg-red-900/60 text-red-800 dark:text-red-200"
-                        : "bg-slate-200/60 dark:bg-slate-800 text-slate-500"
-                    }`}>
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs ${
+                        isSakit
+                          ? "bg-red-200/80 dark:bg-red-900/60 text-red-800 dark:text-red-200"
+                          : "bg-slate-200/60 dark:bg-slate-800 text-slate-500"
+                      }`}
+                    >
                       #{index + 1}
                     </div>
 
@@ -159,18 +167,21 @@ export function StudentScheduleCard({
                         {slot.class?.name || "Kelas"}
                       </h4>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {formatFullIndonesianDate(slot.date)} • {formatShortTime(slot.time)} WIB
+                        {formatFullIndonesianDate(slot.date)} •{" "}
+                        {formatShortTime(slot.time)} WIB
                       </p>
                     </div>
                   </div>
 
-                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold shrink-0 ${
-                    isSakit
-                      ? "bg-red-600 text-white shadow-2xs"
-                      : isIjin
-                      ? "bg-amber-500 text-white shadow-2xs"
-                      : "bg-slate-200/70 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                  }`}>
+                  <span
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold shrink-0 ${
+                      isSakit
+                        ? "bg-red-600 text-white shadow-2xs"
+                        : isIjin
+                          ? "bg-amber-500 text-white shadow-2xs"
+                          : "bg-slate-200/70 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                    }`}
+                  >
                     {isSakit ? "🤒 Sakit" : isIjin ? "📩 Ijin" : "Selesai"}
                   </span>
                 </div>
