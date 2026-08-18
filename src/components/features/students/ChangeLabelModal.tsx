@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -116,7 +117,7 @@ export function ChangeLabelModal({
     }
   };
 
-  return (
+  return createPortal(
     <>
       {isSubmitting && <LoadingSpinner usePortal={true} />}
       {isLoadingWorksheetData && <LoadingSpinner usePortal={true} />}
@@ -339,6 +340,7 @@ export function ChangeLabelModal({
           }}
         />
       )}
-    </>
+    </>,
+    document.body,
   );
 }

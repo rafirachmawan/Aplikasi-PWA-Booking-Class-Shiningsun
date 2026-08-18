@@ -8,6 +8,7 @@ import {
   getClasses,
   getActiveBranchName,
   getStudentRulesDocuments,
+  getCurriculumDocuments,
 } from "@/lib/actions";
 import { TodaySchedule } from "@/components/features/dashboard/TodaySchedule";
 import { QuickAccessLinks } from "@/components/features/dashboard/QuickAccessLinks";
@@ -16,6 +17,7 @@ import { BranchSelector } from "@/components/features/auth/BranchSelector";
 import { DashboardStatsPanel } from "@/components/features/dashboard/DashboardStatsPanel";
 import { NotificationPermissionBanner } from "@/components/features/notifications/NotificationPermissionBanner";
 import { StudentRulesSection } from "@/components/features/dashboard/StudentRulesSection";
+import { CurriculumSection } from "@/components/features/dashboard/CurriculumSection";
 import { formatFullIndonesianDate } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +50,7 @@ export default async function DashboardPage() {
 
   // Dokumen Upload File PDF (global, tidak tergantung cabang)
   const rulesDocuments = await getStudentRulesDocuments();
+  const curriculumDocuments = await getCurriculumDocuments();
 
   const stats = [
     {
@@ -229,6 +232,12 @@ export default async function DashboardPage() {
 
       {/* Upload File PDF — selalu di paling bawah dashboard */}
       <StudentRulesSection initialDocuments={rulesDocuments} />
+
+      {/* Kurikulum — di bawah Informasi Bimba; upload khusus superadmin, lihat untuk admin */}
+      <CurriculumSection
+        initialDocuments={curriculumDocuments}
+        isSuperadmin={isSuperadmin}
+      />
     </div>
   );
 }

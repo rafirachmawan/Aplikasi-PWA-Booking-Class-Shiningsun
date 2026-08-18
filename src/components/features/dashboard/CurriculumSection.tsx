@@ -3,29 +3,30 @@
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  saveStudentRulesDocument,
-  deleteStudentRulesDocument,
-  renameStudentRulesDocument,
+  saveCurriculumDocument,
+  deleteCurriculumDocument,
+  renameCurriculumDocument,
 } from "@/lib/actions";
 import { getGDrivePreviewLink } from "@/lib/gdriveUtils";
 import { formatShortDate } from "@/lib/dateUtils";
 
-interface RulesDocument {
+interface CurriculumDocument {
   id: string;
   file_url: string;
   file_name: string;
   uploaded_at: string;
 }
 
-interface StudentRulesSectionProps {
-  initialDocuments: RulesDocument[];
+interface CurriculumSectionProps {
+  initialDocuments: CurriculumDocument[];
+  isSuperadmin: boolean;
 }
 
 const MAX_PDF_SIZE_MB = 15;
 
 function friendlyError(msg: string): string {
   if (msg.includes("Could not find the table")) {
-    return "Tabel student_rules_documents belum dibuat. Jalankan file supabase/student_rules_documents.sql di Supabase SQL Editor terlebih dahulu.";
+    return "Tabel curriculum_documents belum dibuat. Jalankan file supabase/curriculum_documents.sql di Supabase SQL Editor terlebih dahulu.";
   }
   return msg;
 }
@@ -34,10 +35,11 @@ function withPdfSuffix(name: string): string {
   return name.toLowerCase().endsWith(".pdf") ? name : `${name}.pdf`;
 }
 
-export function StudentRulesSection({
+export function CurriculumSection({
   initialDocuments,
-}: StudentRulesSectionProps) {
-  const [docs, setDocs] = useState<RulesDocument[]>(initialDocuments);
+  isSuperadmin,
+}: CurriculumSectionProps) {
+  const [docs, setDocs] = useState<CurriculumDocument[]>(initialDocuments);
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{
@@ -52,7 +54,9 @@ export function StudentRulesSection({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   // Rename modal state
-  const [renameTarget, setRenameTarget] = useState<RulesDocument | null>(null);
+  const [renameTarget, setRenameTarget] = useState<CurriculumDocument | null>(
+    null,
+  );
   const [renameValue, setRenameValue] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
 
@@ -109,7 +113,7 @@ export function StudentRulesSection({
         throw new Error(data.error || "Gagal mengunggah ke Google Drive");
       }
 
-      const saved = await saveStudentRulesDocument(data.gdriveLink, fileName);
+      const saved = await saveCurriculumDocument(data.gdriveLink, fileName);
       if (!saved.success || !saved.data) {
         throw new Error(saved.error || "Gagal menyimpan dokumen");
       }
@@ -120,7 +124,7 @@ export function StudentRulesSection({
       setPendingFile(null);
       setMessage({
         type: "success",
-        text: `Dokumen "${fileName}" berhasil diunggah dan sudah tampil di Portal Orang Tua.`,
+        text: `Dokumen "${fileName}" berhasil diunggah.`,
       });
     } catch (err) {
       setMessage({
@@ -134,10 +138,10 @@ export function StudentRulesSection({
     }
   };
 
-  const handleDelete = async (doc: RulesDocument) => {
+  const handleDelete = async (doc: CurriculumDocument) => {
     if (
       !window.confirm(
-        `Hapus dokumen "${doc.file_name}"? Dokumen tidak akan tampil lagi di Portal Orang Tua.`,
+        `Hapus dokumen "${doc.file_name}"? Dokumen tidak akan tampil lagi di daftar kurikulum.`,
       )
     )
       return;
@@ -145,7 +149,7 @@ export function StudentRulesSection({
     setDeletingId(doc.id);
     setMessage(null);
     try {
-      const res = await deleteStudentRulesDocument(doc.id);
+      const res = await deleteCurriculumDocument(doc.id);
       if (!res.success) {
         throw new Error(res.error || "Gagal menghapus dokumen");
       }
@@ -166,7 +170,7 @@ export function StudentRulesSection({
     }
   };
 
-  const openRenameModal = (doc: RulesDocument) => {
+  const openRenameModal = (doc: CurriculumDocument) => {
     setRenameTarget(doc);
     setRenameValue(doc.file_name.replace(/\.pdf$/i, ""));
   };
@@ -183,7 +187,7 @@ export function StudentRulesSection({
     setIsRenaming(true);
     setMessage(null);
     try {
-      const res = await renameStudentRulesDocument(renameTarget.id, fileName);
+      const res = await renameCurriculumDocument(renameTarget.id, fileName);
       if (!res.success || !res.data) {
         throw new Error(res.error || "Gagal mengubah nama dokumen");
       }
@@ -209,12 +213,64 @@ export function StudentRulesSection({
     }
   };
 
+  // Satu tombol upload — selalu dirender di dalam kotak dashed
+  const uploadButton = (
+    <button
+      type="button"
+      onClick={openUploadModal}
+      disabled={isUploading}
+      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-md shadow-emerald-500/20 cursor-pointer"
+    >
+      {isUploading ? (
+        <>
+          <svg
+            className="animate-spin h-3.5 w-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+          Mengunggah...
+        </>
+      ) : (
+        <>
+          <svg
+            className="h-3.5 w-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+            />
+          </svg>
+          Unggah PDF
+        </>
+      )}
+    </button>
+  );
+
   return (
     <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
       <div className="p-4 sm:p-6 space-y-4">
         {/* Header */}
         <div className="flex items-start gap-3">
-          <div className="rounded-xl p-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
+          <div className="rounded-xl p-2.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
             <svg
               className="h-5 w-5"
               fill="none"
@@ -225,68 +281,19 @@ export function StudentRulesSection({
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
               />
             </svg>
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              Informasi Bimba
+              Kurikulum
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Unggah dokumen PDF (bisa lebih dari satu). Dokumen terbaru
-              otomatis tampil di Portal Orang Tua — nama bisa diganti kapan
-              saja.
+              Dokumen PDF kurikulum (bisa lebih dari satu). Upload khusus
+              Superadmin — admin dapat melihat dokumen.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={openUploadModal}
-            disabled={isUploading}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors shadow-md shadow-brand-500/20 cursor-pointer shrink-0"
-          >
-            {isUploading ? (
-              <>
-                <svg
-                  className="animate-spin h-3.5 w-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                Mengunggah...
-              </>
-            ) : (
-              <>
-                <svg
-                  className="h-3.5 w-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                  />
-                </svg>
-                Unggah PDF
-              </>
-            )}
-          </button>
         </div>
 
         {/* Status Message */}
@@ -311,7 +318,7 @@ export function StudentRulesSection({
                 className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3.5 sm:p-4 space-y-3"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="rounded-lg p-2 bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 shrink-0">
+                  <div className="rounded-lg p-2 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
                     <svg
                       className="h-5 w-5"
                       fill="none"
@@ -341,7 +348,7 @@ export function StudentRulesSection({
                     href={getGDrivePreviewLink(doc.file_url)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 hover:bg-brand-100 dark:hover:bg-brand-500/20 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors"
                   >
                     <svg
                       className="h-3.5 w-3.5"
@@ -363,98 +370,65 @@ export function StudentRulesSection({
                     </svg>
                     Lihat PDF
                   </a>
-                  <button
-                    type="button"
-                    onClick={() => openRenameModal(doc)}
-                    disabled={isRenaming}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
-                  >
-                    <svg
-                      className="h-3.5 w-3.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                      />
-                    </svg>
-                    Rename
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(doc)}
-                    disabled={deletingId === doc.id}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 disabled:opacity-50 transition-colors cursor-pointer"
-                  >
-                    {deletingId === doc.id ? "Menghapus..." : "Hapus"}
-                  </button>
+                  {isSuperadmin && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => openRenameModal(doc)}
+                        disabled={isRenaming}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
+                      >
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                        Rename
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(doc)}
+                        disabled={deletingId === doc.id}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 disabled:opacity-50 transition-colors cursor-pointer"
+                      >
+                        {deletingId === doc.id ? "Menghapus..." : "Hapus"}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
+            {isSuperadmin && (
+              <div className="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 flex flex-col items-center justify-center text-center gap-2.5">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Tambahkan dokumen kurikulum lain (PDF).
+                </p>
+                {uploadButton}
+              </div>
+            )}
           </div>
         ) : (
           <div className="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-6 flex flex-col items-center justify-center text-center gap-3">
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Belum ada dokumen PDF. Unggah file PDF untuk menampilkannya di
-              Portal Orang Tua.
+              {isSuperadmin
+                ? "Belum ada dokumen kurikulum. Unggah file PDF untuk membagikannya ke admin."
+                : "Belum ada dokumen kurikulum. Hubungi Superadmin untuk mengunggah dokumen."}
             </p>
-            <button
-              type="button"
-              onClick={openUploadModal}
-              disabled={isUploading}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors shadow-md shadow-brand-500/20 cursor-pointer"
-            >
-              {isUploading ? (
-                <>
-                  <svg
-                    className="animate-spin h-3.5 w-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
-                  Mengunggah...
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="h-3.5 w-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                    />
-                  </svg>
-                  Unggah PDF
-                </>
-              )}
-            </button>
+            {isSuperadmin && uploadButton}
           </div>
         )}
 
-        {/* Upload Modal: isi nama dulu, pilih file, lalu unggah */}
-        {isUploadModalOpen &&
+        {/* Upload modal (superadmin only): isi nama dulu, pilih file, lalu unggah */}
+        {isSuperadmin &&
+          isUploadModalOpen &&
           createPortal(
             <div
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
@@ -465,7 +439,7 @@ export function StudentRulesSection({
               onClick={(e) => e.stopPropagation()}
             >
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                Unggah File PDF
+                Unggah File PDF Kurikulum
               </h4>
 
               <div className="space-y-1.5">
@@ -476,9 +450,9 @@ export function StudentRulesSection({
                   type="text"
                   value={uploadName}
                   onChange={(e) => setUploadName(e.target.value)}
-                  placeholder="Cth: Informasi Bimba Agustus 2026"
+                  placeholder="Cth: Kurikulum Bimba 2026"
                   disabled={isUploading}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs placeholder:text-slate-400"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-xs placeholder:text-slate-400"
                 />
               </div>
 
@@ -492,8 +466,8 @@ export function StudentRulesSection({
                   disabled={isUploading}
                   className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 ${
                     pendingFile
-                      ? "border-brand-300 dark:border-brand-700 bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300"
-                      : "border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 hover:border-brand-400 hover:text-brand-600"
+                      ? "border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                      : "border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 hover:border-emerald-400 hover:text-emerald-600"
                   }`}
                 >
                   <span className="truncate">
@@ -517,7 +491,7 @@ export function StudentRulesSection({
                   type="button"
                   onClick={handleUpload}
                   disabled={isUploading || !uploadName.trim() || !pendingFile}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-colors cursor-pointer"
                 >
                   {isUploading ? "Mengunggah..." : "Unggah"}
                 </button>
@@ -527,8 +501,9 @@ export function StudentRulesSection({
             document.body,
           )}
 
-        {/* Rename Modal */}
-        {renameTarget &&
+        {/* Rename modal (superadmin only) */}
+        {isSuperadmin &&
+          renameTarget &&
           createPortal(
             <div
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
@@ -551,7 +526,7 @@ export function StudentRulesSection({
                   value={renameValue}
                   onChange={(e) => setRenameValue(e.target.value)}
                   disabled={isRenaming}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-xs"
                 />
               </div>
 
@@ -568,7 +543,7 @@ export function StudentRulesSection({
                   type="button"
                   onClick={handleRename}
                   disabled={isRenaming || !renameValue.trim()}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-colors cursor-pointer"
                 >
                   {isRenaming ? "Menyimpan..." : "Simpan"}
                 </button>

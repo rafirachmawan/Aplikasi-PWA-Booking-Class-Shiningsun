@@ -514,7 +514,7 @@ export function Sidebar({
               >
                 <Icons.settings className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <span className="flex-1 text-left truncate">
-                  Password Akses Modul
+                  Password Tambah Point
                 </span>
                 <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 dark:bg-amber-800 dark:text-amber-100 shrink-0">
                   🔑 PIN

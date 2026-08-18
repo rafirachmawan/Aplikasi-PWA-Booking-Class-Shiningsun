@@ -3020,3 +3020,162 @@ export async function deleteStudentRulesDocument(id: string) {
     };
   }
 }
+
+/**
+ * Mengambil daftar dokumen Kurikulum (superadmin & branch admin)
+ */
+export async function getCurriculumDocuments() {
+  try {
+    const supabaseServer = await createClient();
+    const { data, error } = await supabaseServer
+      .from("curriculum_documents")
+      .select("id, file_url, file_name, uploaded_at")
+      .order("uploaded_at", { ascending: false });
+
+    if (error) {
+      console.warn(
+        "Notice fetching curriculum documents:",
+        error.message || error,
+      );
+      return [];
+    }
+    return data || [];
+  } catch (e: any) {
+    console.warn("Exception fetching curriculum documents:", e?.message || e);
+    return [];
+  }
+}
+
+/**
+ * Menyimpan dokumen Kurikulum baru — khusus SUPERADMIN
+ */
+export async function saveCurriculumDocument(
+  fileUrl: string,
+  fileName: string,
+) {
+  try {
+    const role = await getCurrentUserRole();
+    if (role !== "SUPERADMIN") {
+      return {
+        success: false,
+        error: "Hanya Superadmin yang dapat mengunggah dokumen kurikulum.",
+      };
+    }
+
+    const supabaseServer = await createClient();
+    const {
+      data: { user },
+    } = await supabaseServer.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        error: "Sesi admin tidak ditemukan. Silakan login ulang.",
+      };
+    }
+
+    const { data, error } = await supabaseServer
+      .from("curriculum_documents")
+      .insert({
+        file_url: fileUrl,
+        file_name: fileName,
+        uploaded_by: user.id,
+      })
+      .select("id, file_url, file_name, uploaded_at")
+      .single();
+
+    if (error) {
+      console.error("Error saving curriculum document:", error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true, data };
+  } catch (e: any) {
+    console.error("Error saving curriculum document:", e);
+    return {
+      success: false,
+      error: e.message || "Gagal menyimpan dokumen kurikulum",
+    };
+  }
+}
+
+/**
+ * Mengubah nama dokumen Kurikulum — khusus SUPERADMIN
+ */
+export async function renameCurriculumDocument(id: string, newName: string) {
+  try {
+    const role = await getCurrentUserRole();
+    if (role !== "SUPERADMIN") {
+      return {
+        success: false,
+        error: "Hanya Superadmin yang dapat mengubah nama dokumen kurikulum.",
+      };
+    }
+
+    const supabaseServer = await createClient();
+    const { data, error } = await supabaseServer
+      .from("curriculum_documents")
+      .update({ file_name: newName })
+      .eq("id", id)
+      .select("id, file_url, file_name, uploaded_at")
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error renaming curriculum document:", error);
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return {
+        success: false,
+        error:
+          "Rename gagal: policy UPDATE belum ada di Supabase. Jalankan file supabase/curriculum_documents.sql di Supabase SQL Editor.",
+      };
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true, data };
+  } catch (e: any) {
+    console.error("Error renaming curriculum document:", e);
+    return {
+      success: false,
+      error: e.message || "Gagal mengubah nama dokumen kurikulum",
+    };
+  }
+}
+
+/**
+ * Menghapus dokumen Kurikulum — khusus SUPERADMIN
+ */
+export async function deleteCurriculumDocument(id: string) {
+  try {
+    const role = await getCurrentUserRole();
+    if (role !== "SUPERADMIN") {
+      return {
+        success: false,
+        error: "Hanya Superadmin yang dapat menghapus dokumen kurikulum.",
+      };
+    }
+
+    const supabaseServer = await createClient();
+    const { error } = await supabaseServer
+      .from("curriculum_documents")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error deleting curriculum document:", error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (e: any) {
+    console.error("Error deleting curriculum document:", e);
+    return {
+      success: false,
+      error: e.message || "Gagal menghapus dokumen kurikulum",
+    };
+  }
+}

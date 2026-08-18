@@ -165,7 +165,7 @@ export function QuickAccessLinks({
     ...(isSuperadmin
       ? [
           {
-            name: "Password Akses Modul",
+            name: "Password Tambah Point",
             description: "Atur PIN/password modul terkunci",
             href: "#superadmin-lock-settings",
             icon: Icons.shield,

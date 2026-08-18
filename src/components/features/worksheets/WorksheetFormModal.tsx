@@ -856,6 +856,8 @@ export function WorksheetFormModal({
   const rumahSearchInputRef = useRef<HTMLInputElement>(null);
   const [afirmasiSearch, setAfirmasiSearch] = useState("");
   const afirmasiSearchInputRef = useRef<HTMLInputElement>(null);
+  const [alasanSearch, setAlasanSearch] = useState("");
+  const alasanSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Date Input (calendar picker only, defaults to today)
   const [worksheetDateInput, setWorksheetDateInput] = useState(
@@ -896,6 +898,10 @@ export function WorksheetFormModal({
       setTimeout(() => {
         afirmasiSearchInputRef.current?.focus();
       }, 50);
+    } else if (openDropdown === "alasan") {
+      setTimeout(() => {
+        alasanSearchInputRef.current?.focus();
+      }, 50);
     } else {
       setTeacherSearch("");
       setMateriSearch("");
@@ -904,6 +910,7 @@ export function WorksheetFormModal({
       setPemahamanSearch("");
       setRumahSearch("");
       setAfirmasiSearch("");
+      setAlasanSearch("");
     }
   }, [openDropdown]);
 
@@ -950,6 +957,14 @@ export function WorksheetFormModal({
       o.label.toLowerCase().includes(q),
     );
   }, [defaultAfirmasiOptions, afirmasiSearch]);
+
+  const filteredReasonOptions = useMemo(() => {
+    if (!alasanSearch.trim()) return currentReasonTemplates;
+    const q = alasanSearch.toLowerCase();
+    return currentReasonTemplates.filter((t) =>
+      t.title.toLowerCase().includes(q),
+    );
+  }, [currentReasonTemplates, alasanSearch]);
 
   const filteredAvailableLevels = useMemo(() => {
     if (!levelSearch.trim()) return availableLevels;
@@ -1284,7 +1299,7 @@ export function WorksheetFormModal({
     <div className="fixed inset-0 z-100 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-900/70 animate-in fade-in duration-200"
         onClick={() => !isSubmitting && onClose()}
       />
 
@@ -1325,7 +1340,7 @@ export function WorksheetFormModal({
         <form
           ref={formRef}
           onSubmit={handleSubmit}
-          className="p-3.5 sm:p-6 space-y-4 sm:space-y-5 max-h-[82vh] sm:max-h-[75vh] overflow-y-auto custom-scrollbar"
+          className="p-3.5 sm:p-6 space-y-4 sm:space-y-5 max-h-[82vh] sm:max-h-[75vh] overflow-y-auto overscroll-contain custom-scrollbar"
         >
           {errorMsg && (
             <div className="p-3 rounded-xl bg-red-50 text-red-700 text-xs font-semibold border border-red-200/60 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50">
@@ -1834,18 +1849,76 @@ export function WorksheetFormModal({
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                   💬 Alasan Ketidakhadiran (Template Penilaian)
                 </label>
-                <select
-                  value={absenceReason}
-                  onChange={(e) => handleAbsenceReasonChange(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-sky-400 focus:outline-none shadow-xs"
-                >
-                  <option value="">-- Pilih Alasan --</option>
-                  {currentReasonTemplates.map((t) => (
-                    <option key={t.id} value={t.title}>
-                      {t.title}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    disabled={currentReasonTemplates.length === 0}
+                    onClick={() =>
+                      setOpenDropdown(openDropdown === "alasan" ? null : "alasan")
+                    }
+                    className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-800/80 bg-amber-50/50 dark:bg-slate-800 text-amber-950 dark:text-amber-200 text-xs font-semibold shadow-xs hover:border-amber-400 cursor-pointer text-left disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <span className="truncate">
+                      {absenceReason || "-- Pilih Alasan --"}
+                    </span>
+                    <Icons.chevronDown
+                      className={`w-3.5 h-3.5 text-amber-600 shrink-0 transition-transform duration-200 ${openDropdown === "alasan" ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {openDropdown === "alasan" && (
+                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-amber-200 dark:border-amber-800 p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
+                      {/* Search input for Alasan */}
+                      <div className="p-1">
+                        <input
+                          ref={alasanSearchInputRef}
+                          type="text"
+                          value={alasanSearch}
+                          onChange={(e) => setAlasanSearch(e.target.value)}
+                          placeholder="🔍 Cari opsi alasan..."
+                          className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium"
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                        {filteredReasonOptions.length === 0 ? (
+                          <div className="py-4 text-center text-xs text-slate-400 italic">
+                            Tidak ada opsi alasan yang cocok.
+                          </div>
+                        ) : (
+                          filteredReasonOptions.map((t) => {
+                            const isSel = absenceReason === t.title;
+                            return (
+                              <button
+                                key={t.id}
+                                type="button"
+                                onClick={() => {
+                                  handleAbsenceReasonChange(t.title);
+                                  setOpenDropdown(null);
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
+                                  isSel
+                                    ? "bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-extrabold"
+                                    : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                                }`}
+                              >
+                                <span className="wrap-break-word whitespace-normal leading-snug">
+                                  {t.title}
+                                </span>
+                                {isSel && (
+                                  <span className="text-amber-600 shrink-0 text-xs font-bold mt-0.5">
+                                    ✓
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 {currentReasonTemplates.length === 0 && (
                   <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 block">
                     Belum ada opsi alasan untuk kategori ini — tambahkan di menu
@@ -2843,26 +2916,26 @@ export function WorksheetFormModal({
 
           {/* ── SECTION 5: Live Preview Tampilan Portal Orang Tua ── */}
           <div className="rounded-2xl border-2 border-indigo-200 dark:border-indigo-900/80 bg-indigo-50/40 dark:bg-indigo-950/20 p-3 sm:p-4 space-y-2 sm:space-y-3">
-            {/* Scrollable container for preview on mobile to prevent ngeblok */}
-            <div className="max-h-[65vh] sm:max-h-none overflow-y-auto custom-scrollbar rounded-xl border border-indigo-200/50 dark:border-indigo-900/50 px-2 sm:px-3 pb-2 sm:pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-[11px] font-extrabold shrink-0">
-                    5
-                  </span>
-                  <div>
-                    <span className="text-xs font-extrabold text-indigo-950 dark:text-indigo-200 uppercase tracking-wider block">
+            {/* Preview mengalir natural — scroll ditangani form induk agar scroll touch lancar */}
+            <div className="rounded-xl border border-indigo-200/50 dark:border-indigo-900/50 px-2 sm:px-3 pt-2 sm:pt-3 pb-2 sm:pb-3 space-y-2">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-[11px] font-extrabold shrink-0">
+                      5
+                    </span>
+                    <span className="text-xs font-extrabold text-indigo-950 dark:text-indigo-200 uppercase tracking-wider">
                       👁️ Preview Tampilan Portal Orang Tua
                     </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                      Tampilan persis yang akan dilihat oleh Orang Tua (
-                      {activeStudentName})
-                    </span>
                   </div>
+                  <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/60 px-2.5 py-1 rounded-full border border-indigo-200 dark:border-indigo-800 shrink-0">
+                    Live Preview
+                  </span>
                 </div>
-                <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/60 px-2.5 py-1 rounded-full border border-indigo-200 dark:border-indigo-800 shrink-0">
-                  Live Preview
-                </span>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium pl-8">
+                  Tampilan persis yang akan dilihat oleh Orang Tua (
+                  {activeStudentName})
+                </p>
               </div>
 
               {/* Container Matching DailyWorksheetSessionItem */}
