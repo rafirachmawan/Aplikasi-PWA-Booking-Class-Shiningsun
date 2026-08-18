@@ -55,6 +55,29 @@ export function SchedulingClientWrapper({
   const [studentSearchQuery, setStudentSearchQuery] = useState("");
   const studentDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Custom dropdown Tipe Kelas (per baris jadwal rutin)
+  const [openClassIdx, setOpenClassIdx] = useState<number | null>(null);
+  const [classTypeSearch, setClassTypeSearch] = useState("");
+  const classTypeSearchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (openClassIdx !== null) {
+      setClassTypeSearch("");
+    }
+  }, [openClassIdx]);
+
+  // Custom dropdowns tab Manual (Pilih Jam & Pilih Kelas)
+  const [openManualDD, setOpenManualDD] = useState<null | "jam" | "kelas">(
+    null,
+  );
+  const [manualDDSearch, setManualDDSearch] = useState("");
+
+  useEffect(() => {
+    if (openManualDD !== null) {
+      setManualDDSearch("");
+    }
+  }, [openManualDD]);
+
   // Click outside for student dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent | TouchEvent) {
@@ -857,6 +880,7 @@ export function SchedulingClientWrapper({
                           </div>
                           <DatePickerInput
                             required
+                            showManualInput={false}
                             value={schedule.startDate}
                             onChange={(e) =>
                               updateAutoSchedule(
@@ -958,6 +982,7 @@ export function SchedulingClientWrapper({
                             </label>
                           </div>
                           <div className="relative">
+                            {/* Hidden native select — hanya untuk semantik form (required) */}
                             <select
                               required
                               value={schedule.classId}
@@ -968,50 +993,183 @@ export function SchedulingClientWrapper({
                                   e.target.value,
                                 )
                               }
-                              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
+                              tabIndex={-1}
+                              aria-hidden="true"
+                              className="absolute opacity-0 pointer-events-none w-px h-px"
                             >
-                              <option value="" disabled>
-                                -- Pilih Tipe Kelas --
-                              </option>
-                              {classes.map((c) => {
-                                const rem =
-                                  schedule.startDate && schedule.time
-                                    ? getRemainingSlots(
-                                        schedule.startDate,
-                                        schedule.time,
-                                        c.id,
-                                      )
-                                    : null;
-                                const labelText =
-                                  rem !== null
-                                    ? `${c.name} (Sisa ${rem}/${c.max_quota})`
-                                    : `${c.name} (Max: ${c.max_quota})`;
-                                return (
-                                  <option
-                                    key={c.id}
-                                    value={c.id}
-                                    disabled={rem !== null && rem <= 0}
-                                  >
-                                    {labelText}
-                                  </option>
-                                );
-                              })}
+                              <option value="" />
+                              {classes.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name}
+                                </option>
+                              ))}
                             </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+
+                            {/* Trigger Button */}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setOpenClassIdx(
+                                  openClassIdx === index ? null : index,
+                                )
+                              }
+                              className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-slate-900 pl-3.5 pr-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white shadow-2xs transition-all cursor-pointer h-11 ${
+                                openClassIdx === index
+                                  ? "border-brand-500 ring-2 ring-brand-500/30"
+                                  : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                              }`}
+                            >
+                              {schedule.classId ? (
+                                <span className="truncate text-left">
+                                  {classes.find((c) => c.id === schedule.classId)
+                                    ?.name || "-- Pilih Tipe Kelas --"}
+                                </span>
+                              ) : (
+                                <span className="truncate text-left text-slate-400 font-medium">
+                                  -- Pilih Tipe Kelas --
+                                </span>
+                              )}
                               <svg
-                                className="h-4 w-4 text-slate-400"
-                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
                                 viewBox="0 0 24 24"
+                                fill="none"
                                 stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className={`text-slate-400 transition-transform duration-200 shrink-0 ${
+                                  openClassIdx === index
+                                    ? "rotate-180 text-brand-500"
+                                    : ""
+                                }`}
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2.5"
-                                  d="M19 9l-7 7-7-7"
-                                />
+                                <path d="m6 9 6 6 6-6" />
                               </svg>
-                            </div>
+                            </button>
+
+                            {/* Floating Menu Popover */}
+                            {openClassIdx === index && (
+                              <>
+                                {/* Invisible Backdrop (tanpa blur/gelap — halaman tetap normal) */}
+                                <div
+                                  className="fixed inset-0 z-40"
+                                  onClick={() => setOpenClassIdx(null)}
+                                />
+
+                                {/* Menu Popover Container */}
+                                <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                                  {/* Search */}
+                                  <div className="p-1">
+                                    <input
+                                      ref={classTypeSearchRef}
+                                      type="text"
+                                      value={classTypeSearch}
+                                      onChange={(e) =>
+                                        setClassTypeSearch(e.target.value)
+                                      }
+                                      placeholder="Cari tipe kelas..."
+                                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
+                                    />
+                                  </div>
+
+                                  <div className="max-h-52 overflow-y-auto space-y-1">
+                                    {classes
+                                      .filter((c) =>
+                                        classTypeSearch.trim()
+                                          ? c.name
+                                              .toLowerCase()
+                                              .includes(
+                                                classTypeSearch
+                                                  .trim()
+                                                  .toLowerCase(),
+                                              )
+                                          : true,
+                                      )
+                                      .map((c) => {
+                                        const rem =
+                                          schedule.startDate && schedule.time
+                                            ? getRemainingSlots(
+                                                schedule.startDate,
+                                                schedule.time,
+                                                c.id,
+                                              )
+                                            : null;
+                                        const isFull =
+                                          rem !== null && rem <= 0;
+                                        const isSelected =
+                                          c.id === schedule.classId;
+                                        return (
+                                          <button
+                                            key={c.id}
+                                            type="button"
+                                            disabled={isFull}
+                                            onClick={() => {
+                                              updateAutoSchedule(
+                                                index,
+                                                "classId",
+                                                c.id,
+                                              );
+                                              setOpenClassIdx(null);
+                                            }}
+                                            className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                                              isFull
+                                                ? "opacity-50 cursor-not-allowed"
+                                                : "cursor-pointer"
+                                            } ${
+                                              isSelected
+                                                ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40"
+                                                : isFull
+                                                  ? "bg-slate-50 dark:bg-slate-800/40"
+                                                  : "hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                                            }`}
+                                          >
+                                            <span
+                                              className={`truncate text-left font-semibold ${
+                                                isSelected
+                                                  ? "text-brand-600 dark:text-brand-400"
+                                                  : "text-slate-900 dark:text-white"
+                                              }`}
+                                            >
+                                              {c.name}
+                                            </span>
+                                            <span
+                                              className={`shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                                                isFull
+                                                  ? "bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300"
+                                                  : "bg-brand-100 text-brand-700 dark:bg-brand-950/80 dark:text-brand-300"
+                                              }`}
+                                            >
+                                              {isFull
+                                                ? "Penuh"
+                                                : rem !== null
+                                                  ? `Sisa ${rem}/${c.max_quota}`
+                                                  : `Max: ${c.max_quota}`}
+                                            </span>
+                                          </button>
+                                        );
+                                      })}
+
+                                    {classes.every(
+                                      (c) =>
+                                        classTypeSearch.trim() &&
+                                        !c.name
+                                          .toLowerCase()
+                                          .includes(
+                                            classTypeSearch
+                                              .trim()
+                                              .toLowerCase(),
+                                          ),
+                                    ) && (
+                                      <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500 text-center font-medium">
+                                        Tipe kelas tidak ditemukan.
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
 
@@ -1095,6 +1253,7 @@ export function SchedulingClientWrapper({
                     })()}
                     <DatePickerInput
                       required
+                      showManualInput={false}
                       value={manualDate}
                       onChange={(e) => setManualDate(e.target.value)}
                     />
@@ -1119,52 +1278,170 @@ export function SchedulingClientWrapper({
                         })()}
                     </label>
                     <div className="relative">
+                      {/* Hidden native select — hanya untuk semantik form (required) */}
                       <select
                         required
                         value={manualTime}
                         onChange={(e) => setManualTime(e.target.value)}
-                        className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        className="absolute opacity-0 pointer-events-none w-px h-px"
                       >
-                        <option value="" disabled>
-                          -- Pilih Jam --
-                        </option>
-                        {timeSlots.map((t) => {
-                          const rem = manualClassId
-                            ? getRemainingSlots(manualDate, t, manualClassId)
-                            : null;
-                          const isFull = rem !== null && rem <= 0;
-                          const endHour = String(
-                            parseInt(t.split(":")[0], 10) + 1,
-                          ).padStart(2, "0");
-                          const labelText =
-                            rem !== null
-                              ? isFull
-                                ? `${t} - ${endHour}:00 (Penuh)`
-                                : `${t} - ${endHour}:00 (Sisa ${rem})`
-                              : `${t} - ${endHour}:00`;
-
-                          return (
-                            <option key={t} value={t} disabled={isFull}>
-                              {labelText}
-                            </option>
-                          );
-                        })}
+                        <option value="" />
+                        {timeSlots.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
                       </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+
+                      {/* Trigger Button */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOpenManualDD(openManualDD === "jam" ? null : "jam")
+                        }
+                        className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-slate-900 pl-3.5 pr-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white shadow-2xs transition-all cursor-pointer h-11 ${
+                          openManualDD === "jam"
+                            ? "border-brand-500 ring-2 ring-brand-500/30"
+                            : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {manualTime ? (
+                          <span className="truncate text-left">
+                            {manualTime} -{""}
+                            {
+                              String(
+                                parseInt(manualTime.split(":")[0], 10) + 1,
+                              ).padStart(2, "0")
+                            }
+                            :00
+                          </span>
+                        ) : (
+                          <span className="truncate text-left text-slate-400 font-medium">
+                            -- Pilih Jam --
+                          </span>
+                        )}
                         <svg
-                          className="h-4 w-4 text-slate-400"
-                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
                           viewBox="0 0 24 24"
+                          fill="none"
                           stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className={`text-slate-400 transition-transform duration-200 shrink-0 ${
+                            openManualDD === "jam"
+                              ? "rotate-180 text-brand-500"
+                              : ""
+                          }`}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2.5"
-                            d="M19 9l-7 7-7-7"
-                          />
+                          <path d="m6 9 6 6 6-6" />
                         </svg>
-                      </div>
+                      </button>
+
+                      {/* Floating Menu Popover */}
+                      {openManualDD === "jam" && (
+                        <>
+                          {/* Invisible Backdrop (tanpa blur/gelap) */}
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setOpenManualDD(null)}
+                          />
+
+                          <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="p-1">
+                              <input
+                                type="text"
+                                value={manualDDSearch}
+                                onChange={(e) =>
+                                  setManualDDSearch(e.target.value)
+                                }
+                                placeholder="Cari jam..."
+                                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
+                              />
+                            </div>
+
+                            <div className="max-h-52 overflow-y-auto space-y-1">
+                              {timeSlots
+                                .filter((t) =>
+                                  manualDDSearch.trim()
+                                    ? t.includes(manualDDSearch.trim())
+                                    : true,
+                                )
+                                .map((t) => {
+                                  const rem = manualClassId
+                                    ? getRemainingSlots(
+                                        manualDate,
+                                        t,
+                                        manualClassId,
+                                      )
+                                    : null;
+                                  const isFull = rem !== null && rem <= 0;
+                                  const endHour = String(
+                                    parseInt(t.split(":")[0], 10) + 1,
+                                  ).padStart(2, "0");
+                                  const isSelected = manualTime === t;
+                                  return (
+                                    <button
+                                      key={t}
+                                      type="button"
+                                      disabled={isFull}
+                                      onClick={() => {
+                                        setManualTime(t);
+                                        setOpenManualDD(null);
+                                      }}
+                                      className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                                        isFull
+                                          ? "opacity-50 cursor-not-allowed"
+                                          : "cursor-pointer"
+                                      } ${
+                                        isSelected
+                                          ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40"
+                                          : isFull
+                                            ? "bg-slate-50 dark:bg-slate-800/40"
+                                            : "hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                                      }`}
+                                    >
+                                      <span
+                                        className={`truncate text-left font-semibold ${
+                                          isSelected
+                                            ? "text-brand-600 dark:text-brand-400"
+                                            : "text-slate-900 dark:text-white"
+                                        }`}
+                                      >
+                                        {t} - {endHour}:00
+                                      </span>
+                                      {rem !== null && (
+                                        <span
+                                          className={`shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                                            isFull
+                                              ? "bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300"
+                                              : "bg-brand-100 text-brand-700 dark:bg-brand-950/80 dark:text-brand-300"
+                                          }`}
+                                        >
+                                          {isFull ? "Penuh" : `Sisa ${rem}`}
+                                        </span>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+
+                              {timeSlots.every(
+                                (t) =>
+                                  manualDDSearch.trim() &&
+                                  !t.includes(manualDDSearch.trim()),
+                              ) && (
+                                <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500 text-center font-medium">
+                                  Jam tidak ditemukan.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div>
@@ -1172,50 +1449,175 @@ export function SchedulingClientWrapper({
                       🏫 Pilih Kelas
                     </label>
                     <div className="relative">
+                      {/* Hidden native select — hanya untuk semantik form (required) */}
                       <select
                         required
                         value={manualClassId}
                         onChange={(e) => setManualClassId(e.target.value)}
-                        className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        className="absolute opacity-0 pointer-events-none w-px h-px"
                       >
-                        <option value="" disabled>
-                          -- Pilih Tipe Kelas --
-                        </option>
-                        {classes.map((c) => {
-                          const rem =
-                            manualDate && manualTime
-                              ? getRemainingSlots(manualDate, manualTime, c.id)
-                              : null;
-                          const labelText =
-                            rem !== null
-                              ? `${c.name} (Sisa ${rem}/${c.max_quota})`
-                              : `${c.name} (Max: ${c.max_quota})`;
-                          return (
-                            <option
-                              key={c.id}
-                              value={c.id}
-                              disabled={rem !== null && rem <= 0}
-                            >
-                              {labelText}
-                            </option>
-                          );
-                        })}
+                        <option value="" />
+                        {classes.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
                       </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+
+                      {/* Trigger Button */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOpenManualDD(
+                            openManualDD === "kelas" ? null : "kelas",
+                          )
+                        }
+                        className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-slate-900 pl-3.5 pr-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white shadow-2xs transition-all cursor-pointer h-11 ${
+                          openManualDD === "kelas"
+                            ? "border-brand-500 ring-2 ring-brand-500/30"
+                            : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {manualClassId ? (
+                          <span className="truncate text-left">
+                            {classes.find((c) => c.id === manualClassId)
+                              ?.name || "-- Pilih Tipe Kelas --"}
+                          </span>
+                        ) : (
+                          <span className="truncate text-left text-slate-400 font-medium">
+                            -- Pilih Tipe Kelas --
+                          </span>
+                        )}
                         <svg
-                          className="h-4 w-4 text-slate-400"
-                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
                           viewBox="0 0 24 24"
+                          fill="none"
                           stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className={`text-slate-400 transition-transform duration-200 shrink-0 ${
+                            openManualDD === "kelas"
+                              ? "rotate-180 text-brand-500"
+                              : ""
+                          }`}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2.5"
-                            d="M19 9l-7 7-7-7"
-                          />
+                          <path d="m6 9 6 6 6-6" />
                         </svg>
-                      </div>
+                      </button>
+
+                      {/* Floating Menu Popover */}
+                      {openManualDD === "kelas" && (
+                        <>
+                          {/* Invisible Backdrop (tanpa blur/gelap) */}
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setOpenManualDD(null)}
+                          />
+
+                          <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="p-1">
+                              <input
+                                type="text"
+                                value={manualDDSearch}
+                                onChange={(e) =>
+                                  setManualDDSearch(e.target.value)
+                                }
+                                placeholder="Cari tipe kelas..."
+                                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
+                              />
+                            </div>
+
+                            <div className="max-h-52 overflow-y-auto space-y-1">
+                              {classes
+                                .filter((c) =>
+                                  manualDDSearch.trim()
+                                    ? c.name
+                                        .toLowerCase()
+                                        .includes(
+                                          manualDDSearch.trim().toLowerCase(),
+                                        )
+                                    : true,
+                                )
+                                .map((c) => {
+                                  const rem =
+                                    manualDate && manualTime
+                                      ? getRemainingSlots(
+                                          manualDate,
+                                          manualTime,
+                                          c.id,
+                                        )
+                                      : null;
+                                  const isFull = rem !== null && rem <= 0;
+                                  const isSelected = c.id === manualClassId;
+                                  return (
+                                    <button
+                                      key={c.id}
+                                      type="button"
+                                      disabled={isFull}
+                                      onClick={() => {
+                                        setManualClassId(c.id);
+                                        setOpenManualDD(null);
+                                      }}
+                                      className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                                        isFull
+                                          ? "opacity-50 cursor-not-allowed"
+                                          : "cursor-pointer"
+                                      } ${
+                                        isSelected
+                                          ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40"
+                                          : isFull
+                                            ? "bg-slate-50 dark:bg-slate-800/40"
+                                            : "hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                                      }`}
+                                    >
+                                      <span
+                                        className={`truncate text-left font-semibold ${
+                                          isSelected
+                                            ? "text-brand-600 dark:text-brand-400"
+                                            : "text-slate-900 dark:text-white"
+                                        }`}
+                                      >
+                                        {c.name}
+                                      </span>
+                                      <span
+                                        className={`shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                                          isFull
+                                            ? "bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300"
+                                            : "bg-brand-100 text-brand-700 dark:bg-brand-950/80 dark:text-brand-300"
+                                        }`}
+                                      >
+                                        {isFull
+                                          ? "Penuh"
+                                          : rem !== null
+                                            ? `Sisa ${rem}/${c.max_quota}`
+                                            : `Max: ${c.max_quota}`}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+
+                              {classes.every(
+                                (c) =>
+                                  manualDDSearch.trim() &&
+                                  !c.name
+                                    .toLowerCase()
+                                    .includes(
+                                      manualDDSearch.trim().toLowerCase(),
+                                    ),
+                              ) && (
+                                <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500 text-center font-medium">
+                                  Tipe kelas tidak ditemukan.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

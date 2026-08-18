@@ -17,8 +17,7 @@ type CategoryType =
   | "rumah"
   | "afirmasi"
   | "ijin"
-  | "sakit"
-  | "libur";
+  | "sakit";
 
 const CATEGORIES: {
   id: CategoryType;
@@ -83,14 +82,6 @@ const CATEGORIES: {
     desc: "Opsi alasan ketidakhadiran karena Sakit (dropdown di laporan)",
     placeholderTitle: "Sakit demam, istirahat di rumah",
     placeholderDesc: "Opsi alasan sakit untuk Miss",
-  },
-  {
-    id: "libur",
-    label: "Alasan Libur",
-    icon: "🚩",
-    desc: "Opsi deskripsi libur tanggal merah / hari besar (dropdown di laporan)",
-    placeholderTitle: "Kelas diliburkan karena tanggal merah",
-    placeholderDesc: "Opsi deskripsi libur untuk Miss",
   },
 ];
 

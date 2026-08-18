@@ -25,6 +25,7 @@ export function StudentClientWrapper({
   const [selectedLabelId, setSelectedLabelId] = useState("");
   const [isLevelOpen, setIsLevelOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [levelSearch, setLevelSearch] = useState("");
 
   const [selectedGender, setSelectedGender] = useState("");
   const [isGenderOpen, setIsGenderOpen] = useState(false);
@@ -377,20 +378,31 @@ export function StudentClientWrapper({
 
         {/* Grid Filters: Level, Gender & Status Dropdowns */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Level Dropdown */}
-          <div className="relative">
-            <select
-              value={selectedLabelId}
-              onChange={(e) => setSelectedLabelId(e.target.value)}
-              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
+          {/* Level Dropdown (Custom) */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => {
+                if (!isLevelOpen) setLevelSearch("");
+                setIsLevelOpen(!isLevelOpen);
+              }}
+              className={`w-full flex items-center rounded-xl border bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs transition-all cursor-pointer h-11 text-left ${
+                isLevelOpen
+                  ? "border-brand-500 ring-2 ring-brand-500/20"
+                  : "border-slate-200 dark:border-slate-700"
+              }`}
             >
-              <option value="">✨ Semua Level / Tingkat</option>
-              {labels.map((label) => (
-                <option key={label.id} value={label.id}>
-                  {label.main_level} - {label.sub_level}
-                </option>
-              ))}
-            </select>
+              <span className="truncate">
+                {selectedLabelId
+                  ? (() => {
+                      const l = labels.find((x) => x.id === selectedLabelId);
+                      return l
+                        ? `${l.main_level} - ${l.sub_level}`
+                        : "✨ Semua Level / Tingkat";
+                    })()
+                  : "✨ Semua Level / Tingkat"}
+              </span>
+            </button>
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
               <Icons.settings
                 className="h-4 w-4 text-brand-500"
@@ -399,7 +411,9 @@ export function StudentClientWrapper({
             </div>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
               <svg
-                className="h-4 w-4 text-slate-400"
+                className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
+                  isLevelOpen ? "rotate-180 text-brand-500" : ""
+                }`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -412,6 +426,125 @@ export function StudentClientWrapper({
                 />
               </svg>
             </div>
+
+            {/* Floating Menu Popover */}
+            {isLevelOpen && (
+              <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                <div className="p-1">
+                  <input
+                    type="text"
+                    value={levelSearch}
+                    onChange={(e) => setLevelSearch(e.target.value)}
+                    placeholder="Cari level..."
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="max-h-52 overflow-y-auto space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedLabelId("");
+                      setIsLevelOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                      selectedLabelId === ""
+                        ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40"
+                        : "hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                    }`}
+                  >
+                    <span
+                      className={`truncate text-left font-semibold ${
+                        selectedLabelId === ""
+                          ? "text-brand-600 dark:text-brand-400"
+                          : "text-slate-900 dark:text-white"
+                      }`}
+                    >
+                      ✨ Semua Level / Tingkat
+                    </span>
+                    {selectedLabelId === "" && (
+                      <svg
+                        className="h-4 w-4 text-brand-600 dark:text-brand-400 shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+
+                  {labels
+                    .filter((l) =>
+                      levelSearch.trim()
+                        ? `${l.main_level} - ${l.sub_level}`
+                            .toLowerCase()
+                            .includes(levelSearch.trim().toLowerCase())
+                        : true,
+                    )
+                    .map((label) => {
+                      const isSelected = label.id === selectedLabelId;
+                      return (
+                        <button
+                          key={label.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedLabelId(label.id);
+                            setIsLevelOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40"
+                              : "hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                          }`}
+                        >
+                          <span
+                            className={`truncate text-left font-semibold ${
+                              isSelected
+                                ? "text-brand-600 dark:text-brand-400"
+                                : "text-slate-900 dark:text-white"
+                            }`}
+                          >
+                            {label.main_level} - {label.sub_level}
+                          </span>
+                          {isSelected && (
+                            <svg
+                              className="h-4 w-4 text-brand-600 dark:text-brand-400 shrink-0"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
+
+                  {labels.every(
+                    (l) =>
+                      levelSearch.trim() &&
+                      !`${l.main_level} - ${l.sub_level}`
+                        .toLowerCase()
+                        .includes(levelSearch.trim().toLowerCase()),
+                  ) && (
+                    <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500 text-center font-medium">
+                      Level tidak ditemukan.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Gender Dropdown */}

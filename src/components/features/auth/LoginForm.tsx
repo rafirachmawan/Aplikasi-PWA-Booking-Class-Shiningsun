@@ -525,24 +525,26 @@ export function LoginForm() {
             </div>
           </a>
 
-          {/* Footer: Install PWA + Reset Cache */}
-          <div className="flex flex-col items-center gap-1.5 pt-0.5">
-            <InstallPWAButton />
-            {resetMsg && (
-              <p className="text-[11px] text-center text-brand-600 dark:text-brand-400 font-medium animate-pulse py-0.5">
-                {resetMsg}
-              </p>
-            )}
-            <button
-              type="button"
-              onClick={handleResetPWA}
-              disabled={isSubmitting}
-              className="text-[10px] sm:text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline text-center transition-colors py-0.5 disabled:opacity-50 cursor-pointer"
-            >
-              Terjadi masalah di HP ini? Klik untuk Reset Cache Aplikasi
-            </button>
-          </div>
         </form>
+      </div>
+
+      {/* Footer di bawah kartu: Install PWA + Reset Cache —
+          dipisah agar kartu login tetap ringkas & fokus */}
+      <div className="flex flex-col items-center gap-1.5">
+        <InstallPWAButton />
+        {resetMsg && (
+          <p className="text-[11px] text-center text-brand-400 lg:text-brand-600 dark:text-brand-400 font-medium animate-pulse py-0.5">
+            {resetMsg}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={handleResetPWA}
+          disabled={isSubmitting}
+          className="lg:hidden text-[10px] sm:text-[11px] text-slate-400 hover:text-slate-300 dark:hover:text-slate-300 underline text-center transition-colors py-0.5 disabled:opacity-50 cursor-pointer"
+        >
+          Terjadi masalah di HP ini? Klik untuk Reset Cache Aplikasi
+        </button>
       </div>
     </div>
   );

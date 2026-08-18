@@ -216,37 +216,39 @@ export function StudentRulesSection({
     <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
       <div className="p-4 sm:p-6 space-y-4">
         {/* Header */}
-        <div className="flex items-start gap-3">
-          <div className="rounded-xl p-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              Informasi Bimba
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Unggah dokumen PDF (bisa lebih dari satu). Dokumen terbaru
-              otomatis tampil di Portal Orang Tua — nama bisa diganti kapan
-              saja.
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
+            <div className="rounded-xl p-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                Informasi Bimba
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Unggah dokumen PDF (bisa lebih dari satu). Dokumen terbaru
+                otomatis tampil di Portal Orang Tua — nama bisa diganti kapan
+                saja.
+              </p>
+            </div>
           </div>
           <button
             type="button"
             onClick={openUploadModal}
             disabled={isUploading}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors shadow-md shadow-brand-500/20 cursor-pointer shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3.5 py-2.5 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors shadow-md shadow-brand-500/20 cursor-pointer shrink-0"
           >
             {isUploading ? (
               <>

@@ -86,10 +86,10 @@ export function ResetDataSection({
             </svg>
           </div>
           <div>
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
               <span>Bersihkan Cache & Perbarui Versi</span>
               {updateAvailable && (
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 animate-pulse">
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 animate-pulse whitespace-nowrap">
                   UPDATE TERSEDIA
                 </span>
               )}
@@ -158,9 +158,9 @@ export function ResetDataSection({
               <Icons.trash className="w-5.5 h-5.5" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
                 <span>Reset Semua Data Sistem</span>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300">
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300 whitespace-nowrap">
                   KHUSUS SUPERADMIN
                 </span>
               </h4>

@@ -126,7 +126,7 @@ export default function LoginPage() {
           </div>
 
           {/* Desktop Heading */}
-          <div className="hidden lg:block mb-8 animate-in fade-in slide-in-from-right-8 duration-700 delay-200">
+          <div className="hidden lg:block mb-6 text-center animate-in fade-in slide-in-from-right-8 duration-700 delay-200">
             <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Selamat Datang
             </h2>

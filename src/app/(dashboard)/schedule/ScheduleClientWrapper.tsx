@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ScheduleManagerDrawer } from "@/components/features/schedule/ScheduleManagerDrawer";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -83,6 +83,11 @@ export function ScheduleClientWrapper({
   const [isDownloading, setIsDownloading] = useState(false);
   const [weekIndex, setWeekIndex] = useState(0);
 
+  // Custom dropdown Filter Kelas (pola sama dengan dropdown lain di aplikasi)
+  const [isClassFilterOpen, setIsClassFilterOpen] = useState(false);
+  const [classFilterSearch, setClassFilterSearch] = useState("");
+  const classFilterSearchRef = useRef<HTMLInputElement>(null);
+
   const weeks = useMemo(
     () => getWeeksOfMonth(currentYear, currentMonth),
     [currentYear, currentMonth],
@@ -103,6 +108,12 @@ export function ScheduleClientWrapper({
       setWeekIndex(0);
     }
   }, [currentMonth, currentYear, weeks]);
+
+  useEffect(() => {
+    if (isClassFilterOpen) {
+      setClassFilterSearch("");
+    }
+  }, [isClassFilterOpen]);
 
   const navigateMonth = (direction: "prev" | "next") => {
     setIsLoadingMonth(true);
@@ -132,6 +143,14 @@ export function ScheduleClientWrapper({
   const selectedClassName = filterClassId
     ? classes.find((c) => c.id === filterClassId)?.name
     : "Semua Kelas";
+
+  const filteredFilterClasses = classFilterSearch.trim()
+    ? classes.filter((c) =>
+        c.name
+          .toLowerCase()
+          .includes(classFilterSearch.trim().toLowerCase()),
+      )
+    : classes;
 
   const handleDownload = async () => {
     // Store all the original styles to restore after capture
@@ -328,33 +347,112 @@ export function ScheduleClientWrapper({
             Filter Kelas
           </label>
           <div className="relative w-full">
-            <select
-              value={filterClassId}
-              onChange={(e) => setFilterClassId(e.target.value)}
-              className="appearance-none w-full bg-slate-50 dark:bg-slate-800 pl-4 pr-10 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer h-10.5"
+            {/* Trigger Button */}
+            <button
+              type="button"
+              onClick={() => setIsClassFilterOpen(!isClassFilterOpen)}
+              className={`w-full flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 pl-4 pr-3 py-2 rounded-lg border text-sm font-medium text-slate-700 dark:text-slate-300 shadow-2xs transition-all cursor-pointer h-10.5 ${
+                isClassFilterOpen
+                  ? "border-brand-500 ring-2 ring-brand-500/30"
+                  : "border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/60"
+              }`}
             >
-              <option value="">-- Semua Kelas --</option>
-              {classes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+              <span className="truncate text-left">
+                {filterClassId
+                  ? classes.find((c) => c.id === filterClassId)?.name ||
+                    "-- Semua Kelas --"
+                  : "-- Semua Kelas --"}
+              </span>
               <svg
-                className="h-4 w-4 text-slate-400"
-                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
+                fill="none"
                 stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`text-slate-400 transition-transform duration-200 shrink-0 ${
+                  isClassFilterOpen ? "rotate-180 text-brand-500" : ""
+                }`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2.5"
-                  d="M19 9l-7 7-7-7"
-                />
+                <path d="m6 9 6 6 6-6" />
               </svg>
-            </div>
+            </button>
+
+            {/* Floating Menu Popover */}
+            {isClassFilterOpen && (
+              <>
+                {/* Invisible Backdrop (tanpa blur/gelap — halaman tetap normal) */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsClassFilterOpen(false)}
+                />
+
+                {/* Menu Popover Container */}
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                  {/* Search */}
+                  <div className="p-1">
+                    <input
+                      ref={classFilterSearchRef}
+                      type="text"
+                      value={classFilterSearch}
+                      onChange={(e) => setClassFilterSearch(e.target.value)}
+                      placeholder="Cari kelas..."
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="max-h-52 overflow-y-auto space-y-1">
+                    {filteredFilterClasses.map((c) => {
+                      const isSelected = c.id === filterClassId;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setFilterClassId(c.id);
+                            setIsClassFilterOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 font-bold border border-brand-200/60 dark:border-brand-800/40"
+                              : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                          }`}
+                        >
+                          <span className="truncate text-left font-semibold text-slate-900 dark:text-white">
+                            {c.name}
+                          </span>
+                          {isSelected && (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="text-brand-600 dark:text-brand-400 shrink-0 ml-2"
+                            >
+                              <path d="M20 6 9 17l-5-5" />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
+
+                    {filteredFilterClasses.length === 0 && (
+                      <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500 text-center font-medium">
+                        Kelas tidak ditemukan.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

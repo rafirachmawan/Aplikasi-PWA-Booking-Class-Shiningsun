@@ -158,8 +158,8 @@ export default function ParentLoginPage() {
         </div>
 
         <div className="w-full max-w-105 mx-auto my-auto py-2 sm:py-4">
-          {/* Header - Brand & Title */}
-          <div className="flex flex-col items-center lg:items-start text-center lg:text-left mb-6">
+          {/* Header - Brand & Title (centered di semua ukuran agar simetris) */}
+          <div className="flex flex-col items-center text-center mb-6">
             {/* Logo Icon Box (Mobile Only) */}
             <div className="h-16 w-16 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-2xl border border-white/20 mb-3.5 lg:hidden">
               <Image
@@ -411,21 +411,21 @@ export default function ParentLoginPage() {
 
             {/* Mobile Feature Highlights Inside Card */}
             <div className="lg:hidden border-t border-slate-100 dark:border-slate-800/80 pt-4 grid grid-cols-3 gap-2 text-center">
-              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50">
-                <span className="text-base block mb-0.5">📅</span>
-                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">
+              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 flex flex-col items-center justify-center gap-1">
+                <span className="text-base leading-none">📅</span>
+                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">
                   Jadwal Kelas
                 </span>
               </div>
-              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50">
-                <span className="text-base block mb-0.5">📄</span>
-                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">
+              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 flex flex-col items-center justify-center gap-1">
+                <span className="text-base leading-none">📄</span>
+                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">
                   Laporan Perkembangan
                 </span>
               </div>
-              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50">
-                <span className="text-base block mb-0.5">🔑</span>
-                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">
+              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 flex flex-col items-center justify-center gap-1">
+                <span className="text-base leading-none">🔑</span>
+                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">
                   Akses PIN
                 </span>
               </div>
@@ -433,9 +433,9 @@ export default function ParentLoginPage() {
           </div>
 
           {/* Footer Install PWA Button & Copyright */}
-          <div className="text-center pt-3 space-y-4">
+          <div className="text-center space-y-2">
             <InstallPWAButton />
-            <p className="text-white/60 lg:text-slate-400 dark:lg:text-slate-500 text-[11px] font-medium tracking-wide pt-1 pb-1">
+            <p className="text-white/60 lg:text-slate-400 dark:lg:text-slate-500 text-[11px] font-medium tracking-wide pb-1">
               &copy; 2026 ShiningSun. All rights reserved.
             </p>
           </div>
