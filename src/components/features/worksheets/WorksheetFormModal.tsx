@@ -1493,7 +1493,8 @@ export function WorksheetFormModal({
                   </span>
                 )}
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {/* Opsi Libur dihapus — saat tanggal merah sistem mengisi otomatis */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
                   {
                     id: "HADIR",
@@ -1515,13 +1516,6 @@ export function WorksheetFormModal({
                     icon: "🤒",
                     color:
                       "peer-checked:bg-rose-50 peer-checked:border-rose-500 peer-checked:text-rose-700 dark:peer-checked:bg-rose-950/50 dark:peer-checked:text-rose-300",
-                  },
-                  {
-                    id: "LIBUR_HARI_BESAR",
-                    label: "Libur",
-                    icon: "🚩",
-                    color:
-                      "peer-checked:bg-indigo-50 peer-checked:border-indigo-500 peer-checked:text-indigo-700 dark:peer-checked:bg-indigo-950/50 dark:peer-checked:text-indigo-300",
                   },
                 ].map((st) => (
                   <label key={st.id} className="relative cursor-pointer">

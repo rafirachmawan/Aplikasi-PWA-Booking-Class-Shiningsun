@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { sendWebPushNotification } from "@/lib/push";
 import { formatShortDate } from "@/lib/dateUtils";
+import { getHolidayName } from "@/lib/holidays";
 
 type CGSessionItem = {
   studentName: string;
@@ -9,6 +10,120 @@ type CGSessionItem = {
   date: string;
   time: string;
 };
+
+// ============================================
+// Otomatis isi Laporan Perkembangan "Libur" saat tanggal merah.
+// Semua siswa terjadwal di tanggal tersebut (tidak nonaktif) yang belum
+// punya worksheet di tanggal itu akan dibuatkan entri Libur dengan nama
+// hari libur (mis. "Maulid Nabi Muhammad SAW"). Idempoten: siswa yang
+// sudah punya worksheet di tanggal itu dilewati.
+// ============================================
+async function autoFillHolidayWorksheets(todayStr: string, holiday: string) {
+  // 1. Siswa yang terjadwal di tanggal tersebut (kecuali INACTIVE)
+  const { data: slots, error: slotErr } = await supabase
+    .from("schedule_slots")
+    .select(
+      `
+      id, branch_id,
+      bookings:schedule_student(
+        student_id,
+        student:students(id, branch_id, status)
+      )
+    `,
+    )
+    .eq("date", todayStr);
+
+  if (slotErr || !slots) {
+    return { created: 0, error: slotErr?.message };
+  }
+
+  const scheduled = new Map<string, { branchId: string | null }>();
+  for (const slot of slots as any[]) {
+    for (const b of slot.bookings || []) {
+      const st = b.student;
+      if (!st || st.status === "INACTIVE") continue;
+      if (!scheduled.has(st.id)) {
+        scheduled.set(st.id, {
+          branchId: slot.branch_id || st.branch_id || null,
+        });
+      }
+    }
+  }
+  if (scheduled.size === 0) return { created: 0 };
+
+  const studentIds = [...scheduled.keys()];
+
+  // 2. Siswa yang sudah punya worksheet di tanggal ini → lewati
+  const { data: existing } = await supabase
+    .from("student_worksheets")
+    .select("student_id")
+    .eq("worksheet_date", todayStr)
+    .in("student_id", studentIds);
+  const done = new Set((existing || []).map((w: any) => w.student_id));
+
+  const toFill = studentIds.filter((id) => !done.has(id));
+  if (toFill.length === 0) return { created: 0 };
+
+  // 3. Riwayat bulan_ke untuk perhitungan otomatis (pola sama seperti form)
+  const { data: history } = await supabase
+    .from("student_worksheets")
+    .select("student_id, worksheet_date, bulan_ke")
+    .in("student_id", toFill)
+    .not("bulan_ke", "is", null);
+
+  const historyByStudent = new Map<string, any[]>();
+  for (const w of history || []) {
+    if (!w.worksheet_date) continue;
+    if (!historyByStudent.has(w.student_id)) historyByStudent.set(w.student_id, []);
+    historyByStudent.get(w.student_id)!.push(w);
+  }
+
+  const calcBulanKe = (sid: string): number => {
+    const list = historyByStudent.get(sid) || [];
+    if (list.length === 0) return 1;
+    list.sort((a, b) => String(a.worksheet_date).localeCompare(String(b.worksheet_date)));
+    const earliest = list[0];
+    const em = String(earliest.worksheet_date).match(/^(\d{4})-(\d{2})/);
+    const cm = todayStr.match(/^(\d{4})-(\d{2})/);
+    const start = parseInt(earliest.bulan_ke, 10) || 1;
+    if (!em || !cm) return start;
+    const diff =
+      (parseInt(cm[1], 10) - parseInt(em[1], 10)) * 12 +
+      (parseInt(cm[2], 10) - parseInt(em[2], 10));
+    return Math.max(1, start + diff);
+  };
+
+  // 4. Alasan libur dari Template Penilaian (kategori 'libur'), jika ada
+  const { data: liburTemplates } = await supabase
+    .from("assessment_templates")
+    .select("title")
+    .eq("category", "libur")
+    .limit(1);
+  const reason = (liburTemplates && liburTemplates[0]?.title) || "";
+
+  // 5. Buat entri Libur otomatis
+  const rows = toFill.map((id) => ({
+    student_id: id,
+    branch_id: scheduled.get(id)!.branchId,
+    title: `Libur Hari Besar (${holiday})`,
+    description: "",
+    worksheet_date: todayStr,
+    gdrive_link: "",
+    materi: `Libur Hari Besar (${holiday})`,
+    kegiatan: `- ${reason || `Kelas Diliburkan (${holiday})`}`,
+    hasil_belajar: `- ${reason || `Libur ${holiday}`}`,
+    catatan_guru: "Kelas diliburkan dalam rangka memperingati Libur Hari Besar.",
+    rekomendasi_rumah: "Selamat berlibur bersama keluarga!",
+    ttd_guru: "Otomatis (Tanggal Merah)",
+    bulan_ke: calcBulanKe(id),
+  }));
+
+  const { error: insErr } = await supabase
+    .from("student_worksheets")
+    .insert(rows);
+  if (insErr) return { created: 0, error: insErr.message };
+  return { created: rows.length };
+}
 
 export async function GET(req: Request) {
   // Authorization check (Verify CRON_SECRET or allow GET in dev)
@@ -28,6 +143,16 @@ export async function GET(req: Request) {
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     const dayName = DAYS[now.getDay()];
+
+    // 1b. Tanggal hari ini dalam WIB + isi otomatis worksheet Libur
+    // jika tanggal merah (sebelum early-return agar tetap berjalan)
+    const wibNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+    const todayWibStr = `${wibNow.getUTCFullYear()}-${String(wibNow.getUTCMonth() + 1).padStart(2, "0")}-${String(wibNow.getUTCDate()).padStart(2, "0")}`;
+    const holidayName = getHolidayName(todayWibStr);
+    let autoLibur: { created: number; error?: string } = { created: 0 };
+    if (holidayName) {
+      autoLibur = await autoFillHolidayWorksheets(todayWibStr, holidayName);
+    }
 
     // 2. Fetch all CG students and their scheduled slots
     const { data: cgStudents, error: cgErr } = await supabase
@@ -87,6 +212,9 @@ export async function GET(req: Request) {
       return NextResponse.json({
         message: "Cron finished. No device subscriptions registered.",
         today: todayStr,
+        holiday: holidayName,
+        autoLiburCreated: autoLibur.created,
+        autoLiburError: autoLibur.error || null,
         totalCGToday: allTodaySessions.length,
         totalCGUpcoming: allUpcomingSessions.length,
       });
@@ -158,6 +286,9 @@ export async function GET(req: Request) {
       success: true,
       today: todayStr,
       dayName,
+      holiday: holidayName,
+      autoLiburCreated: autoLibur.created,
+      autoLiburError: autoLibur.error || null,
       totalCGToday: allTodaySessions.length,
       totalCGUpcoming: allUpcomingSessions.length,
       totalSubscribers: subscriptions.length,
