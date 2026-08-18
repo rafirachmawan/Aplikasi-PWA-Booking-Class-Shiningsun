@@ -10,7 +10,15 @@ import {
 } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
-type CategoryType = "materi" | "kegiatan" | "pemahaman" | "rumah" | "afirmasi";
+type CategoryType =
+  | "materi"
+  | "kegiatan"
+  | "pemahaman"
+  | "rumah"
+  | "afirmasi"
+  | "ijin"
+  | "sakit"
+  | "libur";
 
 const CATEGORIES: {
   id: CategoryType;
@@ -59,6 +67,30 @@ const CATEGORIES: {
     desc: "Kalimat motivasi hangat & catatan perkembangan",
     placeholderTitle: "Untuk Opsi Pemahaman 1 (Masih bingung)",
     placeholderDesc: "Tetap semangat ya, sedikit demi sedikit pasti bisa",
+  },
+  {
+    id: "ijin",
+    label: "Alasan Ijin",
+    icon: "📩",
+    desc: "Opsi alasan ketidakhadiran karena Ijin (dropdown di laporan)",
+    placeholderTitle: "Ijin acara keluarga",
+    placeholderDesc: "Opsi alasan ijin untuk Miss",
+  },
+  {
+    id: "sakit",
+    label: "Alasan Sakit",
+    icon: "🤒",
+    desc: "Opsi alasan ketidakhadiran karena Sakit (dropdown di laporan)",
+    placeholderTitle: "Sakit demam, istirahat di rumah",
+    placeholderDesc: "Opsi alasan sakit untuk Miss",
+  },
+  {
+    id: "libur",
+    label: "Alasan Libur",
+    icon: "🚩",
+    desc: "Opsi deskripsi libur tanggal merah / hari besar (dropdown di laporan)",
+    placeholderTitle: "Kelas diliburkan karena tanggal merah",
+    placeholderDesc: "Opsi deskripsi libur untuk Miss",
   },
 ];
 

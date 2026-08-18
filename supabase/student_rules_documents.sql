@@ -30,3 +30,8 @@ CREATE POLICY "Allow authenticated insert student rules documents" ON public.stu
 DROP POLICY IF EXISTS "Allow authenticated delete student rules documents" ON public.student_rules_documents;
 CREATE POLICY "Allow authenticated delete student rules documents" ON public.student_rules_documents
     FOR DELETE TO authenticated USING (true);
+
+-- Hanya admin terautentikasi yang boleh mengubah nama dokumen
+DROP POLICY IF EXISTS "Allow authenticated update student rules documents" ON public.student_rules_documents;
+CREATE POLICY "Allow authenticated update student rules documents" ON public.student_rules_documents
+    FOR UPDATE TO authenticated USING (true) WITH CHECK (true);

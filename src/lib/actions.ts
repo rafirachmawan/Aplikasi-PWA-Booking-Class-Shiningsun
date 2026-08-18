@@ -2856,6 +2856,34 @@ export async function getStudentRulesDocument() {
 }
 
 /**
+ * Mengambil semua dokumen Upload File PDF, urut dari yang terbaru (dipakai dashboard)
+ */
+export async function getStudentRulesDocuments() {
+  try {
+    const supabaseServer = await createClient();
+    const { data, error } = await supabaseServer
+      .from("student_rules_documents")
+      .select("id, file_url, file_name, uploaded_at")
+      .order("uploaded_at", { ascending: false });
+
+    if (error) {
+      console.warn(
+        "Notice fetching student rules documents:",
+        error.message || error,
+      );
+      return [];
+    }
+    return data || [];
+  } catch (e: any) {
+    console.warn(
+      "Exception fetching student rules documents:",
+      e?.message || e,
+    );
+    return [];
+  }
+}
+
+/**
  * Menyimpan dokumen Peraturan Siswa baru (admin mengunggah via Google Drive)
  */
 export async function saveStudentRulesDocument(
@@ -2898,6 +2926,58 @@ export async function saveStudentRulesDocument(
     return {
       success: false,
       error: e.message || "Gagal menyimpan dokumen peraturan",
+    };
+  }
+}
+
+/**
+ * Mengubah nama dokumen Upload File PDF
+ */
+export async function renameStudentRulesDocument(
+  id: string,
+  newName: string,
+) {
+  try {
+    const supabaseServer = await createClient();
+    const {
+      data: { user },
+    } = await supabaseServer.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        error: "Sesi admin tidak ditemukan. Silakan login ulang.",
+      };
+    }
+
+    const { data, error } = await supabaseServer
+      .from("student_rules_documents")
+      .update({ file_name: newName })
+      .eq("id", id)
+      .select("id, file_url, file_name, uploaded_at")
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error renaming student rules document:", error);
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return {
+        success: false,
+        error:
+          "Rename gagal: policy UPDATE belum ada di Supabase. Jalankan ulang file supabase/student_rules_documents.sql di Supabase SQL Editor.",
+      };
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath("/portal-ortu/dashboard");
+    return { success: true, data };
+  } catch (e: any) {
+    console.error("Error renaming student rules document:", e);
+    return {
+      success: false,
+      error: e.message || "Gagal mengubah nama dokumen",
     };
   }
 }

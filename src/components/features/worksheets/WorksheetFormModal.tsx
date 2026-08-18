@@ -14,6 +14,7 @@ import {
   formatFullIndonesianDate,
   parseIndonesianDateToISO,
 } from "@/lib/dateUtils";
+import { getHolidayName } from "@/lib/holidays";
 
 interface WorksheetFormModalProps {
   students: any[];
@@ -111,6 +112,9 @@ export function WorksheetFormModal({
       return "HADIR";
     },
   );
+
+  // Selected absence reason (from Template Penilaian dropdown)
+  const [absenceReason, setAbsenceReason] = useState("");
 
   const isAbsent = attendanceStatus !== "HADIR";
 
@@ -422,9 +426,11 @@ export function WorksheetFormModal({
   const handleAttendanceChange = (status: AttendanceStatus) => {
     setAttendanceStatus(status);
     if (status === "IJIN") {
+      const reason = ijinReasonTemplates[0]?.title || "";
+      setAbsenceReason(reason);
       setMateri("Tidak Hadir (Ijin)");
-      setKegiatanItems(["Siswa Ijin (Tidak Mengikuti Sesi Kelas)"]);
-      setHasilBelajarItems(["Siswa Ijin"]);
+      setKegiatanItems([reason || "Siswa Ijin (Tidak Mengikuti Sesi Kelas)"]);
+      setHasilBelajarItems([reason || "Siswa Ijin"]);
       setCatatanGuru(
         "Ananda tidak dapat mengikuti kelas hari ini karena Ijin.",
       );
@@ -432,22 +438,33 @@ export function WorksheetFormModal({
         "Dapat mempelajari materi mandiri jika memungkinkan.",
       );
     } else if (status === "SAKIT") {
+      const reason = sakitReasonTemplates[0]?.title || "";
+      setAbsenceReason(reason);
       setMateri("Tidak Hadir (Sakit)");
-      setKegiatanItems(["Siswa Sakit (Istirahat di Rumah)"]);
-      setHasilBelajarItems(["Siswa Sakit"]);
+      setKegiatanItems([reason || "Siswa Sakit (Istirahat di Rumah)"]);
+      setHasilBelajarItems([reason || "Siswa Sakit"]);
       setCatatanGuru(
         "Ananda tidak dapat mengikuti kelas hari ini karena Sakit. Semoga lekas sembuh! 🌸",
       );
       setRekomendasiRumah("Istirahat yang cukup hingga kondisi fit kembali.");
     } else if (status === "LIBUR" || status === "LIBUR_HARI_BESAR") {
-      setMateri("Libur Hari Besar");
-      setKegiatanItems(["Kelas Diliburkan"]);
-      setHasilBelajarItems(["Libur Hari Besar"]);
+      const iso = parseIndonesianDateToISO(worksheetDateInput || getTodayISO());
+      const holiday = iso ? getHolidayName(iso) : null;
+      const reason = liburReasonTemplates[0]?.title || "";
+      setAbsenceReason(reason);
+      setMateri(holiday ? `Libur Hari Besar (${holiday})` : "Libur Hari Besar");
+      setKegiatanItems([
+        reason || (holiday ? `Kelas Diliburkan (${holiday})` : "Kelas Diliburkan"),
+      ]);
+      setHasilBelajarItems([
+        reason || (holiday ? `Libur ${holiday}` : "Libur Hari Besar"),
+      ]);
       setCatatanGuru(
         "Kelas diliburkan dalam rangka memperingati Libur Hari Besar.",
       );
       setRekomendasiRumah("Selamat berlibur bersama keluarga!");
     } else {
+      setAbsenceReason("");
       if (materi.includes("Tidak Hadir") || materi.includes("Libur")) {
         setMateri("");
         setKegiatanItems([""]);
@@ -455,6 +472,15 @@ export function WorksheetFormModal({
         setCatatanGuru("");
         setRekomendasiRumah("");
       }
+    }
+  };
+
+  // Change absence reason via dropdown (reason is shown in Kegiatan & Hasil Belajar tables)
+  const handleAbsenceReasonChange = (reason: string) => {
+    setAbsenceReason(reason);
+    if (reason) {
+      setKegiatanItems([reason]);
+      setHasilBelajarItems([reason]);
     }
   };
 
@@ -675,23 +701,43 @@ export function WorksheetFormModal({
     );
   }, [filteredTemplatesByLevel]);
 
+  // Global (not level-filtered) — same options as Template Penilaian
   const kegiatanTemplates = useMemo(() => {
-    return filteredTemplatesByLevel.filter(
-      (t) => (t.category || "kegiatan") === "kegiatan",
-    );
-  }, [filteredTemplatesByLevel]);
+    return templates.filter((t) => (t.category || "kegiatan") === "kegiatan");
+  }, [templates]);
 
   const pemahamanTemplates = useMemo(() => {
-    return filteredTemplatesByLevel.filter((t) => t.category === "pemahaman");
-  }, [filteredTemplatesByLevel]);
+    return templates.filter((t) => t.category === "pemahaman");
+  }, [templates]);
 
   const rumahTemplates = useMemo(() => {
-    return filteredTemplatesByLevel.filter((t) => t.category === "rumah");
-  }, [filteredTemplatesByLevel]);
+    return templates.filter((t) => t.category === "rumah");
+  }, [templates]);
 
   const afirmasiTemplates = useMemo(() => {
-    return filteredTemplatesByLevel.filter((t) => t.category === "afirmasi");
-  }, [filteredTemplatesByLevel]);
+    return templates.filter((t) => t.category === "afirmasi");
+  }, [templates]);
+
+  // Absence reason templates (ijin/sakit/libur) — not filtered by level
+  const ijinReasonTemplates = useMemo(
+    () => templates.filter((t) => t.category === "ijin"),
+    [templates],
+  );
+  const sakitReasonTemplates = useMemo(
+    () => templates.filter((t) => t.category === "sakit"),
+    [templates],
+  );
+  const liburReasonTemplates = useMemo(
+    () => templates.filter((t) => t.category === "libur"),
+    [templates],
+  );
+
+  const currentReasonTemplates =
+    attendanceStatus === "IJIN"
+      ? ijinReasonTemplates
+      : attendanceStatus === "SAKIT"
+        ? sakitReasonTemplates
+        : liburReasonTemplates;
 
   const defaultKegiatanOptions =
     kegiatanTemplates.length > 0
@@ -802,10 +848,18 @@ export function WorksheetFormModal({
   const materiSearchInputRef = useRef<HTMLInputElement>(null);
   const [levelSearch, setLevelSearch] = useState("");
   const levelSearchInputRef = useRef<HTMLInputElement>(null);
+  const [kegiatanSearch, setKegiatanSearch] = useState("");
+  const kegiatanSearchInputRef = useRef<HTMLInputElement>(null);
+  const [pemahamanSearch, setPemahamanSearch] = useState("");
+  const pemahamanSearchInputRef = useRef<HTMLInputElement>(null);
+  const [rumahSearch, setRumahSearch] = useState("");
+  const rumahSearchInputRef = useRef<HTMLInputElement>(null);
+  const [afirmasiSearch, setAfirmasiSearch] = useState("");
+  const afirmasiSearchInputRef = useRef<HTMLInputElement>(null);
 
-  // Date Input with Manual Text Entry
+  // Date Input (calendar picker only, defaults to today)
   const [worksheetDateInput, setWorksheetDateInput] = useState(
-    isEditing ? initialData?.worksheet_date || "" : "",
+    initialData?.worksheet_date || getTodayISO(),
   );
 
   // Hidden date input for native calendar picker
@@ -826,10 +880,30 @@ export function WorksheetFormModal({
       setTimeout(() => {
         levelSearchInputRef.current?.focus();
       }, 50);
+    } else if (openDropdown === "kegiatan") {
+      setTimeout(() => {
+        kegiatanSearchInputRef.current?.focus();
+      }, 50);
+    } else if (openDropdown === "pemahaman") {
+      setTimeout(() => {
+        pemahamanSearchInputRef.current?.focus();
+      }, 50);
+    } else if (openDropdown === "rumah") {
+      setTimeout(() => {
+        rumahSearchInputRef.current?.focus();
+      }, 50);
+    } else if (openDropdown === "afirmasi") {
+      setTimeout(() => {
+        afirmasiSearchInputRef.current?.focus();
+      }, 50);
     } else {
       setTeacherSearch("");
       setMateriSearch("");
       setLevelSearch("");
+      setKegiatanSearch("");
+      setPemahamanSearch("");
+      setRumahSearch("");
+      setAfirmasiSearch("");
     }
   }, [openDropdown]);
 
@@ -844,6 +918,38 @@ export function WorksheetFormModal({
     const q = materiSearch.toLowerCase();
     return materiTemplates.filter((t) => t.title.toLowerCase().includes(q));
   }, [materiTemplates, materiSearch]);
+
+  const filteredKegiatanOptions = useMemo(() => {
+    if (!kegiatanSearch.trim()) return defaultKegiatanOptions;
+    const q = kegiatanSearch.toLowerCase();
+    return defaultKegiatanOptions.filter((o) =>
+      o.label.toLowerCase().includes(q),
+    );
+  }, [defaultKegiatanOptions, kegiatanSearch]);
+
+  const filteredPemahamanOptions = useMemo(() => {
+    if (!pemahamanSearch.trim()) return defaultPemahamanOptions;
+    const q = pemahamanSearch.toLowerCase();
+    return defaultPemahamanOptions.filter((o) =>
+      o.label.toLowerCase().includes(q),
+    );
+  }, [defaultPemahamanOptions, pemahamanSearch]);
+
+  const filteredRumahOptions = useMemo(() => {
+    if (!rumahSearch.trim()) return defaultRumahOptions;
+    const q = rumahSearch.toLowerCase();
+    return defaultRumahOptions.filter((o) =>
+      o.label.toLowerCase().includes(q),
+    );
+  }, [defaultRumahOptions, rumahSearch]);
+
+  const filteredAfirmasiOptions = useMemo(() => {
+    if (!afirmasiSearch.trim()) return defaultAfirmasiOptions;
+    const q = afirmasiSearch.toLowerCase();
+    return defaultAfirmasiOptions.filter((o) =>
+      o.label.toLowerCase().includes(q),
+    );
+  }, [defaultAfirmasiOptions, afirmasiSearch]);
 
   const filteredAvailableLevels = useMemo(() => {
     if (!levelSearch.trim()) return availableLevels;
@@ -862,6 +968,15 @@ export function WorksheetFormModal({
       setWorksheetDateInput(initialData.worksheet_date);
     }
   }, [initialData, isEditing]);
+
+  // Auto-Libur when the selected date is a national holiday (tanggal merah), not applied while editing
+  useEffect(() => {
+    if (isEditing) return;
+    const iso = parseIndonesianDateToISO(worksheetDateInput);
+    if (!iso || !getHolidayName(iso)) return;
+    handleAttendanceChange("LIBUR_HARI_BESAR");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [worksheetDateInput, isEditing]);
 
   // Handle click outside for Calendar Picker (after all state declarations)
   useEffect(() => {
@@ -929,6 +1044,18 @@ export function WorksheetFormModal({
     // If parsing fails, show original input
     return worksheetDateInput;
   }, [worksheetDateInput]);
+
+  // Open calendar picker synced to the currently selected date
+  const openCalendarPicker = () => {
+    const parsed = parseIndonesianDateToISO(worksheetDateInput);
+    const base =
+      parsed && !isNaN(new Date(parsed).getTime())
+        ? new Date(parsed)
+        : new Date();
+    setCurrentCalendarMonth(base.getMonth());
+    setCurrentCalendarYear(base.getFullYear());
+    setIsCalendarPickerOpen(true);
+  };
 
   // Generate calendar days
   const getCalendarDays = () => {
@@ -1410,20 +1537,16 @@ export function WorksheetFormModal({
                 Tanggal *
               </label>
               <div className="relative">
-                <input
-                  type="text"
-                  value={workSheetDateDisplay}
-                  onChange={(e) => setWorksheetDateInput(e.target.value)}
-                  placeholder="dd/mm/yyyy atau 16 Agustus 2026"
-                  className="w-full px-3 py-2.5 pr-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs"
-                />
                 <button
                   type="button"
-                  onClick={() => setIsCalendarPickerOpen(true)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer"
+                  onClick={openCalendarPicker}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700/80 cursor-pointer text-left"
                   title="Pilih dari kalender"
                 >
-                  <Icons.calendar className="w-4 h-4" />
+                  <span className="font-semibold truncate">
+                    {workSheetDateDisplay || "Pilih tanggal"}
+                  </span>
+                  <Icons.calendar className="w-4 h-4 text-slate-400 shrink-0" />
                 </button>
 
                 {/* Custom calendar date picker (mobile-friendly) */}
@@ -1515,10 +1638,6 @@ export function WorksheetFormModal({
                   </div>
                 )}
               </div>
-              <span className="text-[10px] text-slate-400 block">
-                💡 Ketik manual atau pilih dari kalender (format: DD-MM-YYYY
-                atau DD Bulan YYYY)
-              </span>
             </div>
 
             {/* Teacher Name */}
@@ -1669,9 +1788,6 @@ export function WorksheetFormModal({
                   className="w-24 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs placeholder:text-slate-400"
                 />
               </div>
-              <span className="text-[10px] text-slate-400 block">
-                💡 Pilih dari dropdown atau ketik manual (max 10)
-              </span>
             </div>
           </div>
 
@@ -1709,6 +1825,33 @@ export function WorksheetFormModal({
                     Materi dan penilaian perkembangan dikunci otomatis.
                   </span>
                 </div>
+              </div>
+            )}
+
+            {/* Absence Reason Dropdown (options from Template Penilaian) */}
+            {isAbsent && (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  💬 Alasan Ketidakhadiran (Template Penilaian)
+                </label>
+                <select
+                  value={absenceReason}
+                  onChange={(e) => handleAbsenceReasonChange(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-sky-400 focus:outline-none shadow-xs"
+                >
+                  <option value="">-- Pilih Alasan --</option>
+                  {currentReasonTemplates.map((t) => (
+                    <option key={t.id} value={t.title}>
+                      {t.title}
+                    </option>
+                  ))}
+                </select>
+                {currentReasonTemplates.length === 0 && (
+                  <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 block">
+                    Belum ada opsi alasan untuk kategori ini — tambahkan di menu
+                    Template Penilaian (kategori Alasan Ijin / Sakit / Libur).
+                  </span>
+                )}
               </div>
             )}
 
@@ -2115,8 +2258,27 @@ export function WorksheetFormModal({
                   </button>
 
                   {openDropdown === "kegiatan" && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 space-y-1 max-h-56 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
-                      {defaultKegiatanOptions.map((opt) => {
+                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
+                      {/* Search input for Kegiatan */}
+                      <div className="p-1">
+                        <input
+                          ref={kegiatanSearchInputRef}
+                          type="text"
+                          value={kegiatanSearch}
+                          onChange={(e) => setKegiatanSearch(e.target.value)}
+                          placeholder="🔍 Cari opsi kegiatan..."
+                          className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-sky-500 focus:outline-none font-medium"
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                      {filteredKegiatanOptions.length === 0 ? (
+                        <div className="py-4 text-center text-xs text-slate-400 italic">
+                          Tidak ada opsi kegiatan yang cocok.
+                        </div>
+                      ) : (
+                      filteredKegiatanOptions.map((opt) => {
                         const isSel = smartKegiatanId === opt.id;
                         return (
                           <button
@@ -2153,7 +2315,9 @@ export function WorksheetFormModal({
                             )}
                           </button>
                         );
-                      })}
+                      })
+                      )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2235,8 +2399,27 @@ export function WorksheetFormModal({
                   </button>
 
                   {openDropdown === "pemahaman" && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-emerald-200 dark:border-emerald-800 p-1.5 space-y-1 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
-                      {defaultPemahamanOptions.map((opt) => {
+                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-emerald-200 dark:border-emerald-800 p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
+                      {/* Search input for Pemahaman */}
+                      <div className="p-1">
+                        <input
+                          ref={pemahamanSearchInputRef}
+                          type="text"
+                          value={pemahamanSearch}
+                          onChange={(e) => setPemahamanSearch(e.target.value)}
+                          placeholder="🔍 Cari opsi pemahaman..."
+                          className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium"
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                      {filteredPemahamanOptions.length === 0 ? (
+                        <div className="py-4 text-center text-xs text-slate-400 italic">
+                          Tidak ada opsi pemahaman yang cocok.
+                        </div>
+                      ) : (
+                      filteredPemahamanOptions.map((opt) => {
                         const isSel = smartPemahamanId === opt.id;
                         return (
                           <button
@@ -2263,7 +2446,9 @@ export function WorksheetFormModal({
                             )}
                           </button>
                         );
-                      })}
+                      })
+                      )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2329,8 +2514,27 @@ export function WorksheetFormModal({
                   </button>
 
                   {openDropdown === "rumah" && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-amber-200 dark:border-amber-800 p-1.5 space-y-1 max-h-56 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
-                      {defaultRumahOptions.map((opt) => {
+                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-amber-200 dark:border-amber-800 p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
+                      {/* Search input for Rekomendasi Rumah */}
+                      <div className="p-1">
+                        <input
+                          ref={rumahSearchInputRef}
+                          type="text"
+                          value={rumahSearch}
+                          onChange={(e) => setRumahSearch(e.target.value)}
+                          placeholder="🔍 Cari opsi rekomendasi..."
+                          className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium"
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                      {filteredRumahOptions.length === 0 ? (
+                        <div className="py-4 text-center text-xs text-slate-400 italic">
+                          Tidak ada opsi rekomendasi yang cocok.
+                        </div>
+                      ) : (
+                      filteredRumahOptions.map((opt) => {
                         const isSel = smartRumahId === opt.id;
                         return (
                           <button
@@ -2364,7 +2568,9 @@ export function WorksheetFormModal({
                             )}
                           </button>
                         );
-                      })}
+                      })
+                      )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2413,8 +2619,27 @@ export function WorksheetFormModal({
                   </button>
 
                   {openDropdown === "afirmasi" && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-1.5 space-y-1 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
-                      {defaultAfirmasiOptions.map((opt) => {
+                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-sky-800 p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
+                      {/* Search input for Afirmasi */}
+                      <div className="p-1">
+                        <input
+                          ref={afirmasiSearchInputRef}
+                          type="text"
+                          value={afirmasiSearch}
+                          onChange={(e) => setAfirmasiSearch(e.target.value)}
+                          placeholder="🔍 Cari opsi afirmasi..."
+                          className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-sky-500 focus:outline-none font-medium"
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                      {filteredAfirmasiOptions.length === 0 ? (
+                        <div className="py-4 text-center text-xs text-slate-400 italic">
+                          Tidak ada opsi afirmasi yang cocok.
+                        </div>
+                      ) : (
+                      filteredAfirmasiOptions.map((opt) => {
                         const isSel = smartAfirmasiId === opt.id;
                         return (
                           <button
@@ -2441,7 +2666,9 @@ export function WorksheetFormModal({
                             )}
                           </button>
                         );
-                      })}
+                      })
+                      )}
+                      </div>
                     </div>
                   )}
                 </div>

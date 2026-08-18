@@ -7,7 +7,7 @@ import {
   getBranchId,
   getClasses,
   getActiveBranchName,
-  getStudentRulesDocument,
+  getStudentRulesDocuments,
 } from "@/lib/actions";
 import { TodaySchedule } from "@/components/features/dashboard/TodaySchedule";
 import { QuickAccessLinks } from "@/components/features/dashboard/QuickAccessLinks";
@@ -46,8 +46,8 @@ export default async function DashboardPage() {
     ]);
   }
 
-  // Dokumen Peraturan Siswa terbaru (global, tidak tergantung cabang)
-  const rulesDocument = await getStudentRulesDocument();
+  // Dokumen Upload File PDF (global, tidak tergantung cabang)
+  const rulesDocuments = await getStudentRulesDocuments();
 
   const stats = [
     {
@@ -227,8 +227,8 @@ export default async function DashboardPage() {
         </>
       )}
 
-      {/* Peraturan Siswa — selalu di paling bawah dashboard */}
-      <StudentRulesSection initialDocument={rulesDocument} />
+      {/* Upload File PDF — selalu di paling bawah dashboard */}
+      <StudentRulesSection initialDocuments={rulesDocuments} />
     </div>
   );
 }

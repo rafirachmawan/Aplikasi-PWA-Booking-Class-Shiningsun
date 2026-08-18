@@ -5,7 +5,7 @@ import {
   getStudentScheduleHistory,
   getWorksheetsByStudent,
   getPointRedemptions,
-  getStudentRulesDocument,
+  getStudentRulesDocuments,
 } from "@/lib/actions";
 import { ParentDashboardClient } from "@/components/features/portal/ParentDashboardClient";
 
@@ -23,13 +23,13 @@ export default async function ParentDashboardPage() {
     scheduleHistory,
     worksheets,
     redemptions,
-    rulesDocument,
+    rulesDocuments,
   ] = await Promise.all([
     getStudentUpcomingSchedule(student.id),
     getStudentScheduleHistory(student.id),
     getWorksheetsByStudent(student.id),
     getPointRedemptions(student.id),
-    getStudentRulesDocument(),
+    getStudentRulesDocuments(),
   ]);
 
   return (
@@ -39,7 +39,7 @@ export default async function ParentDashboardPage() {
       scheduleHistory={scheduleHistory}
       worksheets={worksheets}
       redemptions={redemptions}
-      rulesDocument={rulesDocument}
+      rulesDocuments={rulesDocuments}
     />
   );
 }
