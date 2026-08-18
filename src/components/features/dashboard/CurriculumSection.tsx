@@ -7,6 +7,7 @@ import {
   deleteCurriculumDocument,
   renameCurriculumDocument,
 } from "@/lib/actions";
+import { supabase } from "@/lib/supabase";
 import { getGDrivePreviewLink } from "@/lib/gdriveUtils";
 import { formatShortDate } from "@/lib/dateUtils";
 
@@ -27,6 +28,9 @@ const MAX_PDF_SIZE_MB = 15;
 function friendlyError(msg: string): string {
   if (msg.includes("Could not find the table")) {
     return "Tabel curriculum_documents belum dibuat. Jalankan file supabase/curriculum_documents.sql di Supabase SQL Editor terlebih dahulu.";
+  }
+  if (msg.toLowerCase().includes("bucket not found")) {
+    return "Bucket storage 'kurikulum' belum dibuat. Jalankan file supabase/curriculum_storage.sql di Supabase SQL Editor terlebih dahulu.";
   }
   return msg;
 }
@@ -101,19 +105,27 @@ export function CurriculumSection({
     setIsUploading(true);
     setMessage(null);
     try {
-      const formData = new FormData();
-      formData.append("file", pendingFile);
-
-      const res = await fetch("/api/upload-gdrive", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Gagal mengunggah ke Google Drive");
+      // Upload langsung dari browser ke Supabase Storage —
+      // tidak lewat server Vercel agar tidak kena batas body 4.5 MB.
+      const storagePath = `kurikulum-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.pdf`;
+      const { error: uploadError } = await supabase.storage
+        .from("kurikulum")
+        .upload(storagePath, pendingFile, {
+          contentType: "application/pdf",
+          upsert: false,
+        });
+      if (uploadError) {
+        throw new Error(uploadError.message || "Gagal mengunggah file");
       }
 
-      const saved = await saveCurriculumDocument(data.gdriveLink, fileName);
+      const { data: publicUrlData } = supabase.storage
+        .from("kurikulum")
+        .getPublicUrl(storagePath);
+
+      const saved = await saveCurriculumDocument(
+        publicUrlData.publicUrl,
+        fileName,
+      );
       if (!saved.success || !saved.data) {
         throw new Error(saved.error || "Gagal menyimpan dokumen");
       }
@@ -152,6 +164,20 @@ export function CurriculumSection({
       const res = await deleteCurriculumDocument(doc.id);
       if (!res.success) {
         throw new Error(res.error || "Gagal menghapus dokumen");
+      }
+      // Best-effort: hapus juga file di Supabase Storage jika URL-nya dari bucket kurikulum
+      const marker = "/kurikulum/";
+      const idx = doc.file_url.indexOf(marker);
+      if (idx !== -1) {
+        const path = decodeURIComponent(
+          doc.file_url.slice(idx + marker.length).split("?")[0],
+        );
+        if (path) {
+          await supabase.storage
+            .from("kurikulum")
+            .remove([path])
+            .catch(() => undefined);
+        }
       }
       setDocs((prev) => prev.filter((d) => d.id !== doc.id));
       setMessage({
