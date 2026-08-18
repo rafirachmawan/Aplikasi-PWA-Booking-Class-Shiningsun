@@ -7,7 +7,7 @@ import {
   deleteStudentRulesDocument,
   renameStudentRulesDocument,
 } from "@/lib/actions";
-import { getGDrivePreviewLink } from "@/lib/gdriveUtils";
+import { PdfViewerModal } from "@/components/ui/PdfViewerModal";
 import { formatShortDate } from "@/lib/dateUtils";
 
 interface RulesDocument {
@@ -55,6 +55,9 @@ export function StudentRulesSection({
   const [renameTarget, setRenameTarget] = useState<RulesDocument | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
+
+  // Viewer PDF hanya-lihat (tanpa download)
+  const [previewDoc, setPreviewDoc] = useState<RulesDocument | null>(null);
 
   const openUploadModal = () => {
     setUploadName("");
@@ -337,11 +340,10 @@ export function StudentRulesSection({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <a
-                    href={getGDrivePreviewLink(doc.file_url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 hover:bg-brand-100 dark:hover:bg-brand-500/20 transition-colors"
+                  <button
+                    type="button"
+                    onClick={() => setPreviewDoc(doc)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 hover:bg-brand-100 dark:hover:bg-brand-500/20 transition-colors cursor-pointer"
                   >
                     <svg
                       className="h-3.5 w-3.5"
@@ -362,7 +364,7 @@ export function StudentRulesSection({
                       />
                     </svg>
                     Lihat PDF
-                  </a>
+                  </button>
                   <button
                     type="button"
                     onClick={() => openRenameModal(doc)}
@@ -585,6 +587,14 @@ export function StudentRulesSection({
           className="hidden"
           onChange={handleFileChange}
         />
+
+      {previewDoc && (
+        <PdfViewerModal
+          fileUrl={previewDoc.file_url}
+          title={previewDoc.file_name}
+          onClose={() => setPreviewDoc(null)}
+        />
+      )}
       </div>
     </div>
   );

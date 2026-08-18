@@ -882,7 +882,14 @@ export async function getMonthlySchedules(year: number, month: number) {
     console.error("Error fetching schedules:", error);
     return [];
   }
-  return data;
+
+  // Siswa nonaktif tidak dihitung: jadwalnya hilang dari dashboard & kuota jadwal kelas
+  return (data || []).map((slot: any) => ({
+    ...slot,
+    bookings: (slot.bookings || []).filter(
+      (b: any) => b?.student?.status !== "INACTIVE",
+    ),
+  }));
 }
 
 export async function createScheduleSlot(formData: FormData) {
@@ -1220,7 +1227,14 @@ export async function getSchedulesByDate(dateStr: string) {
     console.error("Error fetching schedules by date:", error);
     return [];
   }
-  return data || [];
+
+  // Siswa nonaktif tidak dihitung: jadwalnya hilang dari dashboard & kuota jadwal kelas
+  return (data || []).map((slot: any) => ({
+    ...slot,
+    bookings: (slot.bookings || []).filter(
+      (b: any) => b?.student?.status !== "INACTIVE",
+    ),
+  }));
 }
 
 export async function getTodaySchedules() {
@@ -1361,13 +1375,19 @@ export async function getClassesWithSchedules() {
 
   const { data: slots } = await slotQuery;
 
+  // Siswa nonaktif tidak dihitung: jadwalnya hilang dari kuota dashboard
+  const activeSlots = (slots || []).map((s: any) => ({
+    ...s,
+    bookings: (s.bookings || []).filter(
+      (b: any) => b?.student?.status !== "INACTIVE",
+    ),
+  }));
+
   // 4. Group slots by class_id
   const slotMap: Record<string, any[]> = {};
-  if (slots) {
-    for (const s of slots) {
-      if (!slotMap[s.class_id]) slotMap[s.class_id] = [];
-      slotMap[s.class_id].push(s);
-    }
+  for (const s of activeSlots) {
+    if (!slotMap[s.class_id]) slotMap[s.class_id] = [];
+    slotMap[s.class_id].push(s);
   }
 
   // 5. Merge

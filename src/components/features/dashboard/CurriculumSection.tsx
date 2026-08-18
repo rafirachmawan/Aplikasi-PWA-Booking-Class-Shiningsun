@@ -8,7 +8,7 @@ import {
   renameCurriculumDocument,
 } from "@/lib/actions";
 import { createBrowserClient } from "@supabase/ssr";
-import { getGDrivePreviewLink } from "@/lib/gdriveUtils";
+import { PdfViewerModal } from "@/components/ui/PdfViewerModal";
 import { formatShortDate } from "@/lib/dateUtils";
 
 interface CurriculumDocument {
@@ -70,6 +70,9 @@ export function CurriculumSection({
   );
   const [renameValue, setRenameValue] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
+
+  // Viewer PDF hanya-lihat (tanpa download)
+  const [previewDoc, setPreviewDoc] = useState<CurriculumDocument | null>(null);
 
   const openUploadModal = () => {
     setUploadName("");
@@ -377,11 +380,10 @@ export function CurriculumSection({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <a
-                    href={getGDrivePreviewLink(doc.file_url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors"
+                  <button
+                    type="button"
+                    onClick={() => setPreviewDoc(doc)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors cursor-pointer"
                   >
                     <svg
                       className="h-3.5 w-3.5"
@@ -402,7 +404,7 @@ export function CurriculumSection({
                       />
                     </svg>
                     Lihat PDF
-                  </a>
+                  </button>
                   {isSuperadmin && (
                     <>
                       <button
@@ -593,6 +595,14 @@ export function CurriculumSection({
           className="hidden"
           onChange={handleFileChange}
         />
+
+      {previewDoc && (
+        <PdfViewerModal
+          fileUrl={previewDoc.file_url}
+          title={previewDoc.file_name}
+          onClose={() => setPreviewDoc(null)}
+        />
+      )}
       </div>
     </div>
   );

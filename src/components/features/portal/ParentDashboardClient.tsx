@@ -11,7 +11,8 @@ import {
   updateStudentAccessPin,
 } from "@/lib/actions";
 import { formatShortDate, calculateStudentPoints } from "@/lib/dateUtils";
-import { getGDriveDirectLink, getGDrivePreviewLink } from "@/lib/gdriveUtils";
+import { getGDriveDirectLink } from "@/lib/gdriveUtils";
+import { PdfViewerModal } from "@/components/ui/PdfViewerModal";
 
 interface ParentDashboardClientProps {
   student: any;
@@ -40,6 +41,11 @@ export function ParentDashboardClient({
   const [showPointsModal, setShowPointsModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
+
+  // Viewer PDF hanya-lihat (tanpa download)
+  const [previewDoc, setPreviewDoc] = useState<
+    NonNullable<ParentDashboardClientProps["rulesDocuments"]>[number] | null
+  >(null);
 
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
@@ -785,11 +791,10 @@ export function ParentDashboardClient({
                       Diunggah {formatShortDate(doc.uploaded_at)}
                     </p>
                   </div>
-                  <a
-                    href={getGDrivePreviewLink(doc.file_url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 active:scale-98 transition-all shadow-md shadow-brand-500/20"
+                  <button
+                    type="button"
+                    onClick={() => setPreviewDoc(doc)}
+                    className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 active:scale-98 transition-all shadow-md shadow-brand-500/20 cursor-pointer"
                   >
                     <svg
                       className="h-3.5 w-3.5"
@@ -810,7 +815,7 @@ export function ParentDashboardClient({
                       />
                     </svg>
                     Lihat PDF
-                  </a>
+                  </button>
                 </div>
               ))}
             </div>
@@ -1695,6 +1700,14 @@ export function ParentDashboardClient({
             </div>
           </div>
         </div>
+      )}
+
+      {previewDoc && (
+        <PdfViewerModal
+          fileUrl={previewDoc.file_url}
+          title={previewDoc.file_name}
+          onClose={() => setPreviewDoc(null)}
+        />
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { StudentRegistrationForm } from "@/components/features/students/StudentRegistrationForm";
@@ -222,8 +223,9 @@ export function StudentClientWrapper({
       {isProcessing && <LoadingSpinner usePortal={true} />}
 
       {/* Custom Confirm Modal */}
-      {confirmModal.isOpen && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+      {confirmModal.isOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() =>
@@ -317,8 +319,9 @@ export function StudentClientWrapper({
               </button>
             </div>
           </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
 
       {/* Header Card - Unified Design */}
       <div className="rounded-3xl bg-brand-600 p-6 sm:p-10 shadow-lg relative overflow-hidden">
