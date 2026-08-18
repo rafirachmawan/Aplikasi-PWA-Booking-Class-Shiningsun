@@ -95,12 +95,9 @@ export function StudentScheduleCard({
                       </span>
                     </div>
 
-                    {/* Info */}
+                    {/* Info — nama kelas disembunyikan dari portal ortu */}
                     <div className="min-w-0">
-                      <h4 className="text-sm font-extrabold text-slate-900 dark:text-white truncate">
-                        {slot.class?.name || "Kelas"}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
                         <span className="font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 px-2 py-0.5 rounded-md border border-brand-200/60 dark:border-brand-800/50">
                           ⏰ {formatShortTime(slot.time)} WIB
                         </span>
@@ -163,10 +160,7 @@ export function StudentScheduleCard({
                     </div>
 
                     <div className="min-w-0">
-                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">
-                        {slot.class?.name || "Kelas"}
-                      </h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         {formatFullIndonesianDate(slot.date)} •{" "}
                         {formatShortTime(slot.time)} WIB
                       </p>
