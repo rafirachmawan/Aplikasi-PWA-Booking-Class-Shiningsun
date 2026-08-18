@@ -8,8 +8,9 @@ import { extractGDriveFileId } from "@/lib/gdriveUtils";
  * Modal viewer PDF — hanya untuk melihat, tanpa tombol download.
  * - File Google Drive → embed preview Drive (tanpa tombol download).
  * - File langsung (Supabase Storage):
- *   - Mobile → Google Docs viewer embed (Chrome mobile memblokir PDF mentah di iframe).
- *   - Desktop → viewer PDF native dengan #toolbar=0 (gview menolak embed di desktop).
+ *   - Mobile → viewer pdf.js lokal (/pdf-viewer.html) yang stream langsung
+ *     dari Storage — jauh lebih cepat daripada gview (tanpa konversi server Google).
+ *   - Desktop → viewer PDF native dengan #toolbar=0.
  * Dirender via portal ke document.body agar backdrop menyeluruh.
  */
 export function PdfViewerModal({
@@ -23,24 +24,24 @@ export function PdfViewerModal({
 }) {
   const fileId = extractGDriveFileId(fileUrl);
 
-  // Deteksi mobile: gview hanya dipakai di mobile (desktop menolak embed)
+  // Deteksi mobile: viewer pdf.js lokal hanya dipakai di mobile
+  // (desktop sudah lancar dengan viewer native #toolbar=0)
   const isMobile = useMemo(
     () =>
       typeof navigator !== "undefined" &&
       /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent),
     [],
   );
-  const useGview = !fileId && isMobile;
 
   const embedSrc = fileId
     ? `https://drive.google.com/file/d/${fileId}/preview`
-    : useGview
-      ? `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(fileUrl)}`
+    : isMobile
+      ? `/pdf-viewer.html?file=${encodeURIComponent(fileUrl)}`
       : `${fileUrl}#toolbar=0&navpanes=0&view=FitH`;
 
-  // Viewer Google (Drive preview & gview) punya toolbar atas ±64px yang
-  // digeser keluar area pandang; viewer native desktop (#toolbar=0) tidak.
-  const hideTopBar = Boolean(fileId) || useGview;
+  // Hanya preview Drive yang punya toolbar atas ±64px untuk digeser keluar;
+  // viewer pdf.js lokal & viewer native (#toolbar=0) tidak punya toolbar.
+  const hideTopBar = Boolean(fileId);
 
   return createPortal(
     <div className="fixed inset-0 z-100 flex flex-col bg-slate-950/95 animate-in fade-in duration-200 p-3 sm:p-6">

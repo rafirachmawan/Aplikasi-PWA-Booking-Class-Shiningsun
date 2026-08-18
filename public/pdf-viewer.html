@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Viewer PDF</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #525659; }
+  #status { color: #fff; font: 13px/1.5 system-ui, sans-serif; text-align: center; padding: 24px 16px; }
+  #pages { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px; }
+  canvas { background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4); max-width: calc(100vw - 16px); height: auto; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+<div id="status">Memuat dokumen…</div>
+<div id="pages"></div>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  var statusEl = document.getElementById("status");
+  var fileUrl = new URLSearchParams(location.search).get("file");
+
+  if (!fileUrl) {
+    statusEl.textContent = "File tidak ditemukan.";
+  } else {
+    pdfjsLib
+      .getDocument(fileUrl)
+      .promise.then(function (pdf) {
+        statusEl.style.display = "none";
+        var container = document.getElementById("pages");
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var maxWidth = Math.min(document.documentElement.clientWidth - 16, 900);
+
+        function renderPage(i) {
+          if (i > pdf.numPages) return Promise.resolve();
+          return pdf.getPage(i).then(function (page) {
+            var base = page.getViewport({ scale: 1 });
+            var scale = (maxWidth / base.width) * dpr;
+            var viewport = page.getViewport({ scale: scale });
+            var canvas = document.createElement("canvas");
+            canvas.width = Math.floor(viewport.width);
+            canvas.height = Math.floor(viewport.height);
+            canvas.style.width = Math.floor(viewport.width / dpr) + "px";
+            container.appendChild(canvas);
+            return page
+              .render({ canvasContext: canvas.getContext("2d"), viewport: viewport })
+              .promise.then(function () { return renderPage(i + 1); });
+          });
+        }
+
+        return renderPage(1);
+      })
+      .catch(function (err) {
+        statusEl.style.display = "";
+        statusEl.textContent =
+          "Gagal memuat dokumen: " + (err && err.message ? err.message : err);
+      });
+  }
+</script>
+</body>
+</html>
