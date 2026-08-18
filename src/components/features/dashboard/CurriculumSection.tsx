@@ -7,7 +7,7 @@ import {
   deleteCurriculumDocument,
   renameCurriculumDocument,
 } from "@/lib/actions";
-import { supabase } from "@/lib/supabase";
+import { createBrowserClient } from "@supabase/ssr";
 import { getGDrivePreviewLink } from "@/lib/gdriveUtils";
 import { formatShortDate } from "@/lib/dateUtils";
 
@@ -24,6 +24,13 @@ interface CurriculumSectionProps {
 }
 
 const MAX_PDF_SIZE_MB = 15;
+
+// Client browser dengan sesi cookie (pola sama seperti LoginForm) —
+// agar upload Storage terbaca sebagai authenticated, bukan anon.
+const supabaseBrowser = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+);
 
 function friendlyError(msg: string): string {
   if (msg.includes("Could not find the table")) {
@@ -108,7 +115,7 @@ export function CurriculumSection({
       // Upload langsung dari browser ke Supabase Storage —
       // tidak lewat server Vercel agar tidak kena batas body 4.5 MB.
       const storagePath = `kurikulum-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.pdf`;
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabaseBrowser.storage
         .from("kurikulum")
         .upload(storagePath, pendingFile, {
           contentType: "application/pdf",
@@ -118,7 +125,7 @@ export function CurriculumSection({
         throw new Error(uploadError.message || "Gagal mengunggah file");
       }
 
-      const { data: publicUrlData } = supabase.storage
+      const { data: publicUrlData } = supabaseBrowser.storage
         .from("kurikulum")
         .getPublicUrl(storagePath);
 
@@ -173,7 +180,7 @@ export function CurriculumSection({
           doc.file_url.slice(idx + marker.length).split("?")[0],
         );
         if (path) {
-          await supabase.storage
+          await supabaseBrowser.storage
             .from("kurikulum")
             .remove([path])
             .catch(() => undefined);
