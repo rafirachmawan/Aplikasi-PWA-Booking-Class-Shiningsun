@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Icons } from "@/components/ui/icons";
-import { createWorksheet, updateWorksheet } from "@/lib/actions";
+import {
+  createWorksheet,
+  updateWorksheet,
+  getAssessmentTemplates,
+} from "@/lib/actions";
 import {
   getGDrivePreviewLink,
   getGDriveDirectLink,
@@ -63,6 +67,19 @@ export function WorksheetFormModal({
   onSuccess,
 }: WorksheetFormModalProps) {
   const isEditing = !!initialData?.id;
+
+  // Ambil template terbaru sesuai cabang aktif setiap kali modal dibuka,
+  // agar dropdown tidak memakai data lama dari cabang lain.
+  const [templateList, setTemplateList] = useState<any[]>(templates);
+  useEffect(() => {
+    let active = true;
+    getAssessmentTemplates().then((fresh) => {
+      if (active && Array.isArray(fresh)) setTemplateList(fresh);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Sync with parent's locked student ID
   const [effectiveLockedStudentId, setEffectiveLockedStudentId] = useState(
@@ -249,7 +266,7 @@ export function WorksheetFormModal({
             });
 
             setTimeout(() => {
-              setBulanKe(calculated <= 10 ? calculated.toString() : "");
+              setBulanKe(calculated.toString());
             }, 50);
           } else {
             // Student has no riwayat bulan_ke - clear existing values FIRST, then allow manual input
@@ -454,7 +471,8 @@ export function WorksheetFormModal({
       setAbsenceReason(reason);
       setMateri(holiday ? `Libur Hari Besar (${holiday})` : "Libur Hari Besar");
       setKegiatanItems([
-        reason || (holiday ? `Kelas Diliburkan (${holiday})` : "Kelas Diliburkan"),
+        reason ||
+          (holiday ? `Kelas Diliburkan (${holiday})` : "Kelas Diliburkan"),
       ]);
       setHasilBelajarItems([
         reason || (holiday ? `Libur ${holiday}` : "Libur Hari Besar"),
@@ -547,7 +565,7 @@ export function WorksheetFormModal({
   // Template autofill handler
   const handleSelectTemplate = (tplId: string) => {
     if (!tplId) return;
-    const found = templates.find((t) => t.id === tplId);
+    const found = templateList.find((t) => t.id === tplId);
     if (found) {
       if (found.materi) setMateri(found.materi);
       if (found.kegiatan) setKegiatanItems(parseBulletList(found.kegiatan));
@@ -604,7 +622,7 @@ export function WorksheetFormModal({
     }
 
     // 2. Incorporate labels attached to templates
-    templates.forEach((t) => {
+    templateList.forEach((t) => {
       if (t.label_id || t.label) {
         const lbls = Array.isArray(t.label) ? t.label : [t.label];
         lbls.forEach((lbl: any) => {
@@ -639,7 +657,7 @@ export function WorksheetFormModal({
     }
 
     return Array.from(map.values());
-  }, [templates, labels, activeStudentLabelId, activeStudentLabel]);
+  }, [templateList, labels, activeStudentLabelId, activeStudentLabel]);
 
   const [selectedLevelId, setSelectedLevelId] = useState<string>(() => {
     if (activeStudentLabelId) return activeStudentLabelId;
@@ -664,8 +682,8 @@ export function WorksheetFormModal({
 
   const filteredTemplatesByLevel = useMemo(() => {
     if (!selectedLevelId) return [];
-    if (selectedLevelId === "ALL") return templates;
-    return templates.filter((t) => {
+    if (selectedLevelId === "ALL") return templateList;
+    return templateList.filter((t) => {
       const tLabels = Array.isArray(t.label)
         ? t.label
         : t.label
@@ -693,7 +711,7 @@ export function WorksheetFormModal({
       }
       return false;
     });
-  }, [templates, selectedLevelId, selectedLevelObj]);
+  }, [templateList, selectedLevelId, selectedLevelObj]);
 
   const materiTemplates = useMemo(() => {
     return filteredTemplatesByLevel.filter(
@@ -703,33 +721,35 @@ export function WorksheetFormModal({
 
   // Global (not level-filtered) — same options as Template Penilaian
   const kegiatanTemplates = useMemo(() => {
-    return templates.filter((t) => (t.category || "kegiatan") === "kegiatan");
-  }, [templates]);
+    return templateList.filter(
+      (t) => (t.category || "kegiatan") === "kegiatan",
+    );
+  }, [templateList]);
 
   const pemahamanTemplates = useMemo(() => {
-    return templates.filter((t) => t.category === "pemahaman");
-  }, [templates]);
+    return templateList.filter((t) => t.category === "pemahaman");
+  }, [templateList]);
 
   const rumahTemplates = useMemo(() => {
-    return templates.filter((t) => t.category === "rumah");
-  }, [templates]);
+    return templateList.filter((t) => t.category === "rumah");
+  }, [templateList]);
 
   const afirmasiTemplates = useMemo(() => {
-    return templates.filter((t) => t.category === "afirmasi");
-  }, [templates]);
+    return templateList.filter((t) => t.category === "afirmasi");
+  }, [templateList]);
 
   // Absence reason templates (ijin/sakit/libur) — not filtered by level
   const ijinReasonTemplates = useMemo(
-    () => templates.filter((t) => t.category === "ijin"),
-    [templates],
+    () => templateList.filter((t) => t.category === "ijin"),
+    [templateList],
   );
   const sakitReasonTemplates = useMemo(
-    () => templates.filter((t) => t.category === "sakit"),
-    [templates],
+    () => templateList.filter((t) => t.category === "sakit"),
+    [templateList],
   );
   const liburReasonTemplates = useMemo(
-    () => templates.filter((t) => t.category === "libur"),
-    [templates],
+    () => templateList.filter((t) => t.category === "libur"),
+    [templateList],
   );
 
   const currentReasonTemplates =
@@ -945,9 +965,7 @@ export function WorksheetFormModal({
   const filteredRumahOptions = useMemo(() => {
     if (!rumahSearch.trim()) return defaultRumahOptions;
     const q = rumahSearch.toLowerCase();
-    return defaultRumahOptions.filter((o) =>
-      o.label.toLowerCase().includes(q),
-    );
+    return defaultRumahOptions.filter((o) => o.label.toLowerCase().includes(q));
   }, [defaultRumahOptions, rumahSearch]);
 
   const filteredAfirmasiOptions = useMemo(() => {
@@ -1212,18 +1230,18 @@ export function WorksheetFormModal({
     // Determine effectiveBulanKe based on user input or auto-calculation
     let effectiveBulanKe = "";
 
-    // Priority 1: User typed in manual field
+    // Priority 1: User typed in manual field (bebas, tidak dibatasi 10)
     if (manualBulanKe.trim()) {
       const num = parseInt(manualBulanKe.trim(), 10);
-      if (num >= 1 && num <= 10) {
+      if (num >= 1) {
         effectiveBulanKe = manualBulanKe.trim();
       }
     }
 
-    // Priority 2: User selected from dropdown
+    // Priority 2: User selected from dropdown (nilai auto-fill > 10 juga lolos)
     else if (bulanKe.trim()) {
       const num = parseInt(bulanKe.trim(), 10);
-      if (num >= 1 && num <= 10) {
+      if (num >= 1) {
         effectiveBulanKe = bulanKe.trim();
       }
     }
@@ -1848,7 +1866,9 @@ export function WorksheetFormModal({
                     type="button"
                     disabled={currentReasonTemplates.length === 0}
                     onClick={() =>
-                      setOpenDropdown(openDropdown === "alasan" ? null : "alasan")
+                      setOpenDropdown(
+                        openDropdown === "alasan" ? null : "alasan",
+                      )
                     }
                     className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-800/80 bg-amber-50/50 dark:bg-slate-800 text-amber-950 dark:text-amber-200 text-xs font-semibold shadow-xs hover:border-amber-400 cursor-pointer text-left disabled:opacity-60 disabled:cursor-not-allowed"
                   >
@@ -2340,50 +2360,50 @@ export function WorksheetFormModal({
                         />
                       </div>
                       <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                      {filteredKegiatanOptions.length === 0 ? (
-                        <div className="py-4 text-center text-xs text-slate-400 italic">
-                          Tidak ada opsi kegiatan yang cocok.
-                        </div>
-                      ) : (
-                      filteredKegiatanOptions.map((opt) => {
-                        const isSel = smartKegiatanId === opt.id;
-                        return (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => {
-                              setSmartKegiatanId(opt.id);
-                              const cleanLabel = opt.label.replace(
-                                /^(1|2|3|4)\.\s*/,
-                                "",
-                              );
-                              const currentMateri =
-                                materi || smartMateriText || "";
-                              const newItem = currentMateri
-                                ? `${cleanLabel} ${currentMateri}`
-                                : cleanLabel;
-                              setKegiatanItems([newItem]);
-                              setOpenDropdown(null);
-                            }}
-                            className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
-                              isSel
-                                ? "bg-brand-50 dark:bg-brand-950/70 text-brand-700 dark:text-brand-300 font-extrabold"
-                                : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
-                            }`}
-                          >
-                            <span className="wrap-break-word whitespace-normal leading-snug">
-                              {opt.num}.{" "}
-                              {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
-                            </span>
-                            {isSel && (
-                              <span className="text-brand-600 shrink-0 text-xs font-bold mt-0.5">
-                                ✓
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })
-                      )}
+                        {filteredKegiatanOptions.length === 0 ? (
+                          <div className="py-4 text-center text-xs text-slate-400 italic">
+                            Tidak ada opsi kegiatan yang cocok.
+                          </div>
+                        ) : (
+                          filteredKegiatanOptions.map((opt) => {
+                            const isSel = smartKegiatanId === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => {
+                                  setSmartKegiatanId(opt.id);
+                                  const cleanLabel = opt.label.replace(
+                                    /^(1|2|3|4)\.\s*/,
+                                    "",
+                                  );
+                                  const currentMateri =
+                                    materi || smartMateriText || "";
+                                  const newItem = currentMateri
+                                    ? `${cleanLabel} ${currentMateri}`
+                                    : cleanLabel;
+                                  setKegiatanItems([newItem]);
+                                  setOpenDropdown(null);
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
+                                  isSel
+                                    ? "bg-brand-50 dark:bg-brand-950/70 text-brand-700 dark:text-brand-300 font-extrabold"
+                                    : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                                }`}
+                              >
+                                <span className="wrap-break-word whitespace-normal leading-snug">
+                                  {opt.num}.{" "}
+                                  {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
+                                </span>
+                                {isSel && (
+                                  <span className="text-brand-600 shrink-0 text-xs font-bold mt-0.5">
+                                    ✓
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
                       </div>
                     </div>
                   )}
@@ -2481,40 +2501,40 @@ export function WorksheetFormModal({
                         />
                       </div>
                       <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                      {filteredPemahamanOptions.length === 0 ? (
-                        <div className="py-4 text-center text-xs text-slate-400 italic">
-                          Tidak ada opsi pemahaman yang cocok.
-                        </div>
-                      ) : (
-                      filteredPemahamanOptions.map((opt) => {
-                        const isSel = smartPemahamanId === opt.id;
-                        return (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => {
-                              handlePemahamanChange(opt.id);
-                              setOpenDropdown(null);
-                            }}
-                            className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
-                              isSel
-                                ? "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 font-extrabold"
-                                : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
-                            }`}
-                          >
-                            <span className="wrap-break-word whitespace-normal leading-snug">
-                              {opt.num}.{" "}
-                              {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
-                            </span>
-                            {isSel && (
-                              <span className="text-emerald-600 shrink-0 text-xs font-bold mt-0.5">
-                                ✓
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })
-                      )}
+                        {filteredPemahamanOptions.length === 0 ? (
+                          <div className="py-4 text-center text-xs text-slate-400 italic">
+                            Tidak ada opsi pemahaman yang cocok.
+                          </div>
+                        ) : (
+                          filteredPemahamanOptions.map((opt) => {
+                            const isSel = smartPemahamanId === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => {
+                                  handlePemahamanChange(opt.id);
+                                  setOpenDropdown(null);
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
+                                  isSel
+                                    ? "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 font-extrabold"
+                                    : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                                }`}
+                              >
+                                <span className="wrap-break-word whitespace-normal leading-snug">
+                                  {opt.num}.{" "}
+                                  {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
+                                </span>
+                                {isSel && (
+                                  <span className="text-emerald-600 shrink-0 text-xs font-bold mt-0.5">
+                                    ✓
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
                       </div>
                     </div>
                   )}
@@ -2596,47 +2616,47 @@ export function WorksheetFormModal({
                         />
                       </div>
                       <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                      {filteredRumahOptions.length === 0 ? (
-                        <div className="py-4 text-center text-xs text-slate-400 italic">
-                          Tidak ada opsi rekomendasi yang cocok.
-                        </div>
-                      ) : (
-                      filteredRumahOptions.map((opt) => {
-                        const isSel = smartRumahId === opt.id;
-                        return (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => {
-                              setSmartRumahId(opt.id);
-                              const cleanLabel = opt.label.replace(
-                                /^(1|2|3|4)\.\s*/,
-                                "",
-                              );
-                              setRekomendasiRumah(
-                                `Untuk di rumah Ananda bisa ${cleanLabel.toLowerCase()}`,
-                              );
-                              setOpenDropdown(null);
-                            }}
-                            className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
-                              isSel
-                                ? "bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-extrabold"
-                                : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
-                            }`}
-                          >
-                            <span className="wrap-break-word whitespace-normal leading-snug">
-                              {opt.num}.{" "}
-                              {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
-                            </span>
-                            {isSel && (
-                              <span className="text-amber-600 shrink-0 text-xs font-bold mt-0.5">
-                                ✓
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })
-                      )}
+                        {filteredRumahOptions.length === 0 ? (
+                          <div className="py-4 text-center text-xs text-slate-400 italic">
+                            Tidak ada opsi rekomendasi yang cocok.
+                          </div>
+                        ) : (
+                          filteredRumahOptions.map((opt) => {
+                            const isSel = smartRumahId === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => {
+                                  setSmartRumahId(opt.id);
+                                  const cleanLabel = opt.label.replace(
+                                    /^(1|2|3|4)\.\s*/,
+                                    "",
+                                  );
+                                  setRekomendasiRumah(
+                                    `Untuk di rumah Ananda bisa ${cleanLabel.toLowerCase()}`,
+                                  );
+                                  setOpenDropdown(null);
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
+                                  isSel
+                                    ? "bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-extrabold"
+                                    : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                                }`}
+                              >
+                                <span className="wrap-break-word whitespace-normal leading-snug">
+                                  {opt.num}.{" "}
+                                  {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
+                                </span>
+                                {isSel && (
+                                  <span className="text-amber-600 shrink-0 text-xs font-bold mt-0.5">
+                                    ✓
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
                       </div>
                     </div>
                   )}
@@ -2701,40 +2721,40 @@ export function WorksheetFormModal({
                         />
                       </div>
                       <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                      {filteredAfirmasiOptions.length === 0 ? (
-                        <div className="py-4 text-center text-xs text-slate-400 italic">
-                          Tidak ada opsi afirmasi yang cocok.
-                        </div>
-                      ) : (
-                      filteredAfirmasiOptions.map((opt) => {
-                        const isSel = smartAfirmasiId === opt.id;
-                        return (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => {
-                              handleAfirmasiChange(opt.id);
-                              setOpenDropdown(null);
-                            }}
-                            className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
-                              isSel
-                                ? "bg-sky-100 dark:bg-sky-900/60 text-sky-900 dark:text-sky-200 font-extrabold"
-                                : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
-                            }`}
-                          >
-                            <span className="wrap-break-word whitespace-normal leading-snug">
-                              {opt.num}.{" "}
-                              {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
-                            </span>
-                            {isSel && (
-                              <span className="text-sky-600 shrink-0 text-xs font-bold mt-0.5">
-                                ✓
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })
-                      )}
+                        {filteredAfirmasiOptions.length === 0 ? (
+                          <div className="py-4 text-center text-xs text-slate-400 italic">
+                            Tidak ada opsi afirmasi yang cocok.
+                          </div>
+                        ) : (
+                          filteredAfirmasiOptions.map((opt) => {
+                            const isSel = smartAfirmasiId === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => {
+                                  handleAfirmasiChange(opt.id);
+                                  setOpenDropdown(null);
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-start justify-between gap-2 cursor-pointer ${
+                                  isSel
+                                    ? "bg-sky-100 dark:bg-sky-900/60 text-sky-900 dark:text-sky-200 font-extrabold"
+                                    : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                                }`}
+                              >
+                                <span className="wrap-break-word whitespace-normal leading-snug">
+                                  {opt.num}.{" "}
+                                  {opt.label.replace(/^(1|2|3|4)\.\s*/, "")}
+                                </span>
+                                {isSel && (
+                                  <span className="text-sky-600 shrink-0 text-xs font-bold mt-0.5">
+                                    ✓
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
                       </div>
                     </div>
                   )}

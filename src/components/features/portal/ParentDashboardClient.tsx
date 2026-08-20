@@ -707,7 +707,7 @@ export function ParentDashboardClient({
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="block text-[10px] font-extrabold text-amber-600 uppercase tracking-wider">
-                    Poin Kehadiran Siswa
+                    Poin
                   </span>
                   <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-md group-hover:bg-amber-200 transition-colors">
                     Lihat Riwayat ↗

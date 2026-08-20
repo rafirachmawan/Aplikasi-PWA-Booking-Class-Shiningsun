@@ -226,7 +226,7 @@ export default async function DashboardPage() {
             <QuickAccessLinks isSuperadmin={isSuperadmin} />
           </div>
 
-          <ResetDataSection isSuperadmin={isSuperadmin} />
+          <ResetDataSection isSuperadmin={isSuperadmin} showReset={false} />
         </>
       )}
 

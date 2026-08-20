@@ -2277,9 +2277,16 @@ export async function deleteTeacher(id: string) {
 // ASSESSMENT TEMPLATES ACTIONS
 // =========================================
 
+// Kategori "materi" bersifat global (sama di semua cabang);
+// kategori lainnya milik cabang yang sedang aktif.
+function templateBranchId(category: string, branchId: string) {
+  return category === "materi" ? null : branchId || null;
+}
+
 export async function getAssessmentTemplates() {
   try {
     const supabaseServer = await createClient();
+    const branchId = await getBranchId();
 
     const { data, error } = await supabaseServer
       .from("assessment_templates")
@@ -2291,7 +2298,50 @@ export async function getAssessmentTemplates() {
       console.warn("Notice fetching assessment templates:", error.message);
       return [];
     }
-    return data || [];
+    const templates = data || [];
+
+    // Kategori "materi" global; kategori lain per-cabang agar editan
+    // admin cabang tidak mempengaruhi cabang lainnya.
+    if (branchId) {
+      const isMateri = (t: any) => (t.category || "kegiatan") === "materi";
+      const materiRows = templates.filter(isMateri);
+      const branchRows = templates.filter(
+        (t: any) => !isMateri(t) && t.branch_id === branchId,
+      );
+      const globalNonMateri = templates.filter(
+        (t: any) => !isMateri(t) && !t.branch_id,
+      );
+
+      // Akses pertama: patenkan template global yang ada ke cabang ini
+      if (branchRows.length === 0 && globalNonMateri.length > 0) {
+        const clones = globalNonMateri.map((t: any) => ({
+          branch_id: branchId,
+          category: t.category,
+          title: t.title,
+          materi: t.materi,
+          kegiatan: t.kegiatan,
+          hasil_belajar: t.hasil_belajar,
+          label_id: t.label_id || null,
+          is_active: true,
+        }));
+        const { data: cloned, error: cloneError } = await supabaseServer
+          .from("assessment_templates")
+          .insert(clones)
+          .select("*, label:labels(id, main_level, sub_level, hex_color)");
+        if (!cloneError && cloned) {
+          return [...materiRows, ...cloned];
+        }
+        console.warn(
+          "Notice pinning templates per branch:",
+          cloneError?.message,
+        );
+        return [...materiRows, ...globalNonMateri];
+      }
+
+      return [...materiRows, ...branchRows];
+    }
+
+    return templates;
   } catch (err: any) {
     console.warn(
       "Exception fetching assessment templates:",
@@ -2321,7 +2371,7 @@ export async function createAssessmentTemplate(formData: FormData) {
 
   if (labelIds.length > 1) {
     const insertPayloads = labelIds.map((lId) => ({
-      branch_id: null,
+      branch_id: templateBranchId(category, branchId),
       category: category,
       title: title.trim(),
       materi: materi.trim(),
@@ -2357,7 +2407,7 @@ export async function createAssessmentTemplate(formData: FormData) {
   } else {
     const singleLabelId = labelIds[0] || null;
     const insertPayload: any = {
-      branch_id: null,
+      branch_id: templateBranchId(category, branchId),
       category: category,
       title: title.trim(),
       materi: materi.trim(),
@@ -2428,7 +2478,7 @@ export async function updateAssessmentTemplate(id: string, formData: FormData) {
   // Re-insert template records for selected level IDs
   if (labelIds.length > 1) {
     const insertPayloads = labelIds.map((lId) => ({
-      branch_id: null,
+      branch_id: templateBranchId(category, branchId),
       category: category,
       title: title.trim(),
       materi: materi.trim(),
@@ -2464,7 +2514,7 @@ export async function updateAssessmentTemplate(id: string, formData: FormData) {
   } else {
     const singleLabelId = labelIds[0] || null;
     const insertPayload: any = {
-      branch_id: null,
+      branch_id: templateBranchId(category, branchId),
       category: category,
       title: title.trim(),
       materi: materi.trim(),
@@ -2821,16 +2871,14 @@ export async function updateModuleLockPassword(
       dbKeyMap[routeKey] || `lock_password_${routeKey.replace("/", "")}`;
     const supabaseServer = await createClient();
 
-    const { error } = await supabaseServer
-      .from("system_settings")
-      .upsert(
-        {
-          key: keyName,
-          value: cleanPass,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "key" },
-      );
+    const { error } = await supabaseServer.from("system_settings").upsert(
+      {
+        key: keyName,
+        value: cleanPass,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" },
+    );
 
     if (error) {
       console.warn(
@@ -2953,10 +3001,7 @@ export async function saveStudentRulesDocument(
 /**
  * Mengubah nama dokumen Upload File PDF
  */
-export async function renameStudentRulesDocument(
-  id: string,
-  newName: string,
-) {
+export async function renameStudentRulesDocument(id: string, newName: string) {
   try {
     const supabaseServer = await createClient();
     const {
