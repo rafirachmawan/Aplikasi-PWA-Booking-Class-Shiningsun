@@ -24,6 +24,9 @@ interface SchedulingClientWrapperProps {
   currentYear: number;
 }
 
+// Key localStorage riwayat siswa terakhir dipilih di dropdown penjadwalan
+const RECENT_STUDENTS_KEY = "shiningsun_recent_students_scheduling";
+
 export function SchedulingClientWrapper({
   students,
   classes,
@@ -54,6 +57,34 @@ export function SchedulingClientWrapper({
   const [isOpenStudentDropdown, setIsOpenStudentDropdown] = useState(false);
   const [studentSearchQuery, setStudentSearchQuery] = useState("");
   const studentDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Riwayat siswa terakhir dipilih: paling baru di atas; tanpa riwayat = alfabet
+  const [recentStudentIds, setRecentStudentIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(RECENT_STUDENTS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((x): x is string => typeof x === "string");
+        }
+      }
+    } catch {
+      // Abaikan jika localStorage tidak tersedia
+    }
+    return [];
+  });
+
+  const rememberRecentStudent = (id: string) => {
+    setRecentStudentIds((prev) => {
+      const next = [id, ...prev.filter((x) => x !== id)].slice(0, 10);
+      try {
+        localStorage.setItem(RECENT_STUDENTS_KEY, JSON.stringify(next));
+      } catch {
+        // Abaikan
+      }
+      return next;
+    });
+  };
 
   // Custom dropdown Tipe Kelas (per baris jadwal rutin)
   const [openClassIdx, setOpenClassIdx] = useState<number | null>(null);
@@ -432,9 +463,15 @@ export function SchedulingClientWrapper({
       );
     }
 
-    // Sort alphabetically by name (ABC) - primary sort
-    // If names are same, sort by nickname as fallback
-    return result.sort((a, b) => {
+    // Urutan: siswa dengan riwayat pilihan terakhir di atas (paling baru dulu),
+    // sisanya alfabetis. Tanpa riwayat, semua alfabetis seperti semula.
+    return [...result].sort((a, b) => {
+      const ra = recentStudentIds.indexOf(a.id);
+      const rb = recentStudentIds.indexOf(b.id);
+      if (ra !== -1 && rb !== -1 && ra !== rb) return ra - rb;
+      if (ra !== -1 && rb === -1) return -1;
+      if (ra === -1 && rb !== -1) return 1;
+
       const nameCompare = a.name.localeCompare(b.name, "id");
       if (nameCompare !== 0) return nameCompare;
 
@@ -443,7 +480,7 @@ export function SchedulingClientWrapper({
       const nickB = b.nickname || "";
       return nickA.localeCompare(nickB, "id");
     });
-  }, [students, studentSearchQuery]);
+  }, [students, studentSearchQuery, recentStudentIds]);
 
   return (
     <>
@@ -621,6 +658,7 @@ export function SchedulingClientWrapper({
                                 setStudentId(s.id);
                                 setStudentSearchQuery(s.name);
                                 setIsOpenStudentDropdown(false);
+                                rememberRecentStudent(s.id);
                               }
                             }}
                             className={`w-full px-3 py-2.5 text-xs text-left rounded-lg transition-colors flex items-center justify-between min-h-11 ${
@@ -1021,8 +1059,9 @@ export function SchedulingClientWrapper({
                             >
                               {schedule.classId ? (
                                 <span className="truncate text-left">
-                                  {classes.find((c) => c.id === schedule.classId)
-                                    ?.name || "-- Pilih Tipe Kelas --"}
+                                  {classes.find(
+                                    (c) => c.id === schedule.classId,
+                                  )?.name || "-- Pilih Tipe Kelas --"}
                                 </span>
                               ) : (
                                 <span className="truncate text-left text-slate-400 font-medium">
@@ -1096,8 +1135,7 @@ export function SchedulingClientWrapper({
                                                 c.id,
                                               )
                                             : null;
-                                        const isFull =
-                                          rem !== null && rem <= 0;
+                                        const isFull = rem !== null && rem <= 0;
                                         const isSelected =
                                           c.id === schedule.classId;
                                         return (
@@ -1310,11 +1348,9 @@ export function SchedulingClientWrapper({
                         {manualTime ? (
                           <span className="truncate text-left">
                             {manualTime} -{""}
-                            {
-                              String(
-                                parseInt(manualTime.split(":")[0], 10) + 1,
-                              ).padStart(2, "0")
-                            }
+                            {String(
+                              parseInt(manualTime.split(":")[0], 10) + 1,
+                            ).padStart(2, "0")}
                             :00
                           </span>
                         ) : (
