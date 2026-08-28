@@ -470,13 +470,13 @@ export function WorksheetFormModal({
       const reason = liburReasonTemplates[0]?.title || "";
       setAbsenceReason(reason);
       setMateri(holiday ? `Libur Hari Besar (${holiday})` : "Libur Hari Besar");
-      setKegiatanItems([
-        reason ||
-          (holiday ? `Kelas Diliburkan (${holiday})` : "Kelas Diliburkan"),
-      ]);
-      setHasilBelajarItems([
-        reason || (holiday ? `Libur ${holiday}` : "Libur Hari Besar"),
-      ]);
+      // Kegiatan & hasil belajar mengikuti libur global (nama hari besar),
+      // bukan dari template libur cabang.
+      const liburLine = holiday
+        ? `Ananda hari ini belajar di rumah dikarenakan Libur Hari Besar (${holiday})`
+        : "Ananda hari ini belajar di rumah dikarenakan Libur Hari Besar";
+      setKegiatanItems([liburLine]);
+      setHasilBelajarItems([liburLine]);
       setCatatanGuru(
         "Kelas diliburkan dalam rangka memperingati Libur Hari Besar.",
       );

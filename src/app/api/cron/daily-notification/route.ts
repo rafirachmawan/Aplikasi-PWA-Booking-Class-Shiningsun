@@ -74,14 +74,17 @@ async function autoFillHolidayWorksheets(todayStr: string, holiday: string) {
   const historyByStudent = new Map<string, any[]>();
   for (const w of history || []) {
     if (!w.worksheet_date) continue;
-    if (!historyByStudent.has(w.student_id)) historyByStudent.set(w.student_id, []);
+    if (!historyByStudent.has(w.student_id))
+      historyByStudent.set(w.student_id, []);
     historyByStudent.get(w.student_id)!.push(w);
   }
 
   const calcBulanKe = (sid: string): number => {
     const list = historyByStudent.get(sid) || [];
     if (list.length === 0) return 1;
-    list.sort((a, b) => String(a.worksheet_date).localeCompare(String(b.worksheet_date)));
+    list.sort((a, b) =>
+      String(a.worksheet_date).localeCompare(String(b.worksheet_date)),
+    );
     const earliest = list[0];
     const em = String(earliest.worksheet_date).match(/^(\d{4})-(\d{2})/);
     const cm = todayStr.match(/^(\d{4})-(\d{2})/);
@@ -93,15 +96,8 @@ async function autoFillHolidayWorksheets(todayStr: string, holiday: string) {
     return Math.max(1, start + diff);
   };
 
-  // 4. Alasan libur dari Template Penilaian (kategori 'libur'), jika ada
-  const { data: liburTemplates } = await supabase
-    .from("assessment_templates")
-    .select("title")
-    .eq("category", "libur")
-    .limit(1);
-  const reason = (liburTemplates && liburTemplates[0]?.title) || "";
-
-  // 5. Buat entri Libur otomatis
+  // 4. Buat entri Libur otomatis — kegiatan & hasil belajar mengikuti
+  // libur global (nama hari besar), bukan dari template libur cabang.
   const rows = toFill.map((id) => ({
     student_id: id,
     branch_id: scheduled.get(id)!.branchId,
@@ -110,9 +106,10 @@ async function autoFillHolidayWorksheets(todayStr: string, holiday: string) {
     worksheet_date: todayStr,
     gdrive_link: "",
     materi: `Libur Hari Besar (${holiday})`,
-    kegiatan: `- ${reason || `Kelas Diliburkan (${holiday})`}`,
-    hasil_belajar: `- ${reason || `Libur ${holiday}`}`,
-    catatan_guru: "Kelas diliburkan dalam rangka memperingati Libur Hari Besar.",
+    kegiatan: `- Ananda hari ini belajar di rumah dikarenakan Libur Hari Besar (${holiday})`,
+    hasil_belajar: `- Ananda hari ini belajar di rumah dikarenakan Libur Hari Besar (${holiday})`,
+    catatan_guru:
+      "Kelas diliburkan dalam rangka memperingati Libur Hari Besar.",
     rekomendasi_rumah: "Selamat berlibur bersama keluarga!",
     ttd_guru: "Otomatis (Tanggal Merah)",
     bulan_ke: calcBulanKe(id),
@@ -128,20 +125,32 @@ async function autoFillHolidayWorksheets(todayStr: string, holiday: string) {
 export async function GET(req: Request) {
   // Authorization check (Verify CRON_SECRET or allow GET in dev)
   const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET || "shiningsun_daily_cron_secret_key_2026";
+  const cronSecret =
+    process.env.CRON_SECRET || "shiningsun_daily_cron_secret_key_2026";
 
   if (
     process.env.NODE_ENV === "production" &&
     authHeader !== `Bearer ${cronSecret}`
   ) {
-    return NextResponse.json({ error: "Unauthorized cron call" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized cron call" },
+      { status: 401 },
+    );
   }
 
   try {
     // 1. Get today's date string (YYYY-MM-DD) in WIB timezone (+07:00)
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const DAYS = [
+      "Minggu",
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu",
+    ];
     const dayName = DAYS[now.getDay()];
 
     // 1b. Tanggal hari ini dalam WIB + isi otomatis worksheet Libur
@@ -157,13 +166,15 @@ export async function GET(req: Request) {
     // 2. Fetch all CG students and their scheduled slots
     const { data: cgStudents, error: cgErr } = await supabase
       .from("students")
-      .select(`
+      .select(
+        `
         id, name, nickname, status, branch_id,
         schedule_student (
           slot_id,
           schedule_slots ( id, date, time, branch_id )
         )
-      `)
+      `,
+      )
       .eq("status", "CG");
 
     if (cgErr) {
@@ -181,7 +192,9 @@ export async function GET(req: Request) {
         const bookings = student.schedule_student || [];
 
         bookings.forEach((b: any) => {
-          const slot = Array.isArray(b.schedule_slots) ? b.schedule_slots[0] : b.schedule_slots;
+          const slot = Array.isArray(b.schedule_slots)
+            ? b.schedule_slots[0]
+            : b.schedule_slots;
           if (!slot || !slot.date) return;
 
           const slotBranch = slot.branch_id || studentBranch;
@@ -236,9 +249,14 @@ export async function GET(req: Request) {
         const title = `🎯 Jadwal CG Hari Ini (${dayName})`;
         let bodyList = "";
         if (todaySessions.length <= 3) {
-          bodyList = todaySessions.map((s) => `${s.studentName} (${s.time})`).join(", ");
+          bodyList = todaySessions
+            .map((s) => `${s.studentName} (${s.time})`)
+            .join(", ");
         } else {
-          const firstTwo = todaySessions.slice(0, 2).map((s) => `${s.studentName} (${s.time})`).join(", ");
+          const firstTwo = todaySessions
+            .slice(0, 2)
+            .map((s) => `${s.studentName} (${s.time})`)
+            .join(", ");
           bodyList = `${firstTwo}, +${todaySessions.length - 2} lainnya`;
         }
 
@@ -270,7 +288,9 @@ export async function GET(req: Request) {
     let sentCount = 0;
 
     for (const sub of subscriptions) {
-      const { title, body, badgeCount } = getNotificationPayload(sub.branch_id || "ALL");
+      const { title, body, badgeCount } = getNotificationPayload(
+        sub.branch_id || "ALL",
+      );
 
       const result = await sendWebPushNotification(sub, {
         title,
@@ -296,6 +316,9 @@ export async function GET(req: Request) {
     });
   } catch (error: any) {
     console.error("Cron execution error:", error);
-    return NextResponse.json({ error: error.message || "Cron error" }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Cron error" },
+      { status: 500 },
+    );
   }
 }
