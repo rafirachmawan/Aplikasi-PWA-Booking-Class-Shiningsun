@@ -66,6 +66,12 @@ function formatAnandaLine(rawLine: string): string {
   return `Ananda ${clean}`;
 }
 
+function formatPlainLine(rawLine: string): string {
+  let clean = rawLine.replace(/^[-•*]\s*/, "").trim();
+  if (!clean || clean === "-") return "-";
+  return clean;
+}
+
 function formatDateIndonesian(dateStr?: string | null): string {
   if (!dateStr) return "-";
   try {
@@ -347,7 +353,11 @@ function DailyWorksheetSessionItem({
                       className="flex items-start gap-1.5 leading-relaxed"
                     >
                       <span className={bulletColorClass}>-</span>
-                      <span>{formatAnandaLine(line)}</span>
+                      <span>
+                        {isSakit || isIjin || isLibur
+                          ? formatPlainLine(line)
+                          : formatAnandaLine(line)}
+                      </span>
                     </div>
                   ))}
               </td>
@@ -363,7 +373,11 @@ function DailyWorksheetSessionItem({
                       className="flex items-start gap-1.5 leading-relaxed"
                     >
                       <span className={bulletColorClass}>-</span>
-                      <span>{formatAnandaLine(line)}</span>
+                      <span>
+                        {isSakit || isIjin || isLibur
+                          ? formatPlainLine(line)
+                          : formatAnandaLine(line)}
+                      </span>
                     </div>
                   ))}
               </td>

@@ -1,18 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { verifyParentAccess } from "@/lib/actions";
+import { verifyParentAccess, getBranches } from "@/lib/actions";
 import { InstallPWAButton } from "@/components/features/auth/InstallPWAButton";
 
 export default function ParentLoginPage() {
   const router = useRouter();
   const [studentName, setStudentName] = useState("");
   const [pin, setPin] = useState("");
+  const [branches, setBranches] = useState<any[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [showPin, setShowPin] = useState(false);
+
+  useEffect(() => {
+    getBranches().then((data) => {
+      if (data && data.length > 0) {
+        setBranches(data);
+      }
+    });
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +39,7 @@ export default function ParentLoginPage() {
     setErrorMsg("");
 
     try {
-      await verifyParentAccess(studentName, pin);
+      await verifyParentAccess(studentName, pin, selectedBranchId);
       window.location.href = "/portal-ortu/dashboard";
     } catch (err: any) {
       setErrorMsg(err.message || "Gagal masuk. Periksa nama siswa dan PIN.");
@@ -205,6 +215,58 @@ export default function ParentLoginPage() {
                     />
                   </svg>
                   <span>{errorMsg}</span>
+                </div>
+              )}
+
+              {/* Unit / Cabang Select */}
+              {branches.length > 0 && (
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-linear-to-r from-brand-500 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-15 transition duration-500 pointer-events-none"></div>
+                  <div className="relative flex items-center bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900 min-h-12.5">
+                    <div className="pl-3.5 pr-1 text-slate-400 dark:text-slate-500 shrink-0 pointer-events-none">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                    </div>
+                    <div className="relative flex-1 pr-3">
+                      <select
+                        id="branchSelect"
+                        value={selectedBranchId}
+                        onChange={(e) => setSelectedBranchId(e.target.value)}
+                        className="w-full bg-transparent pt-5 pb-2 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none cursor-pointer"
+                      >
+                        <option value="" className="text-slate-900 dark:text-slate-900">
+                          -- Semua Unit / Cabang --
+                        </option>
+                        {branches.map((b) => (
+                          <option
+                            key={b.id}
+                            value={b.id}
+                            className="text-slate-900 dark:text-slate-900"
+                          >
+                            Unit {b.name}
+                          </option>
+                        ))}
+                      </select>
+                      <label
+                        htmlFor="branchSelect"
+                        className="absolute left-0 top-1.5 text-slate-400 text-[11px] font-semibold pointer-events-none"
+                      >
+                        Pilih Unit / Cabang Sekolah
+                      </label>
+                    </div>
+                  </div>
                 </div>
               )}
 

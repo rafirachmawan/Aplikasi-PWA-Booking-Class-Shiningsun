@@ -162,7 +162,25 @@ export async function getBranchId() {
           b.name.toLowerCase().includes(prefix.toLowerCase()),
         );
         if (matched) return matched.id;
+
+        // Fallback: jika tidak cocok, gunakan cabang pertama yang tersedia
+        // agar data BRANCH_ADMIN tidak tercampur lintas unit
+        if (branches.length > 0) {
+          return branches[0].id;
+        }
       }
+    }
+
+    // Fallback terakhir: ambil cabang pertama yang aktif agar data tidak tercampur
+    const { data: firstBranch } = await supabaseServer
+      .from("branches")
+      .select("id")
+      .eq("is_active", true)
+      .order("name")
+      .limit(1)
+      .single();
+    if (firstBranch) {
+      return firstBranch.id;
     }
 
     return "ALL";
@@ -545,7 +563,8 @@ export async function createStudent(formData: FormData) {
     insertPayload.gender = gender;
   }
 
-  let { error } = await supabase.from("students").insert(insertPayload);
+  const supabaseServer = await createClient();
+  let { error } = await supabaseServer.from("students").insert(insertPayload);
 
   // Fallback jika kolom gender belum ada di database Supabase
   if (
@@ -556,7 +575,7 @@ export async function createStudent(formData: FormData) {
       error.code === "42703")
   ) {
     delete insertPayload.gender;
-    const retry = await supabase.from("students").insert(insertPayload);
+    const retry = await supabaseServer.from("students").insert(insertPayload);
     error = retry.error;
   }
 
@@ -578,6 +597,7 @@ export async function autoBookStudentToClass(
   startDateStr: string,
   time: string,
 ) {
+  const supabaseServer = await createClient();
   const branchId = await getBranchId();
 
   // 1. Hitung range sampai akhir bulan dari startDate
@@ -612,7 +632,7 @@ export async function autoBookStudentToClass(
   // 2. Loop setiap tanggal, cari slot, jika tidak ada buat baru
   for (const dateStr of datesToBook) {
     // Cari slot
-    let { data: slots, error: fetchError } = await supabase
+    let { data: slots, error: fetchError } = await supabaseServer
       .from("schedule_slots")
       .select(
         "id, class_id, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id)",
@@ -630,7 +650,7 @@ export async function autoBookStudentToClass(
 
     if (!slotId) {
       // Buat slot baru
-      const { data: newSlot, error: insertError } = await supabase
+      const { data: newSlot, error: insertError } = await supabaseServer
         .from("schedule_slots")
         .insert({
           branch_id: branchId,
@@ -661,7 +681,7 @@ export async function autoBookStudentToClass(
 
     if (!isFull && !alreadyBooked) {
       // Booking
-      const { error: bookErr } = await supabase
+      const { error: bookErr } = await supabaseServer
         .from("schedule_student")
         .insert({ student_id: studentId, schedule_slot_id: slotId });
 
@@ -681,10 +701,11 @@ export async function bookStudentManual(
   dateStr: string,
   time: string,
 ) {
+  const supabaseServer = await createClient();
   const branchId = await getBranchId();
 
   // Cari slot
-  let { data: slots, error: fetchError } = await supabase
+  let { data: slots, error: fetchError } = await supabaseServer
     .from("schedule_slots")
     .select(
       "id, class_id, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id)",
@@ -700,7 +721,7 @@ export async function bookStudentManual(
 
   if (!slotId) {
     // Buat slot baru
-    const { data: newSlot, error: insertError } = await supabase
+    const { data: newSlot, error: insertError } = await supabaseServer
       .from("schedule_slots")
       .insert({
         branch_id: branchId,
@@ -728,7 +749,7 @@ export async function bookStudentManual(
   }
 
   // Booking
-  const { error: bookErr } = await supabase
+  const { error: bookErr } = await supabaseServer
     .from("schedule_student")
     .insert({ student_id: studentId, schedule_slot_id: slotId });
 
@@ -740,7 +761,8 @@ export async function removeStudentBooking(
   scheduleSlotId: string,
   studentId: string,
 ) {
-  const { error } = await supabase
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer
     .from("schedule_student")
     .delete()
     .eq("schedule_slot_id", scheduleSlotId)
@@ -755,7 +777,8 @@ export async function bulkRemoveStudentBookings(
   scheduleSlotIds: string[],
 ) {
   if (scheduleSlotIds.length === 0) return true;
-  const { error } = await supabase
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer
     .from("schedule_student")
     .delete()
     .eq("student_id", studentId)
@@ -851,11 +874,13 @@ export async function getMonthlySchedules(year: number, month: number) {
   const branchId = await getBranchId();
   if (!branchId) return [];
 
+  const supabaseServer = await createClient();
+
   // Hitung tanggal awal dan akhir bulan
   const startDate = new Date(year, month - 1, 1).toISOString().split("T")[0];
   const endDate = new Date(year, month, 0).toISOString().split("T")[0]; // Hari terakhir bulan tersebut
 
-  let query = supabase
+  let query = supabaseServer
     .from("schedule_slots")
     .select(
       `
@@ -928,7 +953,8 @@ export async function createScheduleSlot(formData: FormData) {
     is_locked: false,
   }));
 
-  const { error } = await supabase.from("schedule_slots").insert(payload);
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer.from("schedule_slots").insert(payload);
 
   if (error) {
     console.error("Error creating schedule:", error);
@@ -942,9 +968,10 @@ export async function bookStudentToSlot(
   studentId: string,
   scheduleSlotId: string,
 ) {
+  const supabaseServer = await createClient();
   // Pessimistic Quota Check
   // 1. Dapatkan slot saat ini beserta kuota maksimal kelas
-  const { data: slotData, error: slotError } = await supabase
+  const { data: slotData, error: slotError } = await supabaseServer
     .from("schedule_slots")
     .select("is_locked, class:classes(max_quota)")
     .eq("id", scheduleSlotId)
@@ -963,7 +990,7 @@ export async function bookStudentToSlot(
   const maxQuota = (slotData.class as any)?.max_quota || 4;
 
   // 2. Hitung jumlah siswa yang sudah booking
-  const { count, error: countError } = await supabase
+  const { count, error: countError } = await supabaseServer
     .from("schedule_student")
     .select("*", { count: "exact", head: true })
     .eq("schedule_slot_id", scheduleSlotId);
@@ -977,7 +1004,7 @@ export async function bookStudentToSlot(
   }
 
   // 3. Insert jika masih aman
-  const { error: insertError } = await supabase
+  const { error: insertError } = await supabaseServer
     .from("schedule_student")
     .insert({
       schedule_slot_id: scheduleSlotId,
@@ -999,7 +1026,8 @@ export async function toggleSlotLock(
   scheduleSlotId: string,
   currentStatus: boolean,
 ) {
-  const { error } = await supabase
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer
     .from("schedule_slots")
     .update({ is_locked: !currentStatus })
     .eq("id", scheduleSlotId);
@@ -1026,7 +1054,8 @@ export async function createClass(formData: FormData) {
     );
   }
 
-  const { error } = await supabase.from("classes").insert({
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer.from("classes").insert({
     branch_id: branchId,
     name,
     // @ts-ignore: max_quota doesn't exist in generated types yet but is in the DB schema
@@ -1045,8 +1074,9 @@ export async function createLabel(formData: FormData) {
   const sub_level = formData.get("sub_level") as string;
   const hex_color = formData.get("hex_color") as string;
 
+  const supabaseServer = await createClient();
   // Labels are global — no branch_id needed
-  const { error } = await supabase.from("labels").insert({
+  const { error } = await supabaseServer.from("labels").insert({
     branch_id: null,
     is_system_default: false,
     main_level,
@@ -1066,14 +1096,16 @@ export async function createLabel(formData: FormData) {
 // =========================================
 
 export async function deleteStudent(id: string) {
-  const { error } = await supabase.from("students").delete().eq("id", id);
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer.from("students").delete().eq("id", id);
 
   if (error) throw new Error(error.message);
   return true;
 }
 
 export async function updateStudentStatus(id: string, status: string) {
-  const { error } = await supabase
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer
     .from("students")
     .update({ status })
     .eq("id", id);
@@ -1083,7 +1115,8 @@ export async function updateStudentStatus(id: string, status: string) {
 }
 
 export async function updateStudentLabel(id: string, labelId: string | null) {
-  const { error } = await supabase
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer
     .from("students")
     .update({ label_id: labelId || null })
     .eq("id", id);
@@ -1123,7 +1156,8 @@ export async function updateStudent(id: string, formData: FormData) {
     updatePayload.registration_date = registration_date;
   }
 
-  let { error } = await supabase
+  const supabaseServer = await createClient();
+  let { error } = await supabaseServer
     .from("students")
     .update(updatePayload)
     .eq("id", id);
@@ -1137,7 +1171,7 @@ export async function updateStudent(id: string, formData: FormData) {
       error.code === "42703")
   ) {
     delete updatePayload.gender;
-    const retry = await supabase
+    const retry = await supabaseServer
       .from("students")
       .update(updatePayload)
       .eq("id", id);
@@ -1149,7 +1183,8 @@ export async function updateStudent(id: string, formData: FormData) {
 }
 
 export async function cancelBooking(scheduleSlotId: string, studentId: string) {
-  const { error } = await supabase
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer
     .from("schedule_student")
     .delete()
     .match({ schedule_slot_id: scheduleSlotId, student_id: studentId });
@@ -1188,7 +1223,8 @@ export async function deleteClass(id: string) {
 }
 
 export async function deleteLabel(id: string) {
-  const { error } = await supabase.from("labels").delete().eq("id", id);
+  const supabaseServer = await createClient();
+  const { error } = await supabaseServer.from("labels").delete().eq("id", id);
 
   if (error)
     throw new Error(
@@ -1203,7 +1239,8 @@ export async function getSchedulesByDate(dateStr: string) {
   // Jika belum pilih cabang, return kosong
   if (!branchId) return [];
 
-  let query = supabase
+  const supabaseServer = await createClient();
+  let query = supabaseServer
     .from("schedule_slots")
     .select(
       `
@@ -1248,8 +1285,9 @@ export async function getStudentsByStatusWithSchedules(
   const branchId = await getBranchId();
   if (!branchId) return [];
 
+  const supabaseServer = await createClient();
   // 1. Fetch students by status
-  let studentQuery = supabase
+  let studentQuery = supabaseServer
     .from("students")
     .select(
       "id, name, nickname, gender, status, label_id, label:labels(id, main_level, sub_level, hex_color)",
@@ -1270,7 +1308,7 @@ export async function getStudentsByStatusWithSchedules(
   const studentIds = students.map((s) => s.id);
   if (studentIds.length === 0) return [];
 
-  let schedQuery = supabase
+  let schedQuery = supabaseServer
     .from("schedule_student")
     .select(
       `
@@ -1337,8 +1375,9 @@ export async function getClassesWithSchedules() {
   const branchId = await getBranchId();
   if (!branchId) return [];
 
+  const supabaseServer = await createClient();
   // 1. Fetch classes
-  let classQuery = supabase
+  let classQuery = supabaseServer
     .from("classes")
     .select("*, branch:branches(name)")
     .order("name", { ascending: true });
@@ -1356,7 +1395,7 @@ export async function getClassesWithSchedules() {
   if (classIds.length === 0) return [];
 
   // 3. Fetch schedule slots with student bookings
-  let slotQuery = supabase
+  let slotQuery = supabaseServer
     .from("schedule_slots")
     .select(
       `
@@ -1515,7 +1554,8 @@ export async function getAllUsers() {
   const role = await getCurrentUserRole();
   if (role !== "SUPERADMIN") throw new Error("Akses ditolak");
 
-  const { data, error } = await supabase
+  const supabaseServer = await createClient();
+  const { data, error } = await supabaseServer
     .from("users")
     .select("*, branch:branches(name)")
     .order("created_at", { ascending: false });
@@ -1816,19 +1856,26 @@ export async function updateStudentAccessPin(
 
   revalidatePath("/students");
   revalidatePath("/portal-ortu/dashboard");
+  revalidatePath("/worksheets");
   return true;
 }
 
 export async function verifyParentAccess(
   studentNameOrSearch: string,
   pin: string,
+  branchId?: string,
 ) {
   if (!studentNameOrSearch || !pin) {
     throw new Error("Nama Siswa dan PIN Akses wajib diisi.");
   }
 
-  const cleanSearch = studentNameOrSearch.trim().toLowerCase();
+  const cleanSearchRaw = studentNameOrSearch.trim();
   const cleanPin = pin.trim();
+
+  const normalizeText = (str: string | null | undefined) =>
+    (str || "").trim().toLowerCase().replace(/\s+/g, " ");
+
+  const cleanSearch = normalizeText(cleanSearchRaw);
 
   const supabaseServer = await createClient();
 
@@ -1836,8 +1883,8 @@ export async function verifyParentAccess(
   let error: any = null;
 
   const primaryRes = await supabaseServer.from("students").select(`
-      id, name, nickname, gender, date_of_birth, status, registration_date, access_pin,
-      branch:branches(name),
+      id, name, nickname, gender, date_of_birth, status, registration_date, access_pin, branch_id,
+      branch:branches(id, name),
       label:labels(id, main_level, sub_level, hex_color)
     `);
 
@@ -1846,8 +1893,8 @@ export async function verifyParentAccess(
 
   if (error) {
     const fallbackRes = await supabaseServer.from("students").select(`
-        id, name, nickname, gender, date_of_birth, status, registration_date,
-        branch:branches(name),
+        id, name, nickname, gender, date_of_birth, status, registration_date, branch_id,
+        branch:branches(id, name),
         label:labels(id, main_level, sub_level, hex_color)
       `);
     students = fallbackRes.data;
@@ -1860,42 +1907,83 @@ export async function verifyParentAccess(
     );
   }
 
-  // Priority-based matching: exact match first, then partial match as fallback
-  // This prevents "Rafi" from matching "Syafira" instead of the actual student named "Rafi"
-
-  // Helper: check if a student's PIN matches
-  const pinMatches = (s: any) => (s.access_pin || "123456") === cleanPin;
-
-  // 1. Exact nickname match (case-insensitive) — highest priority
-  let matchedStudent = students.find(
-    (s) =>
-      s.nickname && s.nickname.toLowerCase() === cleanSearch && pinMatches(s),
-  );
-
-  // 2. Exact full name match (case-insensitive)
-  if (!matchedStudent) {
-    matchedStudent = students.find(
-      (s) => s.name.toLowerCase() === cleanSearch && pinMatches(s),
+  // Filter per Unit/Cabang jika dipilih oleh orang tua
+  if (branchId && branchId.trim() !== "" && branchId !== "ALL") {
+    const cleanBranchId = branchId.trim();
+    students = students.filter(
+      (s) =>
+        s.branch_id === cleanBranchId ||
+        s.branch?.id === cleanBranchId ||
+        (s.branch?.name &&
+          normalizeText(s.branch.name) === normalizeText(cleanBranchId)),
     );
+    if (students.length === 0) {
+      throw new Error(
+        "Siswa tidak ditemukan pada Unit/Cabang yang dipilih. Mohon periksa kembali pilihan Unit/Cabang.",
+      );
+    }
   }
 
-  // 3. Name starts with search term (more specific than includes)
+  // Helper: check if a student's PIN matches (fallback to "123456" if null/empty/whitespace)
+  const getStudentPin = (s: any) => {
+    if (s.access_pin && String(s.access_pin).trim() !== "") {
+      return String(s.access_pin).trim();
+    }
+    return "123456";
+  };
+
+  const pinMatches = (s: any) => getStudentPin(s) === cleanPin;
+
+  // Order students so ACTIVE students are checked before INACTIVE ones.
+  // This prevents an inactive student record with the same PIN from shadowing an active student.
+  const activeStudents = students.filter((s) => s.status !== "INACTIVE");
+  const inactiveStudents = students.filter((s) => s.status === "INACTIVE");
+  const orderedStudents = [...activeStudents, ...inactiveStudents];
+
+  // Priority-based matching logic:
+  // 1. Exact full name match (case & whitespace insensitive) — highest priority
+  let matchedStudent = orderedStudents.find((s) => {
+    const nameNorm = normalizeText(s.name);
+    return nameNorm === cleanSearch && pinMatches(s);
+  });
+
+  // 2. Exact nickname match (case & whitespace insensitive)
   if (!matchedStudent) {
-    matchedStudent = students.find((s) => {
-      const nameStartsWith = s.name.toLowerCase().startsWith(cleanSearch);
-      const nicknameStartsWith =
-        s.nickname && s.nickname.toLowerCase().startsWith(cleanSearch);
+    matchedStudent = orderedStudents.find((s) => {
+      const nickNorm = normalizeText(s.nickname);
+      return nickNorm && nickNorm === cleanSearch && pinMatches(s);
+    });
+  }
+
+  // 3. Exact word in full name match (e.g., searching "Elvano" for "Muhammad Elvano")
+  if (!matchedStudent) {
+    matchedStudent = orderedStudents.find((s) => {
+      const nameNorm = normalizeText(s.name);
+      const words = nameNorm.split(" ");
+      return words.includes(cleanSearch) && pinMatches(s);
+    });
+  }
+
+  // 4. Name or nickname starts with search term
+  if (!matchedStudent) {
+    matchedStudent = orderedStudents.find((s) => {
+      const nameNorm = normalizeText(s.name);
+      const nickNorm = normalizeText(s.nickname);
+      const nameStartsWith = nameNorm.startsWith(cleanSearch);
+      const nicknameStartsWith = nickNorm && nickNorm.startsWith(cleanSearch);
       return (nameStartsWith || nicknameStartsWith) && pinMatches(s);
     });
   }
 
-  // 4. Partial match (contains) as last resort
+  // 5. Partial match (contains / ID match) as last resort
   if (!matchedStudent) {
-    matchedStudent = students.find((s) => {
+    matchedStudent = orderedStudents.find((s) => {
+      const nameNorm = normalizeText(s.name);
+      const nickNorm = normalizeText(s.nickname);
       const nameMatch =
-        s.name.toLowerCase().includes(cleanSearch) ||
-        (s.nickname && s.nickname.toLowerCase().includes(cleanSearch)) ||
-        s.id === cleanSearch;
+        nameNorm.includes(cleanSearch) ||
+        nickNorm.includes(cleanSearch) ||
+        s.id === cleanSearchRaw;
       return nameMatch && pinMatches(s);
     });
   }

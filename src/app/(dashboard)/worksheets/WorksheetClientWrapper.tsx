@@ -317,10 +317,10 @@ export function WorksheetClientWrapper({
       if (!map.has(groupKey)) {
         const fullStudent = students.find((s) => s.id === sId);
         const studentObj = {
-          ...(fullStudent || {}),
           ...(w.student || {}),
+          ...(fullStudent || {}),
           date_of_birth:
-            w.student?.date_of_birth || fullStudent?.date_of_birth || null,
+            fullStudent?.date_of_birth || w.student?.date_of_birth || null,
         };
         map.set(groupKey, { student: studentObj, bulanKe: bk, worksheets: [] });
       }

@@ -21,6 +21,11 @@ async function getAccessTokenFromRefreshToken(
 
   const data = await res.json();
   if (!res.ok) {
+    if (data.error === "invalid_grant" || (data.error_description && data.error_description.includes("grant"))) {
+      throw new Error(
+        "Akses Google Drive telah kadaluarsa atau dicabut. Silakan buka /api/auth/gdrive untuk menghubungkan kembali."
+      );
+    }
     throw new Error(
       `Google OAuth refresh error: ${data.error_description || data.error || JSON.stringify(data)}`
     );

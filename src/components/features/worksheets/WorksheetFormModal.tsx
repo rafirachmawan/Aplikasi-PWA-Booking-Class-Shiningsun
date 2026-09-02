@@ -54,6 +54,73 @@ function formatAnandaLine(rawLine: string): string {
   return `Ananda ${clean}`;
 }
 
+/**
+ * Kompresi foto secara otomatis di browser sebelum diunggah.
+ * Mengubah foto kamera HP yang berukuran besar (8-15 MB) menjadi ~200-400 KB
+ * sehingga proses upload instan dan tidak kena limit payload Vercel/Next.js.
+ */
+async function compressImage(
+  file: File,
+  maxWidth = 1600,
+  maxHeight = 1600,
+  quality = 0.8,
+): Promise<File> {
+  if (!file.type || !file.type.startsWith("image/")) return file;
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxWidth || height > maxHeight) {
+        if (width > height) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        } else {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+          const compressedFile = new File(
+            [blob],
+            file.name.replace(/\.[^/.]+$/, "") + ".jpg",
+            { type: "image/jpeg" },
+          );
+          resolve(compressedFile);
+        },
+        "image/jpeg",
+        quality,
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
+}
+
+function formatPlainLine(rawLine: string): string {
+  let clean = rawLine.replace(/^[-•*]\s*/, "").trim();
+  if (!clean || clean === "-") return "-";
+  return clean;
+}
+
 export function WorksheetFormModal({
   students,
   teachers = [],
@@ -446,10 +513,10 @@ export function WorksheetFormModal({
       const reason = ijinReasonTemplates[0]?.title || "";
       setAbsenceReason(reason);
       setMateri("Tidak Hadir (Ijin)");
-      setKegiatanItems([reason || "Siswa Ijin (Tidak Mengikuti Sesi Kelas)"]);
-      setHasilBelajarItems([reason || "Siswa Ijin"]);
+      setKegiatanItems([reason || "Ijin (Tidak Mengikuti Sesi Kelas)"]);
+      setHasilBelajarItems([reason || "Ijin"]);
       setCatatanGuru(
-        "Ananda tidak dapat mengikuti kelas hari ini karena Ijin.",
+        "Tidak dapat mengikuti kelas hari ini karena Ijin.",
       );
       setRekomendasiRumah(
         "Dapat mempelajari materi mandiri jika memungkinkan.",
@@ -458,10 +525,10 @@ export function WorksheetFormModal({
       const reason = sakitReasonTemplates[0]?.title || "";
       setAbsenceReason(reason);
       setMateri("Tidak Hadir (Sakit)");
-      setKegiatanItems([reason || "Siswa Sakit (Istirahat di Rumah)"]);
-      setHasilBelajarItems([reason || "Siswa Sakit"]);
+      setKegiatanItems([reason || "Sakit (Istirahat di Rumah)"]);
+      setHasilBelajarItems([reason || "Sakit"]);
       setCatatanGuru(
-        "Ananda tidak dapat mengikuti kelas hari ini karena Sakit. Semoga lekas sembuh! 🌸",
+        "Tidak dapat mengikuti kelas hari ini karena Sakit. Semoga lekas sembuh! 🌸",
       );
       setRekomendasiRumah("Istirahat yang cukup hingga kondisi fit kembali.");
     } else if (status === "LIBUR" || status === "LIBUR_HARI_BESAR") {
@@ -473,8 +540,8 @@ export function WorksheetFormModal({
       // Kegiatan & hasil belajar mengikuti libur global (nama hari besar),
       // bukan dari template libur cabang.
       const liburLine = holiday
-        ? `Ananda hari ini belajar di rumah dikarenakan Libur Hari Besar (${holiday})`
-        : "Ananda hari ini belajar di rumah dikarenakan Libur Hari Besar";
+        ? `Hari ini belajar di rumah dikarenakan Libur Hari Besar (${holiday})`
+        : "Hari ini belajar di rumah dikarenakan Libur Hari Besar";
       setKegiatanItems([liburLine]);
       setHasilBelajarItems([liburLine]);
       setCatatanGuru(
@@ -525,8 +592,13 @@ export function WorksheetFormModal({
     setUploadError(null);
 
     try {
+      // Kompresi gambar client-side (kamera HP 15MB -> ~300KB) agar cepat & tidak error 413
+      const compressedFile = target.type?.startsWith("image/")
+        ? await compressImage(target)
+        : target;
+
       const formData = new FormData();
-      formData.append("file", target);
+      formData.append("file", compressedFile);
 
       const res = await fetch("/api/upload-gdrive", {
         method: "POST",
@@ -542,7 +614,7 @@ export function WorksheetFormModal({
         setGdriveLink(data.gdriveLink);
       }
     } catch (err: any) {
-      console.error(err);
+      console.error("Upload error:", err);
       setUploadError(err.message || "Gagal mengunggah file");
     } finally {
       setIsUploadingGDrive(false);
@@ -2882,8 +2954,24 @@ export function WorksheetFormModal({
               )}
 
               {uploadError && (
-                <div className="p-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-[11px] text-red-600 dark:text-red-400">
-                  ⚠️ {uploadError}
+                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-xs text-red-600 dark:text-red-400 space-y-2">
+                  <div className="flex items-start gap-1.5 font-medium">
+                    <span className="shrink-0">⚠️</span>
+                    <span>{uploadError}</span>
+                  </div>
+                  {(uploadError.includes("/api/auth/gdrive") ||
+                    uploadError.includes("Google Drive belum terhubung") ||
+                    uploadError.includes("kadaluarsa")) && (
+                    <a
+                      href="/api/auth/gdrive"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 mt-1 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-[11px] transition-colors shadow-xs"
+                    >
+                      <span>🔗</span>
+                      <span>Otorisasi / Hubungkan Google Drive Sekarang</span>
+                    </a>
+                  )}
                 </div>
               )}
             </div>
@@ -3065,7 +3153,11 @@ export function WorksheetFormModal({
                                   <span className="text-sky-500 font-bold shrink-0 mt-0.5">
                                     -
                                   </span>
-                                  <span>{formatAnandaLine(line)}</span>
+                                  <span>
+                                    {isAbsent
+                                      ? formatPlainLine(line)
+                                      : formatAnandaLine(line)}
+                                  </span>
                                 </div>
                               ))
                           ) : (
@@ -3087,7 +3179,11 @@ export function WorksheetFormModal({
                                   <span className="text-sky-500 font-bold shrink-0 mt-0.5">
                                     -
                                   </span>
-                                  <span>{formatAnandaLine(line)}</span>
+                                  <span>
+                                    {isAbsent
+                                      ? formatPlainLine(line)
+                                      : formatAnandaLine(line)}
+                                  </span>
                                 </div>
                               ))
                           ) : (

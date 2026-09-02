@@ -456,10 +456,13 @@ export function SchedulingClientWrapper({
   const filteredStudents = useMemo(() => {
     let result = students;
 
-    // Filter based on search query
+    // Filter based on search query (matches name or nickname like in Kelola Siswa)
     if (studentSearchQuery.trim()) {
-      result = students.filter((s) =>
-        s.name.toLowerCase().includes(studentSearchQuery.toLowerCase()),
+      const q = studentSearchQuery.toLowerCase().trim();
+      result = students.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          (s.nickname && s.nickname.toLowerCase().includes(q)),
       );
     }
 
@@ -675,6 +678,11 @@ export function SchedulingClientWrapper({
                                 className={`font-medium ${isSelected ? "text-brand-700 dark:text-brand-300 font-semibold" : isInactive ? "text-slate-500 dark:text-slate-400" : ""}`}
                               >
                                 {s.name}
+                                {s.nickname ? (
+                                  <span className="text-slate-400 dark:text-slate-500 font-normal ml-1">
+                                    ({s.nickname})
+                                  </span>
+                                ) : null}
                               </span>
                               {isInactive && (
                                 <span className="text-[9px] text-red-500 dark:text-red-400 font-medium mt-0.5">
