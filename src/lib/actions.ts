@@ -1946,9 +1946,9 @@ export async function verifyParentAccess(
   studentNameOrSearch: string,
   pin: string,
   branchId?: string,
-) {
+): Promise<{ success: boolean; error?: string; student?: any }> {
   if (!studentNameOrSearch || !pin) {
-    throw new Error("Nama Siswa dan PIN Akses wajib diisi.");
+    return { success: false, error: "Nama Siswa dan PIN Akses wajib diisi." };
   }
 
   const cleanSearchRaw = studentNameOrSearch.trim();
@@ -1984,9 +1984,10 @@ export async function verifyParentAccess(
   }
 
   if (error || !students || students.length === 0) {
-    throw new Error(
-      "Data siswa tidak ditemukan. Mohon periksa kembali nama yang dimasukkan.",
-    );
+    return {
+      success: false,
+      error: "Data siswa tidak ditemukan. Mohon periksa kembali nama yang dimasukkan.",
+    };
   }
 
   // Filter per Unit/Cabang jika dipilih oleh orang tua
@@ -2000,9 +2001,10 @@ export async function verifyParentAccess(
           normalizeText(s.branch.name) === normalizeText(cleanBranchId)),
     );
     if (students.length === 0) {
-      throw new Error(
-        "Siswa tidak ditemukan pada Unit/Cabang yang dipilih. Mohon periksa kembali pilihan Unit/Cabang.",
-      );
+      return {
+        success: false,
+        error: "Siswa tidak ditemukan pada Unit/Cabang yang dipilih. Mohon periksa kembali pilihan Unit/Cabang.",
+      };
     }
   }
 
@@ -2063,20 +2065,23 @@ export async function verifyParentAccess(
     });
 
     if (nameFoundButPinWrong) {
-      throw new Error(
-        "PIN Akses salah. Silakan masukkan PIN yang benar atau hubungi admin sekolah.",
-      );
+      return {
+        success: false,
+        error: "PIN Akses salah. Silakan masukkan PIN yang benar atau hubungi admin sekolah.",
+      };
     } else {
-      throw new Error(
-        "Nama Siswa tidak ditemukan. Pastikan Anda memasukkan Nama Panggilan atau Nama Lengkap yang benar.",
-      );
+      return {
+        success: false,
+        error: "Nama Siswa tidak ditemukan. Pastikan Anda memasukkan Nama Panggilan atau Nama Lengkap yang benar.",
+      };
     }
   }
 
   if (matchedStudent.status === "INACTIVE") {
-    throw new Error(
-      "Akun siswa ini sedang Nonaktif. Silakan hubungi pihak admin sekolah.",
-    );
+    return {
+      success: false,
+      error: "Akun siswa ini sedang Nonaktif. Silakan hubungi pihak admin sekolah.",
+    };
   }
 
   // Set session cookie for Parent Portal (valid for 7 days)
@@ -2089,7 +2094,7 @@ export async function verifyParentAccess(
 
   // Exclude access_pin from returned student object
   const { access_pin, ...safeStudent } = matchedStudent;
-  return safeStudent;
+  return { success: true, student: safeStudent };
 }
 
 export async function getParentSessionStudent() {

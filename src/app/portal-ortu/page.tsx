@@ -39,10 +39,15 @@ export default function ParentLoginPage() {
     setErrorMsg("");
 
     try {
-      await verifyParentAccess(studentName, pin, selectedBranchId);
+      const result = await verifyParentAccess(studentName, pin, selectedBranchId);
+      if (!result.success) {
+        setErrorMsg(result.error || "Gagal masuk. Periksa nama siswa dan PIN.");
+        setIsLoading(false);
+        return;
+      }
       window.location.href = "/portal-ortu/dashboard";
     } catch (err: any) {
-      setErrorMsg(err.message || "Gagal masuk. Periksa nama siswa dan PIN.");
+      setErrorMsg("Terjadi kesalahan koneksi. Silakan coba lagi.");
       setIsLoading(false);
     }
   };
