@@ -373,9 +373,10 @@ export async function getStudentScheduleMap(
   if (!studentIds || studentIds.length === 0) return {};
   try {
     const supabaseServer = await createClient();
+    const today = getTodayISO();
 
-    // Query bookings for these students
-    const { data: bookings } = await supabaseServer
+    // Query upcoming/current active bookings for these students (from today onwards)
+    let { data: bookings } = await supabaseServer
       .from("schedule_student")
       .select(
         `
@@ -385,7 +386,33 @@ export async function getStudentScheduleMap(
         )
       `,
       )
-      .in("student_id", studentIds);
+      .in("student_id", studentIds)
+      .gte("slot.date", today);
+
+    // Fallback: jika belum ada slot mendatang (misal di akhir bulan), ambil slot bulan berjalan
+    const foundStudentIds = new Set((bookings || []).map((b) => b.student_id));
+    const missingStudentIds = studentIds.filter((id) => !foundStudentIds.has(id));
+
+    if (missingStudentIds.length > 0) {
+      const now = new Date();
+      const firstDayOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const { data: monthBookings } = await supabaseServer
+        .from("schedule_student")
+        .select(
+          `
+          student_id,
+          slot:schedule_slots!inner(
+            date, time
+          )
+        `,
+        )
+        .in("student_id", missingStudentIds)
+        .gte("slot.date", firstDayOfMonth);
+
+      if (monthBookings && monthBookings.length > 0) {
+        bookings = [...(bookings || []), ...monthBookings];
+      }
+    }
 
     const scheduleMap: Record<string, string> = {};
 
@@ -598,15 +625,32 @@ export async function autoBookStudentToClass(
   time: string,
 ) {
   const supabaseServer = await createClient();
-  const branchId = await getBranchId();
+  let branchId = await getBranchId();
 
-  // 1. Hitung range sampai akhir bulan dari startDate
-  const startDate = new Date(startDateStr);
-  const endDate = new Date(
-    startDate.getFullYear(),
-    startDate.getMonth() + 1,
-    0,
-  ); // Hari terakhir bulan tersebut
+  // Pick branchId safely: if branchId is "ALL" or empty, fetch student's or class's branch_id
+  if (!branchId || branchId === "ALL") {
+    const { data: st } = await supabaseServer
+      .from("students")
+      .select("branch_id")
+      .eq("id", studentId)
+      .maybeSingle();
+    if (st?.branch_id) {
+      branchId = st.branch_id;
+    } else {
+      const { data: cl } = await supabaseServer
+        .from("classes")
+        .select("branch_id")
+        .eq("id", classId)
+        .maybeSingle();
+      if (cl?.branch_id) branchId = cl.branch_id;
+    }
+  }
+  const finalBranchId = branchId === "ALL" ? null : branchId;
+
+  // 1. Hitung range sampai akhir bulan dari startDate (parse lokal tanpa offset UTC)
+  const parts = startDateStr.split("-").map(Number);
+  const startDate = new Date(parts[0], parts[1] - 1, parts[2] || 1);
+  const endDate = new Date(parts[0], parts[1], 0); // Hari terakhir bulan tersebut
 
   const dayOfWeek = startDate.getDay();
   const datesToBook: string[] = [];
@@ -628,18 +672,19 @@ export async function autoBookStudentToClass(
 
   let bookedCount = 0;
   const failedDates: string[] = [];
+  const timeVariants = Array.from(new Set([time, `${time}:00`, time.substring(0, 5)]));
 
   // 2. Loop setiap tanggal, cari slot, jika tidak ada buat baru
   for (const dateStr of datesToBook) {
-    // Cari slot
+    // Cari slot dengan mencocokkan variasi format jam
     let { data: slots, error: fetchError } = await supabaseServer
       .from("schedule_slots")
       .select(
         "id, class_id, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id)",
       )
       .eq("date", dateStr)
-      .eq("time", time)
-      .eq("class_id", classId);
+      .eq("class_id", classId)
+      .in("time", timeVariants);
 
     if (fetchError)
       throw new Error("Gagal mengambil jadwal: " + fetchError.message);
@@ -653,7 +698,7 @@ export async function autoBookStudentToClass(
       const { data: newSlot, error: insertError } = await supabaseServer
         .from("schedule_slots")
         .insert({
-          branch_id: branchId,
+          branch_id: finalBranchId,
           class_id: classId,
           date: dateStr,
           time: time,
@@ -670,7 +715,15 @@ export async function autoBookStudentToClass(
     } else {
       // Cek kuota
       const slot = slots![0];
-      const maxQ = (slot.max_quota as any).max_quota || 4;
+      let maxQ = 4;
+      if (slot.max_quota) {
+        if (Array.isArray(slot.max_quota) && slot.max_quota.length > 0) {
+          maxQ = (slot.max_quota[0] as any).max_quota || 4;
+        } else if (typeof slot.max_quota === "object") {
+          maxQ = (slot.max_quota as any).max_quota || 4;
+        }
+      }
+
       if (slot.bookings && slot.bookings.length >= maxQ) {
         isFull = true;
       }
@@ -702,7 +755,28 @@ export async function bookStudentManual(
   time: string,
 ) {
   const supabaseServer = await createClient();
-  const branchId = await getBranchId();
+  let branchId = await getBranchId();
+
+  if (!branchId || branchId === "ALL") {
+    const { data: st } = await supabaseServer
+      .from("students")
+      .select("branch_id")
+      .eq("id", studentId)
+      .maybeSingle();
+    if (st?.branch_id) {
+      branchId = st.branch_id;
+    } else {
+      const { data: cl } = await supabaseServer
+        .from("classes")
+        .select("branch_id")
+        .eq("id", classId)
+        .maybeSingle();
+      if (cl?.branch_id) branchId = cl.branch_id;
+    }
+  }
+  const finalBranchId = branchId === "ALL" ? null : branchId;
+
+  const timeVariants = Array.from(new Set([time, `${time}:00`, time.substring(0, 5)]));
 
   // Cari slot
   let { data: slots, error: fetchError } = await supabaseServer
@@ -711,8 +785,8 @@ export async function bookStudentManual(
       "id, class_id, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id)",
     )
     .eq("date", dateStr)
-    .eq("time", time)
-    .eq("class_id", classId);
+    .eq("class_id", classId)
+    .in("time", timeVariants);
 
   if (fetchError)
     throw new Error("Gagal mengambil jadwal: " + fetchError.message);
@@ -724,7 +798,7 @@ export async function bookStudentManual(
     const { data: newSlot, error: insertError } = await supabaseServer
       .from("schedule_slots")
       .insert({
-        branch_id: branchId,
+        branch_id: finalBranchId,
         class_id: classId,
         date: dateStr,
         time: time,
@@ -739,7 +813,15 @@ export async function bookStudentManual(
   } else {
     // Cek kuota
     const slot = slots![0];
-    const maxQ = (slot.max_quota as any).max_quota || 4;
+    let maxQ = 4;
+    if (slot.max_quota) {
+      if (Array.isArray(slot.max_quota) && slot.max_quota.length > 0) {
+        maxQ = (slot.max_quota[0] as any).max_quota || 4;
+      } else if (typeof slot.max_quota === "object") {
+        maxQ = (slot.max_quota as any).max_quota || 4;
+      }
+    }
+
     if (slot.bookings && slot.bookings.length >= maxQ) {
       throw new Error("Sesi pada tanggal dan jam tersebut sudah penuh.");
     }

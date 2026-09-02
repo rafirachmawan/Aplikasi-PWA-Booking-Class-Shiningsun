@@ -102,6 +102,8 @@ export function SchedulingClientWrapper({
     null,
   );
   const [manualDDSearch, setManualDDSearch] = useState("");
+  const [openAutoTimeIndex, setOpenAutoTimeIndex] = useState<number | null>(null);
+  const [openEditTimeDD, setOpenEditTimeDD] = useState<boolean>(false);
 
   useEffect(() => {
     if (openManualDD !== null) {
@@ -969,49 +971,130 @@ export function SchedulingClientWrapper({
                                   e.target.value,
                                 )
                               }
-                              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-3.5 pr-9 py-2.5 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
+                              tabIndex={-1}
+                              aria-hidden="true"
+                              className="absolute opacity-0 pointer-events-none w-px h-px"
                             >
-                              {timeSlots.map((t) => {
-                                const rem = schedule.classId
-                                  ? getRemainingSlots(
-                                      schedule.startDate,
-                                      t,
-                                      schedule.classId,
-                                    )
-                                  : null;
-                                const isFull = rem !== null && rem <= 0;
-                                const endHour = String(
-                                  parseInt(t.split(":")[0], 10) + 1,
-                                ).padStart(2, "0");
-                                const labelText =
-                                  rem !== null
-                                    ? isFull
-                                      ? `${t} - ${endHour}:00 (Penuh)`
-                                      : `${t} - ${endHour}:00 (Sisa ${rem})`
-                                    : `${t} - ${endHour}:00`;
-
-                                return (
-                                  <option key={t} value={t} disabled={isFull}>
-                                    {labelText}
-                                  </option>
-                                );
-                              })}
+                              {timeSlots.map((t) => (
+                                <option key={t} value={t}>
+                                  {t}
+                                </option>
+                              ))}
                             </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setOpenAutoTimeIndex(
+                                  openAutoTimeIndex === index ? null : index,
+                                )
+                              }
+                              className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-slate-900 pl-3.5 pr-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white shadow-2xs transition-all cursor-pointer h-11 ${
+                                openAutoTimeIndex === index
+                                  ? "border-brand-500 ring-2 ring-brand-500/30"
+                                  : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                              }`}
+                            >
+                              {schedule.time ? (
+                                <span className="truncate text-left">
+                                  {schedule.time} -{" "}
+                                  {String(
+                                    parseInt(schedule.time.split(":")[0], 10) +
+                                      1,
+                                  ).padStart(2, "0")}
+                                  :00
+                                </span>
+                              ) : (
+                                <span className="truncate text-left text-slate-400 font-medium">
+                                  -- Pilih Jam --
+                                </span>
+                              )}
                               <svg
-                                className="h-4 w-4 text-slate-400"
-                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
                                 viewBox="0 0 24 24"
+                                fill="none"
                                 stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className={`text-slate-400 transition-transform duration-200 shrink-0 ${
+                                  openAutoTimeIndex === index
+                                    ? "rotate-180 text-brand-500"
+                                    : ""
+                                }`}
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2.5"
-                                  d="M19 9l-7 7-7-7"
-                                />
+                                <path d="m6 9 6 6 6-6" />
                               </svg>
-                            </div>
+                            </button>
+
+                            {openAutoTimeIndex === index && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-40"
+                                  onClick={() => setOpenAutoTimeIndex(null)}
+                                />
+                                <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                                  <div className="max-h-52 overflow-y-auto space-y-1">
+                                    {timeSlots.map((t) => {
+                                      const rem = schedule.classId
+                                        ? getRemainingSlots(
+                                            schedule.startDate,
+                                            t,
+                                            schedule.classId,
+                                          )
+                                        : null;
+                                      const isFull = rem !== null && rem <= 0;
+                                      const endHour = String(
+                                        parseInt(t.split(":")[0], 10) + 1,
+                                      ).padStart(2, "0");
+                                      const isSelected = schedule.time === t;
+
+                                      return (
+                                        <button
+                                          key={t}
+                                          type="button"
+                                          disabled={isFull}
+                                          onClick={() => {
+                                            updateAutoSchedule(
+                                              index,
+                                              "time",
+                                              t,
+                                            );
+                                            setOpenAutoTimeIndex(null);
+                                          }}
+                                          className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                                            isFull
+                                              ? "opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800/40"
+                                              : "cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                                          } ${
+                                            isSelected
+                                              ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40 text-brand-600 dark:text-brand-400 font-bold"
+                                              : "text-slate-900 dark:text-white"
+                                          }`}
+                                        >
+                                          <span className="truncate text-left font-semibold">
+                                            {t} - {endHour}:00
+                                          </span>
+                                          {rem !== null && (
+                                            <span
+                                              className={`shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                                                isFull
+                                                  ? "bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300"
+                                                  : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300"
+                                              }`}
+                                            >
+                                              {isFull ? "Penuh" : `Sisa ${rem}`}
+                                            </span>
+                                          )}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
 
@@ -1837,49 +1920,122 @@ export function SchedulingClientWrapper({
                     onChange={(e) =>
                       setEditModal({ ...editModal, time: e.target.value })
                     }
-                    className="appearance-none block w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    className="absolute opacity-0 pointer-events-none w-px h-px"
                   >
                     <option value="" disabled>
                       -- Pilih Jam --
                     </option>
-                    {timeSlots.map((t) => {
-                      const rem = editModal.classId
-                        ? getRemainingSlots(
-                            editModal.date,
-                            t,
-                            editModal.classId,
-                          )
-                        : null;
-                      const isFull = rem !== null && rem <= 0;
-                      const labelText =
-                        rem !== null
-                          ? isFull
-                            ? `${t}-${String(parseInt(t) + 1).padStart(2, "0")}:00 (Penuh)`
-                            : `${t}-${String(parseInt(t) + 1).padStart(2, "0")}:00 (Sisa ${rem})`
-                          : `${t}-${String(parseInt(t) + 1).padStart(2, "0")}:00`;
-
-                      return (
-                        <option key={t} value={t} disabled={isFull}>
-                          {labelText}
-                        </option>
-                      );
-                    })}
+                    {timeSlots.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+
+                  <button
+                    type="button"
+                    onClick={() => setOpenEditTimeDD(!openEditTimeDD)}
+                    className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white shadow-2xs transition-all cursor-pointer h-11 ${
+                      openEditTimeDD
+                        ? "border-brand-500 ring-2 ring-brand-500/30"
+                        : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    {editModal.time ? (
+                      <span className="truncate text-left font-semibold">
+                        {editModal.time} -{" "}
+                        {String(
+                          parseInt(editModal.time.split(":")[0], 10) + 1,
+                        ).padStart(2, "0")}
+                        :00
+                      </span>
+                    ) : (
+                      <span className="truncate text-left text-slate-400 font-medium">
+                        -- Pilih Jam --
+                      </span>
+                    )}
                     <svg
-                      className="h-4 w-4 text-slate-400"
-                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
                       viewBox="0 0 24 24"
+                      fill="none"
                       stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`text-slate-400 transition-transform duration-200 shrink-0 ${
+                        openEditTimeDD ? "rotate-180 text-brand-500" : ""
+                      }`}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2.5"
-                        d="M19 9l-7 7-7-7"
-                      />
+                      <path d="m6 9 6 6 6-6" />
                     </svg>
-                  </div>
+                  </button>
+
+                  {openEditTimeDD && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setOpenEditTimeDD(false)}
+                      />
+                      <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                        <div className="max-h-52 overflow-y-auto space-y-1">
+                          {timeSlots.map((t) => {
+                            const rem = editModal.classId
+                              ? getRemainingSlots(
+                                  editModal.date,
+                                  t,
+                                  editModal.classId,
+                                )
+                              : null;
+                            const isFull = rem !== null && rem <= 0;
+                            const endHour = String(
+                              parseInt(t.split(":")[0], 10) + 1,
+                            ).padStart(2, "0");
+                            const isSelected = editModal.time === t;
+
+                            return (
+                              <button
+                                key={t}
+                                type="button"
+                                disabled={isFull}
+                                onClick={() => {
+                                  setEditModal({ ...editModal, time: t });
+                                  setOpenEditTimeDD(false);
+                                }}
+                                className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                                  isFull
+                                    ? "opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800/40"
+                                    : "cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                                } ${
+                                  isSelected
+                                    ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40 text-brand-600 dark:text-brand-400 font-bold"
+                                    : "text-slate-900 dark:text-white"
+                                }`}
+                              >
+                                <span className="truncate text-left font-semibold">
+                                  {t} - {endHour}:00
+                                </span>
+                                {rem !== null && (
+                                  <span
+                                    className={`shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                                      isFull
+                                        ? "bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300"
+                                        : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300"
+                                    }`}
+                                  >
+                                    {isFull ? "Penuh" : `Sisa ${rem}`}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
