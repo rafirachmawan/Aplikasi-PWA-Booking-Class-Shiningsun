@@ -1,5 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { createClient } from "@/lib/supabase/server";
+
+let memoryGDriveRefreshToken: string | null = null;
+
+export function setMemoryGDriveRefreshToken(token: string | null) {
+  memoryGDriveRefreshToken = token;
+}
+
+async function getStoredRefreshToken(): Promise<string | null> {
+  if (memoryGDriveRefreshToken) return memoryGDriveRefreshToken;
+  if (process.env.GOOGLE_DRIVE_REFRESH_TOKEN) return process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
+
+  try {
+    const supabaseServer = await createClient();
+    const { data } = await supabaseServer
+      .from("system_settings")
+      .select("value")
+      .eq("key", "gdrive_refresh_token")
+      .maybeSingle();
+
+    if (data?.value) {
+      memoryGDriveRefreshToken = data.value;
+      return data.value;
+    }
+  } catch (err) {
+    console.warn("Could not read gdrive_refresh_token from system_settings DB:", err);
+  }
+
+  return null;
+}
+
 /**
  * Mendapatkan access_token baru dari refresh_token via OAuth2
  */
@@ -22,6 +53,7 @@ async function getAccessTokenFromRefreshToken(
   const data = await res.json();
   if (!res.ok) {
     if (data.error === "invalid_grant" || (data.error_description && data.error_description.includes("grant"))) {
+      setMemoryGDriveRefreshToken(null);
       throw new Error(
         "Akses Google Drive telah kadaluarsa atau dicabut. Silakan buka /api/auth/gdrive untuk menghubungkan kembali."
       );
@@ -37,14 +69,14 @@ export async function POST(req: NextRequest) {
   try {
     const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
-    const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
+    const refreshToken = await getStoredRefreshToken();
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
     if (!clientId || !clientSecret || !refreshToken) {
       return NextResponse.json(
         {
           error:
-            "Google Drive belum terhubung. Buka /api/auth/gdrive untuk otorisasi terlebih dahulu.",
+            "Google Drive belum terhubung. Silakan buka /api/auth/gdrive untuk otorisasi terlebih dahulu.",
         },
         { status: 500 }
       );

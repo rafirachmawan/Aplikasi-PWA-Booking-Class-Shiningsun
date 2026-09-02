@@ -64,14 +64,41 @@ export async function GET(req: NextRequest) {
         <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
         <body style="font-family:system-ui;max-width:600px;margin:40px auto;padding:20px;text-align:center;">
           <h1 style="color:#f59e0b;">⚠️ Tidak mendapatkan Refresh Token</h1>
-          <p>Google tidak mengembalikan refresh_token. Coba ulangi proses otorisasi.</p>
-          <a href="/api/auth/gdrive" style="display:inline-block;padding:12px 24px;background:#2563eb;color:white;text-decoration:none;border-radius:12px;font-weight:bold;">Coba Lagi</a>
+          <p>Google tidak mengembalikan refresh_token. Silakan coba otorisasi ulang.</p>
+          <a href="/api/auth/gdrive" style="display:inline-block;padding:12px 24px;background:#2563eb;color:white;text-decoration:none;border-radius:12px;font-weight:bold;">Coba Otorisasi Lagi</a>
         </body></html>`,
         { headers: { "Content-Type": "text/html; charset=utf-8" } }
       );
     }
 
-    // Tampilkan halaman sukses berisi refresh token
+    // Update memory & environment
+    const { setMemoryGDriveRefreshToken } = await import("@/app/api/upload-gdrive/route");
+    setMemoryGDriveRefreshToken(refreshToken);
+    process.env.GOOGLE_DRIVE_REFRESH_TOKEN = refreshToken;
+
+    // Simpan otomatis ke database Supabase (tabel system_settings)
+    let savedToDb = false;
+    try {
+      const { createClient } = await import("@/lib/supabase/server");
+      const supabaseServer = await createClient();
+      const { error: dbErr } = await supabaseServer.from("system_settings").upsert(
+        {
+          key: "gdrive_refresh_token",
+          value: refreshToken,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "key" }
+      );
+      if (!dbErr) {
+        savedToDb = true;
+      } else {
+        console.warn("Notice saving gdrive_refresh_token to system_settings:", dbErr.message);
+      }
+    } catch (e: any) {
+      console.warn("Exception saving gdrive_refresh_token to DB:", e?.message);
+    }
+
+    // Tampilkan halaman sukses berisi konfirmasi otomatis
     return new NextResponse(
       `<!DOCTYPE html>
       <html>
@@ -82,18 +109,15 @@ export async function GET(req: NextRequest) {
       </head>
       <body style="font-family:system-ui;max-width:600px;margin:40px auto;padding:20px;text-align:center;background:#f0fdf4;">
         <div style="background:white;padding:32px;border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
-          <h1 style="color:#16a34a;font-size:24px;">✅ Google Drive Berhasil Terhubung!</h1>
-          <p style="color:#64748b;">Salin Refresh Token di bawah ini dan masukkan ke file <code>.env.local</code> di proyek Anda:</p>
-          <div style="background:#f1f5f9;padding:16px;border-radius:12px;word-break:break-all;font-family:monospace;font-size:13px;text-align:left;border:2px solid #e2e8f0;">
-            GOOGLE_DRIVE_REFRESH_TOKEN=${refreshToken}
-          </div>
+          <h1 style="color:#16a34a;font-size:24px;">🎉 Google Drive Berhasil Terhubung!</h1>
+          <p style="color:#334155;font-size:15px;line-height:1.6;">
+            Akses Google Drive telah diperbarui dan ${savedToDb ? "<strong>tersimpan otomatis ke database</strong>" : "aktif di memori server"}.
+            Miss / Guru sekarang dapat langsung mengunggah foto Laporan Perkembangan!
+          </p>
           <br>
-          <button onclick="navigator.clipboard.writeText('${refreshToken}').then(()=>this.textContent='✅ Tersalin!')" 
-            style="padding:12px 24px;background:#2563eb;color:white;border:none;border-radius:12px;font-weight:bold;cursor:pointer;font-size:14px;">
-            📋 Salin Refresh Token
-          </button>
-          <p style="margin-top:20px;color:#94a3b8;font-size:12px;">Setelah disimpan, restart server development Anda lalu upload foto akan otomatis masuk ke Google Drive!</p>
-          <a href="/worksheets" style="display:inline-block;margin-top:10px;padding:12px 24px;background:#16a34a;color:white;text-decoration:none;border-radius:12px;font-weight:bold;">🏠 Kembali ke Aplikasi</a>
+          <a href="/worksheets" style="display:inline-block;padding:14px 28px;background:#16a34a;color:white;text-decoration:none;border-radius:12px;font-weight:bold;font-size:15px;box-shadow:0 4px 12px rgba(22,163,74,0.3);">
+            🏠 Kembali ke Laporan Perkembangan (Worksheets)
+          </a>
         </div>
       </body></html>`,
       { headers: { "Content-Type": "text/html; charset=utf-8" } }

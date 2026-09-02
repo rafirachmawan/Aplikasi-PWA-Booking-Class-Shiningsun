@@ -2962,15 +2962,25 @@ export function WorksheetFormModal({
                   {(uploadError.includes("/api/auth/gdrive") ||
                     uploadError.includes("Google Drive belum terhubung") ||
                     uploadError.includes("kadaluarsa")) && (
-                    <a
-                      href="/api/auth/gdrive"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 mt-1 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-[11px] transition-colors shadow-xs"
-                    >
-                      <span>🔗</span>
-                      <span>Otorisasi / Hubungkan Google Drive Sekarang</span>
-                    </a>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <a
+                        href="/api/auth/gdrive"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-[11px] transition-colors shadow-xs"
+                      >
+                        <span>🔗</span>
+                        <span>1. Hubungkan Google Drive</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setUploadError("")}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-800 text-white font-bold text-[11px] transition-colors shadow-xs"
+                      >
+                        <span>🔄</span>
+                        <span>2. Coba Upload Lagi</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
