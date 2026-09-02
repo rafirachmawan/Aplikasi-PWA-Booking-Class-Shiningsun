@@ -2022,56 +2022,36 @@ export async function verifyParentAccess(
   const inactiveStudents = students.filter((s) => s.status === "INACTIVE");
   const orderedStudents = [...activeStudents, ...inactiveStudents];
 
-  // Priority-based matching logic:
-  // 1. Exact full name match (case & whitespace insensitive) — highest priority
+  // Strict matching logic for Parent Portal:
+  // 1. Exact Nickname match (case & whitespace insensitive) — Highest priority as requested
   let matchedStudent = orderedStudents.find((s) => {
-    const nameNorm = normalizeText(s.name);
-    return nameNorm === cleanSearch && pinMatches(s);
+    const nickNorm = normalizeText(s.nickname);
+    return nickNorm && nickNorm === cleanSearch && pinMatches(s);
   });
 
-  // 2. Exact nickname match (case & whitespace insensitive)
+  // 2. Exact Full Name match (case & whitespace insensitive)
   if (!matchedStudent) {
     matchedStudent = orderedStudents.find((s) => {
-      const nickNorm = normalizeText(s.nickname);
-      return nickNorm && nickNorm === cleanSearch && pinMatches(s);
+      const nameNorm = normalizeText(s.name);
+      return nameNorm === cleanSearch && pinMatches(s);
     });
   }
 
-  // 3. Exact word in full name match (e.g., searching "Elvano" for "Muhammad Elvano")
+  // 3. Exact word in full name match (e.g. searching "Khaleed" for "Khaleed Al Fatih") or Student ID match
   if (!matchedStudent) {
     matchedStudent = orderedStudents.find((s) => {
       const nameNorm = normalizeText(s.name);
       const words = nameNorm.split(" ");
-      return words.includes(cleanSearch) && pinMatches(s);
-    });
-  }
-
-  // 4. Name or nickname starts with search term
-  if (!matchedStudent) {
-    matchedStudent = orderedStudents.find((s) => {
-      const nameNorm = normalizeText(s.name);
-      const nickNorm = normalizeText(s.nickname);
-      const nameStartsWith = nameNorm.startsWith(cleanSearch);
-      const nicknameStartsWith = nickNorm && nickNorm.startsWith(cleanSearch);
-      return (nameStartsWith || nicknameStartsWith) && pinMatches(s);
-    });
-  }
-
-  // 5. Partial match (contains / ID match) as last resort
-  if (!matchedStudent) {
-    matchedStudent = orderedStudents.find((s) => {
-      const nameNorm = normalizeText(s.name);
-      const nickNorm = normalizeText(s.nickname);
-      const nameMatch =
-        nameNorm.includes(cleanSearch) ||
-        nickNorm.includes(cleanSearch) ||
-        s.id === cleanSearchRaw;
-      return nameMatch && pinMatches(s);
+      const isWordMatch = words.includes(cleanSearch);
+      const isIdMatch = s.id === cleanSearchRaw;
+      return (isWordMatch || isIdMatch) && pinMatches(s);
     });
   }
 
   if (!matchedStudent) {
-    throw new Error("Nama siswa atau PIN Akses salah. Silakan coba lagi.");
+    throw new Error(
+      "Nama Panggilan / Nama Siswa atau PIN Akses tidak cocok. Silakan periksa kembali.",
+    );
   }
 
   if (matchedStudent.status === "INACTIVE") {
