@@ -2049,9 +2049,28 @@ export async function verifyParentAccess(
   }
 
   if (!matchedStudent) {
-    throw new Error(
-      "Nama Panggilan / Nama Siswa atau PIN Akses tidak cocok. Silakan periksa kembali.",
-    );
+    // Determine whether the NAME is wrong or the PIN is wrong for a clearer error message
+    const nameFoundButPinWrong = orderedStudents.some((s) => {
+      const nickNorm = normalizeText(s.nickname);
+      const nameNorm = normalizeText(s.name);
+      const words = nameNorm.split(" ");
+      return (
+        (nickNorm && nickNorm === cleanSearch) ||
+        nameNorm === cleanSearch ||
+        words.includes(cleanSearch) ||
+        s.id === cleanSearchRaw
+      );
+    });
+
+    if (nameFoundButPinWrong) {
+      throw new Error(
+        "PIN Akses salah. Silakan masukkan PIN yang benar atau hubungi admin sekolah.",
+      );
+    } else {
+      throw new Error(
+        "Nama Siswa tidak ditemukan. Pastikan Anda memasukkan Nama Panggilan atau Nama Lengkap yang benar.",
+      );
+    }
   }
 
   if (matchedStudent.status === "INACTIVE") {
