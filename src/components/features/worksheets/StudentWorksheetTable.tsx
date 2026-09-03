@@ -330,7 +330,7 @@ function DailyWorksheetSessionItem({
       </div>
 
       {/* 2. 2-Column Table (Kegiatan | Hasil belajar) */}
-      <div className="overflow-x-auto touch-pan-x">
+      <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
             <tr className={tableHeaderClass}>
