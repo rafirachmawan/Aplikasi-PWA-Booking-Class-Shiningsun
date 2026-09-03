@@ -88,6 +88,33 @@ async function getAccessTokenFromRefreshToken(
       `Google OAuth refresh error: ${data.error_description || data.error || JSON.stringify(data)}`
     );
   }
+
+  // JIKA GOOGLE MENGEMBALIKAN REFRESH TOKEN BARU (TOKEN ROTATION), SIMPAN AUTOMATIS KE DB & MEMORI
+  if (data.refresh_token && data.refresh_token !== refreshToken) {
+    console.log("Google issued a rotated refresh token. Updating DB & memory...");
+    setMemoryGDriveRefreshToken(data.refresh_token);
+    process.env.GOOGLE_DRIVE_REFRESH_TOKEN = data.refresh_token;
+
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (supabaseUrl && supabaseKey) {
+        const { createClient: createSupabaseDirect } = await import("@supabase/supabase-js");
+        const supabaseDirect = createSupabaseDirect(supabaseUrl, supabaseKey);
+        await supabaseDirect.from("system_settings").upsert(
+          {
+            key: "gdrive_refresh_token",
+            value: data.refresh_token,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "key" }
+        );
+      }
+    } catch (e) {
+      console.warn("Failed to persist rotated refresh token to DB:", e);
+    }
+  }
+
   return data.access_token;
 }
 
