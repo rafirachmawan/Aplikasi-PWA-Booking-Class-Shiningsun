@@ -11,7 +11,28 @@ export function setMemoryGDriveRefreshToken(token: string | null) {
 async function getStoredRefreshToken(): Promise<string | null> {
   if (memoryGDriveRefreshToken) return memoryGDriveRefreshToken;
 
-  // 1. Cek database Supabase terlebih dahulu (token aktif terbaru tersimpan otomatis di sini)
+  // 1. Cek database Supabase terlebih dahulu (token aktif terbaru tersimpan di sini)
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (supabaseUrl && supabaseKey) {
+      const { createClient: createSupabaseDirect } = await import("@supabase/supabase-js");
+      const supabaseDirect = createSupabaseDirect(supabaseUrl, supabaseKey);
+      const { data } = await supabaseDirect
+        .from("system_settings")
+        .select("value")
+        .eq("key", "gdrive_refresh_token")
+        .maybeSingle();
+
+      if (data?.value) {
+        memoryGDriveRefreshToken = data.value;
+        return data.value;
+      }
+    }
+  } catch (e) {
+    console.warn("Direct query failed for gdrive_refresh_token:", e);
+  }
+
   try {
     const supabaseServer = await createClient();
     const { data } = await supabaseServer

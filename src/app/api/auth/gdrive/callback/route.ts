@@ -78,24 +78,52 @@ export async function GET(req: NextRequest) {
 
     // Simpan otomatis ke database Supabase (tabel system_settings)
     let savedToDb = false;
+    let dbErrorDetail = "";
     try {
-      const { createClient } = await import("@/lib/supabase/server");
-      const supabaseServer = await createClient();
-      const { error: dbErr } = await supabaseServer.from("system_settings").upsert(
-        {
-          key: "gdrive_refresh_token",
-          value: refreshToken,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "key" }
-      );
-      if (!dbErr) {
-        savedToDb = true;
-      } else {
-        console.warn("Notice saving gdrive_refresh_token to system_settings:", dbErr.message);
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (supabaseUrl && supabaseKey) {
+        const { createClient: createSupabaseDirect } = await import("@supabase/supabase-js");
+        const supabaseDirect = createSupabaseDirect(supabaseUrl, supabaseKey);
+        const { error: dbErr } = await supabaseDirect.from("system_settings").upsert(
+          {
+            key: "gdrive_refresh_token",
+            value: refreshToken,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "key" }
+        );
+
+        if (!dbErr) {
+          savedToDb = true;
+        } else {
+          dbErrorDetail = dbErr.message;
+          console.error("Direct upsert error to system_settings:", dbErr.message);
+        }
+      }
+
+      if (!savedToDb) {
+        const { createClient } = await import("@/lib/supabase/server");
+        const supabaseServer = await createClient();
+        const { error: dbErr } = await supabaseServer.from("system_settings").upsert(
+          {
+            key: "gdrive_refresh_token",
+            value: refreshToken,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "key" }
+        );
+        if (!dbErr) {
+          savedToDb = true;
+        } else if (!dbErrorDetail) {
+          dbErrorDetail = dbErr.message;
+          console.error("Server client upsert error to system_settings:", dbErr.message);
+        }
       }
     } catch (e: any) {
-      console.warn("Exception saving gdrive_refresh_token to DB:", e?.message);
+      dbErrorDetail = e?.message || String(e);
+      console.error("Exception saving gdrive_refresh_token to DB:", e?.message);
     }
 
     // Tampilkan halaman sukses berisi konfirmasi otomatis
@@ -107,15 +135,20 @@ export async function GET(req: NextRequest) {
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Google Drive Terhubung!</title>
       </head>
-      <body style="font-family:system-ui;max-width:600px;margin:40px auto;padding:20px;text-align:center;background:#f0fdf4;">
+      <body style="font-family:system-ui;max-width:600px;margin:40px auto;padding:20px;text-align:center;background:${savedToDb ? "#f0fdf4" : "#fffbeb"};">
         <div style="background:white;padding:32px;border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
-          <h1 style="color:#16a34a;font-size:24px;">🎉 Google Drive Berhasil Terhubung!</h1>
+          <h1 style="color:${savedToDb ? "#16a34a" : "#d97706"};font-size:24px;">
+            ${savedToDb ? "🎉 Google Drive Berhasil Terhubung!" : "⚠️ Drive Terhubung (Memori)"}
+          </h1>
           <p style="color:#334155;font-size:15px;line-height:1.6;">
-            Akses Google Drive telah diperbarui dan ${savedToDb ? "<strong>tersimpan otomatis ke database</strong>" : "aktif di memori server"}.
-            Miss / Guru sekarang dapat langsung mengunggah foto Laporan Perkembangan!
+            ${
+              savedToDb
+                ? "Akses Google Drive telah diperbarui dan <strong>tersimpan permanen ke database Supabase</strong>. Miss / Guru sekarang dapat langsung mengunggah foto Laporan Perkembangan!"
+                : `Token terhubung ke memori server tetapi <strong>gagal tersimpan ke database Supabase</strong> (${dbErrorDetail}). Mohon pastikan tabel <code>system_settings</code> di Supabase memiliki izin/policy.`
+            }
           </p>
           <br>
-          <a href="/worksheets" style="display:inline-block;padding:14px 28px;background:#16a34a;color:white;text-decoration:none;border-radius:12px;font-weight:bold;font-size:15px;box-shadow:0 4px 12px rgba(22,163,74,0.3);">
+          <a href="/worksheets" style="display:inline-block;padding:14px 28px;background:${savedToDb ? "#16a34a" : "#d97706"};color:white;text-decoration:none;border-radius:12px;font-weight:bold;font-size:15px;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
             🏠 Kembali ke Laporan Perkembangan (Worksheets)
           </a>
         </div>
