@@ -10,8 +10,8 @@ export function setMemoryGDriveRefreshToken(token: string | null) {
 
 async function getStoredRefreshToken(): Promise<string | null> {
   if (memoryGDriveRefreshToken) return memoryGDriveRefreshToken;
-  if (process.env.GOOGLE_DRIVE_REFRESH_TOKEN) return process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
 
+  // 1. Cek database Supabase terlebih dahulu (token aktif terbaru tersimpan otomatis di sini)
   try {
     const supabaseServer = await createClient();
     const { data } = await supabaseServer
@@ -26,6 +26,11 @@ async function getStoredRefreshToken(): Promise<string | null> {
     }
   } catch (err) {
     console.warn("Could not read gdrive_refresh_token from system_settings DB:", err);
+  }
+
+  // 2. Fallback ke process.env jika belum ada di database
+  if (process.env.GOOGLE_DRIVE_REFRESH_TOKEN) {
+    return process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
   }
 
   return null;
