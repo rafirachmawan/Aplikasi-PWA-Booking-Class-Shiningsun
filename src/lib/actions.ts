@@ -680,7 +680,7 @@ export async function autoBookStudentToClass(
     let { data: slots, error: fetchError } = await supabaseServer
       .from("schedule_slots")
       .select(
-        "id, class_id, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id)",
+        "id, class_id, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id, student:students(status))",
       )
       .eq("date", dateStr)
       .eq("class_id", classId)
@@ -713,7 +713,7 @@ export async function autoBookStudentToClass(
         );
       slotId = newSlot.id;
     } else {
-      // Cek kuota
+      // Cek kuota (abaikan siswa nonaktif agar sesuai tampilan UI)
       const slot = slots![0];
       let maxQ = 4;
       if (slot.max_quota) {
@@ -724,10 +724,14 @@ export async function autoBookStudentToClass(
         }
       }
 
-      if (slot.bookings && slot.bookings.length >= maxQ) {
+      const activeBookings = (slot.bookings || []).filter(
+        (b: any) => b?.student?.status !== "INACTIVE",
+      );
+
+      if (activeBookings.length >= maxQ) {
         isFull = true;
       }
-      if (slot.bookings?.some((b: any) => b.student_id === studentId)) {
+      if (activeBookings.some((b: any) => b.student_id === studentId)) {
         alreadyBooked = true;
       }
     }
@@ -738,8 +742,12 @@ export async function autoBookStudentToClass(
         .from("schedule_student")
         .insert({ student_id: studentId, schedule_slot_id: slotId });
 
-      if (!bookErr) bookedCount++;
-      else failedDates.push(dateStr);
+      if (!bookErr) {
+        bookedCount++;
+      } else {
+        console.error("Auto-booking insert error on date:", dateStr, bookErr.message);
+        failedDates.push(dateStr);
+      }
     } else {
       failedDates.push(dateStr);
     }
@@ -782,7 +790,7 @@ export async function bookStudentManual(
   let { data: slots, error: fetchError } = await supabaseServer
     .from("schedule_slots")
     .select(
-      "id, class_id, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id)",
+      "id, class_id, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id, student:students(status))",
     )
     .eq("date", dateStr)
     .eq("class_id", classId)
@@ -811,7 +819,7 @@ export async function bookStudentManual(
       throw new Error("Gagal membuat sesi jadwal baru: " + insertError.message);
     slotId = newSlot.id;
   } else {
-    // Cek kuota
+    // Cek kuota (abaikan siswa nonaktif agar sesuai tampilan UI)
     const slot = slots![0];
     let maxQ = 4;
     if (slot.max_quota) {
@@ -822,10 +830,14 @@ export async function bookStudentManual(
       }
     }
 
-    if (slot.bookings && slot.bookings.length >= maxQ) {
+    const activeBookings = (slot.bookings || []).filter(
+      (b: any) => b?.student?.status !== "INACTIVE",
+    );
+
+    if (activeBookings.length >= maxQ) {
       throw new Error("Sesi pada tanggal dan jam tersebut sudah penuh.");
     }
-    if (slot.bookings?.some((b: any) => b.student_id === studentId)) {
+    if (activeBookings.some((b: any) => b.student_id === studentId)) {
       throw new Error("Siswa sudah terdaftar di sesi tersebut.");
     }
   }
