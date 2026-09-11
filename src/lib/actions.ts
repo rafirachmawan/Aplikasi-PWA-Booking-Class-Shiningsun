@@ -1719,8 +1719,8 @@ export async function getWorksheetsByBranch() {
         student:students(id, name, nickname, gender, date_of_birth, status, access_pin, label_id, label:labels(id, main_level, sub_level, hex_color))
       `,
       )
-      .order("worksheet_date", { ascending: true })
-      .order("created_at", { ascending: true });
+      .order("worksheet_date", { ascending: false })
+      .order("created_at", { ascending: false });
 
     if (branchId !== "ALL") {
       query = query.eq("branch_id", branchId);
