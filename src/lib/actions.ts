@@ -261,6 +261,9 @@ export async function getDashboardStats() {
       ).getDate();
       const endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+
       const { data: bookings } = await supabaseServer
         .from("schedule_student")
         .select(
@@ -285,7 +288,24 @@ export async function getDashboardStats() {
 
       for (const s of cgStudents) {
         const dates = bookingMap[s.id] || [];
-        if (dates.length === 0 || dates.some((d) => d >= today)) {
+
+        // If no schedules in current month, mark as passed
+        if (dates.length === 0) {
+          cgPassed++;
+          continue;
+        }
+
+        // Check if any schedule is in current month or later
+        const hasCurrentMonthSchedule = dates.some((d) => {
+          const schedDate = new Date(d);
+          return (
+            schedDate.getFullYear() > currentYear ||
+            (schedDate.getFullYear() === currentYear &&
+              schedDate.getMonth() >= currentMonth)
+          );
+        });
+
+        if (hasCurrentMonthSchedule) {
           cgUpcoming++;
         } else {
           cgPassed++;
@@ -1748,8 +1768,8 @@ export async function getWorksheetsByStudent(studentId: string) {
       .from("student_worksheets")
       .select("*")
       .eq("student_id", studentId)
-      .order("worksheet_date", { ascending: true })
-      .order("created_at", { ascending: true });
+      .order("worksheet_date", { ascending: false })
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.warn(

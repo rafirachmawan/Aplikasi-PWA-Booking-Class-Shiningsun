@@ -208,10 +208,24 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
   });
 
   const today = getTodayISO();
+  const todayDate = new Date(today);
+  const currentMonth = todayDate.getMonth();
+  const currentYear = todayDate.getFullYear();
 
   const isStudentUpcoming = (student: any) => {
-    if (!student.schedules || student.schedules.length === 0) return true;
-    return student.schedules.some((sched: any) => sched.date >= today);
+    // Siswa tanpa jadwal = Sudah Terlewat (tidak ada jadwal di bulan ini)
+    if (!student.schedules || student.schedules.length === 0) return false;
+
+    // Check if student has at least one schedule in current month or future
+    return student.schedules.some((sched: any) => {
+      const schedDate = new Date(sched.date);
+      // Schedule is upcoming if it's in current month or later
+      return (
+        schedDate.getFullYear() > currentYear ||
+        (schedDate.getFullYear() === currentYear &&
+          schedDate.getMonth() >= currentMonth)
+      );
+    });
   };
 
   const upcomingStudents = sortedItems.filter(isStudentUpcoming);
