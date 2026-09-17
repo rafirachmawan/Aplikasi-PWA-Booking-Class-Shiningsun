@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "dev:clean": "npm run clean-next && next dev",
+    "dev:normal": "set NEXT_TELEMETRY_DISABLED=1 && set NODE_OPTIONS=--max-old-space-size=4096 && next dev",
+    "clean-next": "del /s /q .next\\cache"
   },
   "dependencies": {
     "@serwist/next": "^9.5.11",

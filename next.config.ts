@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
   turbopack: {},
   devIndicators: {
     // Next 16: buildActivity is removed, just pass an empty object or position if needed
+    position: 'top-left',
   },
   async redirects() {
     return [
