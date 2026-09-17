@@ -249,7 +249,8 @@ export async function getDashboardStats() {
     let cgPassed = 0;
 
     if (cgStudents && cgStudents.length > 0) {
-      const today = getTodayISO();
+      const todayISO = getTodayISO();
+      const today = new Date(todayISO);
       const studentIds = cgStudents.map((s) => s.id);
 
       const now = new Date();
@@ -260,9 +261,6 @@ export async function getDashboardStats() {
         0,
       ).getDate();
       const endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
 
       const { data: bookings } = await supabaseServer
         .from("schedule_student")
@@ -295,17 +293,14 @@ export async function getDashboardStats() {
           continue;
         }
 
-        // Check if any schedule is in current month or later
-        const hasCurrentMonthSchedule = dates.some((d) => {
+        // Check if any schedule is on or after today (compare full date)
+        const hasFutureOrTodaySchedule = dates.some((d) => {
           const schedDate = new Date(d);
-          return (
-            schedDate.getFullYear() > currentYear ||
-            (schedDate.getFullYear() === currentYear &&
-              schedDate.getMonth() >= currentMonth)
-          );
+          // Compare full date including year, month, AND day
+          return schedDate.getTime() >= today.getTime();
         });
 
-        if (hasCurrentMonthSchedule) {
+        if (hasFutureOrTodaySchedule) {
           cgUpcoming++;
         } else {
           cgPassed++;
@@ -411,7 +406,9 @@ export async function getStudentScheduleMap(
 
     // Fallback: jika belum ada slot mendatang (misal di akhir bulan), ambil slot bulan berjalan
     const foundStudentIds = new Set((bookings || []).map((b) => b.student_id));
-    const missingStudentIds = studentIds.filter((id) => !foundStudentIds.has(id));
+    const missingStudentIds = studentIds.filter(
+      (id) => !foundStudentIds.has(id),
+    );
 
     if (missingStudentIds.length > 0) {
       const now = new Date();
@@ -692,7 +689,9 @@ export async function autoBookStudentToClass(
 
   let bookedCount = 0;
   const failedDates: string[] = [];
-  const timeVariants = Array.from(new Set([time, `${time}:00`, time.substring(0, 5)]));
+  const timeVariants = Array.from(
+    new Set([time, `${time}:00`, time.substring(0, 5)]),
+  );
 
   // 2. Loop setiap tanggal, cari slot, jika tidak ada buat baru
   for (const dateStr of datesToBook) {
@@ -765,7 +764,11 @@ export async function autoBookStudentToClass(
       if (!bookErr) {
         bookedCount++;
       } else {
-        console.error("Auto-booking insert error on date:", dateStr, bookErr.message);
+        console.error(
+          "Auto-booking insert error on date:",
+          dateStr,
+          bookErr.message,
+        );
         failedDates.push(dateStr);
       }
     } else {
@@ -804,7 +807,9 @@ export async function bookStudentManual(
   }
   const finalBranchId = branchId === "ALL" ? null : branchId;
 
-  const timeVariants = Array.from(new Set([time, `${time}:00`, time.substring(0, 5)]));
+  const timeVariants = Array.from(
+    new Set([time, `${time}:00`, time.substring(0, 5)]),
+  );
 
   // Cari slot
   let { data: slots, error: fetchError } = await supabaseServer
@@ -2018,7 +2023,8 @@ export async function verifyParentAccess(
   if (error || !students || students.length === 0) {
     return {
       success: false,
-      error: "Data siswa tidak ditemukan. Mohon periksa kembali nama yang dimasukkan.",
+      error:
+        "Data siswa tidak ditemukan. Mohon periksa kembali nama yang dimasukkan.",
     };
   }
 
@@ -2035,7 +2041,8 @@ export async function verifyParentAccess(
     if (students.length === 0) {
       return {
         success: false,
-        error: "Siswa tidak ditemukan pada Unit/Cabang yang dipilih. Mohon periksa kembali pilihan Unit/Cabang.",
+        error:
+          "Siswa tidak ditemukan pada Unit/Cabang yang dipilih. Mohon periksa kembali pilihan Unit/Cabang.",
       };
     }
   }
@@ -2099,12 +2106,14 @@ export async function verifyParentAccess(
     if (nameFoundButPinWrong) {
       return {
         success: false,
-        error: "PIN Akses salah. Silakan masukkan PIN yang benar atau hubungi admin sekolah.",
+        error:
+          "PIN Akses salah. Silakan masukkan PIN yang benar atau hubungi admin sekolah.",
       };
     } else {
       return {
         success: false,
-        error: "Nama Siswa tidak ditemukan. Pastikan Anda memasukkan Nama Panggilan atau Nama Lengkap yang benar.",
+        error:
+          "Nama Siswa tidak ditemukan. Pastikan Anda memasukkan Nama Panggilan atau Nama Lengkap yang benar.",
       };
     }
   }
@@ -2112,7 +2121,8 @@ export async function verifyParentAccess(
   if (matchedStudent.status === "INACTIVE") {
     return {
       success: false,
-      error: "Akun siswa ini sedang Nonaktif. Silakan hubungi pihak admin sekolah.",
+      error:
+        "Akun siswa ini sedang Nonaktif. Silakan hubungi pihak admin sekolah.",
     };
   }
 

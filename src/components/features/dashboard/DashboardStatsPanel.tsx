@@ -216,15 +216,11 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     // Siswa tanpa jadwal = Sudah Terlewat (tidak ada jadwal di bulan ini)
     if (!student.schedules || student.schedules.length === 0) return false;
 
-    // Check if student has at least one schedule in current month or future
+    // Check if student has at least one schedule on or after today
     return student.schedules.some((sched: any) => {
       const schedDate = new Date(sched.date);
-      // Schedule is upcoming if it's in current month or later
-      return (
-        schedDate.getFullYear() > currentYear ||
-        (schedDate.getFullYear() === currentYear &&
-          schedDate.getMonth() >= currentMonth)
-      );
+      // Compare full date including year, month, AND day
+      return schedDate.getTime() >= todayDate.getTime();
     });
   };
 
