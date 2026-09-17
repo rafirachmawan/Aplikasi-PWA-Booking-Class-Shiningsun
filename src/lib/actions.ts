@@ -363,6 +363,182 @@ export async function getLabels() {
   return data;
 }
 
+/**
+ * Get overdue worksheets for students
+ * Shows students who have schedules but haven't filled their worksheets
+ */
+export async function getOverdueWorksheets(branchId = "ALL") {
+  try {
+    const supabaseServer = await createClient();
+    const todayISO = getTodayISO();
+
+    // ✅ NEW LOGIC: Start checking from September 1, 2026
+    const startDateSeptember = "2026-09-01";
+
+    console.log(`🚀 Overdue check (Sept 1+ logic) for branch ${branchId}`);
+    console.log(` Branch ID from query: ${branchId}`);
+
+    // 1. Get all active students for this branch (both CG and REGISTERED)
+    let studentsQuery = supabaseServer
+      .from("students")
+      .select(
+        `
+        id, name, nickname, gender, status, label_id,
+        label:labels(id, main_level, sub_level, hex_color)
+      `,
+      )
+      .in("status", ["CG", "REGISTERED"]);
+
+    if (branchId !== "ALL") {
+      studentsQuery = studentsQuery.eq("branch_id", branchId);
+    }
+
+    const { data: students, error: studentError } = await studentsQuery;
+
+    if (studentError) {
+      console.error("❌ Error fetching students:", studentError);
+      return [];
+    }
+
+    const studentList = students || [];
+    if (studentList.length === 0) return [];
+
+    // DEBUG: Log student count for debugging
+    console.log(`📚 Found ${studentList.length} active students`);
+    studentList.forEach((s) => {
+      console.log(`  Student: ${s.name} (${s.id}) - Status: ${s.status}`);
+    });
+
+    // 2. Fetch ALL bookings for these students from September 1, 2026 until today
+    // CRITICAL: Only fetch schedules for currently active students (filter by student_id)
+    const studentIds = studentList.map((s) => s.id);
+
+    console.log(`🔍 Fetching ${studentIds.length} active student schedules`);
+
+    const { data: allBookings, error: bookingsError } = await supabaseServer
+      .from("schedule_student")
+      .select(
+        `
+        student_id,
+        slot:schedule_slots!inner(date, time, class_id)
+      `,
+      )
+      .in("student_id", studentIds)
+      .gte("slot.date", startDateSeptember)
+      .lte("slot.date", todayISO);
+
+    if (bookingsError) {
+      console.error("❌ Error fetching bookings:", bookingsError);
+      return [];
+    }
+
+    // Group bookings by student_id
+    const bookingsByStudent = new Map<string, any[]>();
+    allBookings?.forEach((booking: any) => {
+      if (!bookingsByStudent.has(booking.student_id)) {
+        bookingsByStudent.set(booking.student_id, []);
+      }
+      bookingsByStudent.get(booking.student_id)!.push(booking);
+    });
+
+    // 3. Fetch ALL worksheets from September 1, 2026 until today
+    const { data: allWorksheets } = await supabaseServer
+      .from("student_worksheets")
+      .select(
+        `
+        student_id,
+        worksheet_date
+      `,
+      )
+      .in("student_id", studentIds)
+      .gte("worksheet_date", startDateSeptember)
+      .lte("worksheet_date", todayISO);
+
+    // Group worksheets by student_id
+    const worksheetsByStudent = new Map<string, string[]>();
+    allWorksheets?.forEach((ws: any) => {
+      if (!worksheetsByStudent.has(ws.student_id)) {
+        worksheetsByStudent.set(ws.student_id, []);
+      }
+      const dateStr =
+        typeof ws.worksheet_date === "string"
+          ? ws.worksheet_date.split("T")[0]
+          : ws.worksheet_date;
+      worksheetsByStudent.get(ws.student_id)!.push(dateStr);
+    });
+
+    // 4. Find overdue students (marked as OVERDUE if schedule + 1 hour passed AND no worksheet)
+    const overdueList: Array<
+      any & { missedDate: string; missedTime: string; className: string | null }
+    > = [];
+    const seenOverdueEntries = new Set<string>();
+
+    for (const student of studentList) {
+      const studentBookings = bookingsByStudent.get(student.id) || [];
+      const studentWorksheets = worksheetsByStudent.get(student.id) || [];
+
+      if (studentBookings.length === 0) continue;
+
+      // Check each booking
+      for (const booking of studentBookings) {
+        const slot = Array.isArray(booking.slot)
+          ? booking.slot[0]
+          : booking.slot;
+        const schedDate = String(
+          typeof slot.date === "string" ? slot.date.split("T")[0] : slot.date,
+        );
+        const schedTime = String(slot.time || "");
+
+        // CRITICAL FIX: Skip schedules on today because we can't check +1 hour properly from server
+        if (schedDate === todayISO) {
+          console.log(
+            `⏭️ Skipping today's schedule ${schedDate} ${schedTime} - can't determine from server`,
+          );
+          continue;
+        }
+
+        // For past dates (before today), all counts as overdue since the day has passed
+        // This is safe because we're querying only up to yesterday
+
+        // Check if there's a worksheet on the SAME date
+        const hasWorksheetOnSameDate = studentWorksheets.includes(schedDate);
+
+        if (!hasWorksheetOnSameDate) {
+          // Create unique key to avoid duplicates
+          const entryKey = `${student.id}_${schedDate}`;
+
+          // Skip if already added
+          if (seenOverdueEntries.has(entryKey)) {
+            continue;
+          }
+
+          seenOverdueEntries.add(entryKey);
+
+          overdueList.push({
+            ...student,
+            missedDate: schedDate,
+            missedTime: schedTime,
+            className: null,
+          });
+        }
+      }
+    }
+
+    // Sort by missed date (most recent first)
+    overdueList.sort(
+      (a, b) =>
+        new Date(b.missedDate).getTime() - new Date(a.missedDate).getTime(),
+    );
+
+    console.log(`✅ Total OVERDUE worksheets found: ${overdueList.length}`);
+
+    return overdueList;
+  } catch (error) {
+    console.error("Error fetching overdue worksheets:", error);
+    return [];
+  }
+}
+
 const DAYS_INDONESIAN = [
   "Minggu",
   "Senin",

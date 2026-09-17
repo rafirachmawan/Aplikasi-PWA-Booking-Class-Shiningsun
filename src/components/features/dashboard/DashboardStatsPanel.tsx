@@ -5,6 +5,7 @@ import { Icons } from "@/components/ui/icons";
 import {
   getStudentsByStatusWithSchedules,
   getClassesWithSchedules,
+  getOverdueWorksheets,
 } from "@/lib/actions";
 import {
   formatShortDate,
@@ -12,7 +13,7 @@ import {
   getTodayISO,
 } from "@/lib/dateUtils";
 
-type TabType = "REGISTERED" | "CG" | "CLASSES";
+type TabType = "REGISTERED" | "CG" | "CLASSES" | "OVERDUE_WORKSHEETS";
 
 type StatItem = {
   name: string;
@@ -26,6 +27,7 @@ const iconMap: Record<string, any> = {
   users: Icons.users,
   sun: Icons.sun,
   calendar: Icons.calendar,
+  "alert-circle": Icons.alertCircle,
 };
 
 export function DashboardStatsCards({
@@ -120,6 +122,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     "ALL",
   );
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [currentBranchId, setCurrentBranchId] = useState<string>(""); // Add branch state
   const panelRef = useRef<HTMLDivElement>(null);
 
   const handleCardClick = async (stat: StatItem) => {
@@ -140,8 +143,17 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     setExpandedItemId(null);
 
     try {
+      // Get current branch ID from cookie
+      const { getBranchId } = await import("@/lib/actions");
+      const branchId = await getBranchId();
+      setCurrentBranchId(branchId);
+
       if (stat.statusFilter === "CLASSES") {
         const data = await getClassesWithSchedules();
+        setItems(data);
+      } else if (stat.statusFilter === "OVERDUE_WORKSHEETS") {
+        // Special handling for overdue worksheets - pass branch ID
+        const data = await getOverdueWorksheets(branchId);
         setItems(data);
       } else {
         const data = await getStudentsByStatusWithSchedules(stat.statusFilter);
@@ -169,18 +181,48 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
   const filteredItems = items.filter((item) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
+
     if (activeTab === "CLASSES") {
       return item.name?.toLowerCase().includes(q);
     }
-    return (
-      item.name?.toLowerCase().includes(q) ||
-      item.nickname?.toLowerCase().includes(q)
-    );
+
+    // For students (including overdue worksheets)
+    const matchName = (item.name || "").toLowerCase().includes(q);
+    const matchNickname = (item.nickname || "").toLowerCase().includes(q);
+
+    // Special check for overdue worksheets - also match by missed date
+    let matchDate = false;
+    if (activeTab === "OVERDUE_WORKSHEETS" && item.missedDate) {
+      matchDate = String(item.missedDate).toLowerCase().includes(q);
+    }
+
+    return matchName || matchNickname || matchDate;
   });
 
   const sortedItems = [...filteredItems].sort((a, b) => {
     if (activeTab === "CLASSES") {
       return (a.name || "").localeCompare(b.name || "");
+    }
+
+    // Special sorting for overdue worksheets - by missed date (most recent first)
+    if (activeTab === "OVERDUE_WORKSHEETS") {
+      // If sortBy is 'name', just compare names normally
+      if (sortBy === "name") {
+        const nameA = a.nickname || a.name || "";
+        const nameB = b.nickname || b.name || "";
+        return nameA.localeCompare(nameB, undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
+      }
+
+      // Default sort by missed date (newest first)
+      if (a.missedDate && b.missedDate) {
+        return (
+          new Date(b.missedDate).getTime() - new Date(a.missedDate).getTime()
+        );
+      }
+      return 0;
     }
 
     if (sortBy === "label") {
@@ -239,7 +281,13 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     const hasTodaySchedule = todaySchedules.length > 0;
 
     return (
-      <div key={student.id}>
+      <div
+        key={
+          activeTab === "OVERDUE_WORKSHEETS"
+            ? `${student.id}_${student.missedDate}`
+            : student.id
+        }
+      >
         <button
           type="button"
           onClick={() => setExpandedItemId(isExpanded ? null : student.id)}
@@ -320,6 +368,26 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                   </span>
                 )}
 
+                {/* Overdue Worksheet Warning if active */}
+                {activeTab === "OVERDUE_WORKSHEETS" && (
+                  <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-red-100 text-red-800 border border-red-300 shrink-0 animate-pulse whitespace-nowrap">
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                    <span>Jadwal Terlewat</span>
+                  </span>
+                )}
+
                 {/* Today's schedule indicator */}
                 {hasTodaySchedule && (
                   <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0 animate-pulse whitespace-nowrap">
@@ -369,7 +437,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
         </button>
 
         {/* Expanded Student Schedule Detail */}
-        {isExpanded && (
+        {isExpanded && activeTab !== "OVERDUE_WORKSHEETS" && (
           <div className="bg-slate-50/80 border-b border-slate-200/80 px-3 py-2.5 sm:px-6 sm:py-4 animate-in slide-in-from-top-2 fade-in duration-200">
             <div className="ml-2 sm:ml-6 pl-2.5 sm:pl-3 border-l-2 border-brand-300">
               {scheduleCount === 0 ? (
@@ -384,7 +452,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
 
                     return (
                       <div
-                        key={sIdx}
+                        key={`${student.id}_${sched.date}_${sched.time}`}
                         className={`flex items-center justify-between gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-lg transition-colors ${
                           isToday
                             ? "bg-emerald-50 border border-emerald-200 shadow-2xs"
@@ -424,6 +492,54 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                   })}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Expanded Overdue Worksheet Detail */}
+        {isExpanded && activeTab === "OVERDUE_WORKSHEETS" && (
+          <div className="bg-red-50/80 border-b border-red-200/80 px-3 py-2.5 sm:px-6 sm:py-4 animate-in slide-in-from-top-2 fade-in duration-200">
+            <div className="ml-2 sm:ml-6 pl-2.5 sm:pl-3 border-l-2 border-red-400">
+              <div className="space-y-2">
+                <div className="flex items-start gap-2">
+                  <svg
+                    className="w-5 h-5 text-red-500 mt-0.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-xs text-red-800 font-semibold mb-1">
+                      Jadwal pada tanggal tersebut belum diisi dalam lembar
+                      perkembangan
+                    </p>
+                    <p className="text-[10px] text-red-600">
+                      • Tanggal:{" "}
+                      <strong>{formatShortDate(student.missedDate)}</strong>
+                      <br />• Waktu: <strong>{student.missedTime}</strong>
+                    </p>
+                    {student.className && (
+                      <p className="text-[10px] text-red-600 mt-1">
+                        Kelas: <strong>{student.className}</strong>
+                      </p>
+                    )}
+                    <a
+                      href="/worksheets"
+                      className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      <Icons.add className="w-3.5 h-3.5" />
+                      Isi Lembar Perkembangan Sekarang
+                    </a>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -475,14 +591,18 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                         ? "Daftar Siswa Aktif"
                         : activeTab === "CG"
                           ? "Daftar Siswa Coba Gratis"
-                          : "Daftar Tipe Kelas"}
+                          : activeTab === "OVERDUE_WORKSHEETS"
+                            ? "Laporan Terlewat - Mohon Segera Diisi"
+                            : "Daftar Tipe Kelas"}
                     </h4>
                     <p className="text-[11px] text-slate-500 truncate mt-0.5">
                       {activeTab === "CLASSES"
                         ? `${sortedItems.length} tipe kelas tersedia`
                         : activeTab === "CG"
                           ? `Bulan ${getMonthName()} • ${upcomingStudents.length} belum terlewat, ${passedStudents.length} sudah terlewat`
-                          : `Bulan ${getMonthName()} • ${sortedItems.length} siswa`}
+                          : activeTab === "OVERDUE_WORKSHEETS"
+                            ? `${sortedItems.length} siswa belum mengisi laporan sesuai jadwal`
+                            : `Bulan ${getMonthName()} • ${sortedItems.length} siswa`}
                     </p>
                   </div>
                 </div>
@@ -505,7 +625,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
 
               {/* Sub-filter tabs & Controls Row */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-3 border-t border-slate-200/60">
-                {/* Sub-filter dropdown for CG - Mobile friendly */}
+                {/* Sub-filter dropdown for CG only - not shown for OVERDUE_WORKSHEETS */}
                 {activeTab === "CG" ? (
                   <div className="relative w-full sm:w-auto min-w-35">
                     <select
@@ -541,8 +661,10 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                       </svg>
                     </div>
                   </div>
-                ) : (
+                ) : activeTab === "OVERDUE_WORKSHEETS" ? (
                   <div />
+                ) : (
+                  <div className="w-full sm:w-auto" />
                 )}
 
                 {/* Controls (Sort & Search) */}

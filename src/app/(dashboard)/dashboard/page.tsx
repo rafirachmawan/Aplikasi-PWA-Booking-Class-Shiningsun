@@ -9,6 +9,7 @@ import {
   getActiveBranchName,
   getStudentRulesDocuments,
   getCurriculumDocuments,
+  getOverdueWorksheets,
 } from "@/lib/actions";
 import { TodaySchedule } from "@/components/features/dashboard/TodaySchedule";
 import { QuickAccessLinks } from "@/components/features/dashboard/QuickAccessLinks";
@@ -37,15 +38,18 @@ export default async function DashboardPage() {
   let statsData = { reguler: 0, cg: 0, cgUpcoming: 0, cgPassed: 0, classes: 0 };
   let todaySlots: any[] = [];
   let classes: any[] = [];
+  let overdueList: any[] = [];
   let activeBranchName: string | null = null;
 
   if (hasBranchSelected || !isSuperadmin) {
-    [statsData, todaySlots, classes, activeBranchName] = await Promise.all([
-      getDashboardStats(),
-      getTodaySchedules(),
-      getClasses(),
-      getActiveBranchName(),
-    ]);
+    [statsData, todaySlots, classes, overdueList, activeBranchName] =
+      await Promise.all([
+        getDashboardStats(),
+        getTodaySchedules(),
+        getClasses(),
+        getOverdueWorksheets(currentBranchId), // Pass branch ID for filtering
+        getActiveBranchName(),
+      ]);
   }
 
   // Dokumen Upload File PDF (global, tidak tergantung cabang)
@@ -67,10 +71,10 @@ export default async function DashboardPage() {
       statusFilter: "CG" as const,
     },
     {
-      name: "Tipe Kelas",
-      value: statsData.classes.toString(),
-      iconName: "calendar",
-      statusFilter: "CLASSES" as const,
+      name: "Laporan Terlewat - Mohon Segera Diisi",
+      value: overdueList.length.toString(),
+      iconName: "alert-circle",
+      statusFilter: "OVERDUE_WORKSHEETS" as const,
     },
   ];
 

@@ -1,4 +1,4 @@
-"use client";
+x`"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -50,22 +50,19 @@ export function BranchSelector({
   const selectBranch = async (newBranchId: string) => {
     setIsOpen(false);
     setSelectedId(newBranchId);
-    setIsUpdating(true);
 
     if (newBranchId === "") {
       // Reset ke netral: hapus cookie
       const { clearSuperadminBranch } = await import("@/lib/actions");
       await clearSuperadminBranch();
+      // Force reload dengan timestamp di URL
+      window.location.href = `/?t=${Date.now()}`;
     } else {
       // Set cookie ke cabang terpilih
       await setSuperadminBranch(newBranchId);
+      // Force reload dengan timestamp di URL
+      window.location.href = `/?branch=${encodeURIComponent(newBranchId)}&t=${Date.now()}`;
     }
-
-    // Refresh page fully to update all server components
-    router.refresh();
-    setTimeout(() => {
-      setIsUpdating(false);
-    }, 1000);
   };
 
   return (
