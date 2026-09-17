@@ -66,7 +66,11 @@ export default async function DashboardPage() {
     {
       name: "Coba Gratis",
       value: statsData.cg.toString(),
-      subValue: `${statsData.cgUpcoming} belum terlewat`,
+      // Show dynamic message based on upcoming schedules
+      subValue:
+        statsData.cgUpcoming > 0
+          ? `${statsData.cgUpcoming} sesi tersedia`
+          : "0 sesi",
       iconName: "sun",
       statusFilter: "CG" as const,
     },

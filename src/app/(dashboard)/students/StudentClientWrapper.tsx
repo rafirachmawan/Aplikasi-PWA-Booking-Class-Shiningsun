@@ -227,99 +227,99 @@ export function StudentClientWrapper({
       {confirmModal.isOpen &&
         createPortal(
           <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
-            onClick={() =>
-              !isProcessing &&
-              setConfirmModal((prev) => ({ ...prev, isOpen: false }))
-            }
-          />
-          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                confirmModal.type === "delete"
-                  ? "bg-red-100 dark:bg-red-500/10"
-                  : "bg-brand-100 dark:bg-brand-500/10"
-              }`}
-            >
-              {confirmModal.type === "delete" ? (
-                <Icons.trash className="w-6 h-6 text-red-600 dark:text-red-400" />
-              ) : (
-                <Icons.settings className="w-6 h-6 text-brand-600 dark:text-brand-400" />
-              )}
-            </div>
-
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center">
-              {confirmModal.type === "delete"
-                ? "Hapus Data Siswa?"
-                : confirmModal.newStatus === "INACTIVE"
-                  ? "Nonaktifkan Siswa?"
-                  : "Aktifkan Siswa?"}
-            </h3>
-
-            <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-2 leading-relaxed">
-              {confirmModal.type === "delete" ? (
-                <>
-                  Apakah Anda yakin ingin menghapus data siswa{" "}
-                  <strong className="text-slate-700 dark:text-slate-300">
-                    "{confirmModal.studentName}"
-                  </strong>{" "}
-                  secara permanen? Data yang dihapus tidak dapat dikembalikan.
-                </>
-              ) : confirmModal.newStatus === "INACTIVE" ? (
-                <>
-                  Apakah Anda yakin ingin menonaktifkan siswa{" "}
-                  <strong className="text-slate-700 dark:text-slate-300">
-                    "{confirmModal.studentName}"
-                  </strong>
-                  ? Data siswa akan dipindah ke tab Nonaktif.
-                </>
-              ) : (
-                <>
-                  Apakah Anda yakin ingin mengaktifkan kembali siswa{" "}
-                  <strong className="text-slate-700 dark:text-slate-300">
-                    "{confirmModal.studentName}"
-                  </strong>{" "}
-                  sebagai siswa Reguler?
-                </>
-              )}
-            </p>
-
-            {modalError && (
-              <p className="text-xs text-red-500 mt-3 text-center font-medium bg-red-50 dark:bg-red-950/20 p-2.5 rounded-xl border border-red-100 dark:border-red-900/50">
-                {modalError}
-              </p>
-            )}
-
-            <div className="flex gap-3 mt-6">
-              <button
-                type="button"
-                disabled={isProcessing}
-                onClick={() =>
-                  setConfirmModal((prev) => ({ ...prev, isOpen: false }))
-                }
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                disabled={isProcessing}
-                onClick={handleExecuteAction}
-                className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 ${
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+              onClick={() =>
+                !isProcessing &&
+                setConfirmModal((prev) => ({ ...prev, isOpen: false }))
+              }
+            />
+            <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${
                   confirmModal.type === "delete"
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-brand-600 hover:bg-brand-700"
+                    ? "bg-red-100 dark:bg-red-500/10"
+                    : "bg-brand-100 dark:bg-brand-500/10"
                 }`}
               >
-                {isProcessing
-                  ? "Memproses..."
-                  : confirmModal.type === "delete"
-                    ? "Ya, Hapus"
-                    : "Ya, Lanjutkan"}
-              </button>
+                {confirmModal.type === "delete" ? (
+                  <Icons.trash className="w-6 h-6 text-red-600 dark:text-red-400" />
+                ) : (
+                  <Icons.settings className="w-6 h-6 text-brand-600 dark:text-brand-400" />
+                )}
+              </div>
+
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center">
+                {confirmModal.type === "delete"
+                  ? "Hapus Data Siswa?"
+                  : confirmModal.newStatus === "INACTIVE"
+                    ? "Nonaktifkan Siswa?"
+                    : "Aktifkan Siswa?"}
+              </h3>
+
+              <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-2 leading-relaxed">
+                {confirmModal.type === "delete" ? (
+                  <>
+                    Apakah Anda yakin ingin menghapus data siswa{" "}
+                    <strong className="text-slate-700 dark:text-slate-300">
+                      "{confirmModal.studentName}"
+                    </strong>{" "}
+                    secara permanen? Data yang dihapus tidak dapat dikembalikan.
+                  </>
+                ) : confirmModal.newStatus === "INACTIVE" ? (
+                  <>
+                    Apakah Anda yakin ingin menonaktifkan siswa{" "}
+                    <strong className="text-slate-700 dark:text-slate-300">
+                      "{confirmModal.studentName}"
+                    </strong>
+                    ? Data siswa akan dipindah ke tab Nonaktif.
+                  </>
+                ) : (
+                  <>
+                    Apakah Anda yakin ingin mengaktifkan kembali siswa{" "}
+                    <strong className="text-slate-700 dark:text-slate-300">
+                      "{confirmModal.studentName}"
+                    </strong>{" "}
+                    sebagai siswa Reguler?
+                  </>
+                )}
+              </p>
+
+              {modalError && (
+                <p className="text-xs text-red-500 mt-3 text-center font-medium bg-red-50 dark:bg-red-950/20 p-2.5 rounded-xl border border-red-100 dark:border-red-900/50">
+                  {modalError}
+                </p>
+              )}
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  disabled={isProcessing}
+                  onClick={() =>
+                    setConfirmModal((prev) => ({ ...prev, isOpen: false }))
+                  }
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={isProcessing}
+                  onClick={handleExecuteAction}
+                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 ${
+                    confirmModal.type === "delete"
+                      ? "bg-red-600 hover:bg-red-700"
+                      : "bg-brand-600 hover:bg-brand-700"
+                  }`}
+                >
+                  {isProcessing
+                    ? "Memproses..."
+                    : confirmModal.type === "delete"
+                      ? "Ya, Hapus"
+                      : "Ya, Lanjutkan"}
+                </button>
+              </div>
             </div>
-          </div>
           </div>,
           document.body,
         )}
@@ -712,6 +712,11 @@ export function StudentClientWrapper({
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 dark:text-white sm:pl-6">
                         <div className="flex items-center gap-2">
                           <span>{person.name}</span>
+                          {person.nickname ? (
+                            <span className="text-slate-400 dark:text-slate-500">
+                              ({person.nickname})
+                            </span>
+                          ) : null}
                           {person.gender === "Perempuan" ? (
                             <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-pink-50 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400 border border-pink-200/50 dark:border-pink-800/50">
                               👧 P
@@ -868,6 +873,11 @@ export function StudentClientWrapper({
                   <div className="flex-1 pr-3">
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-1.5 flex-wrap">
                       <span>{person.name}</span>
+                      {person.nickname ? (
+                        <span className="font-normal text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                          ( {person.nickname} )
+                        </span>
+                      ) : null}
                       {person.gender === "Perempuan" ? (
                         <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold bg-pink-50 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400 border border-pink-200/50 dark:border-pink-800/50">
                           👧 P

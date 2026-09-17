@@ -73,11 +73,15 @@ export function DashboardStatsCards({
               <span className="text-xl sm:text-4xl font-extrabold text-white tracking-tight drop-shadow-sm">
                 {item.value}
               </span>
-              {item.subValue && (
+              {/* Show "X sesi" message for CG */}
+              {item.statusFilter === "CG" && (
                 <div className="mt-1">
-                  <span className="inline-flex items-center gap-1 text-[8px] sm:text-[11px] font-semibold text-amber-100 bg-black/25 px-1.5 py-0.5 rounded-md border border-white/15 backdrop-blur-xs leading-tight">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse shrink-0"></span>
-                    <span>{item.subValue}</span>
+                  <span className="inline-flex items-center gap-1 text-[8px] sm:text-[11px] font-semibold text-slate-100 bg-black/25 px-1.5 py-0.5 rounded-md border border-white/15 backdrop-blur-xs leading-tight">
+                    {item.subValue ? (
+                      <span>{item.subValue}</span>
+                    ) : (
+                      <span>0 sesi</span>
+                    )}
                   </span>
                 </div>
               )}
