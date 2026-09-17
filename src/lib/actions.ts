@@ -441,6 +441,25 @@ export async function getOverdueWorksheets(branchId = "ALL") {
       bookingsByStudent.get(booking.student_id)!.push(booking);
     });
 
+    // Get class details for mapping
+    const classIds = allBookings
+      ?.map((b: any) => b.slot?.class_id)
+      .filter(Boolean);
+    let classNamesMap = new Map<string, string>();
+
+    if (classIds.length > 0) {
+      const { data: classes } = await supabaseServer
+        .from("classes")
+        .select("id, name")
+        .in("id", classIds);
+
+      if (classes) {
+        classes.forEach((cls: any) => {
+          classNamesMap.set(cls.id, cls.name);
+        });
+      }
+    }
+
     // 3. Fetch ALL worksheets from September 1, 2026 until today
     const { data: allWorksheets } = await supabaseServer
       .from("student_worksheets")
@@ -514,11 +533,14 @@ export async function getOverdueWorksheets(branchId = "ALL") {
 
           seenOverdueEntries.add(entryKey);
 
+          // Get class name from map
+          const className = classNamesMap.get(slot.class_id) || null;
+
           overdueList.push({
             ...student,
             missedDate: schedDate,
             missedTime: schedTime,
-            className: null,
+            className,
           });
         }
       }

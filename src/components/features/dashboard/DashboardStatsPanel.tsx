@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
+import { WorksheetFormModal } from "@/components/features/worksheets/WorksheetFormModal";
 import {
   getStudentsByStatusWithSchedules,
   getClassesWithSchedules,
@@ -117,6 +119,7 @@ export function DashboardStatsCards({
 }
 
 export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
   const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -127,6 +130,13 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
   );
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [currentBranchId, setCurrentBranchId] = useState<string>(""); // Add branch state
+
+  // Overdue worksheet modal state
+  const [overdueStudent, setOverdueStudent] = useState<any | null>(null);
+  const [missedDate, setMissedDate] = useState<string>("");
+  const [className, setClassName] = useState<string>("");
+  const [teachers, setTeachers] = useState<any[]>([]);
+
   const panelRef = useRef<HTMLDivElement>(null);
 
   const handleCardClick = async (stat: StatItem) => {
@@ -169,6 +179,28 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Handler for "Isi Lembar Perkembangan Sekarang" button
+  const handleOpenWorksheetForm = async (
+    student: any,
+    missedDate: string,
+    className?: string,
+  ) => {
+    // Fetch teachers from server
+    const { getTeachers } = await import("@/lib/actions");
+    const teacherList = await getTeachers();
+    setTeachers(teacherList);
+
+    setOverdueStudent(student);
+    setMissedDate(missedDate);
+    setClassName(className || "");
+  };
+
+  const handleCloseWorksheetModal = () => {
+    setOverdueStudent(null);
+    setMissedDate("");
+    setClassName("");
   };
 
   useEffect(() => {
@@ -535,8 +567,16 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                       </p>
                     )}
                     <a
-                      href="/worksheets"
+                      href="#"
                       className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleOpenWorksheetForm(
+                          student,
+                          missedDate,
+                          student.className,
+                        );
+                      }}
                     >
                       <Icons.add className="w-3.5 h-3.5" />
                       Isi Lembar Perkembangan Sekarang
@@ -985,6 +1025,21 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Overdue Worksheet Form Modal */}
+      {overdueStudent && (
+        <WorksheetFormModal
+          students={[overdueStudent]}
+          teachers={teachers}
+          onClose={handleCloseWorksheetModal}
+          onSuccess={() => {
+            handleCloseWorksheetModal();
+            // Optionally refresh data here
+          }}
+          lockedStudentId={overdueStudent.id}
+          currentDate={missedDate}
+        />
       )}
     </>
   );
