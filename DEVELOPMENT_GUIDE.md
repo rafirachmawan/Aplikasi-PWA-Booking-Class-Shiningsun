@@ -7,6 +7,7 @@ When running `npm run dev`, you may notice multiple Node.js processes in Task Ma
 ## Solutions
 
 ### Option 1: Kill All Node.js Processes (Recommended)
+
 Use the provided batch script before starting dev server:
 
 ```bash
@@ -14,22 +15,27 @@ kill-node.bat
 ```
 
 Then start the dev server:
+
 ```bash
 npm run dev
 ```
 
 ### Option 2: Use npm scripts to kill manually
+
 Open Command Prompt:
+
 ```bash
 taskkill /F /IM node.exe
 ```
 
 Wait 3 seconds, then:
+
 ```bash
 npm run dev
 ```
 
 ### Option 3: Clean Next.js Cache if compilation stuck
+
 ```bash
 npm run clean-next
 npm run dev
