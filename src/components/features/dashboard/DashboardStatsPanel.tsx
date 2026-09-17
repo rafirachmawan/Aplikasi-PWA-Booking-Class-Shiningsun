@@ -444,17 +444,20 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
 
           {/* Schedule count badge & Chevron - Right aligned */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <span
-              className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
-                hasTodaySchedule
-                  ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                  : scheduleCount > 0
-                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200/80"
-                    : "bg-slate-100 text-slate-400 border border-slate-200"
-              }`}
-            >
-              {scheduleCount} sesi
-            </span>
+            {/* Hidden for overdue worksheets */}
+            {activeTab !== "OVERDUE_WORKSHEETS" && (
+              <span
+                className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
+                  hasTodaySchedule
+                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    : scheduleCount > 0
+                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200/80"
+                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                }`}
+              >
+                {scheduleCount} sesi
+              </span>
+            )}
 
             <svg
               className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180 text-brand-500" : ""}`}
@@ -534,12 +537,12 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
 
         {/* Expanded Overdue Worksheet Detail */}
         {isExpanded && activeTab === "OVERDUE_WORKSHEETS" && (
-          <div className="bg-red-50/80 border-b border-red-200/80 px-3 py-2.5 sm:px-6 sm:py-4 animate-in slide-in-from-top-2 fade-in duration-200">
-            <div className="ml-2 sm:ml-6 pl-2.5 sm:pl-3 border-l-2 border-red-400">
-              <div className="space-y-2">
+          <div className="bg-red-50/80 border-b border-red-200/80 px-3 py-2 sm:px-4 sm:py-3">
+            <div className="ml-2 pl-2.5 border-l-2 border-red-400">
+              <div className="space-y-1.5">
                 <div className="flex items-start gap-2">
                   <svg
-                    className="w-5 h-5 text-red-500 mt-0.5"
+                    className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -551,24 +554,24 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                       d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                     />
                   </svg>
-                  <div className="flex-1">
-                    <p className="text-xs text-red-800 font-semibold mb-1">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-red-800 font-semibold mb-0.5">
                       Jadwal pada tanggal tersebut belum diisi dalam lembar
                       perkembangan
                     </p>
-                    <p className="text-[10px] text-red-600">
+                    <p className="text-[10px] text-red-600 leading-tight">
                       • Tanggal:{" "}
                       <strong>{formatShortDate(student.missedDate)}</strong>
                       <br />• Waktu: <strong>{student.missedTime}</strong>
                     </p>
                     {student.className && (
-                      <p className="text-[10px] text-red-600 mt-1">
+                      <p className="text-[10px] text-red-600 mt-0.5">
                         Kelas: <strong>{student.className}</strong>
                       </p>
                     )}
                     <a
                       href="#"
-                      className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors"
+                      className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors w-full justify-center"
                       onClick={(e) => {
                         e.preventDefault();
                         handleOpenWorksheetForm(

@@ -378,7 +378,7 @@ export async function getOverdueWorksheets(branchId = "ALL") {
     console.log(`🚀 Overdue check (Sept 1+ logic) for branch ${branchId}`);
     console.log(` Branch ID from query: ${branchId}`);
 
-    // 1. Get all active students for this branch (both CG and REGISTERED)
+    // 1. Get all active students for this branch - ONLY REGISTERED (NOT CG or INACTIVE)
     let studentsQuery = supabaseServer
       .from("students")
       .select(
@@ -387,7 +387,7 @@ export async function getOverdueWorksheets(branchId = "ALL") {
         label:labels(id, main_level, sub_level, hex_color)
       `,
       )
-      .in("status", ["CG", "REGISTERED"]);
+      .eq("status", "REGISTERED"); // Only registered students, not CG or INACTIVE
 
     if (branchId !== "ALL") {
       studentsQuery = studentsQuery.eq("branch_id", branchId);
