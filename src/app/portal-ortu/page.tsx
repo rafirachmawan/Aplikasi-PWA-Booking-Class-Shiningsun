@@ -15,6 +15,7 @@ export default function ParentLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [showPin, setShowPin] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     getBranches().then((data) => {
@@ -39,7 +40,11 @@ export default function ParentLoginPage() {
     setErrorMsg("");
 
     try {
-      const result = await verifyParentAccess(studentName, pin, selectedBranchId);
+      const result = await verifyParentAccess(
+        studentName,
+        pin,
+        selectedBranchId,
+      );
       if (!result.success) {
         setErrorMsg(result.error || "Gagal masuk. Periksa nama siswa dan PIN.");
         setIsLoading(false);
@@ -55,7 +60,7 @@ export default function ParentLoginPage() {
   return (
     <div className="flex min-h-screen bg-slate-900 overflow-x-hidden font-sans">
       {/* Left Panel - Branding (hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-[50%] xl:w-[55%] relative flex-col justify-between p-12 overflow-hidden bg-[#0A0F1C] border-r border-slate-800/50">
+      <div className="hidden lg:flex lg:w-[50%] xl:w-[55%] relative flex-col justify-between p-8 overflow-hidden bg-[#0A0F1C] border-r border-slate-800/50">
         {/* Animated Mesh Gradient Background (Brand Blue Theme) */}
         <div className="absolute inset-0 w-full h-full">
           <div
@@ -76,9 +81,9 @@ export default function ParentLoginPage() {
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center mask-[linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
         {/* Top - Logo & Brand */}
-        <div className="relative z-10 animate-in fade-in slide-in-from-top-8 duration-700">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl">
+        <div className="relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl">
               <Image
                 src="/logo.png"
                 alt="Logo"
@@ -89,10 +94,10 @@ export default function ParentLoginPage() {
               />
             </div>
             <div>
-              <span className="text-3xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-white to-white/70 tracking-tight block">
+              <span className="text-2xl font-bold text-transparent bg-clip-text bg-linear-to-r from-white to-white/70 tracking-tight block">
                 ShiningSun
               </span>
-              <span className="text-xs font-bold text-brand-400 tracking-wider uppercase">
+              <span className="text-xs font-semibold text-brand-400 tracking-wider uppercase">
                 Preschool & Academy
               </span>
             </div>
@@ -100,38 +105,30 @@ export default function ParentLoginPage() {
         </div>
 
         {/* Center - Hero Header */}
-        <div className="relative z-10 space-y-6 my-auto py-8 animate-in fade-in slide-in-from-left-8 duration-1000 delay-300">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-sm font-semibold">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
-            </span>
-            👨‍👩‍👧 Portal Mandiri Orang Tua
-          </div>
-
-          <h1 className="text-5xl lg:text-6xl font-extrabold text-white leading-[1.1] tracking-tight">
+        <div className="relative z-10 space-y-4 my-auto py-4">
+          <h1 className="text-4xl lg:text-5xl font-bold text-white leading-[1.1] tracking-tight">
             Pantau Perkembangan & <br />
             <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-400 via-blue-400 to-indigo-400">
               Jadwal Kelas Anak
             </span>
           </h1>
 
-          <p className="text-slate-300/80 text-lg max-w-lg leading-relaxed font-light">
+          <p className="text-slate-300/80 text-base max-w-lg leading-relaxed font-light">
             Akses informasi jadwal mendatang, riwayat sesi kelas, dan unduh
             laporan perkembangan evaluasi anak Anda secara real-time.
           </p>
 
-          {/* Detailed Feature Cards on Left Panel */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
-            <div className="p-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 space-y-1">
-              <div className="text-xl">📅</div>
+          {/* Feature Cards */}
+          <div className="grid grid-cols-3 gap-3 pt-3">
+            <div className="p-3 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 space-y-1">
+              <div className="text-lg">📅</div>
               <h4 className="text-xs font-bold text-white">Jadwal Kelas</h4>
               <p className="text-[11px] text-slate-400">
                 Sesi mendatang & riwayat kehadiran
               </p>
             </div>
-            <div className="p-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 space-y-1">
-              <div className="text-xl">📄</div>
+            <div className="p-3 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 space-y-1">
+              <div className="text-lg">📄</div>
               <h4 className="text-xs font-bold text-white">
                 Laporan Perkembangan
               </h4>
@@ -139,8 +136,8 @@ export default function ParentLoginPage() {
                 Modul & catatan guru via Drive
               </p>
             </div>
-            <div className="p-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 space-y-1">
-              <div className="text-xl">🔑</div>
+            <div className="p-3 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 space-y-1">
+              <div className="text-lg">🔑</div>
               <h4 className="text-xs font-bold text-white">PIN Instan</h4>
               <p className="text-[11px] text-slate-400">
                 Tanpa ribet daftar akun baru
@@ -150,30 +147,24 @@ export default function ParentLoginPage() {
         </div>
 
         {/* Bottom - Copyright */}
-        <div className="relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
+        <div className="relative z-10 pt-4">
           <p className="text-white/40 text-sm font-medium">
             &copy; 2026 ShiningSun. All rights reserved.
           </p>
         </div>
       </div>
 
-      {/* Right Panel - Form Container (Full Height & Clean Spacing with Safe Area Padding) */}
+      {/* Right Panel - Form Container */}
       <div className="flex flex-1 flex-col justify-between p-4 sm:p-8 lg:p-12 pb-5 sm:pb-8 lg:pb-12 bg-slate-900 lg:bg-white dark:lg:bg-[#0B1120] relative z-10 min-h-screen">
-        {/* Animated Mesh background for Mobile */}
-        <div className="lg:hidden absolute inset-0 w-full h-full -z-10 overflow-hidden">
-          <div
-            className="absolute -top-1/4 -left-1/4 w-[140%] h-[80%] rounded-full bg-brand-600/35 blur-[90px] mix-blend-screen animate-pulse"
-            style={{ animationDuration: "8s" }}
-          />
-          <div
-            className="absolute top-1/2 -right-1/4 w-[120%] h-[70%] rounded-full bg-indigo-500/25 blur-[80px] mix-blend-screen animate-pulse"
-            style={{ animationDuration: "12s" }}
-          />
-          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-25 mask-[linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+        {/* Mobile Full Background Ambient Glow */}
+        <div className="lg:hidden absolute inset-0 pointer-events-none overflow-hidden -z-10">
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[140%] h-137.5 rounded-full bg-linear-to-b from-brand-600/25 via-indigo-600/15 to-transparent blur-3xl" />
+          <div className="absolute -bottom-32 left-1/2 -translate-x-1/2 w-[120%] h-100 rounded-full bg-linear-to-t from-blue-600/15 via-brand-600/10 to-transparent blur-3xl" />
+          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-15 mask-[linear-gradient(180deg,white_0%,transparent_100%)]" />
         </div>
 
         <div className="w-full max-w-105 mx-auto my-auto py-2 sm:py-4">
-          {/* Header - Brand & Title (centered di semua ukuran agar simetris) */}
+          {/* Header - Brand & Title */}
           <div className="flex flex-col items-center text-center mb-6">
             {/* Logo Icon Box (Mobile Only) */}
             <div className="h-16 w-16 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-2xl border border-white/20 mb-3.5 lg:hidden">
@@ -189,7 +180,7 @@ export default function ParentLoginPage() {
 
             {/* Portal Badge */}
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-brand-500/20 lg:bg-brand-50 dark:lg:bg-brand-950/50 border border-brand-500/30 lg:border-brand-200 dark:lg:border-brand-800 text-brand-300 lg:text-brand-600 dark:lg:text-brand-400 text-xs font-bold mb-3">
-              👨‍👩‍👧 Portal Orang Tua & Siswa
+              👨‍‍ Portal Orang Tua & Siswa
             </div>
 
             {/* Title & Subtitle */}
@@ -226,52 +217,179 @@ export default function ParentLoginPage() {
               {/* Unit / Cabang Select */}
               {branches.length > 0 && (
                 <div className="relative group">
-                  <div className="absolute -inset-0.5 bg-linear-to-r from-brand-500 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-15 transition duration-500 pointer-events-none"></div>
-                  <div className="relative flex items-center bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500 focus-within:bg-white dark:focus-within:bg-slate-900 min-h-12.5">
-                    <div className="pl-3.5 pr-1 text-slate-400 dark:text-slate-500 shrink-0 pointer-events-none">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                  <label className="block text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    Pilih Unit / Cabang Sekolah
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className={`relative w-full flex items-center justify-between bg-slate-50 dark:bg-slate-800/80 rounded-xl border ${
+                      isDropdownOpen
+                        ? "border-brand-500 ring-2 ring-brand-500/30 bg-white dark:bg-slate-900"
+                        : "border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600"
+                    } transition-all min-h-11 sm:min-h-12 px-3.5 text-left cursor-pointer shadow-xs`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="text-slate-400 dark:text-slate-500 shrink-0">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                      </div>
+                      <span
+                        className={`text-sm font-medium truncate ${
+                          selectedBranchId
+                            ? "text-slate-900 dark:text-white"
+                            : "text-slate-500 dark:text-slate-400"
+                        }`}
                       >
-                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                        <circle cx="12" cy="10" r="3" />
-                      </svg>
+                        {selectedBranchId
+                          ? `Unit ${branches.find((b) => b.id === selectedBranchId)?.name}`
+                          : "-- Semua Unit / Cabang --"}
+                      </span>
                     </div>
-                    <div className="relative flex-1 pr-3">
-                      <select
-                        id="branchSelect"
-                        value={selectedBranchId}
-                        onChange={(e) => setSelectedBranchId(e.target.value)}
-                        className="w-full bg-transparent pt-5 pb-2 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none cursor-pointer"
-                      >
-                        <option value="" className="text-slate-900 dark:text-slate-900">
-                          -- Semua Unit / Cabang --
-                        </option>
+
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`text-slate-400 dark:text-slate-500 transition-transform duration-200 shrink-0 ${
+                        isDropdownOpen ? "rotate-180 text-brand-500" : ""
+                      }`}
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+
+                  {/* Custom Dropdown Menu */}
+                  {isDropdownOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsDropdownOpen(false)}
+                      />
+
+                      <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150 max-h-72 overflow-auto">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedBranchId("");
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                            !selectedBranchId
+                              ? "bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 font-bold border border-brand-200/60 dark:border-brand-800/40"
+                              : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="text-slate-400 dark:text-slate-500 shrink-0">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                                <circle cx="12" cy="10" r="3" />
+                              </svg>
+                            </div>
+                            <span>-- Semua Unit / Cabang --</span>
+                          </div>
+                          {!selectedBranchId && (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="text-brand-600 dark:text-brand-400 shrink-0 ml-2"
+                            >
+                              <path d="M20 6 9 17l-5-5" />
+                            </svg>
+                          )}
+                        </button>
+
                         {branches.map((b) => (
-                          <option
+                          <button
                             key={b.id}
-                            value={b.id}
-                            className="text-slate-900 dark:text-slate-900"
+                            type="button"
+                            onClick={() => {
+                              setSelectedBranchId(b.id);
+                              setIsDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                              selectedBranchId === b.id
+                                ? "bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 font-bold border border-brand-200/60 dark:border-brand-800/40"
+                                : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                            }`}
                           >
-                            Unit {b.name}
-                          </option>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="text-slate-400 dark:text-slate-500 shrink-0">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="18"
+                                  height="18"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                                  <circle cx="12" cy="10" r="3" />
+                                </svg>
+                              </div>
+                              <span className="truncate">Unit {b.name}</span>
+                            </div>
+                            {selectedBranchId === b.id && (
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="text-brand-600 dark:text-brand-400 shrink-0 ml-2"
+                              >
+                                <path d="M20 6 9 17l-5-5" />
+                              </svg>
+                            )}
+                          </button>
                         ))}
-                      </select>
-                      <label
-                        htmlFor="branchSelect"
-                        className="absolute left-0 top-1.5 text-slate-400 text-[11px] font-semibold pointer-events-none"
-                      >
-                        Pilih Unit / Cabang Sekolah
-                      </label>
-                    </div>
-                  </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -461,18 +579,38 @@ export default function ParentLoginPage() {
               </button>
 
               {/* Info Note & Switch Link */}
-              <div className="pt-1 text-center space-y-2">
+              <div className="pt-1 text-center space-y-3">
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                   Belum memiliki PIN anak? Hubungi pihak admin sekolah.
                 </p>
-                <div>
-                  <a
-                    href="/login"
-                    className="text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 transition-colors underline inline-flex items-center gap-1"
-                  >
-                    ← Kembali ke Login Admin & Staf
-                  </a>
-                </div>
+
+                {/* Back to Admin Login Card */}
+                <a
+                  href="/login"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-brand-50/80 dark:bg-brand-950/30 border border-brand-200/80 dark:border-brand-900/60 hover:bg-brand-100/60 dark:hover:bg-brand-900/40 text-slate-800 dark:text-white transition-all group shadow-xs"
+                >
+                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-brand-600 text-white shrink-0 group-hover:scale-105 transition-transform">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M18 12H6" />
+                      <path d="m13 17-5-5 5-5" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 text-left">
+                    <h4 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                      Kembali ke Login Admin & Staf
+                    </h4>
+                  </div>
+                </a>
               </div>
             </form>
 

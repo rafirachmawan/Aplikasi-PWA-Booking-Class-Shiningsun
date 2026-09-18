@@ -262,12 +262,12 @@ export function LoginForm() {
                 <>
                   {/* Invisible Backdrop */}
                   <div
-                    className="fixed inset-0 z-40 bg-black/10 dark:bg-black/40 backdrop-blur-xs"
+                    className="fixed inset-0 z-40"
                     onClick={() => setIsDropdownOpen(false)}
                   />
 
                   {/* Menu Popover Container */}
-                  <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150 max-h-72 overflow-auto">
                     {QUICK_ACCOUNTS.map((acc, idx) => {
                       const isSelected =
                         (acc.email === email && acc.email !== "") ||
@@ -284,7 +284,7 @@ export function LoginForm() {
                             }
                             setIsDropdownOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all cursor-pointer ${
                             isSelected
                               ? "bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 font-bold border border-brand-200/60 dark:border-brand-800/40"
                               : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70"
@@ -299,7 +299,7 @@ export function LoginForm() {
                                 {acc.label}
                               </p>
                               {acc.role && (
-                                <p className="text-[10px] text-slate-400 dark:text-slate-400 font-medium">
+                                <p className="truncate text-[10px] sm:text-xs text-slate-400 dark:text-slate-400 font-normal leading-tight">
                                   {acc.role}
                                 </p>
                               )}
@@ -524,7 +524,6 @@ export function LoginForm() {
               </p>
             </div>
           </a>
-
         </form>
       </div>
 

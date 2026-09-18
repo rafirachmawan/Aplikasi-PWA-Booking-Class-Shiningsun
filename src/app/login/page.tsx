@@ -5,7 +5,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#0A0F1C] flex flex-col lg:flex-row overflow-x-hidden font-sans">
       {/* Left Panel - Branding (desktop only) */}
-      <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-12 overflow-hidden bg-[#0A0F1C]">
+      <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-8 overflow-hidden bg-[#0A0F1C]">
         {/* Animated Mesh Gradient Background */}
         <div className="absolute inset-0 w-full h-full">
           <div
@@ -26,9 +26,9 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center mask-[linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
         {/* Top - Logo & Brand */}
-        <div className="relative z-10 animate-in fade-in slide-in-from-top-8 duration-700">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl">
+        <div className="relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl">
               <Image
                 src="/logo.png"
                 alt="Logo"
@@ -38,51 +38,44 @@ export default function LoginPage() {
                 priority
               />
             </div>
-            <span className="text-3xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-white to-white/70 tracking-tight">
+            <span className="text-2xl font-bold text-transparent bg-clip-text bg-linear-to-r from-white to-white/70 tracking-tight">
               ShiningSun
             </span>
           </div>
         </div>
 
         {/* Center - Tagline */}
-        <div className="relative z-10 space-y-6 animate-in fade-in slide-in-from-left-8 duration-1000 delay-300">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-sm font-medium">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
-            </span>
-            Platform Manajemen Modern
-          </div>
-          <h1 className="text-6xl font-bold text-white leading-[1.1] tracking-tight">
+        <div className="relative z-10 space-y-4 my-auto py-4">
+          <h1 className="text-4xl lg:text-5xl font-bold text-white leading-[1.1] tracking-tight">
             Shiningsun Report <br />
             <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-400 via-blue-400 to-indigo-400">
               Cerdas, Ceria, Kreatif dan Mandiri
             </span>
           </h1>
-          <p className="text-slate-300/80 text-xl max-w-lg leading-relaxed font-light">
+          <p className="text-slate-300/80 text-base max-w-lg leading-relaxed font-light">
             Solusi komprehensif untuk mengelola jadwal kelas, data siswa, dan
             booking sesi cabang secara real-time.
           </p>
         </div>
 
         {/* Bottom - Footer */}
-        <div className="relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
-          <div className="flex items-center gap-4 mb-4">
+        <div className="relative z-10 pt-4">
+          <div className="flex items-center gap-3 mb-3">
             <div className="flex -space-x-3">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="w-10 h-10 rounded-full bg-slate-800 border-2 border-[#0A0F1C] flex items-center justify-center text-xs text-white/50 shadow-sm"
+                  className="w-8 h-8 rounded-full bg-slate-800 border-2 border-[#0A0F1C] flex items-center justify-center text-xs text-white/50 shadow-sm"
                 >
                   {i}
                 </div>
               ))}
-              <div className="w-10 h-10 rounded-full bg-brand-600 border-2 border-[#0A0F1C] flex items-center justify-center text-xs font-bold text-white shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-brand-600 border-2 border-[#0A0F1C] flex items-center justify-center text-xs font-bold text-white shadow-sm">
                 +99
               </div>
             </div>
             <p className="text-sm text-slate-400 font-medium">
-              Dipercaya oleh seluruh admin cabang
+              Dipercaya oleh admin cabang
             </p>
           </div>
           <p className="text-white/40 text-sm font-medium">
