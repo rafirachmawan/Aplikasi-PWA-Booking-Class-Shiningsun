@@ -611,7 +611,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
         >
           <div className="rounded-2xl bg-white shadow-xl shadow-slate-900/10 border border-slate-200/80 overflow-hidden">
             {/* Panel Header */}
-            <div className="px-4 py-3 sm:px-6 sm:py-4 bg-slate-50 border-b border-slate-200 flex flex-col gap-3">
+            <div className="sticky top-0 z-20 px-4 py-3 sm:px-6 sm:py-4 bg-slate-50 border-b border-slate-200 flex flex-col gap-3">
               {/* Header Top Row: Title & Close Button */}
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -769,262 +769,285 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
               </div>
             </div>
 
-            {/* Panel Body */}
-            <div className="max-h-105 sm:max-h-130 overflow-y-auto overscroll-contain">
-              {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-3">
-                  <div className="w-8 h-8 border-[3px] border-slate-200 border-t-brand-500 rounded-full animate-spin" />
-                  <span className="text-xs text-slate-500 font-medium">
-                    Memuat data...
-                  </span>
-                </div>
-              ) : sortedItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-2">
-                  <Icons.users className="w-8 h-8 text-slate-300" />
-                  <span className="text-xs text-slate-400 font-medium">
-                    {searchQuery
-                      ? "Tidak ada data yang cocok"
-                      : "Belum ada data"}
-                  </span>
-                </div>
-              ) : activeTab === "CLASSES" ? (
-                /* Render Classes List */
-                <div className="divide-y divide-slate-100">
-                  {sortedItems.map((cls, idx) => {
-                    const isExpanded = expandedItemId === cls.id;
-                    const scheduleCount = cls.schedules?.length || 0;
-                    const isEven = idx % 2 === 0;
+            {/* Panel Body - Scrollable area with smart overflow */}
+            <div className="px-4 py-3 sm:px-6 sm:py-5">
+              <div
+                className="max-h-[calc(100vh-200px)] min-h-[50vh] overflow-y-auto overscroll-contain"
+                onWheel={(e) => {
+                  const target = e.target as HTMLElement;
+                  const atTop = target.scrollTop === 0;
+                  const atBottom =
+                    target.scrollHeight - target.scrollTop ===
+                    target.clientHeight;
 
-                    return (
-                      <div key={cls.id}>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setExpandedItemId(isExpanded ? null : cls.id)
-                          }
-                          className={`w-full flex items-center justify-between gap-3 px-4 py-3 sm:px-6 transition-all cursor-pointer text-left ${
-                            isExpanded
-                              ? "bg-brand-50/60"
-                              : isEven
-                                ? "bg-white hover:bg-slate-50"
-                                : "bg-slate-50/50 hover:bg-slate-100/60"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                            <span className="text-xs font-bold text-slate-400 w-5 shrink-0 text-right tabular-nums">
-                              {idx + 1}
-                            </span>
-                            <div className="w-2.5 h-2.5 rounded-full bg-brand-500 shrink-0 ring-1 ring-black/10" />
-                            <span className="text-xs sm:text-sm font-bold text-slate-800 truncate">
-                              {cls.name}
-                            </span>
-                          </div>
+                  // Jika sudah mentok bawah dan scroll maju, biarkan scroll berlanjut ke luar
+                  if (!atBottom && e.deltaY > 0) {
+                    e.stopPropagation();
+                  }
+                  // Jika di atas dan scroll mundur, biarkan scroll berlanjut ke luar
+                  if (atTop && e.deltaY < 0) {
+                    e.stopPropagation();
+                  }
+                }}
+              >
+                {isLoading ? (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="w-8 h-8 border-[3px] border-slate-200 border-t-brand-500 rounded-full animate-spin" />
+                    <span className="text-xs text-slate-500 font-medium">
+                      Memuat data...
+                    </span>
+                  </div>
+                ) : sortedItems.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 gap-2">
+                    <Icons.users className="w-8 h-8 text-slate-300" />
+                    <span className="text-xs text-slate-400 font-medium">
+                      {searchQuery
+                        ? "Tidak ada data yang cocok"
+                        : "Belum ada data"}
+                    </span>
+                  </div>
+                ) : activeTab === "CLASSES" ? (
+                  /* Render Classes List */
+                  <div className="divide-y divide-slate-100">
+                    {sortedItems.map((cls, idx) => {
+                      const isExpanded = expandedItemId === cls.id;
+                      const scheduleCount = cls.schedules?.length || 0;
+                      const isEven = idx % 2 === 0;
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200/80">
-                              Maks {cls.max_quota || 4} siswa
-                            </span>
+                      return (
+                        <div key={cls.id}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedItemId(isExpanded ? null : cls.id)
+                            }
+                            className={`w-full flex items-center justify-between gap-3 px-4 py-3 sm:px-6 transition-all cursor-pointer text-left ${
+                              isExpanded
+                                ? "bg-brand-50/60"
+                                : isEven
+                                  ? "bg-white hover:bg-slate-50"
+                                  : "bg-slate-50/50 hover:bg-slate-100/60"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                              <span className="text-xs font-bold text-slate-400 w-5 shrink-0 text-right tabular-nums">
+                                {idx + 1}
+                              </span>
+                              <div className="w-2.5 h-2.5 rounded-full bg-brand-500 shrink-0 ring-1 ring-black/10" />
+                              <span className="text-xs sm:text-sm font-bold text-slate-800 truncate">
+                                {cls.name}
+                              </span>
+                            </div>
 
-                            <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                                scheduleCount > 0
-                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200/80"
-                                  : "bg-slate-100 text-slate-400 border border-slate-200"
-                              }`}
-                            >
-                              {scheduleCount} sesi
-                            </span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                                Maks {cls.max_quota || 4} siswa
+                              </span>
 
-                            <svg
-                              className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180 text-brand-500" : ""}`}
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="m6 9 6 6 6-6"
-                              />
-                            </svg>
-                          </div>
-                        </button>
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                  scheduleCount > 0
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200/80"
+                                    : "bg-slate-100 text-slate-400 border border-slate-200"
+                                }`}
+                              >
+                                {scheduleCount} sesi
+                              </span>
 
-                        {/* Expanded Class Schedule Detail */}
-                        {isExpanded && (
-                          <div className="bg-slate-50/80 border-b border-slate-200/80 px-4 py-3 sm:px-6 sm:py-4 animate-in slide-in-from-top-2 fade-in duration-200">
-                            <div className="ml-7 pl-3 border-l-2 border-brand-300 space-y-2">
-                              {scheduleCount === 0 ? (
-                                <p className="text-xs text-slate-400 italic py-1">
-                                  Belum ada sesi jadwal untuk kelas ini bulan
-                                  ini
-                                </p>
-                              ) : (
-                                cls.schedules.map((slot: any, sIdx: number) => {
-                                  const isPast = slot.date < today;
-                                  const isToday = slot.date === today;
-                                  const bookingsCount =
-                                    slot.bookings?.length || 0;
+                              <svg
+                                className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180 text-brand-500" : ""}`}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="m6 9 6 6 6-6"
+                                />
+                              </svg>
+                            </div>
+                          </button>
 
-                                  return (
-                                    <div
-                                      key={sIdx}
-                                      className={`p-2.5 rounded-xl border transition-colors ${
-                                        isToday
-                                          ? "bg-emerald-50/90 border-emerald-200 shadow-2xs"
-                                          : isPast
-                                            ? "bg-white/60 border-slate-200 opacity-60"
-                                            : "bg-white border-slate-200"
-                                      }`}
-                                    >
-                                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                                        <div className="flex items-center gap-2">
-                                          <div
-                                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                              isToday
-                                                ? "bg-emerald-500 animate-pulse"
-                                                : isPast
-                                                  ? "bg-slate-300"
-                                                  : "bg-brand-500"
-                                            }`}
-                                          />
-                                          <span className="text-xs font-semibold text-slate-700">
-                                            {formatShortDate(slot.date)}
-                                          </span>
-                                          <span className="text-xs font-bold text-slate-900 tabular-nums">
-                                            {slot.time}
-                                          </span>
-                                          {isToday && (
-                                            <span className="text-[8px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
-                                              HARI INI
-                                            </span>
-                                          )}
-                                        </div>
-                                        <span
-                                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                                            bookingsCount >=
-                                            (cls.max_quota || 4)
-                                              ? "bg-red-50 text-red-600 border border-red-200"
-                                              : bookingsCount === 0
-                                                ? "bg-slate-100 text-slate-400"
-                                                : "bg-brand-50 text-brand-700 border border-brand-200"
+                          {/* Expanded Class Schedule Detail */}
+                          {isExpanded && (
+                            <div className="bg-slate-50/80 border-b border-slate-200/80 px-4 py-3 sm:px-6 sm:py-4 animate-in slide-in-from-top-2 fade-in duration-200">
+                              <div className="ml-7 pl-3 border-l-2 border-brand-300 space-y-2">
+                                {scheduleCount === 0 ? (
+                                  <p className="text-xs text-slate-400 italic py-1">
+                                    Belum ada sesi jadwal untuk kelas ini bulan
+                                    ini
+                                  </p>
+                                ) : (
+                                  cls.schedules.map(
+                                    (slot: any, sIdx: number) => {
+                                      const isPast = slot.date < today;
+                                      const isToday = slot.date === today;
+                                      const bookingsCount =
+                                        slot.bookings?.length || 0;
+
+                                      return (
+                                        <div
+                                          key={sIdx}
+                                          className={`p-2.5 rounded-xl border transition-colors ${
+                                            isToday
+                                              ? "bg-emerald-50/90 border-emerald-200 shadow-2xs"
+                                              : isPast
+                                                ? "bg-white/60 border-slate-200 opacity-60"
+                                                : "bg-white border-slate-200"
                                           }`}
                                         >
-                                          {bookingsCount}/{cls.max_quota || 4}{" "}
-                                          Terisi
-                                        </span>
-                                      </div>
-
-                                      {/* Booked Students List */}
-                                      {bookingsCount === 0 ? (
-                                        <p className="text-[10px] text-slate-400 italic pl-3.5">
-                                          Belum ada siswa terdaftar
-                                        </p>
-                                      ) : (
-                                        <div className="flex flex-wrap gap-1.5 pl-3.5 mt-1.5">
-                                          {slot.bookings.map((b: any) => {
-                                            const hex =
-                                              b.student?.label?.hex_color ||
-                                              "#94a3b8";
-                                            return (
-                                              <span
-                                                key={b.student_id}
-                                                className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-md text-slate-800 bg-white border border-slate-200 shadow-2xs"
-                                                style={{
-                                                  borderLeft: `3px solid ${hex}`,
-                                                }}
-                                              >
-                                                {b.student?.status === "CG" && (
-                                                  <span className="text-amber-600 font-extrabold mr-1">
-                                                    (CG)
-                                                  </span>
-                                                )}
-                                                <span>
-                                                  {b.student?.nickname ||
-                                                    b.student?.name}
-                                                </span>
+                                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                                            <div className="flex items-center gap-2">
+                                              <div
+                                                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                                  isToday
+                                                    ? "bg-emerald-500 animate-pulse"
+                                                    : isPast
+                                                      ? "bg-slate-300"
+                                                      : "bg-brand-500"
+                                                }`}
+                                              />
+                                              <span className="text-xs font-semibold text-slate-700">
+                                                {formatShortDate(slot.date)}
                                               </span>
-                                            );
-                                          })}
+                                              <span className="text-xs font-bold text-slate-900 tabular-nums">
+                                                {slot.time}
+                                              </span>
+                                              {isToday && (
+                                                <span className="text-[8px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
+                                                  HARI INI
+                                                </span>
+                                              )}
+                                            </div>
+                                            <span
+                                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                                bookingsCount >=
+                                                (cls.max_quota || 4)
+                                                  ? "bg-red-50 text-red-600 border border-red-200"
+                                                  : bookingsCount === 0
+                                                    ? "bg-slate-100 text-slate-400"
+                                                    : "bg-brand-50 text-brand-700 border border-brand-200"
+                                              }`}
+                                            >
+                                              {bookingsCount}/
+                                              {cls.max_quota || 4} Terisi
+                                            </span>
+                                          </div>
+
+                                          {/* Booked Students List */}
+                                          {bookingsCount === 0 ? (
+                                            <p className="text-[10px] text-slate-400 italic pl-3.5">
+                                              Belum ada siswa terdaftar
+                                            </p>
+                                          ) : (
+                                            <div className="flex flex-wrap gap-1.5 pl-3.5 mt-1.5">
+                                              {slot.bookings.map((b: any) => {
+                                                const hex =
+                                                  b.student?.label?.hex_color ||
+                                                  "#94a3b8";
+                                                return (
+                                                  <span
+                                                    key={b.student_id}
+                                                    className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-md text-slate-800 bg-white border border-slate-200 shadow-2xs"
+                                                    style={{
+                                                      borderLeft: `3px solid ${hex}`,
+                                                    }}
+                                                  >
+                                                    {b.student?.status ===
+                                                      "CG" && (
+                                                      <span className="text-amber-600 font-extrabold mr-1">
+                                                        (CG)
+                                                      </span>
+                                                    )}
+                                                    <span>
+                                                      {b.student?.nickname ||
+                                                        b.student?.name}
+                                                    </span>
+                                                  </span>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
                                         </div>
-                                      )}
-                                    </div>
-                                  );
-                                })
-                              )}
+                                      );
+                                    },
+                                  )
+                                )}
+                              </div>
                             </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : activeTab === "CG" ? (
+                  /* Render CG Students - Split into Belum Terlewat & Sudah Terlewat */
+                  <div>
+                    {cgFilter === "ALL" ? (
+                      <div>
+                        {/* Section 1: Belum Terlewat */}
+                        <div className="bg-amber-50/80 border-b border-amber-200/80 px-4 py-2 flex items-center justify-between sticky top-0 z-10 backdrop-blur-xs">
+                          <span className="text-xs font-extrabold text-amber-900 uppercase tracking-wide flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                            Belum Terlewat ({upcomingStudents.length} siswa)
+                          </span>
+                        </div>
+                        {upcomingStudents.length === 0 ? (
+                          <div className="py-6 text-center text-xs text-slate-400 italic">
+                            Tidak ada siswa CG yang belum terlewat
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-slate-100">
+                            {upcomingStudents.map(renderStudentItem)}
+                          </div>
+                        )}
+
+                        {/* Section 2: Sudah Terlewat */}
+                        <div className="bg-slate-100 border-y border-slate-200 px-4 py-2 flex items-center justify-between sticky top-0 z-10 backdrop-blur-xs">
+                          <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                            Sudah Terlewat ({passedStudents.length} siswa)
+                          </span>
+                        </div>
+                        {passedStudents.length === 0 ? (
+                          <div className="py-6 text-center text-xs text-slate-400 italic">
+                            Tidak ada siswa CG yang sudah terlewat
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-slate-100">
+                            {passedStudents.map(renderStudentItem)}
                           </div>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
-              ) : activeTab === "CG" ? (
-                /* Render CG Students - Split into Belum Terlewat & Sudah Terlewat */
-                <div>
-                  {cgFilter === "ALL" ? (
-                    <div>
-                      {/* Section 1: Belum Terlewat */}
-                      <div className="bg-amber-50/80 border-b border-amber-200/80 px-4 py-2 flex items-center justify-between sticky top-0 z-10 backdrop-blur-xs">
-                        <span className="text-xs font-extrabold text-amber-900 uppercase tracking-wide flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                          Belum Terlewat ({upcomingStudents.length} siswa)
-                        </span>
-                      </div>
-                      {upcomingStudents.length === 0 ? (
-                        <div className="py-6 text-center text-xs text-slate-400 italic">
+                    ) : cgFilter === "UPCOMING" ? (
+                      upcomingStudents.length === 0 ? (
+                        <div className="py-12 text-center text-xs text-slate-400 font-medium">
                           Tidak ada siswa CG yang belum terlewat
                         </div>
                       ) : (
                         <div className="divide-y divide-slate-100">
                           {upcomingStudents.map(renderStudentItem)}
                         </div>
-                      )}
-
-                      {/* Section 2: Sudah Terlewat */}
-                      <div className="bg-slate-100 border-y border-slate-200 px-4 py-2 flex items-center justify-between sticky top-0 z-10 backdrop-blur-xs">
-                        <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wide flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                          Sudah Terlewat ({passedStudents.length} siswa)
-                        </span>
-                      </div>
-                      {passedStudents.length === 0 ? (
-                        <div className="py-6 text-center text-xs text-slate-400 italic">
-                          Tidak ada siswa CG yang sudah terlewat
-                        </div>
-                      ) : (
-                        <div className="divide-y divide-slate-100">
-                          {passedStudents.map(renderStudentItem)}
-                        </div>
-                      )}
-                    </div>
-                  ) : cgFilter === "UPCOMING" ? (
-                    upcomingStudents.length === 0 ? (
+                      )
+                    ) : passedStudents.length === 0 ? (
                       <div className="py-12 text-center text-xs text-slate-400 font-medium">
-                        Tidak ada siswa CG yang belum terlewat
+                        Tidak ada siswa CG yang sudah terlewat
                       </div>
                     ) : (
                       <div className="divide-y divide-slate-100">
-                        {upcomingStudents.map(renderStudentItem)}
+                        {passedStudents.map(renderStudentItem)}
                       </div>
-                    )
-                  ) : passedStudents.length === 0 ? (
-                    <div className="py-12 text-center text-xs text-slate-400 font-medium">
-                      Tidak ada siswa CG yang sudah terlewat
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-slate-100">
-                      {passedStudents.map(renderStudentItem)}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* Render Registered Students List */
-                <div className="divide-y divide-slate-100">
-                  {sortedItems.map(renderStudentItem)}
-                </div>
-              )}
+                    )}
+                  </div>
+                ) : (
+                  /* Render Registered Students List */
+                  <div className="divide-y divide-slate-100">
+                    {sortedItems.map(renderStudentItem)}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
