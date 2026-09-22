@@ -19,6 +19,7 @@ import { DashboardStatsPanel } from "@/components/features/dashboard/DashboardSt
 import { NotificationPermissionBanner } from "@/components/features/notifications/NotificationPermissionBanner";
 import { StudentRulesSection } from "@/components/features/dashboard/StudentRulesSection";
 import { CurriculumSection } from "@/components/features/dashboard/CurriculumSection";
+import { BirthdayListCollapsible } from "@/components/features/dashboard/BirthdayListCollapsible";
 import { formatFullIndonesianDate } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
@@ -223,6 +224,10 @@ export default async function DashboardPage() {
           {/* Notification & Schedule Section */}
           <div className="space-y-6">
             <NotificationPermissionBanner />
+
+            {/* Birthday List Collapsible */}
+            <BirthdayListCollapsible />
+
             <TodaySchedule slots={todaySlots} classes={classes} />
           </div>
 

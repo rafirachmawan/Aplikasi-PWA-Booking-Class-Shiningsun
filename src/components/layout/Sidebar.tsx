@@ -22,6 +22,16 @@ const navigation = [
   { name: "Kelola Guru", href: "/teachers", icon: Icons.userCheck },
   { name: "Template Penilaian", href: "/templates", icon: Icons.fileText },
   { name: "Master Data", href: "/master", icon: Icons.settings },
+  // Only visible for superadmin
+];
+
+// Special routes for superadmin only
+const superAdminMenus = [
+  {
+    name: "📝 Template Ulang Tahun",
+    href: "/birthday-templates",
+    icon: Icons.fileText,
+  },
 ];
 
 interface SidebarProps {
@@ -326,7 +336,9 @@ export function Sidebar({
                           })
                         }
                         title={isShowPass ? "Sembunyikan" : "Lihat"}
-                        aria-label={isShowPass ? "Sembunyikan password" : "Lihat password"}
+                        aria-label={
+                          isShowPass ? "Sembunyikan password" : "Lihat password"
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                       >
                         {isShowPass ? (
@@ -495,6 +507,36 @@ export function Sidebar({
               </a>
             );
           })}
+
+          {/* Super Admin Special Menus */}
+          {role === "SUPERADMIN" &&
+            superAdminMenus.map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              return (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  onClick={(e) => handleNavClick(e, item.href)}
+                  className={`
+                  group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 cursor-pointer
+                  ${
+                    isActive
+                      ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 font-bold"
+                      : "text-slate-600 hover:bg-amber-50 hover:text-amber-900 dark:text-slate-400 dark:hover:bg-amber-950/20 dark:hover:text-amber-300"
+                  }
+                `}
+                >
+                  <item.icon
+                    className={`w-5 h-5 transition-colors ${
+                      isActive
+                        ? "text-amber-600 dark:text-amber-400"
+                        : "text-slate-400 group-hover:text-amber-600 dark:group-hover:text-amber-400"
+                    }`}
+                  />
+                  <span className="flex-1">{item.name}</span>
+                </a>
+              );
+            })}
 
           {/* Khusus Super Admin Section */}
           {role === "SUPERADMIN" && (

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { StudentScheduleCard } from "./StudentScheduleCard";
 import { StudentWorksheetTable } from "@/components/features/worksheets/StudentWorksheetTable";
 import { DatePickerInput } from "@/components/ui/DatePickerInput";
+import { BirthdayGreetingCard } from "./BirthdayGreetingCard";
 import {
   clearParentSession,
   updateStudentPhotoUrl,
@@ -121,6 +122,131 @@ export function ParentDashboardClient({
   const [pinErrorMsg, setPinErrorMsg] = useState("");
   const [pinSuccessMsg, setPinSuccessMsg] = useState("");
   const [showPinText, setShowPinText] = useState(false);
+
+  // Birthday greeting state
+  const [birthdayData, setBirthdayData] = useState<any>(null);
+  const [loadingBirthday, setLoadingBirthday] = useState(true);
+  const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false);
+
+  // Determine if should show full dashboard (or only birthday card)
+  // Jika belum loading → selalu tampilkan dulu untuk prevent blank screen
+  const shouldShowFullDashboard = useMemo(() => {
+    const hasBirthdayToday = birthdayData !== null;
+    const submitted = hasSubmittedFeedback;
+
+    console.log(
+      "[Dashboard Logic] birthdayData:",
+      hasBirthdayToday ? "YES" : "NO",
+      "submitted:",
+      submitted ? "TRUE" : "FALSE",
+    );
+
+    return !hasBirthdayToday || submitted;
+  }, [birthdayData, hasSubmittedFeedback]);
+
+  // Log for debugging
+  useEffect(() => {
+    console.log("[Debug] Dashboard state updated:", {
+      hasBirthdayToday: birthdayData !== null,
+      submitted: hasSubmittedFeedback,
+      shouldShowFull: shouldShowFullDashboard,
+    });
+  }, [birthdayData, hasSubmittedFeedback, shouldShowFullDashboard]);
+
+  useEffect(() => {
+    const fetchBirthdayGreeting = async () => {
+      try {
+        // Skip fetching if no student data
+        if (!student?.id || !student?.date_of_birth) {
+          console.log("❌ No student data or date_of_birth");
+          setLoadingBirthday(false);
+          return;
+        }
+
+        console.log(`🔍 Checking birthday for: ${student.name}`);
+        console.log(`📅 Student DOB: ${student.date_of_birth}`);
+
+        const today = new Date();
+        const dob = new Date(student.date_of_birth);
+        const birthMonth = dob.getMonth() + 1;
+        const birthDay = dob.getDate();
+
+        console.log(
+          `📅 Today: ${today.toDateString()} (Month: ${today.getMonth() + 1}, Day: ${today.getDate()})`,
+        );
+        console.log(`🎂 Birth Month: ${birthMonth}, Birth Day: ${birthDay}`);
+
+        // Check if today IS their birthday
+        const isTodayBirthday =
+          today.getMonth() + 1 === birthMonth && today.getDate() === birthDay;
+
+        console.log(`✅ Is today birthday: ${isTodayBirthday}`);
+
+        if (isTodayBirthday) {
+          // Calculate age
+          let age = today.getFullYear() - dob.getFullYear();
+          const monthDiff = today.getMonth() - dob.getMonth();
+          if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && today.getDate() < dob.getDate())
+          ) {
+            age--;
+          }
+
+          const birthdayStudent = {
+            ...student,
+            age: age > 0 ? age : 0,
+            is_today_birthday: true,
+            days_until_birthday: 0,
+          };
+
+          setBirthdayData(birthdayStudent);
+          console.log(`✅ Birthday card will show!`);
+        } else {
+          setBirthdayData(null);
+          console.log(`❌ Not today's birthday`);
+        }
+      } catch (error) {
+        console.error("Error checking birthday:", error);
+      } finally {
+        setLoadingBirthday(false);
+
+        // Check if feedback already submitted
+        const studentIdToCheck = birthdayData?.id || student.id;
+        if (studentIdToCheck) {
+          try {
+            console.log(
+              `[Dashboard] Checking feedback for student: ${studentIdToCheck}`,
+            );
+            const feedbackResponse = await fetch(
+              `/api/student-feedback?student_id=${studentIdToCheck}`,
+            );
+            const feedbackResult = await feedbackResponse.json();
+
+            if (feedbackResult.success && feedbackResult.feedbacks.length > 0) {
+              setHasSubmittedFeedback(true);
+              console.log("✅ Has submitted feedback, can show dashboard");
+            } else {
+              setHasSubmittedFeedback(false);
+              console.log(
+                "❌ No feedback yet, will block dashboard only on birthday",
+              );
+            }
+          } catch (err) {
+            console.error("Error checking feedback status:", err);
+            // Jika error, default show full dashboard
+            setHasSubmittedFeedback(true);
+          }
+        } else {
+          // No birthday data → show full dashboard immediately
+          setHasSubmittedFeedback(true);
+          console.log("📊 No birthday today, showing full dashboard");
+        }
+      }
+    };
+
+    fetchBirthdayGreeting();
+  }, [student]);
 
   const handleChangePin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -491,548 +617,593 @@ export function ParentDashboardClient({
       </header>
 
       {/* Main Content Container */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 space-y-6">
-        {/* Student Profile Card (Clean Brand Blue Banner) */}
-        <div className="rounded-3xl bg-brand-600 dark:bg-brand-700 border border-brand-500/40 p-5 sm:p-7 text-white shadow-xl space-y-4">
-          {/* Top: Photo + Name + Nickname + Branch */}
-          <div className="flex items-center gap-3.5 sm:gap-5">
-            {/* Hidden File Input */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handlePhotoChange}
-              accept="image/*"
-              className="hidden"
+      {!shouldShowFullDashboard && birthdayData ? (
+        /* ONLY BIRTHDAY CARD - Hide everything else until feedback submitted */
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 pb-8">
+          {loadingBirthday ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-500 border-t-transparent"></div>
+            </div>
+          ) : (
+            <BirthdayGreetingCard
+              student={birthdayData}
+              parentUserId={student.id}
             />
+          )}
+        </div>
+      ) : (
+        /* SHOW FULL DASHBOARD */
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 space-y-6">
+          {/* Student Profile Card (Clean Brand Blue Banner) */}
+          <div className="rounded-3xl bg-brand-600 dark:bg-brand-700 border border-brand-500/40 p-5 sm:p-7 text-white shadow-xl space-y-4">
+            {/* Top: Photo + Name + Nickname + Branch */}
+            <div className="flex items-center gap-3.5 sm:gap-5">
+              {/* Hidden File Input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handlePhotoChange}
+                accept="image/*"
+                className="hidden"
+              />
 
-            {/* Student Photo / Logo Box (Interactive Upload) */}
-            <button
-              type="button"
-              onClick={handlePhotoClick}
-              disabled={isUploadingPhoto}
-              title="Klik untuk mengubah foto profil anak"
-              className="group relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white p-1 shrink-0 flex items-center justify-center shadow-md border-2 border-white/80 overflow-hidden cursor-pointer hover:opacity-95 active:scale-95 transition-all"
-            >
-              {photoUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={photoUrl}
-                  alt={student.name}
-                  className="w-full h-full object-cover rounded-xl"
-                />
-              ) : (
-                <Image
-                  src="/logo.png"
-                  alt="ShiningSun Logo"
-                  width={64}
-                  height={64}
-                  className="w-full h-full object-contain p-1"
-                  priority
-                />
-              )}
+              {/* Student Photo / Logo Box (Interactive Upload) */}
+              <button
+                type="button"
+                onClick={handlePhotoClick}
+                disabled={isUploadingPhoto}
+                title="Klik untuk mengubah foto profil anak"
+                className="group relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white p-1 shrink-0 flex items-center justify-center shadow-md border-2 border-white/80 overflow-hidden cursor-pointer hover:opacity-95 active:scale-95 transition-all"
+              >
+                {photoUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={photoUrl}
+                    alt={student.name}
+                    className="w-full h-full object-cover rounded-xl"
+                  />
+                ) : (
+                  <Image
+                    src="/logo.png"
+                    alt="ShiningSun Logo"
+                    width={64}
+                    height={64}
+                    className="w-full h-full object-contain p-1"
+                    priority
+                  />
+                )}
 
-              {/* Camera Overlay Icon */}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white rounded-xl">
-                <span className="text-base sm:text-lg">📷</span>
-                <span className="text-[9px] font-bold uppercase tracking-tighter">
-                  Ubah
+                {/* Camera Overlay Icon */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white rounded-xl">
+                  <span className="text-base sm:text-lg">📷</span>
+                  <span className="text-[9px] font-bold uppercase tracking-tighter">
+                    Ubah
+                  </span>
+                </div>
+
+                {/* Mobile Camera Indicator Badge */}
+                <div className="absolute bottom-0 right-0 bg-brand-700 text-white w-5 h-5 rounded-tl-lg flex items-center justify-center text-[10px] shadow-xs sm:hidden">
+                  📷
+                </div>
+
+                {/* Uploading Spinner */}
+                {isUploadingPhoto && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white rounded-xl">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+              </button>
+
+              <div className="min-w-0 flex-1">
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight truncate">
+                  {student.name}
+                </h2>
+                <div className="flex items-center gap-1.5 flex-wrap text-xs mt-0.5">
+                  {student.nickname && (
+                    <span className="font-medium text-brand-100">
+                      Panggilan:{" "}
+                      <strong className="text-white font-bold">
+                        &quot;{student.nickname}&quot;
+                      </strong>
+                    </span>
+                  )}
+                  {student.branch?.name && (
+                    <>
+                      {student.nickname && (
+                        <span className="text-brand-300/60">•</span>
+                      )}
+                      <span className="font-semibold text-brand-100">
+                        📍 {student.branch.name}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Middle: Info Grid — DOB, Usia, Jadwal */}
+            {(student.date_of_birth || student.schedule_detail) && (
+              <div className="bg-white rounded-2xl p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 shadow-md border border-white divide-y divide-slate-100 sm:divide-y-0 sm:divide-x sm:divide-slate-100">
+                {student.date_of_birth && dobInfo && (
+                  <div className="flex items-start gap-2.5 text-[12px] pb-2 sm:pb-0">
+                    <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center text-base shrink-0 mt-0.5">
+                      🎂
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                        Tanggal Lahir
+                      </span>
+                      <span
+                        className="font-bold text-slate-800 leading-snug block"
+                        suppressHydrationWarning
+                      >
+                        {dobInfo.formatted}
+                        <span
+                          className="text-slate-400 font-semibold ml-1.5 inline-block"
+                          suppressHydrationWarning
+                        >
+                          ({dobInfo.age} thn)
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {student.schedule_detail && (
+                  <button
+                    type="button"
+                    onClick={() => setShowScheduleModal(true)}
+                    title="Klik untuk melihat rincian jadwal kelas"
+                    className="flex items-start gap-2.5 text-[12px] pt-2.5 sm:pt-0 sm:pl-3 text-left w-full cursor-pointer hover:bg-slate-50/80 p-2 rounded-xl transition-all group"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center text-base shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                      📅
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                          Jadwal Kelas
+                        </span>
+                        <span className="text-[10px] font-extrabold text-brand-600 dark:text-brand-400 group-hover:underline flex items-center gap-0.5">
+                          Lihat ↗
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {student.schedule_detail
+                          .split(", ")
+                          .map((item: string, idx: number) => {
+                            const spaceIdx = item.indexOf(" ");
+                            const dayName =
+                              spaceIdx !== -1
+                                ? item.substring(0, spaceIdx)
+                                : item;
+                            const timeStr =
+                              spaceIdx !== -1
+                                ? item.substring(spaceIdx + 1)
+                                : "";
+                            return (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-2 text-xs font-bold text-slate-800"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" />
+                                <span className="w-16 shrink-0 text-slate-700">
+                                  {dayName}
+                                </span>
+                                {timeStr && (
+                                  <span className="text-[11px] font-bold text-brand-700 bg-brand-50/80 px-2 py-0.5 rounded-md border border-brand-100/80 font-mono tracking-tight">
+                                    {timeStr}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Bottom: Level Badge + Status Badge */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* PROMINENT LEVEL PILL */}
+              <div className="bg-white text-slate-900 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md border border-white flex items-center gap-2">
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{
+                    backgroundColor: student.label?.hex_color || "#16a34a",
+                  }}
+                />
+                <span className="text-slate-500 font-bold text-[11px] uppercase tracking-wider">
+                  Level:
+                </span>
+                <span className="font-black text-brand-700 uppercase tracking-wide">
+                  {student.label
+                    ? `${student.label.main_level} ${student.label.sub_level}`
+                    : "Belum Diatur"}
                 </span>
               </div>
 
-              {/* Mobile Camera Indicator Badge */}
-              <div className="absolute bottom-0 right-0 bg-brand-700 text-white w-5 h-5 rounded-tl-lg flex items-center justify-center text-[10px] shadow-xs sm:hidden">
-                📷
-              </div>
+              {/* STATUS BADGE */}
+              <span className="bg-white text-emerald-700 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md border border-white inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+                <span>
+                  {student.status === "REGISTERED"
+                    ? "Siswa Reguler"
+                    : student.status === "CG"
+                      ? "Coba Gratis"
+                      : "Nonaktif"}
+                </span>
+              </span>
+            </div>
 
-              {/* Uploading Spinner */}
-              {isUploadingPhoto && (
-                <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white rounded-xl">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            {/* Points Display — Inside Card with White Background (Clickable to view Point History) */}
+            <button
+              type="button"
+              onClick={() => setShowPointsModal(true)}
+              title="Klik untuk melihat riwayat poin"
+              className="w-full bg-white rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-md border border-white text-slate-900 cursor-pointer hover:bg-amber-50/60 active:scale-[0.99] transition-all group text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-xl font-black shrink-0 shadow-sm border border-amber-300 group-hover:scale-105 transition-transform">
+                  ⭐
                 </div>
-              )}
-            </button>
-
-            <div className="min-w-0 flex-1">
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight truncate">
-                {student.name}
-              </h2>
-              <div className="flex items-center gap-1.5 flex-wrap text-xs mt-0.5">
-                {student.nickname && (
-                  <span className="font-medium text-brand-100">
-                    Panggilan:{" "}
-                    <strong className="text-white font-bold">
-                      &quot;{student.nickname}&quot;
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="block text-[10px] font-extrabold text-amber-600 uppercase tracking-wider">
+                      Poin
+                    </span>
+                    <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-md group-hover:bg-amber-200 transition-colors">
+                      Lihat Riwayat ↗
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5 mt-0.5">
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                      {netPoints}
+                    </span>
+                    <span className="text-sm font-extrabold text-slate-600">
+                      Poin
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {(student.redeemed_points || 0) > 0 && (
+                  <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 shrink-0">
+                    Ditukar:{" "}
+                    <strong className="text-rose-600 font-extrabold">
+                      {student.redeemed_points}
                     </strong>
                   </span>
                 )}
-                {student.branch?.name && (
-                  <>
-                    {student.nickname && (
-                      <span className="text-brand-300/60">•</span>
-                    )}
-                    <span className="font-semibold text-brand-100">
-                      📍 {student.branch.name}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Middle: Info Grid — DOB, Usia, Jadwal */}
-          {(student.date_of_birth || student.schedule_detail) && (
-            <div className="bg-white rounded-2xl p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 shadow-md border border-white divide-y divide-slate-100 sm:divide-y-0 sm:divide-x sm:divide-slate-100">
-              {student.date_of_birth && dobInfo && (
-                <div className="flex items-start gap-2.5 text-[12px] pb-2 sm:pb-0">
-                  <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center text-base shrink-0 mt-0.5">
-                    🎂
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
-                      Tanggal Lahir
-                    </span>
-                    <span
-                      className="font-bold text-slate-800 leading-snug block"
-                      suppressHydrationWarning
-                    >
-                      {dobInfo.formatted}
-                      <span
-                        className="text-slate-400 font-semibold ml-1.5 inline-block"
-                        suppressHydrationWarning
-                      >
-                        ({dobInfo.age} thn)
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              )}
-              {student.schedule_detail && (
-                <button
-                  type="button"
-                  onClick={() => setShowScheduleModal(true)}
-                  title="Klik untuk melihat rincian jadwal kelas"
-                  className="flex items-start gap-2.5 text-[12px] pt-2.5 sm:pt-0 sm:pl-3 text-left w-full cursor-pointer hover:bg-slate-50/80 p-2 rounded-xl transition-all group"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center text-base shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
-                    📅
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1 mb-1">
-                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        Jadwal Kelas
-                      </span>
-                      <span className="text-[10px] font-extrabold text-brand-600 dark:text-brand-400 group-hover:underline flex items-center gap-0.5">
-                        Lihat ↗
-                      </span>
-                    </div>
-                    <div className="space-y-1.5">
-                      {student.schedule_detail
-                        .split(", ")
-                        .map((item: string, idx: number) => {
-                          const spaceIdx = item.indexOf(" ");
-                          const dayName =
-                            spaceIdx !== -1
-                              ? item.substring(0, spaceIdx)
-                              : item;
-                          const timeStr =
-                            spaceIdx !== -1 ? item.substring(spaceIdx + 1) : "";
-                          return (
-                            <div
-                              key={idx}
-                              className="flex items-center gap-2 text-xs font-bold text-slate-800"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" />
-                              <span className="w-16 shrink-0 text-slate-700">
-                                {dayName}
-                              </span>
-                              {timeStr && (
-                                <span className="text-[11px] font-bold text-brand-700 bg-brand-50/80 px-2 py-0.5 rounded-md border border-brand-100/80 font-mono tracking-tight">
-                                  {timeStr}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Bottom: Level Badge + Status Badge */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* PROMINENT LEVEL PILL */}
-            <div className="bg-white text-slate-900 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md border border-white flex items-center gap-2">
-              <span
-                className="w-2.5 h-2.5 rounded-full shrink-0"
-                style={{
-                  backgroundColor: student.label?.hex_color || "#16a34a",
-                }}
-              />
-              <span className="text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                Level:
-              </span>
-              <span className="font-black text-brand-700 uppercase tracking-wide">
-                {student.label
-                  ? `${student.label.main_level} ${student.label.sub_level}`
-                  : "Belum Diatur"}
-              </span>
-            </div>
-
-            {/* STATUS BADGE */}
-            <span className="bg-white text-emerald-700 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md border border-white inline-flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
-              <span>
-                {student.status === "REGISTERED"
-                  ? "Siswa Reguler"
-                  : student.status === "CG"
-                    ? "Coba Gratis"
-                    : "Nonaktif"}
-              </span>
-            </span>
-          </div>
-
-          {/* Points Display — Inside Card with White Background (Clickable to view Point History) */}
-          <button
-            type="button"
-            onClick={() => setShowPointsModal(true)}
-            title="Klik untuk melihat riwayat poin"
-            className="w-full bg-white rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-md border border-white text-slate-900 cursor-pointer hover:bg-amber-50/60 active:scale-[0.99] transition-all group text-left"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-xl font-black shrink-0 shadow-sm border border-amber-300 group-hover:scale-105 transition-transform">
-                ⭐
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="block text-[10px] font-extrabold text-amber-600 uppercase tracking-wider">
-                    Poin
-                  </span>
-                  <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-md group-hover:bg-amber-200 transition-colors">
-                    Lihat Riwayat ↗
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-1.5 mt-0.5">
-                  <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                    {netPoints}
-                  </span>
-                  <span className="text-sm font-extrabold text-slate-600">
-                    Poin
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {(student.redeemed_points || 0) > 0 && (
-                <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 shrink-0">
-                  Ditukar:{" "}
-                  <strong className="text-rose-600 font-extrabold">
-                    {student.redeemed_points}
-                  </strong>
-                </span>
-              )}
-              <svg
-                className="w-5 h-5 text-slate-400 group-hover:text-amber-600 transition-colors shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </div>
-          </button>
-        </div>
-
-        {/* Peraturan Siswa — semua dokumen PDF yang diunggah admin */}
-        {rulesDocuments.length > 0 && (
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl p-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
                 <svg
-                  className="h-5 w-5"
+                  className="w-5 h-5 text-slate-400 group-hover:text-amber-600 transition-colors shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    d="M9 5l7 7-7 7"
                   />
                 </svg>
               </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
-                  📖 Informasi Bimba
-                </h3>
-                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Dokumen PDF dari admin — terbaru di atas.
-                </p>
-              </div>
-            </div>
+            </button>
+          </div>
 
-            <div className="space-y-2">
-              {rulesDocuments.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3"
-                >
+          {/* Ulang Tahun Hari Ini Section */}
+          {birthdayData && !loadingBirthday && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <BirthdayGreetingCard
+                student={birthdayData}
+                parentUserId={student.id} // Pass student ID as parent user id for this demo
+              />
+
+              {/* Hapus semua konten lain sampai feedback dikirim */}
+              {!hasSubmittedFeedback && (
+                <>
+                  {/* Sembunyikan Rules Documents */}
+                  {/* Sembunyikan Important Info */}
+                  {/* Sembunyikan Change PIN button */}
+                  {/* ... dan semua konten lain di bawahnya */}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Peraturan Siswa — semua dokumen PDF yang diunggah admin */}
+          {/* Hanya tampil jika sudah submit feedback atau bukan hari ini */}
+          {rulesDocuments.length > 0 &&
+            (!birthdayData || hasSubmittedFeedback) && (
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl p-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                  </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-slate-800 dark:text-white truncate">
-                      {doc.file_name}
-                    </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Diunggah {formatShortDate(doc.uploaded_at)}
+                    <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                      📖 Informasi Bimba
+                    </h3>
+                    <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Dokumen PDF dari admin — terbaru di atas.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewDoc(doc)}
-                    className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 active:scale-98 transition-all shadow-md shadow-brand-500/20 cursor-pointer"
-                  >
-                    <svg
-                      className="h-3.5 w-3.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
-                    Lihat PDF
-                  </button>
                 </div>
-              ))}
+
+                <div className="space-y-2">
+                  {rulesDocuments.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-slate-800 dark:text-white truncate">
+                          {doc.file_name}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          Diunggah {formatShortDate(doc.uploaded_at)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDoc(doc)}
+                        className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 active:scale-98 transition-all shadow-md shadow-brand-500/20 cursor-pointer"
+                      >
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                        Lihat PDF
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          {/* Info Penting — Red Card */}
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-start gap-3 shadow-xs">
+            <div className="text-lg shrink-0">⚠️</div>
+            <div className="text-xs text-red-700 dark:text-red-300 leading-relaxed">
+              <strong>Info Poin Kehadiran:</strong> Siswa mendapatkan{" "}
+              <strong>+1 Poin</strong> setiap kali masuk kelas. Hadiah dapat
+              ditukarkan langsung melalui Admin/Tutor di tempat les.
             </div>
           </div>
-        )}
 
-        {/* Info Penting — Red Card */}
-        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-start gap-3 shadow-xs">
-          <div className="text-lg shrink-0">⚠️</div>
-          <div className="text-xs text-red-700 dark:text-red-300 leading-relaxed">
-            <strong>Info Poin Kehadiran:</strong> Siswa mendapatkan{" "}
-            <strong>+1 Poin</strong> setiap kali masuk kelas. Hadiah dapat
-            ditukarkan langsung melalui Admin/Tutor di tempat les.
-          </div>
-        </div>
-
-        {/* Ganti PIN Akses — Standalone Card */}
-        <button
-          type="button"
-          onClick={() => {
-            setShowChangePinModal(true);
-            setNewPin("");
-            setConfirmPin("");
-            setPinErrorMsg("");
-            setPinSuccessMsg("");
-            setShowPinText(false);
-          }}
-          className="w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800/80 active:scale-[0.98] transition-all cursor-pointer group"
-        >
-          <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-lg shrink-0 group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20 transition-colors">
-            🔑
-          </div>
-          <div className="flex-1 text-left">
-            <span className="block text-sm font-bold text-slate-900 dark:text-white">
-              Ganti PIN Akses
-            </span>
-            <span className="block text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              Ubah PIN login Portal Orang Tua. Perubahan langsung berlaku.
-            </span>
-          </div>
-          <svg
-            className="w-5 h-5 text-slate-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="2"
+          {/* Ganti PIN Akses — Standalone Card */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowChangePinModal(true);
+              setNewPin("");
+              setConfirmPin("");
+              setPinErrorMsg("");
+              setPinSuccessMsg("");
+              setShowPinText(false);
+            }}
+            className="w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800/80 active:scale-[0.98] transition-all cursor-pointer group"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-
-        {/* Rapor & Laporan Content — Always Visible */}
-        <div className="space-y-4">
-          {/* Header & Date Range Download Control Panel */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-4">
-            {/* Header Title & Badge */}
-            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
-              <div>
-                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
-                  📄 Laporan Perkembangan Siswa
-                </h3>
-                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Filter berdasarkan tanggal dan unduh file PDF resmi.
-                </p>
-              </div>
-              <span className="shrink-0 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
-                {filteredWorksheets.length} Sesi
+            <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-lg shrink-0 group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20 transition-colors">
+              🔑
+            </div>
+            <div className="flex-1 text-left">
+              <span className="block text-sm font-bold text-slate-900 dark:text-white">
+                Ganti PIN Akses
+              </span>
+              <span className="block text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Ubah PIN login Portal Orang Tua. Perubahan langsung berlaku.
               </span>
             </div>
+            <svg
+              className="w-5 h-5 text-slate-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
 
-            {/* Date Filter & Action Button Grid */}
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {/* Rapor & Laporan Content — Always Visible */}
+          <div className="space-y-4">
+            {/* Header & Date Range Download Control Panel */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-4">
+              {/* Header Title & Badge */}
+              <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    Mulai Tanggal
-                  </label>
-                  <DatePickerInput
-                    showManualInput={false}
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
+                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                    📄 Laporan Perkembangan Siswa
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Filter berdasarkan tanggal dan unduh file PDF resmi.
+                  </p>
                 </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    Sampai Tanggal
-                  </label>
-                  <DatePickerInput
-                    showManualInput={false}
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
-                </div>
+                <span className="shrink-0 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+                  {filteredWorksheets.length} Sesi
+                </span>
               </div>
 
-              {(startDate || endDate) && (
-                <div className="flex justify-end pt-0.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStartDate("");
-                      setEndDate("");
-                    }}
-                    className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 underline cursor-pointer"
-                  >
-                    Reset Filter Tanggal
-                  </button>
-                </div>
-              )}
+              {/* Date Filter & Action Button Grid */}
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      Mulai Tanggal
+                    </label>
+                    <DatePickerInput
+                      showManualInput={false}
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </div>
 
-              {/* SINGLE Download PDF Button */}
-              <button
-                type="button"
-                onClick={handleDownloadPdf}
-                disabled={isDownloadingPdf || filteredWorksheets.length === 0}
-                className="w-full py-2.5 sm:py-3 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 active:scale-98 transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                {isDownloadingPdf ? (
-                  <>
-                    <svg
-                      className="animate-spin h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      Sampai Tanggal
+                    </label>
+                    <DatePickerInput
+                      showManualInput={false}
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {(startDate || endDate) && (
+                  <div className="flex justify-end pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStartDate("");
+                        setEndDate("");
+                      }}
+                      className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 underline cursor-pointer"
                     >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    <span>Memproses PDF...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="15"
-                      height="15"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" x2="12" y1="15" y2="3" />
-                    </svg>
-                    <span>Download PDF ({filteredWorksheets.length} Sesi)</span>
-                  </>
+                      Reset Filter Tanggal
+                    </button>
+                  </div>
                 )}
-              </button>
+
+                {/* SINGLE Download PDF Button */}
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloadingPdf || filteredWorksheets.length === 0}
+                  className="w-full py-2.5 sm:py-3 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 active:scale-98 transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {isDownloadingPdf ? (
+                    <>
+                      <svg
+                        className="animate-spin h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      <span>Memproses PDF...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" x2="12" y1="15" y2="3" />
+                      </svg>
+                      <span>
+                        Download PDF ({filteredWorksheets.length} Sesi)
+                      </span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Container for PDF Export */}
+            <div ref={printableRef} className="space-y-6">
+              {filteredWorksheets.length === 0 ? (
+                <div className="py-12 text-center text-slate-400 italic bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                  Tidak ada data laporan perkembangan untuk rentang tanggal yang
+                  dipilih.
+                </div>
+              ) : (
+                (() => {
+                  const grouped = new Map<string, any[]>();
+                  filteredWorksheets.forEach((w) => {
+                    const bk = w.bulan_ke ?? "none";
+                    const key = String(bk);
+                    if (!grouped.has(key)) grouped.set(key, []);
+                    grouped.get(key)!.push(w);
+                  });
+                  const sortedGroups = Array.from(grouped.entries()).sort(
+                    (a, b) => {
+                      const aNum = a[0] === "none" ? 0 : parseInt(a[0]);
+                      const bNum = b[0] === "none" ? 0 : parseInt(b[0]);
+                      return aNum - bNum;
+                    },
+                  );
+                  return sortedGroups.map(([bk, wsGroup]) => (
+                    <StudentWorksheetTable
+                      key={`parent_${student.id}_${bk}`}
+                      student={{ ...student, photo_url: photoUrl }}
+                      worksheets={wsGroup}
+                      bulanKe={bk === "none" ? null : parseInt(bk, 10)}
+                      isParentView={true}
+                      hideDownloadBtn={true}
+                    />
+                  ));
+                })()
+              )}
             </div>
           </div>
+        </main>
+      )}
 
-          {/* Printable Container for PDF Export */}
-          <div ref={printableRef} className="space-y-6">
-            {filteredWorksheets.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 italic bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                Tidak ada data laporan perkembangan untuk rentang tanggal yang
-                dipilih.
-              </div>
-            ) : (
-              (() => {
-                const grouped = new Map<string, any[]>();
-                filteredWorksheets.forEach((w) => {
-                  const bk = w.bulan_ke ?? "none";
-                  const key = String(bk);
-                  if (!grouped.has(key)) grouped.set(key, []);
-                  grouped.get(key)!.push(w);
-                });
-                const sortedGroups = Array.from(grouped.entries()).sort(
-                  (a, b) => {
-                    const aNum = a[0] === "none" ? 0 : parseInt(a[0]);
-                    const bNum = b[0] === "none" ? 0 : parseInt(b[0]);
-                    return aNum - bNum;
-                  },
-                );
-                return sortedGroups.map(([bk, wsGroup]) => (
-                  <StudentWorksheetTable
-                    key={`parent_${student.id}_${bk}`}
-                    student={{ ...student, photo_url: photoUrl }}
-                    worksheets={wsGroup}
-                    bulanKe={bk === "none" ? null : parseInt(bk, 10)}
-                    isParentView={true}
-                    hideDownloadBtn={true}
-                  />
-                ));
-              })()
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="mt-16 py-6 border-t border-slate-200/60 dark:border-slate-800 text-center text-xs text-slate-400">
-        <p>
-          © {new Date().getFullYear()} ShiningSun Preschool & Academy. Portal
-          Orang Tua & Rapor Digital.
-        </p>
-      </footer>
+      {/* Footer - Show only when full dashboard is displayed */}
+      {shouldShowFullDashboard && (
+        <footer className="mt-16 py-6 border-t border-slate-200/60 dark:border-slate-800 text-center text-xs text-slate-400">
+          <p>
+            © {new Date().getFullYear()} ShiningSun Preschool & Academy. Portal
+            Orang Tua & Rapor Digital.
+          </p>
+        </footer>
+      )}
 
       {/* Back Button Confirmation Modal */}
       {showBackConfirm && (

@@ -102,7 +102,9 @@ export function SchedulingClientWrapper({
     null,
   );
   const [manualDDSearch, setManualDDSearch] = useState("");
-  const [openAutoTimeIndex, setOpenAutoTimeIndex] = useState<number | null>(null);
+  const [openAutoTimeIndex, setOpenAutoTimeIndex] = useState<number | null>(
+    null,
+  );
   const [openEditTimeDD, setOpenEditTimeDD] = useState<boolean>(false);
 
   useEffect(() => {

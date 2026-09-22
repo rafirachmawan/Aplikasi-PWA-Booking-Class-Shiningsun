@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { StudentRegistrationForm } from "@/components/features/students/StudentRegistrationForm";
+import { StudentFeedbackModal } from "@/components/features/students/StudentFeedbackModal";
 import { deleteStudent, updateStudentStatus } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { formatNumericDate } from "@/lib/dateUtils";
@@ -65,6 +66,11 @@ export function StudentClientWrapper({
 
   // State for Edit
   const [editingStudent, setEditingStudent] = useState<any>(null);
+
+  // State for Feedback Modal
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [selectedStudentForFeedback, setSelectedStudentForFeedback] =
+    useState<any>(null);
 
   // Custom Confirm Modal State
   const [confirmModal, setConfirmModal] = useState<{
@@ -781,6 +787,15 @@ export function StudentClientWrapper({
                       <td className="whitespace-nowrap py-3 pl-3 pr-4 sm:pr-6">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
+                            onClick={() => {
+                              setSelectedStudentForFeedback(person);
+                              setFeedbackModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 ring-1 ring-blue-200/60 transition-colors dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 dark:ring-blue-800/40"
+                          >
+                            💬 Feedback
+                          </button>
+                          <button
                             onClick={() =>
                               handleToggleActive(
                                 person.id,
@@ -956,6 +971,16 @@ export function StudentClientWrapper({
                 <div className="flex gap-2 relative z-10 border-t border-slate-100 dark:border-slate-800 pt-3 flex-wrap">
                   <button
                     type="button"
+                    onClick={() => {
+                      setSelectedStudentForFeedback(person);
+                      setFeedbackModalOpen(true);
+                    }}
+                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 transition-colors text-center ring-1 ring-blue-200/50 dark:ring-blue-900/30 min-h-11 flex items-center justify-center gap-1"
+                  >
+                    💬 Feedback
+                  </button>
+                  <button
+                    type="button"
                     onClick={() =>
                       handleToggleActive(person.id, person.name, person.status)
                     }
@@ -1003,6 +1028,19 @@ export function StudentClientWrapper({
           onSuccess={() => {
             setEditingStudent(null);
             router.refresh();
+          }}
+        />
+      )}
+
+      {/* Student Feedback Modal */}
+      {feedbackModalOpen && selectedStudentForFeedback && (
+        <StudentFeedbackModal
+          studentId={selectedStudentForFeedback.id}
+          studentName={selectedStudentForFeedback.name}
+          isOpen={feedbackModalOpen}
+          onClose={() => {
+            setFeedbackModalOpen(false);
+            setSelectedStudentForFeedback(null);
           }}
         />
       )}
