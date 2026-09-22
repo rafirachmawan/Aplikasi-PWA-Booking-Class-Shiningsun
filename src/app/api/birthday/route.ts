@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 
 /**
  * GET /api/birthday
@@ -11,6 +12,46 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const cookieStore = await cookies();
+
+    // Get current user and branch
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    // Get user profile to determine role
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role, branch_id")
+      .eq("id", user.id)
+      .single();
+
+    const isSuperadmin = profile?.role === "SUPERADMIN";
+
+    // Determine effective branch ID
+    // For superadmin: check cookie for selected branch
+    // For branch admin: use profile branch_id
+    let effectiveBranchId: string | null = null;
+
+    if (isSuperadmin) {
+      // Superadmin - get branch from cookie (selected via dropdown)
+      const selectedBranchCookie = cookieStore.get("superadmin_branch_id");
+      effectiveBranchId = selectedBranchCookie?.value || null;
+      console.log(
+        `👤 Superadmin detected, checking cookie for branch selection`,
+      );
+    } else if (profile?.branch_id) {
+      // Branch admin - use profile branch_id
+      effectiveBranchId = profile.branch_id;
+      console.log(`🏫 Branch admin detected, using profile branch_id`);
+    }
 
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month")
@@ -23,18 +64,31 @@ export async function GET(request: NextRequest) {
     console.log(
       `🔍 API Call - Month: ${month}, Day: ${day}, Current Date: ${new Date().toDateString()}`,
     );
+    console.log(
+      `👤 User: ${user.id}, Role: ${profile?.role}, Branch: ${effectiveBranchId}, IsSuperadmin: ${isSuperadmin}`,
+    );
 
-    // Query semua siswa dengan status REGISTERED
-    let { data: students, error } = await supabase
+    // Query students based on user role and branch
+    let query = supabase
       .from("students")
       .select(
         `
-        id, name, nickname, date_of_birth, photo_url, status,
+        id, name, nickname, date_of_birth, photo_url, status, branch_id,
         branch:branches(name),
         label:labels(main_level, sub_level, hex_color)
       `,
       )
       .eq("status", "REGISTERED");
+
+    // Filter by branch if not superadmin
+    if (effectiveBranchId) {
+      query = query.eq("branch_id", effectiveBranchId);
+      console.log(`🏫 Filtering students by branch: ${effectiveBranchId}`);
+    } else if (isSuperadmin) {
+      console.log(`🌍 Superadmin accessing all branches`);
+    }
+
+    let { data: students, error } = await query;
 
     console.log(
       `📊 Database query returned: ${students?.length || 0} registered students`,

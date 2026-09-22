@@ -334,18 +334,29 @@ export function BirthdayGreetingCard({
             )}
 
             {/* Student Info & Date */}
-            <div className="space-y-1.5 sm:space-y-2 w-full mt-2">
-              <div className="flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-3 gap-y-1.5 text-xs sm:text-sm">
-                <span className="flex items-center gap-1.5 text-white/90">
-                  <span className="font-bold">📅</span>
-                  <span>
+            <div className="space-y-1.5 sm:space-y-2 w-full mt-4 mb-3 px-4 sm:px-6">
+              <div className="flex items-center justify-center gap-x-4 gap-y-2 text-xs sm:text-sm bg-white/10 rounded-lg py-2 px-4 backdrop-blur-sm">
+                <span className="flex items-center gap-2 text-white/95">
+                  <svg
+                    className="w-4 h-4 sm:w-5 sm:h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <span className="font-semibold">
                     {birthDay} {birthMonth}
                   </span>
                 </span>
-
                 {student.is_today_birthday && (
-                  <span className="flex items-center gap-1.5 text-amber-300 font-bold">
-                    <span>🎊</span>
+                  <span className="flex items-center gap-2 text-amber-300 font-bold">
+                    <span className="text-base">🎊</span>
                     <span>Umur {student.age} tahun</span>
                   </span>
                 )}
@@ -353,16 +364,18 @@ export function BirthdayGreetingCard({
             </div>
 
             {/* Greeting Message */}
-            <p className="text-white/95 text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4 mx-4 sm:mx-0">
+            <p className="text-white/95 text-xs sm:text-sm leading-relaxed mx-4 sm:mx-0 sm:mx-6 whitespace-pre-line">
               {greetingMessage}
             </p>
 
             {/* Motivational Footer */}
             {student.is_today_birthday && (
-              <div className="pt-2.5 sm:pt-3 border-t border-white/20 mx-4 sm:mx-6">
-                <p className="text-xs sm:text-sm text-white/85 italic line-clamp-2">
-                  {motivationalQuote.replace(/"/g, "")}
-                </p>
+              <div className="my-4 px-4 sm:px-6">
+                <div className="bg-white/5 rounded-lg p-4 border-l-4 border-amber-400 backdrop-blur-sm">
+                  <p className="text-sm sm:text-base text-white/95 italic leading-relaxed">
+                    "{motivationalQuote.replace(/"/g, "")}"
+                  </p>
+                </div>
               </div>
             )}
 
