@@ -305,6 +305,7 @@ export function SchedulingClientWrapper({
     "14:00",
     "15:00",
     "16:00",
+    "17:00",
   ];
 
   useEffect(() => {

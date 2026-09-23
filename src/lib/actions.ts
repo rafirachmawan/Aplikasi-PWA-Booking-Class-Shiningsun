@@ -460,31 +460,110 @@ export async function getOverdueWorksheets(branchId = "ALL") {
       }
     }
 
-    // 3. Fetch ALL worksheets from September 1, 2026 until today
+    // 3. Fetch ALL worksheets from the beginning until now
     const { data: allWorksheets } = await supabaseServer
       .from("student_worksheets")
       .select(
         `
         student_id,
-        worksheet_date
+        worksheet_date,
+        materi,
+        title
       `,
       )
-      .in("student_id", studentIds)
-      .gte("worksheet_date", startDateSeptember)
-      .lte("worksheet_date", todayISO);
+      .in("student_id", studentIds);
 
-    // Group worksheets by student_id
-    const worksheetsByStudent = new Map<string, string[]>();
-    allWorksheets?.forEach((ws: any) => {
-      if (!worksheetsByStudent.has(ws.student_id)) {
-        worksheetsByStudent.set(ws.student_id, []);
+    if (!allWorksheets) {
+      console.log(`📊 No worksheets found for students`);
+    } else {
+      console.log(
+        `📊 Total worksheets fetched for ${studentIds.length} students: ${allWorksheets.length}`,
+      );
+    }
+
+    // Helper function: Check if worksheet has "Tidak Hadir" status
+    const hasAbsentStatus = (ws: any): boolean => {
+      const m = (ws.materi || "").toLowerCase();
+      const t = (ws.title || "").toLowerCase();
+
+      // Debug: Log for Ziel worksheets
+      if (ws.student_id) {
+        studentList.forEach((s: any) => {
+          if (s.id === ws.student_id && s.name.toLowerCase().includes("ziel")) {
+            console.log(
+              `🔎 Checking Worksheet for ${s.name} - materi: "${m}", title: "${t}"`,
+            );
+          }
+        });
       }
+
+      return (
+        m.includes("tidak hadir") ||
+        m.includes("libur") ||
+        t.includes("tidak hadir") ||
+        t.includes("libur") ||
+        t.includes("ijin") ||
+        t.includes("sakit")
+      );
+    };
+
+    // Group worksheets by student_id AND date (with absent status info)
+    const worksheetsByStudentAndDate = new Map<
+      string,
+      Array<{ date: string; isAbsent: boolean }>
+    >();
+    allWorksheets?.forEach((ws: any) => {
+      console.log(
+        `🌍 Raw Worksheet Date Format: "${ws.worksheet_date}", Type: ${typeof ws.worksheet_date}`,
+      );
+
       const dateStr =
         typeof ws.worksheet_date === "string"
           ? ws.worksheet_date.split("T")[0]
-          : ws.worksheet_date;
-      worksheetsByStudent.get(ws.student_id)!.push(dateStr);
+          : new Date(ws.worksheet_date).toISOString().split("T")[0];
+
+      if (!worksheetsByStudentAndDate.has(ws.student_id)) {
+        worksheetsByStudentAndDate.set(ws.student_id, []);
+      }
+
+      const isAbsent = hasAbsentStatus(ws);
+      worksheetsByStudentAndDate
+        .get(ws.student_id)!
+        .push({ date: dateStr, isAbsent });
+
+      // Debug: Log if student is Ziel and worksheet might be absent
+      if (
+        studentList.some(
+          (s) =>
+            s.id === ws.student_id && s.name.toLowerCase().includes("ziel"),
+        )
+      ) {
+        console.log(
+          `📋 Worksheet for Ziel - Original: "${ws.worksheet_date}", Extracted: "${dateStr}", IsAbsent: ${isAbsent}`,
+          ws,
+        );
+      }
     });
+
+    // Debug: Log for all Ziel worksheets to help troubleshoot
+    const zielStudent = studentList.find((s) =>
+      s.name.toLowerCase().includes("ziel"),
+    );
+    if (zielStudent) {
+      const zielWorksheets = allWorksheets?.filter(
+        (w) => w.student_id === zielStudent.id,
+      );
+      console.log(
+        `\n📚 Total Ziel Worksheets in DB: ${zielWorksheets?.length || 0}`,
+      );
+      zielWorksheets?.forEach((w) => {
+        const dateStr = new String(w.worksheet_date).split("T")[0];
+        console.log(
+          `  - ${dateStr} | materi: "${w.materi}" | title: "${w.title}"`,
+        );
+      });
+      console.log();
+    }
 
     // 4. Find overdue students (marked as OVERDUE if schedule + 1 hour passed AND no worksheet)
     const overdueList: Array<
@@ -494,7 +573,8 @@ export async function getOverdueWorksheets(branchId = "ALL") {
 
     for (const student of studentList) {
       const studentBookings = bookingsByStudent.get(student.id) || [];
-      const studentWorksheets = worksheetsByStudent.get(student.id) || [];
+      const studentWorksheetsWithStatus =
+        worksheetsByStudentAndDate.get(student.id) || [];
 
       if (studentBookings.length === 0) continue;
 
@@ -520,29 +600,37 @@ export async function getOverdueWorksheets(branchId = "ALL") {
         // This is safe because we're querying only up to yesterday
 
         // Check if there's a worksheet on the SAME date
-        const hasWorksheetOnSameDate = studentWorksheets.includes(schedDate);
+        const hasWorksheetOnSameDate = studentWorksheetsWithStatus.some(
+          (ws) => ws.date === schedDate,
+        );
 
-        if (!hasWorksheetOnSameDate) {
-          // Create unique key to avoid duplicates
-          const entryKey = `${student.id}_${schedDate}`;
-
-          // Skip if already added
-          if (seenOverdueEntries.has(entryKey)) {
-            continue;
-          }
-
-          seenOverdueEntries.add(entryKey);
-
-          // Get class name from map
-          const className = classNamesMap.get(slot.class_id) || null;
-
-          overdueList.push({
-            ...student,
-            missedDate: schedDate,
-            missedTime: schedTime,
-            className,
-          });
+        // If worksheet exists (regardless of status), DON'T mark as overdue
+        if (hasWorksheetOnSameDate) {
+          console.log(
+            `✅ Student ${student.name} has worksheet on ${schedDate} - SKIPPING from overdue`,
+          );
+          continue; // SKIP: Already have worksheet, even if it's "Tidak Hadir/Ijin/Sakit/Libur"
         }
+
+        // Create unique key to avoid duplicates
+        const entryKey = `${student.id}_${schedDate}`;
+
+        // Skip if already added
+        if (seenOverdueEntries.has(entryKey)) {
+          continue;
+        }
+
+        seenOverdueEntries.add(entryKey);
+
+        // Get class name from map
+        const className = classNamesMap.get(slot.class_id) || null;
+
+        overdueList.push({
+          ...student,
+          missedDate: schedDate,
+          missedTime: schedTime,
+          className,
+        });
       }
     }
 

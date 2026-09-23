@@ -123,11 +123,23 @@ export async function GET(request: NextRequest) {
         const birthDay = dob.getDate();
 
         console.log(
-          `👤 Student: ${student.name}, DOB: ${student.date_of_birth}`,
+          `👤 Student: ${student.name}, DOB string: ${student.date_of_birth}`,
+        );
+        console.log(`   Parsed DOB object: ${dob.toISOString()}`);
+        console.log(
+          `   Year=${dob.getFullYear()}, MonthIndex=${dob.getMonth()}, Day=${dob.getDate()}`,
         );
         console.log(
           `📅 Calculated - Birth Month: ${birthMonth}, Birth Day: ${birthDay}`,
         );
+
+        // Filter by selected month (if specified)
+        if (month && birthMonth !== month) {
+          console.log(
+            `  ❌ Excluded: ${student.name} (Month ${birthMonth} != Filter ${month})`,
+          );
+          return null; // Mark for exclusion
+        }
 
         // Calculate next birthday
         let nextBirthday = new Date(currentYear, birthMonth - 1, birthDay);
@@ -155,6 +167,9 @@ export async function GET(request: NextRequest) {
 
         // Calculate age
         const age = calculateAge(dob, today);
+        console.log(
+          `   🧮 AGE: CurrentYear=${currentYear}, BirthYear=${dob.getFullYear()}, Age=${age}`,
+        );
 
         return {
           ...student,
@@ -163,12 +178,16 @@ export async function GET(request: NextRequest) {
           is_today_birthday: daysUntilBirthday === 0,
         };
       })
-      // Filter out birthdays that are too far away (more than 60 days)
-      // This ensures we only show birthdays that are coming soon or in the selected month
-      .filter(
+      // Remove null entries (filtered out by month)
+      .filter((student) => student !== null);
+
+    // If no month filter selected, apply proximity filter (next 60 days)
+    if (!month) {
+      studentsWithProximity = studentsWithProximity.filter(
         (student) =>
           student.days_until_birthday <= 60 || student.is_today_birthday,
       );
+    }
 
     console.log(
       `🎉 Total students matching filter: ${studentsWithProximity.length}`,
@@ -179,49 +198,50 @@ export async function GET(request: NextRequest) {
       );
     });
 
-    // FIX: If today is Sep 22, make sure to show Rafi (born 2001-09-22)
-    if (today.getMonth() === 8 && today.getDate() === 22) {
-      // Check if any student has DOB on today's date but filtered out due to >60 days
-      const rafiFilterOut = students?.filter((s: any) => {
+    // FIX: Make sure students with birthday TODAY are marked correctly
+    const septemberStudents = students?.filter((s: any) => {
+      const dob = new Date(s.date_of_birth);
+      return (
+        dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()
+      );
+    });
+
+    if (septemberStudents && septemberStudents.length > 0) {
+      console.log(
+        `🎂 Students with birthday TODAY (${septemberStudents.length}):`,
+      );
+      septemberStudents.forEach((s) => {
         const dob = new Date(s.date_of_birth);
-        return (
-          dob.getDate() === today.getDate() &&
-          dob.getMonth() === today.getMonth() &&
-          s.name.toLowerCase().includes("rafi")
-        );
-      });
+        console.log(`  ✅ ${s.name}: DOB=${s.date_of_birth}`);
 
-      if (rafiFilterOut && rafiFilterOut.length > 0) {
-        console.log(
-          `🔧 SPECIAL CASE: Including Rafi (birthday TODAY but age > currentYear)`,
+        // Add or update these students to be today's birthdays
+        const existingIndex = studentsWithProximity.findIndex(
+          (p) => p.id === s.id,
         );
 
-        // Create corrected entries for Rafi and add them FIRST (so they appear at top of list)
-        const rafiEntries = rafiFilterOut.map((s) => {
-          const dob = new Date(s.date_of_birth);
+        if (existingIndex >= 0) {
+          // Update existing entry
+          studentsWithProximity[existingIndex] = {
+            ...studentsWithProximity[existingIndex],
+            days_until_birthday: 0,
+            age: calculateAge(dob, today),
+            is_today_birthday: true,
+          };
+          console.log(`   🔄 Updated: days=0, is_today=true`);
+        } else {
+          // Create new entry and add first
           const birthMonth = dob.getMonth() + 1;
           const birthDay = dob.getDate();
-
-          return {
+          const newEntry = {
             ...s,
             days_until_birthday: 0,
             age: calculateAge(dob, today),
             is_today_birthday: true,
           };
-        });
-
-        // Add to beginning using concat (not assignment) so Rafi appears first
-        studentsWithProximity = studentsWithProximity.concat(rafiEntries);
-
-        console.log(
-          `  🎂 FIXED: Added ${rafiEntries.length} students to TOP of list`,
-        );
-        rafiEntries.forEach((entry) => {
-          console.log(
-            `  ✅ ${entry.name}: DaysUntil=${entry.days_until_birthday}, IsToday=${entry.is_today_birthday}`,
-          );
-        });
-      }
+          studentsWithProximity.unshift(newEntry);
+          console.log(`   ➕ Added as new entry: days=0, is_today=true`);
+        }
+      });
     }
 
     // Sort by proximity (nearest birthday first)
@@ -239,7 +259,7 @@ export async function GET(request: NextRequest) {
 
     // Also show ALL students that were fetched to debug the issue
     console.log(`👥 Total students in database: ${students?.length || 0}`);
-    const septemberStudents = students?.filter((s: any) => {
+    const allSeptemberBirthdays = students?.filter((s: any) => {
       const dob = new Date(s.date_of_birth);
       return dob.getMonth() === 8; // September (0-indexed)
     });
@@ -282,14 +302,10 @@ export async function GET(request: NextRequest) {
 
 /**
  * Helper function: Calculate age from DOB
+ * Simple formula: current year minus birth year
  */
 function calculateAge(dob: Date, today: Date): number {
-  let age = today.getFullYear() - dob.getFullYear();
-  const monthDiff = today.getMonth() - dob.getMonth();
-
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-    age--;
-  }
-
-  return age > 0 ? age : 0;
+  const currentYear = today.getFullYear();
+  const birthYear = dob.getFullYear();
+  return currentYear - birthYear;
 }
