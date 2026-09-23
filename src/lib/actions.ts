@@ -372,8 +372,8 @@ export async function getOverdueWorksheets(branchId = "ALL") {
     const supabaseServer = await createClient();
     const todayISO = getTodayISO();
 
-    // ✅ NEW LOGIC: Start checking from September 1, 2026
-    const startDateSeptember = "2026-09-01";
+    // ✅ CHANGED: Start checking from TODAY ONLY to avoid deleted data
+    const startDateToday = getTodayISO();
 
     console.log(`🚀 Overdue check (Sept 1+ logic) for branch ${branchId}`);
     console.log(` Branch ID from query: ${branchId}`);
@@ -424,7 +424,7 @@ export async function getOverdueWorksheets(branchId = "ALL") {
       `,
       )
       .in("student_id", studentIds)
-      .gte("slot.date", startDateSeptember)
+      .gte("slot.date", startDateToday)
       .lte("slot.date", todayISO);
 
     if (bookingsError) {
