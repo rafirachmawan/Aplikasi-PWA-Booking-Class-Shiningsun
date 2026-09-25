@@ -372,10 +372,10 @@ export async function getOverdueWorksheets(branchId = "ALL") {
     const supabaseServer = await createClient();
     const todayISO = getTodayISO();
 
-    // ✅ CHANGED: Start checking from TODAY ONLY to avoid deleted data
-    const startDateToday = getTodayISO();
+    // Mulai pengecekan permanen sejak tanggal 23 September 2026
+    const startDate = "2026-09-23";
 
-    console.log(`🚀 Overdue check (Sept 1+ logic) for branch ${branchId}`);
+    console.log(`🚀 Overdue check from ${startDate} to ${todayISO} for branch ${branchId}`);
     console.log(` Branch ID from query: ${branchId}`);
 
     // 1. Get all active students for this branch - ONLY REGISTERED (NOT CG or INACTIVE)
@@ -424,7 +424,7 @@ export async function getOverdueWorksheets(branchId = "ALL") {
       `,
       )
       .in("student_id", studentIds)
-      .gte("slot.date", startDateToday)
+      .gte("slot.date", startDate)
       .lte("slot.date", todayISO);
 
     if (bookingsError) {
@@ -460,7 +460,7 @@ export async function getOverdueWorksheets(branchId = "ALL") {
       }
     }
 
-    // 3. Fetch ALL worksheets from the beginning until now
+    // 3. Fetch worksheets from startDate until today (filter date agar tidak terpotong limit 1000 Supabase)
     const { data: allWorksheets } = await supabaseServer
       .from("student_worksheets")
       .select(
@@ -471,7 +471,9 @@ export async function getOverdueWorksheets(branchId = "ALL") {
         title
       `,
       )
-      .in("student_id", studentIds);
+      .in("student_id", studentIds)
+      .gte("worksheet_date", startDate)
+      .lte("worksheet_date", todayISO);
 
     if (!allWorksheets) {
       console.log(`📊 No worksheets found for students`);
@@ -674,9 +676,12 @@ export async function getStudentScheduleMap(
   if (!studentIds || studentIds.length === 0) return {};
   try {
     const supabaseServer = await createClient();
-    const today = getTodayISO();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
+    const firstDayOfMonth = `${currentYear}-${currentMonth}-01`;
 
-    // Query upcoming/current active bookings for these students (from today onwards)
+    // Query active bookings for these students in the current month onwards (sebulan penuh)
     let { data: bookings } = await supabaseServer
       .from("schedule_student")
       .select(
@@ -688,17 +693,17 @@ export async function getStudentScheduleMap(
       `,
       )
       .in("student_id", studentIds)
-      .gte("slot.date", today);
+      .gte("slot.date", firstDayOfMonth);
 
-    // Fallback: jika belum ada slot mendatang (misal di akhir bulan), ambil slot bulan berjalan
+    // Fallback: jika belum ada slot di bulan berjalan/mendatang (misal awal bulan baru belum di-generate), ambil slot bulan sebelumnya
     const foundStudentIds = new Set((bookings || []).map((b) => b.student_id));
     const missingStudentIds = studentIds.filter(
       (id) => !foundStudentIds.has(id),
     );
 
     if (missingStudentIds.length > 0) {
-      const now = new Date();
-      const firstDayOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const prevMonth = new Date(currentYear, now.getMonth() - 1, 1);
+      const firstDayOfPrevMonth = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}-01`;
       const { data: monthBookings } = await supabaseServer
         .from("schedule_student")
         .select(
@@ -710,7 +715,7 @@ export async function getStudentScheduleMap(
         `,
         )
         .in("student_id", missingStudentIds)
-        .gte("slot.date", firstDayOfMonth);
+        .gte("slot.date", firstDayOfPrevMonth);
 
       if (monthBookings && monthBookings.length > 0) {
         bookings = [...(bookings || []), ...monthBookings];
