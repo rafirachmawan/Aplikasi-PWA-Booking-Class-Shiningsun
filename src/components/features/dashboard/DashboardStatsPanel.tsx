@@ -136,6 +136,8 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
   const [missedDate, setMissedDate] = useState<string>("");
   const [className, setClassName] = useState<string>("");
   const [teachers, setTeachers] = useState<any[]>([]);
+  // Riwayat worksheets untuk auto-hitung "bulan ke" (sama seperti halaman worksheets)
+  const [overdueWorksheets, setOverdueWorksheets] = useState<any[]>([]);
 
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -187,10 +189,17 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     missedDate: string,
     className?: string,
   ) => {
-    // Fetch teachers from server
-    const { getTeachers } = await import("@/lib/actions");
-    const teacherList = await getTeachers();
+    // Fetch teachers + riwayat worksheets agar auto-hitung "bulan ke"
+    // sama persis dengan halaman Laporan Perkembangan / ChangeLabelModal
+    const { getTeachers, getWorksheetsByStudent } =
+      await import("@/lib/actions");
+    const [teacherList, studentWorksheets] = await Promise.all([
+      getTeachers(),
+      // Selalu ambil riwayat terbaru agar auto-hitung "bulan ke" sama dengan halaman worksheets
+      student?.id ? getWorksheetsByStudent(student.id) : Promise.resolve([]),
+    ]);
     setTeachers(teacherList);
+    setOverdueWorksheets(studentWorksheets || []);
 
     setOverdueStudent(student);
     setMissedDate(missedDate);
@@ -201,6 +210,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     setOverdueStudent(null);
     setMissedDate("");
     setClassName("");
+    setOverdueWorksheets([]);
   };
 
   useEffect(() => {
@@ -1058,6 +1068,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
         <WorksheetFormModal
           students={[overdueStudent]}
           teachers={teachers}
+          worksheets={overdueWorksheets}
           onClose={handleCloseWorksheetModal}
           onSuccess={() => {
             handleCloseWorksheetModal();
