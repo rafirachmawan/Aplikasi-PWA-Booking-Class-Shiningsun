@@ -26,6 +26,43 @@
   }
 }
 
+/* Auth mobile: entrance + sun-ray. Motion override percakapan (fluid CSS saja,
+   hanya transform/opacity, nonaktif total di bawah prefers-reduced-motion). */
+@keyframes login-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sun-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@utility anim-login-rise {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: login-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@utility anim-login-rise-late {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: login-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+  }
+}
+
+@utility anim-sun-rotate {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: sun-rotate 44s linear infinite;
+  }
+}
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
