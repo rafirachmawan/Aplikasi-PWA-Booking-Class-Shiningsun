@@ -586,7 +586,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                         e.preventDefault();
                         handleOpenWorksheetForm(
                           student,
-                          missedDate,
+                          student.missedDate || missedDate,
                           student.className,
                         );
                       }}

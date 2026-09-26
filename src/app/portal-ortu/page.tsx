@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { verifyParentAccess, getBranches } from "@/lib/actions";
+import {
+  verifyParentAccess,
+  confirmParentStudentSelection,
+  getBranches,
+} from "@/lib/actions";
 import { InstallPWAButton } from "@/components/features/auth/InstallPWAButton";
 
 export default function ParentLoginPage() {
@@ -16,6 +20,10 @@ export default function ParentLoginPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [showPin, setShowPin] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  // OPSI 2 — disambiguasi bila >1 siswa cocok (tanpa ubah data)
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [needSelection, setNeedSelection] = useState(false);
+  const [selectingId, setSelectingId] = useState<string | null>(null);
 
   useEffect(() => {
     getBranches().then((data) => {
@@ -38,6 +46,8 @@ export default function ParentLoginPage() {
 
     setIsLoading(true);
     setErrorMsg("");
+    setCandidates([]);
+    setNeedSelection(false);
 
     try {
       const result = await verifyParentAccess(
@@ -45,6 +55,17 @@ export default function ParentLoginPage() {
         pin,
         selectedBranchId,
       );
+      // OPSI 2: bila nama+PIN cocok ke >1 siswa, tampilkan pilihan — jangan auto-login ke yang pertama.
+      if ((result as any).needSelection && (result as any).candidates?.length > 1) {
+        setCandidates((result as any).candidates);
+        setNeedSelection(true);
+        setErrorMsg(
+          result.error ||
+            "Ditemukan lebih dari satu siswa. Silakan pilih anak Anda.",
+        );
+        setIsLoading(false);
+        return;
+      }
       if (!result.success) {
         setErrorMsg(result.error || "Gagal masuk. Periksa nama siswa dan PIN.");
         setIsLoading(false);
@@ -55,6 +76,35 @@ export default function ParentLoginPage() {
       setErrorMsg("Terjadi kesalahan koneksi. Silakan coba lagi.");
       setIsLoading(false);
     }
+  };
+
+  const handleSelectCandidate = async (studentId: string) => {
+    setSelectingId(studentId);
+    setErrorMsg("");
+    try {
+      const result = await confirmParentStudentSelection(
+        studentId,
+        pin,
+        studentName,
+        selectedBranchId,
+      );
+      if (!result.success) {
+        setErrorMsg(result.error || "Gagal memilih siswa. Coba lagi.");
+        setSelectingId(null);
+        return;
+      }
+      window.location.href = "/portal-ortu/dashboard";
+    } catch (err: any) {
+      setErrorMsg("Terjadi kesalahan koneksi. Silakan coba lagi.");
+      setSelectingId(null);
+    }
+  };
+
+  const handleBackToSearch = () => {
+    setCandidates([]);
+    setNeedSelection(false);
+    setSelectingId(null);
+    setErrorMsg("");
   };
 
   return (
@@ -613,6 +663,63 @@ export default function ParentLoginPage() {
                 </a>
               </div>
             </form>
+
+            {/* OPSI 2 — Pilih anak bila nama+PIN cocok ke >1 siswa */}
+            {needSelection && candidates.length > 1 && (
+              <div className="rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/30 p-4 space-y-3 animate-in fade-in zoom-in-95">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Pilih Anak Anda ({candidates.length} ditemukan)
+                  </h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                    Nama &ldquo;{studentName.trim()}&rdquo; cocok dengan beberapa
+                    siswa. Ketuk salah satu untuk masuk ke data yang benar.
+                    Tanpa memilih, Anda tidak akan masuk ke siswa lain.
+                  </p>
+                </div>
+                <div className="space-y-2 max-h-72 overflow-auto pr-0.5">
+                  {candidates.map((c: any) => {
+                    const isSelecting = selectingId === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        disabled={selectingId !== null}
+                        onClick={() => handleSelectCandidate(c.id)}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-brand-500 hover:ring-2 hover:ring-brand-500/30 transition-all text-left disabled:opacity-60 cursor-pointer"
+                      >
+                        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-brand-600/10 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 font-extrabold text-sm shrink-0">
+                          {(c.name || "?").trim().charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                            {c.name}
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                            Panggilan: {c.nickname || "-"}
+                            {c.branch?.name ? ` • Unit ${c.branch.name}` : ""}
+                            {c.label?.main_level
+                              ? ` • ${c.label.main_level}${c.label?.sub_level ? ` ${c.label.sub_level}` : ""}`
+                              : ""}
+                          </p>
+                        </div>
+                        <span className="text-xs font-bold text-brand-600 dark:text-brand-400 shrink-0">
+                          {isSelecting ? "Memilih..." : "Pilih →"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleBackToSearch}
+                  disabled={selectingId !== null}
+                  className="w-full text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 underline underline-offset-4 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  ← Kembali & perbaiki nama / PIN / cabang
+                </button>
+              </div>
+            )}
 
             {/* Mobile Feature Highlights Inside Card */}
             <div className="lg:hidden border-t border-slate-100 dark:border-slate-800/80 pt-4 grid grid-cols-3 gap-2 text-center">

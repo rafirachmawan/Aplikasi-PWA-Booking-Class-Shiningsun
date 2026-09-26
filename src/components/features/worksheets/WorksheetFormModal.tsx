@@ -174,7 +174,8 @@ export function WorksheetFormModal({
     initialData?.description || "",
   );
   const [worksheetDate, setWorksheetDate] = useState(
-    initialData?.worksheet_date || getTodayISO(),
+    initialData?.worksheet_date ||
+      (!initialData?.id && currentDate ? currentDate : getTodayISO()),
   );
   const [gdriveLink, setGdriveLink] = useState(initialData?.gdrive_link || "");
   const [materi, setMateri] = useState(initialData?.materi || "");
@@ -951,9 +952,11 @@ export function WorksheetFormModal({
   const [alasanSearch, setAlasanSearch] = useState("");
   const alasanSearchInputRef = useRef<HTMLInputElement>(null);
 
-  // Date Input (calendar picker only, defaults to today)
+  // Date Input (calendar picker only, defaults to today —
+  // khusus dari Laporan Terlewat otomatis pakai tanggal terlewatnya)
   const [worksheetDateInput, setWorksheetDateInput] = useState(
-    initialData?.worksheet_date || getTodayISO(),
+    initialData?.worksheet_date ||
+      (!initialData?.id && currentDate ? currentDate : getTodayISO()),
   );
 
   // Hidden date input for native calendar picker
@@ -1073,6 +1076,16 @@ export function WorksheetFormModal({
       setWorksheetDateInput(initialData.worksheet_date);
     }
   }, [initialData, isEditing]);
+
+  // Khusus Laporan Terlewat: saat modal dibuka dengan currentDate (missedDate),
+  // otomatiskan Tanggal ke tanggal terlewat tersebut (hanya untuk entri baru).
+  useEffect(() => {
+    if (!isEditing && currentDate) {
+      setWorksheetDateInput(currentDate);
+      setWorksheetDate(currentDate);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate]);
 
   // Auto-Libur when the selected date is a national holiday (tanggal merah), not applied while editing
   useEffect(() => {
