@@ -4,8 +4,6 @@ import { createClient, getSupabaseClient } from "@/lib/supabase";
 // POST /api/student-feedback - Kirim feedback dari parent
 export async function POST(request: NextRequest) {
   try {
-    console.log("[StudentFeedback] POST request received");
-
     // Use SERVICE ROLE client to bypass RLS for admin operations
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,12 +19,6 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { student_id, parent_user_id, message } = body;
-
-    console.log("[StudentFeedback] Received data:", {
-      student_id,
-      parent_user_id,
-      message_length: message?.length,
-    });
 
     // Validate required fields
     if (!student_id || !parent_user_id || !message) {
@@ -49,10 +41,6 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-
-    console.log(
-      "[StudentFeedback] Attempting to insert into student_feedback table...",
-    );
 
     // Insert feedback into database (bypasses RLS)
     const { data, error } = await supabase
@@ -77,8 +65,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("[StudentFeedback] Feedback saved successfully:", data);
-
     return NextResponse.json(
       { success: true, feedback: data },
       { status: 201 },
@@ -102,8 +88,6 @@ export async function POST(request: NextRequest) {
 // GET /api/student-feedback - Get feedback history for a student
 export async function GET(request: Request) {
   try {
-    console.log("[StudentFeedback] GET request received");
-
     const { searchParams } = new URL(request.url);
     const studentId = searchParams.get("student_id");
 
@@ -114,8 +98,6 @@ export async function GET(request: Request) {
         { status: 400 },
       );
     }
-
-    console.log("[StudentFeedback] Fetching for student_id:", studentId);
 
     // Use SERVICE ROLE client to bypass RLS completely
     const supabase = createClient(
@@ -147,11 +129,6 @@ export async function GET(request: Request) {
         { status: 500 },
       );
     }
-
-    console.log(
-      "[StudentFeedback] Raw feedbacks from DB:",
-      JSON.stringify(feedbacks, null, 2),
-    );
 
     // Since we're using service role, fetch parent names from profiles table manually
     let formattedFeedbacks = feedbacks || [];

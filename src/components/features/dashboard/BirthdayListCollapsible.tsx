@@ -311,6 +311,7 @@ export function BirthdayListCollapsible() {
                                     <img
                                       src={student.photo_url}
                                       alt={student.name}
+                                      loading="lazy"
                                       className="w-full h-full rounded-lg object-cover"
                                     />
                                   ) : (
@@ -400,6 +401,7 @@ export function BirthdayListCollapsible() {
                                       <img
                                         src={student.photo_url}
                                         alt={student.name}
+                                        loading="lazy"
                                         className="w-full h-full rounded-lg object-cover"
                                       />
                                     ) : (
@@ -563,6 +565,7 @@ export function BirthdayListCollapsible() {
                                       <img
                                         src={student.photo_url}
                                         alt={student.name}
+                                        loading="lazy"
                                         className="w-full h-full rounded-lg object-cover"
                                       />
                                     ) : (

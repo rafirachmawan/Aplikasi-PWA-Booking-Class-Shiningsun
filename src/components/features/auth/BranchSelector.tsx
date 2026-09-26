@@ -50,18 +50,24 @@ export function BranchSelector({
   const selectBranch = async (newBranchId: string) => {
     setIsOpen(false);
     setSelectedId(newBranchId);
-
-    if (newBranchId === "") {
-      // Reset ke netral: hapus cookie
-      const { clearSuperadminBranch } = await import("@/lib/actions");
-      await clearSuperadminBranch();
-      // Force reload dengan timestamp di URL
-      window.location.href = `/?t=${Date.now()}`;
-    } else {
-      // Set cookie ke cabang terpilih
-      await setSuperadminBranch(newBranchId);
-      // Force reload dengan timestamp di URL
-      window.location.href = `/?branch=${encodeURIComponent(newBranchId)}&t=${Date.now()}`;
+    // Tampilkan loading selama cookie diset + data dimuat ulang
+    // (spinner sudah dirender di bawah; alur sukses/gagal tidak berubah).
+    setIsUpdating(true);
+    try {
+      if (newBranchId === "") {
+        // Reset ke netral: hapus cookie
+        const { clearSuperadminBranch } = await import("@/lib/actions");
+        await clearSuperadminBranch();
+        // Muat ulang data server dengan cookie baru (tujuan sama: dashboard
+        // dengan cabang terpilih, tanpa full reload seluruh aplikasi).
+        router.refresh();
+      } else {
+        // Set cookie ke cabang terpilih
+        await setSuperadminBranch(newBranchId);
+        router.refresh();
+      }
+    } finally {
+      setIsUpdating(false);
     }
   };
 

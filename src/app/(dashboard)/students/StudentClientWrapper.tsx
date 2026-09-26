@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
@@ -88,93 +88,127 @@ export function StudentClientWrapper({
   const [modalError, setModalError] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Helper check for gender matching
-  const matchesGenderFilter = (s: any) => {
-    if (selectedGender === "") return true;
-    if (selectedGender === "unset") return !s.gender || s.gender === "";
-    return s.gender === selectedGender;
-  };
+  // Helper check for gender matching (aturan sama, di-memo agar stabil
+  // sebagai depedensi useMemo di bawah)
+  const matchesGenderFilter = useCallback(
+    (s: any) => {
+      if (selectedGender === "") return true;
+      if (selectedGender === "unset") return !s.gender || s.gender === "";
+      return s.gender === selectedGender;
+    },
+    [selectedGender],
+  );
 
   // Filter and sort students based on all states (search, level filter, gender filter, active tab, and sort by label)
-  const displayedStudents = initialStudents
-    .filter((s) => {
-      const matchesSearch =
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (s.nickname &&
-          s.nickname.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Di-memo: hitung ulang hanya saat input berubah, bukan tiap render
+  // (misal saat modal/hover memicu render). Isi & urutan hasil identik.
+  const displayedStudents = useMemo(
+    () =>
+      initialStudents
+        .filter((s) => {
+          const matchesSearch =
+            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (s.nickname &&
+              s.nickname.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      const matchesLabel =
-        selectedLabelId === "" || s.label_id === selectedLabelId;
+          const matchesLabel =
+            selectedLabelId === "" || s.label_id === selectedLabelId;
 
-      const matchesGender = matchesGenderFilter(s);
+          const matchesGender = matchesGenderFilter(s);
 
-      const matchesTab =
-        activeTab === "all" ||
-        (activeTab === "reguler" && s.status === "REGISTERED") ||
-        (activeTab === "cg" && s.status === "CG") ||
-        (activeTab === "inactive" && s.status === "INACTIVE");
+          const matchesTab =
+            activeTab === "all" ||
+            (activeTab === "reguler" && s.status === "REGISTERED") ||
+            (activeTab === "cg" && s.status === "CG") ||
+            (activeTab === "inactive" && s.status === "INACTIVE");
 
-      return matchesSearch && matchesLabel && matchesGender && matchesTab;
-    })
-    .sort((a, b) => {
-      // Put students with labels first
-      if (a.label && !b.label) return -1;
-      if (!a.label && b.label) return 1;
-      if (!a.label && !b.label) {
-        return a.name.localeCompare(b.name);
-      }
+          return matchesSearch && matchesLabel && matchesGender && matchesTab;
+        })
+        .sort((a, b) => {
+          // Put students with labels first
+          if (a.label && !b.label) return -1;
+          if (!a.label && b.label) return 1;
+          if (!a.label && !b.label) {
+            return a.name.localeCompare(b.name);
+          }
 
-      // Sort by main_level
-      const mainCompare = a.label.main_level.localeCompare(b.label.main_level);
-      if (mainCompare !== 0) return mainCompare;
+          // Sort by main_level
+          const mainCompare = a.label.main_level.localeCompare(
+            b.label.main_level,
+          );
+          if (mainCompare !== 0) return mainCompare;
 
-      // Sort by sub_level
-      const subCompare = a.label.sub_level.localeCompare(b.label.sub_level);
-      if (subCompare !== 0) return subCompare;
+          // Sort by sub_level
+          const subCompare = a.label.sub_level.localeCompare(b.label.sub_level);
+          if (subCompare !== 0) return subCompare;
 
-      // Sort by name if levels are same
-      return a.name.localeCompare(b.name);
-    });
+          // Sort by name if levels are same
+          return a.name.localeCompare(b.name);
+        }),
+    [
+      initialStudents,
+      searchQuery,
+      selectedLabelId,
+      activeTab,
+      matchesGenderFilter,
+    ],
+  );
 
   // Calculate totals dynamically for tabs based on current search & level & gender filters
-  const regulerCount = initialStudents.filter(
-    (s) =>
-      s.status === "REGISTERED" &&
-      (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (s.nickname &&
-          s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) &&
-      (selectedLabelId === "" || s.label_id === selectedLabelId) &&
-      matchesGenderFilter(s),
-  ).length;
+  const regulerCount = useMemo(
+    () =>
+      initialStudents.filter(
+        (s) =>
+          s.status === "REGISTERED" &&
+          (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (s.nickname &&
+              s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) &&
+          (selectedLabelId === "" || s.label_id === selectedLabelId) &&
+          matchesGenderFilter(s),
+      ).length,
+    [initialStudents, searchQuery, selectedLabelId, matchesGenderFilter],
+  );
 
-  const cgCount = initialStudents.filter(
-    (s) =>
-      s.status === "CG" &&
-      (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (s.nickname &&
-          s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) &&
-      (selectedLabelId === "" || s.label_id === selectedLabelId) &&
-      matchesGenderFilter(s),
-  ).length;
+  const cgCount = useMemo(
+    () =>
+      initialStudents.filter(
+        (s) =>
+          s.status === "CG" &&
+          (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (s.nickname &&
+              s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) &&
+          (selectedLabelId === "" || s.label_id === selectedLabelId) &&
+          matchesGenderFilter(s),
+      ).length,
+    [initialStudents, searchQuery, selectedLabelId, matchesGenderFilter],
+  );
 
-  const inactiveCount = initialStudents.filter(
-    (s) =>
-      s.status === "INACTIVE" &&
-      (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (s.nickname &&
-          s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) &&
-      (selectedLabelId === "" || s.label_id === selectedLabelId) &&
-      matchesGenderFilter(s),
-  ).length;
+  const inactiveCount = useMemo(
+    () =>
+      initialStudents.filter(
+        (s) =>
+          s.status === "INACTIVE" &&
+          (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (s.nickname &&
+              s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) &&
+          (selectedLabelId === "" || s.label_id === selectedLabelId) &&
+          matchesGenderFilter(s),
+      ).length,
+    [initialStudents, searchQuery, selectedLabelId, matchesGenderFilter],
+  );
 
-  const allCount = initialStudents.filter(
-    (s) =>
-      (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (s.nickname &&
-          s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) &&
-      (selectedLabelId === "" || s.label_id === selectedLabelId) &&
-      matchesGenderFilter(s),
-  ).length;
+  const allCount = useMemo(
+    () =>
+      initialStudents.filter(
+        (s) =>
+          (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (s.nickname &&
+              s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) &&
+          (selectedLabelId === "" || s.label_id === selectedLabelId) &&
+          matchesGenderFilter(s),
+      ).length,
+    [initialStudents, searchQuery, selectedLabelId, matchesGenderFilter],
+  );
 
   const handleDelete = (id: string, name: string) => {
     setConfirmModal({

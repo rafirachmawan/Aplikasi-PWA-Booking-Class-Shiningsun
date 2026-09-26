@@ -1,4 +1,4 @@
-import { Icons } from "@/components/ui/icons";
+import { Suspense } from "react";
 import {
   getDashboardStats,
   getTodaySchedules,
@@ -10,6 +10,7 @@ import {
   getStudentRulesDocuments,
   getCurriculumDocuments,
   getOverdueWorksheets,
+  getModuleLockPasswords,
 } from "@/lib/actions";
 import { TodaySchedule } from "@/components/features/dashboard/TodaySchedule";
 import { QuickAccessLinks } from "@/components/features/dashboard/QuickAccessLinks";
@@ -25,63 +26,18 @@ import { formatFullIndonesianDate } from "@/lib/dateUtils";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const role = await getCurrentUserRole();
-  const currentBranchId = await getBranchId();
+  // Bagian cepat & kecil: identitas + daftar cabang untuk selector.
+  // getCurrentUserRole/getBranchId sudah di-cache per-request di actions.ts.
+  const [role, currentBranchId] = await Promise.all([
+    getCurrentUserRole(),
+    getBranchId(),
+  ]);
   const isSuperadmin = role === "SUPERADMIN";
   const hasBranchSelected = !!currentBranchId && currentBranchId !== "";
 
-  let branches: { id: string; name: string }[] = [];
-  if (isSuperadmin) {
-    branches = await getBranches();
-  }
-
-  // Only fetch data if a branch is selected (or if not superadmin)
-  let statsData = { reguler: 0, cg: 0, cgUpcoming: 0, cgPassed: 0, classes: 0 };
-  let todaySlots: any[] = [];
-  let classes: any[] = [];
-  let overdueList: any[] = [];
-  let activeBranchName: string | null = null;
-
-  if (hasBranchSelected || !isSuperadmin) {
-    [statsData, todaySlots, classes, overdueList, activeBranchName] =
-      await Promise.all([
-        getDashboardStats(),
-        getTodaySchedules(),
-        getClasses(),
-        getOverdueWorksheets(currentBranchId), // Pass branch ID for filtering
-        getActiveBranchName(),
-      ]);
-  }
-
-  // Dokumen Upload File PDF (global, tidak tergantung cabang)
-  const rulesDocuments = await getStudentRulesDocuments();
-  const curriculumDocuments = await getCurriculumDocuments();
-
-  const stats = [
-    {
-      name: "Siswa Aktif",
-      value: statsData.reguler.toString(),
-      iconName: "users",
-      statusFilter: "REGISTERED" as const,
-    },
-    {
-      name: "Coba Gratis",
-      value: statsData.cg.toString(),
-      // Show dynamic message based on upcoming schedules
-      subValue:
-        statsData.cgUpcoming > 0
-          ? `${statsData.cgUpcoming} sesi tersedia`
-          : "0 sesi",
-      iconName: "sun",
-      statusFilter: "CG" as const,
-    },
-    {
-      name: "Laporan Terlewat - Mohon Segera Diisi",
-      value: overdueList.length.toString(),
-      iconName: "alert-circle",
-      statusFilter: "OVERDUE_WORKSHEETS" as const,
-    },
-  ];
+  const branches: { id: string; name: string }[] = isSuperadmin
+    ? await getBranches()
+    : [];
 
   // Get selected branch name for display
   let selectedBranchName = "";
@@ -138,6 +94,8 @@ export default async function DashboardPage() {
       )}
 
       {/* Show placeholder when no branch selected (superadmin first login) */}
+      {/* Kondisi sama seperti sebelumnya: superadmin tanpa cabang -> placeholder,
+          selain itu data utama di-streaming agar selector langsung tampil. */}
       {isSuperadmin && !hasBranchSelected ? (
         <div className="rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-slate-700 p-8 sm:p-16 flex flex-col items-center justify-center text-center">
           <div className="rounded-xl p-4 bg-white dark:bg-slate-800 shadow-sm mb-6">
@@ -164,85 +122,173 @@ export default async function DashboardPage() {
           </p>
         </div>
       ) : (
-        <>
-          {/* Hero Banner */}
-          <div className="rounded-2xl bg-linear-to-br from-brand-600 via-brand-600 to-indigo-700 dark:from-brand-700 dark:via-brand-800 dark:to-indigo-950 p-6 shadow-xl border border-brand-500/30 relative overflow-hidden">
-            {/* Background decoration */}
-            <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
-            <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-indigo-500/20 rounded-full blur-2xl"></div>
-
-            <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-              <div>
-                <div className="flex flex-wrap items-center gap-2 mb-4">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white/95 text-xs font-semibold backdrop-blur-md">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    {formatFullIndonesianDate(new Date())}
-                  </div>
-                  {activeBranchName && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-300/30 text-amber-100 text-xs font-bold backdrop-blur-md">
-                      <svg
-                        className="w-3.5 h-3.5 text-amber-300"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                      Cabang: {activeBranchName}
-                    </div>
-                  )}
-                </div>
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight drop-shadow-sm">
-                  Hallo, ShiningSun!
-                  {activeBranchName && (
-                    <span className="text-amber-200/90 font-semibold text-lg sm:text-2xl ml-2">
-                      ({activeBranchName})
-                    </span>
-                  )}
-                </h2>
-                <p className="text-brand-100 text-sm mt-2 max-w-xl leading-relaxed opacity-95">
-                  Ringkasan sistem pendaftaran dan penjadwalan. Semoga aktivitas
-                  berjalan lancar.
-                </p>
-              </div>
-            </div>
-
-            {/* Glassmorphic Stats Cards */}
-            <DashboardStatsPanel stats={stats} />
-          </div>
-
-          {/* Notification & Schedule Section */}
-          <div className="space-y-6">
-            <NotificationPermissionBanner />
-
-            {/* Birthday List Collapsible */}
-            <BirthdayListCollapsible />
-
-            <TodaySchedule slots={todaySlots} classes={classes} />
-          </div>
-
-          {/* Quick Access */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold leading-6 text-slate-900 dark:text-white">
-              Akses Cepat
-            </h3>
-            <QuickAccessLinks isSuperadmin={isSuperadmin} />
-          </div>
-
-          <ResetDataSection isSuperadmin={isSuperadmin} showReset={false} />
-        </>
+        <Suspense fallback={<DashboardMainSkeleton />}>
+          <DashboardMain
+            branchId={currentBranchId}
+            isSuperadmin={isSuperadmin}
+          />
+        </Suspense>
       )}
 
+      {/* Upload File PDF — selalu di paling bawah dashboard.
+          Dokumen global, tidak tergantung cabang: di-streaming terpisah agar
+          hero tidak menunggu query dokumen. Hasil akhir sama. */}
+      <Suspense fallback={<DashboardDocsSkeleton />}>
+        <DashboardDocs isSuperadmin={isSuperadmin} />
+      </Suspense>
+    </div>
+  );
+}
+
+// Data utama dashboard (query & tampilan sama persis seperti sebelumnya,
+// hanya dipindah ke komponen async agar bisa streaming via Suspense).
+async function DashboardMain({
+  branchId,
+  isSuperadmin,
+}: {
+  branchId: string;
+  isSuperadmin: boolean;
+}) {
+  // Only fetch data if a branch is selected (or if not superadmin)
+  // Dijamin oleh pemanggil: komponen ini hanya dirender jika
+  // hasBranchSelected || !isSuperadmin (kondisi identik seperti sebelumnya).
+  // getModuleLockPasswords terdedup via cache() dengan panggilan layout —
+  // QuickAccessLinks menerima nilainya sebagai props (tanpa fetch ulang).
+  const [
+    statsData,
+    todaySlots,
+    classes,
+    overdueList,
+    activeBranchName,
+    initialLockPasswords,
+  ] = await Promise.all([
+    getDashboardStats(),
+    getTodaySchedules(),
+    getClasses(),
+    getOverdueWorksheets(branchId), // Pass branch ID for filtering
+    getActiveBranchName(),
+    getModuleLockPasswords(),
+  ]);
+
+  const stats = [
+    {
+      name: "Siswa Aktif",
+      value: statsData.reguler.toString(),
+      iconName: "users",
+      statusFilter: "REGISTERED" as const,
+    },
+    {
+      name: "Coba Gratis",
+      value: statsData.cg.toString(),
+      // Show dynamic message based on upcoming schedules
+      subValue:
+        statsData.cgUpcoming > 0
+          ? `${statsData.cgUpcoming} sesi tersedia`
+          : "0 sesi",
+      iconName: "sun",
+      statusFilter: "CG" as const,
+    },
+    {
+      name: "Laporan Terlewat - Mohon Segera Diisi",
+      value: overdueList.length.toString(),
+      iconName: "alert-circle",
+      statusFilter: "OVERDUE_WORKSHEETS" as const,
+    },
+  ];
+
+  return (
+    <>
+      {/* Hero Banner */}
+      <div className="rounded-2xl bg-linear-to-br from-brand-600 via-brand-600 to-indigo-700 dark:from-brand-700 dark:via-brand-800 dark:to-indigo-950 p-6 shadow-xl border border-brand-500/30 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-indigo-500/20 rounded-full blur-2xl"></div>
+
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white/95 text-xs font-semibold backdrop-blur-md">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                {formatFullIndonesianDate(new Date())}
+              </div>
+              {activeBranchName && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-300/30 text-amber-100 text-xs font-bold backdrop-blur-md">
+                  <svg
+                    className="w-3.5 h-3.5 text-amber-300"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  Cabang: {activeBranchName}
+                </div>
+              )}
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight drop-shadow-sm">
+              Hallo, ShiningSun!
+              {activeBranchName && (
+                <span className="text-amber-200/90 font-semibold text-lg sm:text-2xl ml-2">
+                  ({activeBranchName})
+                </span>
+              )}
+            </h2>
+            <p className="text-brand-100 text-sm mt-2 max-w-xl leading-relaxed opacity-95">
+              Ringkasan sistem pendaftaran dan penjadwalan. Semoga aktivitas
+              berjalan lancar.
+            </p>
+          </div>
+        </div>
+
+        {/* Glassmorphic Stats Cards */}
+        <DashboardStatsPanel stats={stats} />
+      </div>
+
+      {/* Notification & Schedule Section */}
+      <div className="space-y-6">
+        <NotificationPermissionBanner />
+
+        {/* Birthday List Collapsible */}
+        <BirthdayListCollapsible />
+
+        <TodaySchedule slots={todaySlots} classes={classes} />
+      </div>
+
+      {/* Quick Access */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold leading-6 text-slate-900 dark:text-white">
+          Akses Cepat
+        </h3>
+        <QuickAccessLinks
+          isSuperadmin={isSuperadmin}
+          initialLockPasswords={initialLockPasswords}
+        />
+      </div>
+
+      <ResetDataSection isSuperadmin={isSuperadmin} showReset={false} />
+    </>
+  );
+}
+
+// Dokumen global di bawah dashboard (query & tampilan sama persis).
+async function DashboardDocs({ isSuperadmin }: { isSuperadmin: boolean }) {
+  const [rulesDocuments, curriculumDocuments] = await Promise.all([
+    getStudentRulesDocuments(),
+    getCurriculumDocuments(),
+  ]);
+
+  return (
+    <>
       {/* Upload File PDF — selalu di paling bawah dashboard */}
       <StudentRulesSection initialDocuments={rulesDocuments} />
 
@@ -251,6 +297,30 @@ export default async function DashboardPage() {
         initialDocuments={curriculumDocuments}
         isSuperadmin={isSuperadmin}
       />
+    </>
+  );
+}
+
+// Skeleton selama streaming (tampilan sementara, bukan data).
+function DashboardMainSkeleton() {
+  return (
+    <div className="rounded-2xl bg-slate-200/60 dark:bg-slate-800/60 p-6 sm:p-10 animate-pulse">
+      <div className="h-6 w-48 rounded-lg bg-slate-300 dark:bg-slate-700" />
+      <div className="mt-3 h-4 w-72 max-w-full rounded-lg bg-slate-300/70 dark:bg-slate-700/70" />
+      <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="h-20 rounded-2xl bg-slate-300/70 dark:bg-slate-700/70" />
+        <div className="h-20 rounded-2xl bg-slate-300/70 dark:bg-slate-700/70" />
+        <div className="h-20 rounded-2xl bg-slate-300/70 dark:bg-slate-700/70" />
+      </div>
+    </div>
+  );
+}
+
+function DashboardDocsSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-32 rounded-2xl bg-slate-200/60 dark:bg-slate-800/60" />
+      <div className="h-32 rounded-2xl bg-slate-200/60 dark:bg-slate-800/60" />
     </div>
   );
 }

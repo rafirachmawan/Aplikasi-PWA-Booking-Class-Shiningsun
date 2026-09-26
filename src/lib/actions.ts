@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { cache } from "react";
 import { getTodayISO, parseIndonesianDateToISO } from "./dateUtils";
 
 export async function syncUserIdentity() {
@@ -67,7 +68,10 @@ export async function syncUserIdentity() {
   }
 }
 
-export async function getCurrentUserRole() {
+// Cache per-request: dipanggil berkali-kali dalam 1 render (layout + page +
+// tiap fungsi data). Tanpa cache, tiap panggilan = auth.getUser + select users.
+// cache() tidak mengubah logika/hasil, hanya mendedup query yang sama.
+export const getCurrentUserRole = cache(async (): Promise<string | null> => {
   try {
     const supabaseServer = await createClient();
     const {
@@ -97,7 +101,7 @@ export async function getCurrentUserRole() {
   } catch (err) {
     return "BRANCH_ADMIN";
   }
-}
+});
 
 export async function setSuperadminBranch(branchId: string) {
   const cookieStore = await cookies();
@@ -109,7 +113,8 @@ export async function clearSuperadminBranch() {
   cookieStore.delete("superadmin_branch_id");
 }
 
-export async function getBranchId() {
+// Cache per-request: logika & return value identik, hanya didedup per render.
+export const getBranchId = cache(async (): Promise<string> => {
   try {
     const supabaseServer = await createClient();
     const {
@@ -187,9 +192,9 @@ export async function getBranchId() {
   } catch (err) {
     return "ALL";
   }
-}
+});
 
-export async function getActiveBranchName() {
+export const getActiveBranchName = cache(async (): Promise<string | null> => {
   const branchId = await getBranchId();
   if (!branchId || branchId === "ALL") return null;
 
@@ -201,7 +206,7 @@ export async function getActiveBranchName() {
     .single();
 
   return data?.name || null;
-}
+});
 
 export async function getBranches() {
   const supabaseServer = await createClient();
@@ -227,14 +232,14 @@ export async function getDashboardStats() {
     if (!branchId)
       return { reguler: 0, cg: 0, cgUpcoming: 0, cgPassed: 0, classes: 0 };
 
-    // 1. Hitung Siswa Aktif (Reguler)
+    // 1+2+3. Tiga hitungan independen jalan paralel (hasil sama, hanya tidak antre).
+    // Query bookings di bawah tetap menunggu daftar CG karena butuh studentIds.
     let regulerQuery = supabaseServer
       .from("students")
       .select("*", { count: "exact", head: true })
       .eq("status", "REGISTERED");
     if (branchId !== "ALL")
       regulerQuery = regulerQuery.eq("branch_id", branchId);
-    const { count: regulerCount } = await regulerQuery;
 
     // 2. Hitung Siswa Coba Gratis (CG)
     let cgQuery = supabaseServer
@@ -242,7 +247,15 @@ export async function getDashboardStats() {
       .select("id")
       .eq("status", "CG");
     if (branchId !== "ALL") cgQuery = cgQuery.eq("branch_id", branchId);
-    const { data: cgStudents } = await cgQuery;
+
+    // 3. Hitung Kelas (independen dari 1+2, ikut diparalelkan)
+    let classQuery = supabaseServer
+      .from("classes")
+      .select("*", { count: "exact", head: true });
+    if (branchId !== "ALL") classQuery = classQuery.eq("branch_id", branchId);
+
+    const [{ count: regulerCount }, { data: cgStudents }, { count: classCount }] =
+      await Promise.all([regulerQuery, cgQuery, classQuery]);
 
     const cgCount = cgStudents?.length || 0;
     let cgUpcoming = 0;
@@ -308,13 +321,6 @@ export async function getDashboardStats() {
       }
     }
 
-    // 3. Hitung Kelas
-    let classQuery = supabaseServer
-      .from("classes")
-      .select("*", { count: "exact", head: true });
-    if (branchId !== "ALL") classQuery = classQuery.eq("branch_id", branchId);
-    const { count: classCount } = await classQuery;
-
     return {
       reguler: regulerCount || 0,
       cg: cgCount,
@@ -375,9 +381,6 @@ export async function getOverdueWorksheets(branchId = "ALL") {
     // Mulai pengecekan permanen sejak tanggal 23 September 2026
     const startDate = "2026-09-23";
 
-    console.log(`🚀 Overdue check from ${startDate} to ${todayISO} for branch ${branchId}`);
-    console.log(` Branch ID from query: ${branchId}`);
-
     // 1. Get all active students for this branch - ONLY REGISTERED (NOT CG or INACTIVE)
     let studentsQuery = supabaseServer
       .from("students")
@@ -403,17 +406,9 @@ export async function getOverdueWorksheets(branchId = "ALL") {
     const studentList = students || [];
     if (studentList.length === 0) return [];
 
-    // DEBUG: Log student count for debugging
-    console.log(`📚 Found ${studentList.length} active students`);
-    studentList.forEach((s) => {
-      console.log(`  Student: ${s.name} (${s.id}) - Status: ${s.status}`);
-    });
-
     // 2. Fetch ALL bookings for these students from September 1, 2026 until today
     // CRITICAL: Only fetch schedules for currently active students (filter by student_id)
     const studentIds = studentList.map((s) => s.id);
-
-    console.log(`🔍 Fetching ${studentIds.length} active student schedules`);
 
     const { data: allBookings, error: bookingsError } = await supabaseServer
       .from("schedule_student")
@@ -441,11 +436,15 @@ export async function getOverdueWorksheets(branchId = "ALL") {
       bookingsByStudent.get(booking.student_id)!.push(booking);
     });
 
-    // Get class details for mapping
-    const classIds = allBookings
-      ?.map((b: any) => b.slot?.class_id)
-      .filter(Boolean);
-    let classNamesMap = new Map<string, string>();
+    // Get class details for mapping (didedup agar .in() kecil, hasil sama)
+    const classIds = Array.from(
+      new Set(
+        (allBookings || [])
+          ?.map((b: any) => b.slot?.class_id)
+          .filter(Boolean),
+      ),
+    );
+    const classNamesMap = new Map<string, string>();
 
     if (classIds.length > 0) {
       const { data: classes } = await supabaseServer
@@ -475,29 +474,10 @@ export async function getOverdueWorksheets(branchId = "ALL") {
       .gte("worksheet_date", startDate)
       .lte("worksheet_date", todayISO);
 
-    if (!allWorksheets) {
-      console.log(`📊 No worksheets found for students`);
-    } else {
-      console.log(
-        `📊 Total worksheets fetched for ${studentIds.length} students: ${allWorksheets.length}`,
-      );
-    }
-
     // Helper function: Check if worksheet has "Tidak Hadir" status
     const hasAbsentStatus = (ws: any): boolean => {
       const m = (ws.materi || "").toLowerCase();
       const t = (ws.title || "").toLowerCase();
-
-      // Debug: Log for Ziel worksheets
-      if (ws.student_id) {
-        studentList.forEach((s: any) => {
-          if (s.id === ws.student_id && s.name.toLowerCase().includes("ziel")) {
-            console.log(
-              `🔎 Checking Worksheet for ${s.name} - materi: "${m}", title: "${t}"`,
-            );
-          }
-        });
-      }
 
       return (
         m.includes("tidak hadir") ||
@@ -515,10 +495,6 @@ export async function getOverdueWorksheets(branchId = "ALL") {
       Array<{ date: string; isAbsent: boolean }>
     >();
     allWorksheets?.forEach((ws: any) => {
-      console.log(
-        `🌍 Raw Worksheet Date Format: "${ws.worksheet_date}", Type: ${typeof ws.worksheet_date}`,
-      );
-
       const dateStr =
         typeof ws.worksheet_date === "string"
           ? ws.worksheet_date.split("T")[0]
@@ -532,40 +508,7 @@ export async function getOverdueWorksheets(branchId = "ALL") {
       worksheetsByStudentAndDate
         .get(ws.student_id)!
         .push({ date: dateStr, isAbsent });
-
-      // Debug: Log if student is Ziel and worksheet might be absent
-      if (
-        studentList.some(
-          (s) =>
-            s.id === ws.student_id && s.name.toLowerCase().includes("ziel"),
-        )
-      ) {
-        console.log(
-          `📋 Worksheet for Ziel - Original: "${ws.worksheet_date}", Extracted: "${dateStr}", IsAbsent: ${isAbsent}`,
-          ws,
-        );
-      }
     });
-
-    // Debug: Log for all Ziel worksheets to help troubleshoot
-    const zielStudent = studentList.find((s) =>
-      s.name.toLowerCase().includes("ziel"),
-    );
-    if (zielStudent) {
-      const zielWorksheets = allWorksheets?.filter(
-        (w) => w.student_id === zielStudent.id,
-      );
-      console.log(
-        `\n📚 Total Ziel Worksheets in DB: ${zielWorksheets?.length || 0}`,
-      );
-      zielWorksheets?.forEach((w) => {
-        const dateStr = new String(w.worksheet_date).split("T")[0];
-        console.log(
-          `  - ${dateStr} | materi: "${w.materi}" | title: "${w.title}"`,
-        );
-      });
-      console.log();
-    }
 
     // 4. Find overdue students (marked as OVERDUE if schedule + 1 hour passed AND no worksheet)
     const overdueList: Array<
@@ -592,9 +535,6 @@ export async function getOverdueWorksheets(branchId = "ALL") {
 
         // CRITICAL FIX: Skip schedules on today because we can't check +1 hour properly from server
         if (schedDate === todayISO) {
-          console.log(
-            `⏭️ Skipping today's schedule ${schedDate} ${schedTime} - can't determine from server`,
-          );
           continue;
         }
 
@@ -608,9 +548,6 @@ export async function getOverdueWorksheets(branchId = "ALL") {
 
         // If worksheet exists (regardless of status), DON'T mark as overdue
         if (hasWorksheetOnSameDate) {
-          console.log(
-            `✅ Student ${student.name} has worksheet on ${schedDate} - SKIPPING from overdue`,
-          );
           continue; // SKIP: Already have worksheet, even if it's "Tidak Hadir/Ijin/Sakit/Libur"
         }
 
@@ -641,8 +578,6 @@ export async function getOverdueWorksheets(branchId = "ALL") {
       (a, b) =>
         new Date(b.missedDate).getTime() - new Date(a.missedDate).getTime(),
     );
-
-    console.log(`✅ Total OVERDUE worksheets found: ${overdueList.length}`);
 
     return overdueList;
   } catch (error) {
@@ -810,14 +745,25 @@ export async function getStudents() {
 
   if (data && data.length > 0) {
     const studentIds = data.map((s) => s.id);
-    const scheduleMap = await getStudentScheduleMap(studentIds);
-
-    // Fetch worksheets to calculate gross attendance points for each student
-    const { data: worksheetsData } = await supabaseServer
+    // Ketiganya independen (hanya butuh studentIds) — jalan paralel, hasil sama.
+    // Redemptions tetap dibungkus try/catch seperti semula agar tabel yang
+    // belum ada tetap ditoleransi tanpa mengubah hasil.
+    const scheduleMapPromise = getStudentScheduleMap(studentIds);
+    const worksheetsPromise = supabaseServer
       .from("student_worksheets")
       .select("student_id, materi, title")
       .in("student_id", studentIds);
+    const redemptionsPromise = supabaseServer
+      .from("student_point_redemptions")
+      .select("student_id, points_deducted")
+      .in("student_id", studentIds);
 
+    const [scheduleMap, { data: worksheetsData }] = await Promise.all([
+      scheduleMapPromise,
+      worksheetsPromise,
+    ]);
+
+    // Fetch worksheets to calculate gross attendance points for each student
     const grossPointsMap: Record<string, number> = {};
     (worksheetsData || []).forEach((w) => {
       const m = (w.materi || "").toLowerCase();
@@ -837,10 +783,7 @@ export async function getStudents() {
     // Fetch redemptions to calculate redeemed points per student
     const redeemedPointsMap: Record<string, number> = {};
     try {
-      const { data: redemptionsData } = await supabaseServer
-        .from("student_point_redemptions")
-        .select("student_id, points_deducted")
-        .in("student_id", studentIds);
+      const { data: redemptionsData } = await redemptionsPromise;
 
       (redemptionsData || []).forEach((r) => {
         redeemedPointsMap[r.student_id] =
@@ -2687,14 +2630,24 @@ export async function getParentSessionStudent() {
     return null;
   }
 
-  const scheduleMap = await getStudentScheduleMap([student.id]);
-
-  // Fetch worksheets to calculate gross attendance points
-  const { data: worksheetsData } = await supabaseServer
+  // Ketiganya independen (hanya butuh student.id) — jalan paralel.
+  // Aturan hitung poin & toleransi tabel redemptions sama persis.
+  const scheduleMapPromise = getStudentScheduleMap([student.id]);
+  const worksheetsPromise = supabaseServer
     .from("student_worksheets")
     .select("materi, title")
     .eq("student_id", student.id);
+  const redemptionsPromise = supabaseServer
+    .from("student_point_redemptions")
+    .select("points_deducted")
+    .eq("student_id", student.id);
 
+  const [scheduleMap, { data: worksheetsData }] = await Promise.all([
+    scheduleMapPromise,
+    worksheetsPromise,
+  ]);
+
+  // Fetch worksheets to calculate gross attendance points
   let gross = 0;
   (worksheetsData || []).forEach((w) => {
     const m = (w.materi || "").toLowerCase();
@@ -2714,10 +2667,7 @@ export async function getParentSessionStudent() {
   // Fetch redemptions to calculate redeemed points
   let redeemed = 0;
   try {
-    const { data: redemptionsData } = await supabaseServer
-      .from("student_point_redemptions")
-      .select("points_deducted")
-      .eq("student_id", student.id);
+    const { data: redemptionsData } = await redemptionsPromise;
 
     (redemptionsData || []).forEach((r) => {
       redeemed += r.points_deducted || 0;
@@ -3499,9 +3449,13 @@ let memoryLockPasswords: Record<string, string> = {
   "/points": "123",
 };
 
-export async function getModuleLockPasswords(): Promise<
+// Cache per-request: bacaan murni (cookie + memory + system_settings) yang
+// hasilnya deterministik dalam 1 request. Tanpa cache, Sidebar +
+// QuickAccessLinks + Points masing-masing memicu roundtrip server sendiri
+// untuk data 1 baris yang sama. Logika & return value identik.
+export const getModuleLockPasswords = cache(async (): Promise<
   Record<string, string>
-> {
+> => {
   const result: Record<string, string> = {
     ...memoryLockPasswords,
   };
@@ -3544,7 +3498,7 @@ export async function getModuleLockPasswords(): Promise<
   }
 
   return result;
-}
+});
 
 export async function updateModuleLockPassword(
   routeKey: string,

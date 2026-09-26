@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Icons } from "@/components/ui/icons";
 import { resetAllDatabaseData } from "@/lib/actions";
 import { usePWAUpdate } from "@/hooks/usePWAUpdate";
@@ -23,6 +25,7 @@ export function ResetDataSection({
   const [resetError, setResetError] = useState("");
   const [isResetting, setIsResetting] = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const { updateAvailable, isUpdating, applyUpdate } = usePWAUpdate();
 
@@ -64,11 +67,16 @@ export function ResetDataSection({
 
   const handleSuccessDismiss = () => {
     closeResetModal();
-    window.location.href = "/dashboard";
+    // Data baru saja dihapus massal: refresh agar server baca ulang,
+    // lalu ke dashboard (tujuan sama, tanpa full reload).
+    router.refresh();
+    router.push("/dashboard");
   };
 
   return (
     <div className="mt-10 pt-6 border-t border-slate-200 dark:border-slate-800 space-y-4">
+      {/* Terlihat selama hapus massal berjalan (modal sudah tertutup) */}
+      {isResetting && <LoadingSpinner usePortal={true} />}
       {/* Bersihkan Cache & Perbarui Versi Card */}
       {showCache && (
         <div className="rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">

@@ -6,6 +6,7 @@ import { SidebarProvider } from "@/lib/SidebarContext";
 import {
   getCurrentUserRole,
   getBranchId,
+  getModuleLockPasswords,
   syncUserIdentity,
 } from "@/lib/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -20,12 +21,17 @@ export default async function DashboardLayout({
   // Parallelkan panggilan yang saling bebas agar durasi fungsi Vercel
   // tetap pendek (aman dari limit 10 detik) dan halaman lebih cepat.
   const supabase = await createClient();
-  const [, role, currentBranchId, userRes] = await Promise.all([
-    syncUserIdentity(),
-    getCurrentUserRole(),
-    getBranchId(),
-    supabase.auth.getUser(),
-  ]);
+  // getModuleLockPasswords ikut paralel & terdedup via cache() — Sidebar dan
+  // QuickAccessLinks menerima nilainya sebagai props sehingga tidak perlu
+  // fetch ulang dari browser (hasil sama, tanpa roundtrip tambahan).
+  const [, role, currentBranchId, userRes, initialLockPasswords] =
+    await Promise.all([
+      syncUserIdentity(),
+      getCurrentUserRole(),
+      getBranchId(),
+      supabase.auth.getUser(),
+      getModuleLockPasswords(),
+    ]);
   const user = userRes.data.user;
 
   let effectiveBranchId = currentBranchId;
@@ -74,7 +80,12 @@ export default async function DashboardLayout({
           className="peer/sidebar hidden"
         />
 
-        <Sidebar userName={userName} branchName={branchName} role={role} />
+        <Sidebar
+          userName={userName}
+          branchName={branchName}
+          role={role}
+          initialLockPasswords={initialLockPasswords}
+        />
         <div className="lg:pl-72 flex flex-col min-h-screen">
           <Header role={role} branchName={branchName} />
           <main className="flex-1">

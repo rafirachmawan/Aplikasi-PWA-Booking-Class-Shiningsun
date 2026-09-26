@@ -89,9 +89,14 @@ export function BackButtonHandler() {
     try {
       const { logout } = await import("@/lib/authActions");
       await logout();
-      window.location.href = "/login";
+      // Sama seperti Header: navigasi client-side ke tujuan yang sama,
+      // tanpa full reload seluruh aplikasi.
+      router.replace("/login");
+      router.refresh();
     } catch (error) {
       console.error("Logout failed", error);
+      // Fallback terakhir agar user tetap keluar walau router gagal
+      window.location.href = "/login";
       setIsLoggingOut(false);
       setShowExitModal(false);
     }

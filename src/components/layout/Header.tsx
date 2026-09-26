@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Icons } from "../ui/icons";
 import { useSidebar } from "@/lib/SidebarContext";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -14,6 +15,7 @@ interface HeaderProps {
 
 export function Header({ role, branchName }: HeaderProps) {
   const { toggle } = useSidebar();
+  const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -22,9 +24,14 @@ export function Header({ role, branchName }: HeaderProps) {
     try {
       const { logout } = await import("@/lib/authActions");
       await logout();
-      window.location.href = "/login";
+      // Navigasi client-side (hasil akhir sama: ke /login), tanpa full reload
+      // sehingga tidak memuat ulang seluruh JS + middleware dari nol.
+      router.replace("/login");
+      router.refresh();
     } catch (error) {
       console.error("Logout failed", error);
+      // Fallback terakhir agar user tetap keluar walau router gagal
+      window.location.href = "/login";
       setIsLoggingOut(false);
       setShowLogoutModal(false);
     }

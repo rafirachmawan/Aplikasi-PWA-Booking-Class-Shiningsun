@@ -189,21 +189,28 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     missedDate: string,
     className?: string,
   ) => {
-    // Fetch teachers + riwayat worksheets agar auto-hitung "bulan ke"
-    // sama persis dengan halaman Laporan Perkembangan / ChangeLabelModal
-    const { getTeachers, getWorksheetsByStudent } =
-      await import("@/lib/actions");
-    const [teacherList, studentWorksheets] = await Promise.all([
-      getTeachers(),
-      // Selalu ambil riwayat terbaru agar auto-hitung "bulan ke" sama dengan halaman worksheets
-      student?.id ? getWorksheetsByStudent(student.id) : Promise.resolve([]),
-    ]);
-    setTeachers(teacherList);
-    setOverdueWorksheets(studentWorksheets || []);
+    // Tampilkan loading panel selama data modal disiapkan
+    // (fetch sama persis, hanya ada indikator sebelum modal muncul).
+    setIsLoading(true);
+    try {
+      // Fetch teachers + riwayat worksheets agar auto-hitung "bulan ke"
+      // sama persis dengan halaman Laporan Perkembangan / ChangeLabelModal
+      const { getTeachers, getWorksheetsByStudent } =
+        await import("@/lib/actions");
+      const [teacherList, studentWorksheets] = await Promise.all([
+        getTeachers(),
+        // Selalu ambil riwayat terbaru agar auto-hitung "bulan ke" sama dengan halaman worksheets
+        student?.id ? getWorksheetsByStudent(student.id) : Promise.resolve([]),
+      ]);
+      setTeachers(teacherList);
+      setOverdueWorksheets(studentWorksheets || []);
 
-    setOverdueStudent(student);
-    setMissedDate(missedDate);
-    setClassName(className || "");
+      setOverdueStudent(student);
+      setMissedDate(missedDate);
+      setClassName(className || "");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCloseWorksheetModal = () => {

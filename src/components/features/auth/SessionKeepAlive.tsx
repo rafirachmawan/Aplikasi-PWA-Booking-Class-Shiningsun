@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 
 /*
@@ -29,17 +29,25 @@ export function SessionKeepAlive() {
   const [showWarning, setShowWarning] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  // Waktu aktivitas terakhir disimpan di ref (bukan state) agar event
+  // mousemove/scroll/keydown tidak memicu render ulang tiap gerakan.
+  // Pengecekan idle tiap menit membaca ref yang sama — ambang 30 menit identik.
+  const userActiveAtRef = useRef(Date.now());
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
-  if (!url || !anonKey) return null;
-  
-  const supabase = createBrowserClient(url, anonKey);
+
+  // Memo: client dibuat sekali saja. Sebelumnya dibuat ulang tiap render
+  // sehingga useEffect dengan dep [supabase] jalan berulang-ulang.
+  // Hasil/fungsi sama, hanya tidak boros.
+  const supabase = useMemo(() => {
+    if (!url || !anonKey) return null;
+    return createBrowserClient(url, anonKey);
+  }, [url, anonKey]);
 
   /* --- ACTIVITY DETECTION --- */
   const resetIdleTimer = () => {
-    // Reset idle counter when user is active
-    setUserActiveAt(Date.now());
+    // Reset idle counter when user is active (tanpa render ulang)
+    userActiveAtRef.current = Date.now();
   };
 
   useEffect(() => {
@@ -74,15 +82,12 @@ export function SessionKeepAlive() {
     };
   }, []);
 
-  // Track last user activity time
-  const [userActiveAt, setUserActiveAt] = useState(Date.now());
-
   // Check if user has been idle for too long
   useEffect(() => {
     const checkIdleTime = () => {
       const now = Date.now();
-      const idleTime = now - userActiveAt;
-      
+      const idleTime = now - userActiveAtRef.current;
+
       // If user idle for more than 30 minutes, log warning
       if (idleTime > 30 * 60 * 1000 && idleTime < 31 * 60 * 1000) {
         console.warn('⚠️ User inactive for 30+ minutes - session may expire soon');
@@ -91,15 +96,17 @@ export function SessionKeepAlive() {
 
     const idleInterval = setInterval(checkIdleTime, 60 * 1000); // Check every minute
     return () => clearInterval(idleInterval);
-  }, [userActiveAt]);
+  }, []);
 
   /* --- SESSION MANAGEMENT --- */
   useEffect(() => {
+    if (!supabase) return;
     let disposed = false;
 
     // Refresh only if token expires in < 5 minutes
     const maybeRefresh = async () => {
       if (disposed) return;
+      if (!supabase) return;
       try {
         const { data } = await supabase.auth.getSession();
         const expiresAt = data.session?.expires_at ?? 0;
@@ -141,7 +148,7 @@ export function SessionKeepAlive() {
 
     // Proactive refresh every 45 minutes (safely before 1 hour expiry)
     const proactiveRefresh = setInterval(async () => {
-      if (!disposed) {
+      if (!disposed && supabase) {
         setIsRefreshing(true);
         try {
           const { data } = await supabase.auth.getSession();
@@ -178,11 +185,12 @@ export function SessionKeepAlive() {
 
   /* --- UI: SHOW WARNING IF SESSION EXPIRING SOON --- */
   useEffect(() => {
-    if (showWarning) {
+    if (showWarning && supabase) {
+      const currentClient = supabase;
       const timer = setInterval(() => {
         const now = new Date().getTime();
         // Calculate remaining time based on session expiry
-        supabase.auth.getSession().then(({ data }) => {
+        currentClient.auth.getSession().then(({ data }) => {
           const expiresAt = data.session?.expires_at ?? 0;
           if (expiresAt > 0) {
             const timeLeftMs = expiresAt * 1000 - now;
@@ -202,6 +210,7 @@ export function SessionKeepAlive() {
   }, [showWarning, supabase]);
 
   /* --- RENDER WARNING BANNER --- */
+  if (!supabase) return null;
   if (!showWarning) return null;
 
   return (

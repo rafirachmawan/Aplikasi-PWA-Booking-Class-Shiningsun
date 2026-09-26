@@ -26,7 +26,9 @@ const customCache = defaultCache.map((entry: any) => {
           maxAgeSeconds: 24 * 60 * 60, // 1 day max
           maxAgeFrom: "last-used" as const,
         })],
-        networkTimeoutSeconds: 10,
+        // Timeout pendek agar di koneksi lemot langsung jatuh ke cache
+        // (hanya perilaku cache, bukan logika aplikasi).
+        networkTimeoutSeconds: 3,
       }),
     };
   }

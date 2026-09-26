@@ -164,7 +164,6 @@ export function WorksheetFormModal({
   // Force re-init studentId when lockedStudentId changes
   useEffect(() => {
     if (!initialData && lockedStudentId && studentId !== lockedStudentId) {
-      console.log("🔒 Student locked via parent, setting:", lockedStudentId);
       setStudentId(lockedStudentId);
     }
   }, [lockedStudentId]);
@@ -275,17 +274,6 @@ export function WorksheetFormModal({
         currentDate || worksheetDateInput || getTodayISO(), // Prioritize: prop > input > today
       );
 
-      console.log("🔍 Bulan Ke Calculation:", {
-        usingDateSource: currentDate
-          ? "prop"
-          : worksheetDateInput
-            ? "input"
-            : "today",
-        currentDate: currentISO,
-        studentId,
-        worksheetsCount: worksheets?.length,
-      });
-
       // Find worksheets for current student
       if (studentId && worksheets && worksheets.length > 0) {
         const studentWorksheets = worksheets.filter((w) => {
@@ -326,13 +314,6 @@ export function WorksheetFormModal({
 
             const calculated = Math.max(1, startMonth + diffMonths);
 
-            console.log("📊 Hasil Perhitungan:", {
-              startMonth,
-              startDate: firstWithBulanKe.worksheet_date,
-              diffMonths,
-              calculated,
-            });
-
             setTimeout(() => {
               setBulanKe(calculated.toString());
             }, 50);
@@ -357,21 +338,6 @@ export function WorksheetFormModal({
       }
     }
   }, [studentId, isEditing]);
-
-  // Trigger auto-fill on initial mount if lockedStudentId present and studentId already set
-  useEffect(() => {
-    if (isEditing) return; // Not applicable for edit mode
-
-    // Log when calculation is triggered
-    if (studentId && !bulanKe && !manualBulanKe) {
-      console.log("🔔 Bulan Ke auto-calculation triggered");
-      console.log({
-        studentId,
-        hasWorksheets: worksheets?.length > 0,
-        currentDate: worksheetDateInput || getTodayISO(),
-      });
-    }
-  }, []); // Only run once on mount - just logging
 
   // Custom Bulan Ke dropdown state
   const [isBulanKeDropdownOpen, setIsBulanKeDropdownOpen] = useState(false);
@@ -1155,8 +1121,8 @@ export function WorksheetFormModal({
       if (parsed && !isNaN(new Date(parsed).getTime())) {
         return formatDateForIndonesianDisplay(parsed);
       }
-    } catch (e) {
-      console.log("Date parsing error:", e);
+    } catch {
+      // Abaikan error parsing — tampilkan input asli di bawah
     }
 
     // If parsing fails, show original input
@@ -1339,8 +1305,6 @@ export function WorksheetFormModal({
           ? autoCalculatedBulanKeInfo.value
           : "1";
     }
-
-    console.log("📅 Bulan Ke Result:", effectiveBulanKe);
 
     const formattedKegiatan = kegiatanItems
       .map((item) => item.trim())

@@ -5,14 +5,18 @@ import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 export const dynamic = 'force-dynamic';
 
 export default async function TeachersPage() {
-  const role = await getCurrentUserRole();
-  const branchId = await getBranchId();
+  const [role, branchId] = await Promise.all([
+    getCurrentUserRole(),
+    getBranchId(),
+  ]);
   if (role === 'SUPERADMIN' && !branchId) {
     return <NoBranchSelected pageName="Kelola Guru" />;
   }
 
-  const activeBranchName = role === 'SUPERADMIN' ? await getActiveBranchName() : null;
-  const teachers = await getTeachers();
+  const [activeBranchName, teachers] = await Promise.all([
+    role === 'SUPERADMIN' ? getActiveBranchName() : Promise.resolve(null),
+    getTeachers(),
+  ]);
 
   return <TeacherClientWrapper teachers={teachers} activeBranchName={activeBranchName} role={role} />;
 }

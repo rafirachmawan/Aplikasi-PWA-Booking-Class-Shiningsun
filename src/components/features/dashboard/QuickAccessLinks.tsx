@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
@@ -88,13 +88,20 @@ const lockedRoutes: Record<string, { label: string; sessionKey: string }> = {};
 
 interface QuickAccessLinksProps {
   isSuperadmin?: boolean;
+  // Password modul dialirkan dari server (terdedup via cache) — nilai &
+  // perilaku sama, tanpa fetch ulang tiap pindah halaman.
+  initialLockPasswords?: Record<string, string>;
 }
+
+const DEFAULT_LOCK_PASSWORDS: Record<string, string> = { "/points": "123" };
 
 export function QuickAccessLinks({
   isSuperadmin = false,
+  initialLockPasswords,
 }: QuickAccessLinksProps) {
   const [isNavigating, setIsNavigating] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   // Development Lock Protection Modal State
   const [showDevLockModal, setShowDevLockModal] = useState(false);
@@ -103,17 +110,15 @@ export function QuickAccessLinks({
   const [devLockError, setDevLockError] = useState("");
   const devLockPassInputRef = useRef<HTMLInputElement>(null);
 
-  const [lockPasswords, setLockPasswords] = useState<Record<string, string>>({
-    "/points": "123",
-  });
+  const [lockPasswords, setLockPasswords] = useState<Record<string, string>>(
+    initialLockPasswords ?? DEFAULT_LOCK_PASSWORDS,
+  );
 
   // Super Admin Password Management Modal State
   const [showSuperAdminModal, setShowSuperAdminModal] = useState(false);
   const [superAdminPasswords, setSuperAdminPasswords] = useState<
     Record<string, string>
-  >({
-    "/points": "123",
-  });
+  >(initialLockPasswords ?? DEFAULT_LOCK_PASSWORDS);
   const [showPasswordMap, setShowPasswordMap] = useState<
     Record<string, boolean>
   >({});
@@ -152,13 +157,16 @@ export function QuickAccessLinks({
 
   useEffect(() => {
     setIsNavigating(false);
-    getModuleLockPasswords().then((passwords) => {
-      if (passwords) {
-        setLockPasswords(passwords);
-        setSuperAdminPasswords(passwords);
-      }
-    });
   }, [pathname]);
+
+  // Nilai awal dari server via props — sinkron ulang bila props berubah
+  // (tanpa roundtrip jaringan). Fetch segar tetap dipakai saat unlock.
+  useEffect(() => {
+    if (initialLockPasswords) {
+      setLockPasswords(initialLockPasswords);
+      setSuperAdminPasswords(initialLockPasswords);
+    }
+  }, [initialLockPasswords]);
 
   const allActions = [
     ...quickActions,
@@ -223,7 +231,8 @@ export function QuickAccessLinks({
           sessionStorage.setItem(lockInfo.sessionKey, "true");
         }
         setShowDevLockModal(false);
-        window.location.href = devLockTarget;
+        // Navigasi client-side ke tujuan yang sama (tanpa full reload).
+        router.push(devLockTarget);
       } else {
         setDevLockError(
           "Password salah! Silakan periksa kembali atau hubungi SuperAdmin.",
@@ -236,7 +245,7 @@ export function QuickAccessLinks({
           sessionStorage.setItem(lockInfo.sessionKey, "true");
         }
         setShowDevLockModal(false);
-        window.location.href = devLockTarget;
+        router.push(devLockTarget);
       } else {
         setDevLockError(
           "Password salah! Silakan periksa kembali atau hubungi SuperAdmin.",

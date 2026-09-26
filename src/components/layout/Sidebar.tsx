@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Icons } from "../ui/icons";
 import { useSidebar } from "@/lib/SidebarContext";
@@ -38,14 +38,21 @@ interface SidebarProps {
   userName?: string;
   branchName?: string;
   role?: string | null;
+  // Password modul diambil sekali di layout (server, terdedup via cache)
+  // lalu dialirkan ke sini — nilai & perilaku sama, tanpa fetch ulang.
+  initialLockPasswords?: Record<string, string>;
 }
+
+const DEFAULT_LOCK_PASSWORDS: Record<string, string> = { "/points": "123" };
 
 export function Sidebar({
   userName = "Admin",
   branchName = "Tidak Diketahui",
   role = null,
+  initialLockPasswords,
 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { isOpen, close } = useSidebar();
   const [isNavigating, setIsNavigating] = useState(false);
 
@@ -58,18 +65,16 @@ export function Sidebar({
   const [devLockError, setDevLockError] = useState("");
   const devLockPassInputRef = useRef<HTMLInputElement>(null);
 
-  // Dynamic Module Lock Passwords state
-  const [lockPasswords, setLockPasswords] = useState<Record<string, string>>({
-    "/points": "123",
-  });
+  // Dynamic Module Lock Passwords state (nilai awal dari server via props)
+  const [lockPasswords, setLockPasswords] = useState<Record<string, string>>(
+    initialLockPasswords ?? DEFAULT_LOCK_PASSWORDS,
+  );
 
   // Super Admin Password Management Modal
   const [showSuperAdminModal, setShowSuperAdminModal] = useState(false);
   const [superAdminPasswords, setSuperAdminPasswords] = useState<
     Record<string, string>
-  >({
-    "/points": "123",
-  });
+  >(initialLockPasswords ?? DEFAULT_LOCK_PASSWORDS);
   const [showPasswordMap, setShowPasswordMap] = useState<
     Record<string, boolean>
   >({});
@@ -106,14 +111,14 @@ export function Sidebar({
     }
   };
 
+  // Nilai awal sudah dialirkan dari layout — tidak perlu fetch ulang di sini.
+  // Fetch segar tetap dipakai saat unlock (handleUnlockDevRoute) & simpan.
   useEffect(() => {
-    getModuleLockPasswords().then((passwords) => {
-      if (passwords) {
-        setLockPasswords(passwords);
-        setSuperAdminPasswords(passwords);
-      }
-    });
-  }, []);
+    if (initialLockPasswords) {
+      setLockPasswords(initialLockPasswords);
+      setSuperAdminPasswords(initialLockPasswords);
+    }
+  }, [initialLockPasswords]);
 
   // Nav click protection for locked (in-development) routes
   const handleNavClick = (
@@ -152,7 +157,8 @@ export function Sidebar({
           sessionStorage.setItem(lockInfo.sessionKey, "true");
         }
         setShowDevLockModal(false);
-        window.location.href = devLockTarget;
+        // Navigasi client-side ke tujuan yang sama (tanpa full reload).
+        router.push(devLockTarget);
       } else {
         setDevLockError(
           "Password salah! Silakan periksa kembali atau hubungi SuperAdmin.",
@@ -165,7 +171,7 @@ export function Sidebar({
           sessionStorage.setItem(lockInfo.sessionKey, "true");
         }
         setShowDevLockModal(false);
-        window.location.href = devLockTarget;
+        router.push(devLockTarget);
       } else {
         setDevLockError(
           "Password salah! Silakan periksa kembali atau hubungi SuperAdmin.",

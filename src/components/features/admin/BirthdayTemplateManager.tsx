@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Template {
   id: string;
@@ -15,6 +16,7 @@ interface Template {
 export function BirthdayTemplateManager() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -78,6 +80,8 @@ export function BirthdayTemplateManager() {
   };
 
   const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       // Jika edit default template, harus create yang baru di DB
       const isDefaultEdit = editingId === "default";
@@ -139,12 +143,15 @@ export function BirthdayTemplateManager() {
       }
     } catch (err: any) {
       alert(err.message || "Terjadi kesalahan saat menyimpan");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Apakah Anda yakin ingin menghapus template ini?")) return;
-
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       const response = await fetch(`/api/birthday-template?id=${id}`, {
         method: "DELETE",
@@ -159,10 +166,14 @@ export function BirthdayTemplateManager() {
       }
     } catch (err: any) {
       alert(err.message || "Terjadi kesalahan saat menghapus");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const toggleActive = async (id: string, currentActive: boolean) => {
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       // Use PUT with action query param
       const newStatus = !currentActive;
@@ -187,6 +198,8 @@ export function BirthdayTemplateManager() {
       }
     } catch (err: any) {
       alert(err.message || "Terjadi kesalahan");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -206,6 +219,7 @@ export function BirthdayTemplateManager() {
 
   return (
     <div className="space-y-6">
+      {isSaving && <LoadingSpinner usePortal={true} />}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">
@@ -277,16 +291,18 @@ export function BirthdayTemplateManager() {
                     </h3>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setEditingId(null)}
-                        className="text-sm text-slate-500 hover:text-slate-700"
+                        onClick={() => !isSaving && setEditingId(null)}
+                        disabled={isSaving}
+                        className="text-sm text-slate-500 hover:text-slate-700 disabled:opacity-50"
                       >
                         Batal
                       </button>
                       <button
                         onClick={handleSave}
-                        className="inline-flex items-center gap-1 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700"
+                        disabled={isSaving}
+                        className="inline-flex items-center gap-1 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
                       >
-                        Simpan
+                        {isSaving ? "Menyimpan..." : "Simpan"}
                       </button>
                     </div>
                   </div>
@@ -483,7 +499,8 @@ export function BirthdayTemplateManager() {
                       {template.id !== "default" && (
                         <button
                           onClick={() => handleDelete(template.id)}
-                          className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md bg-red-50 dark:bg-red-900/20 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
+                          disabled={isSaving}
+                          className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md bg-red-50 dark:bg-red-900/20 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 disabled:opacity-50"
                         >
                           <svg
                             className="w-3 h-3 sm:w-3.5 sm:h-3.5"

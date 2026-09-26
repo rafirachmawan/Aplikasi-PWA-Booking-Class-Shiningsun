@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getStudents, getClasses, getMonthlySchedules, getCurrentUserRole, getBranchId, getActiveBranchName } from "@/lib/actions";
 import { SchedulingClientWrapper } from "./SchedulingClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
@@ -5,22 +6,21 @@ import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 export const dynamic = 'force-dynamic';
 
 export default async function SchedulingPage({ searchParams }: { searchParams: Promise<{ month?: string, year?: string }> }) {
-  // Cek apakah superadmin belum pilih cabang
-  const role = await getCurrentUserRole();
-  const branchId = await getBranchId();
+  // Gate cepat & kecil (hasil sama): superadmin wajib pilih cabang dulu.
+  const [role, branchId] = await Promise.all([
+    getCurrentUserRole(),
+    getBranchId(),
+  ]);
   if (role === 'SUPERADMIN' && !branchId) {
     return <NoBranchSelected pageName="Penjadwalan Siswa" />;
   }
-
-  const activeBranchName = role === 'SUPERADMIN' ? await getActiveBranchName() : null;
 
   const params = await searchParams;
   const currentMonth = params.month ? parseInt(params.month) : new Date().getMonth() + 1; // 1-12
   const currentYear = params.year ? parseInt(params.year) : new Date().getFullYear();
 
-  const students = await getStudents();
-  const classes = await getClasses();
-  const schedules = await getMonthlySchedules(currentYear, currentMonth);
+  // Nama cabang kecil & cepat (1 select) agar header langsung tampil.
+  const activeBranchName = role === 'SUPERADMIN' ? await getActiveBranchName() : null;
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -45,13 +45,44 @@ export default async function SchedulingPage({ searchParams }: { searchParams: P
         </div>
       </div>
 
-      <SchedulingClientWrapper 
-        students={students} 
-        classes={classes} 
-        schedules={schedules}
-        currentMonth={currentMonth}
-        currentYear={currentYear}
-      />
+      {/* Tiga query berat di-streaming (hasil & props sama persis). */}
+      <Suspense fallback={<SchedulingDataSkeleton />}>
+        <SchedulingData currentMonth={currentMonth} currentYear={currentYear} />
+      </Suspense>
+    </div>
+  );
+}
+
+// Query berat: students + classes + schedules bulan berjalan (paralel, sama).
+async function SchedulingData({
+  currentMonth,
+  currentYear,
+}: {
+  currentMonth: number;
+  currentYear: number;
+}) {
+  const [students, classes, schedules] = await Promise.all([
+    getStudents(),
+    getClasses(),
+    getMonthlySchedules(currentYear, currentMonth),
+  ]);
+
+  return (
+    <SchedulingClientWrapper
+      students={students}
+      classes={classes}
+      schedules={schedules}
+      currentMonth={currentMonth}
+      currentYear={currentYear}
+    />
+  );
+}
+
+function SchedulingDataSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-24 rounded-2xl bg-slate-200/60 dark:bg-slate-800/60" />
+      <div className="h-96 rounded-2xl bg-slate-200/60 dark:bg-slate-800/60" />
     </div>
   );
 }
