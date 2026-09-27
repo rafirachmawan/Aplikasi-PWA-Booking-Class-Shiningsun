@@ -379,26 +379,26 @@ export function WorksheetClientWrapper({
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 sm:space-y-8">
       {/* Access PIN Manager Modal */}
       {pinModalStudent && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => setPinModalStudent(null)}
           />
-          <div className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 animate-in zoom-in-95 duration-200 space-y-5">
+          <div className="relative z-10 w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 p-6 sm:p-7 space-y-5">
             {/* Header */}
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shrink-0 border border-amber-200 dark:border-amber-800/50">
-                  🔑
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+                  <Icons.shield className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
                     PIN Portal Orang Tua
                   </h3>
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-xs font-medium text-slate-500 dark:text-zinc-400 mt-0.5 truncate">
                     Siswa:{" "}
                     <span className="text-brand-600 dark:text-brand-400 font-bold">
                       {pinModalStudent.name}
@@ -408,36 +408,35 @@ export function WorksheetClientWrapper({
               </div>
               <button
                 onClick={() => setPinModalStudent(null)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                aria-label="Tutup"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
               >
                 <Icons.close className="w-5 h-5" />
               </button>
             </div>
 
             {/* Current Active PIN Card */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 block">
                     PIN Aktif Saat Ini
                   </span>
-                  <span className="font-mono text-2xl font-black text-slate-900 dark:text-white tracking-widest block mt-0.5">
+                  <span className="font-mono text-2xl font-bold text-slate-900 dark:text-white tracking-widest block mt-0.5">
                     {pinModalStudent.access_pin || "123456"}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={handleCopyWaInfo}
-                  className="px-3 py-2 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/50 transition-all flex items-center gap-1.5 shadow-xs active:scale-95 cursor-pointer"
+                  className="px-3 py-2 rounded-xl text-xs font-bold text-brand-700 dark:text-brand-300 bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/15 dark:hover:bg-brand-500/25 border border-brand-200 dark:border-brand-800/50 transition-colors cursor-pointer shrink-0"
                 >
-                  <span>
-                    {pinCopiedWa ? "✅ Info Tersalin!" : "📋 Salin Info WA"}
-                  </span>
+                  {pinCopiedWa ? "Info Tersalin!" : "Salin Info WA"}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+              <p className="text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400">
                 Digunakan Orang Tua untuk masuk ke portal{" "}
-                <strong className="text-slate-700 dark:text-slate-300">
+                <strong className="text-slate-700 dark:text-zinc-200">
                   /portal-ortu
                 </strong>{" "}
                 menggunakan Nama Siswa.
@@ -446,19 +445,19 @@ export function WorksheetClientWrapper({
 
             {/* Feedback Messages */}
             {pinMsg.error && (
-              <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 p-3 rounded-xl border border-red-200 dark:border-red-800 font-semibold animate-in fade-in">
-                ⚠️ {pinMsg.error}
+              <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-3 rounded-xl border border-red-200 dark:border-red-800/50 font-semibold">
+                {pinMsg.error}
               </div>
             )}
             {pinMsg.success && (
-              <div className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 font-semibold animate-in fade-in">
-                ✅ {pinMsg.success}
+              <div className="text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/50 font-semibold">
+                {pinMsg.success}
               </div>
             )}
 
             {/* Form Input New PIN */}
             <div className="space-y-3">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300">
                 Ubah PIN Akses Baru
               </label>
 
@@ -468,13 +467,14 @@ export function WorksheetClientWrapper({
                   value={newPin}
                   onChange={(e) => setNewPin(e.target.value)}
                   placeholder="Misal: 123456"
-                  className="w-full px-4 py-2.5 pr-10 border rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-base font-bold tracking-widest border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  className="w-full px-4 py-2.5 pr-10 border rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-mono text-base font-bold tracking-widest border-slate-300 dark:border-zinc-700 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPinModal(!showPinModal)}
-                  className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1"
+                  className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-1 cursor-pointer"
                   title={showPinModal ? "Sembunyikan PIN" : "Tampilkan PIN"}
+                  aria-label={showPinModal ? "Sembunyikan PIN" : "Tampilkan PIN"}
                 >
                   {showPinModal ? (
                     <svg
@@ -520,16 +520,16 @@ export function WorksheetClientWrapper({
                 <button
                   type="button"
                   onClick={handleGenerateRandomPin}
-                  className="flex-1 py-1.5 px-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  className="flex-1 py-2 px-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                 >
-                  <span>🎲 Generate PIN Acak</span>
+                  Generate PIN Acak
                 </button>
                 <button
                   type="button"
                   onClick={() => setNewPin("123456")}
-                  className="py-1.5 px-3 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                  className="py-2 px-3 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                 >
-                  🔄 Reset Default (123456)
+                  Reset Default (123456)
                 </button>
               </div>
             </div>
@@ -539,14 +539,14 @@ export function WorksheetClientWrapper({
               <button
                 type="button"
                 onClick={() => setPinModalStudent(null)}
-                className="flex-1 py-2.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="flex-1 py-2.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={handleUpdatePin}
-                className="flex-1 py-2.5 text-xs font-bold rounded-xl bg-brand-600 text-white hover:bg-brand-700 shadow-md transition-all active:scale-95 cursor-pointer"
+                className="flex-1 py-2.5 text-xs font-bold rounded-xl bg-brand-600 text-white hover:bg-brand-700 active:translate-y-[1px] transition-colors cursor-pointer"
               >
                 Simpan PIN Baru
               </button>
@@ -555,22 +555,18 @@ export function WorksheetClientWrapper({
         </div>
       )}
 
-      {/* Header Banner */}
-      <div className="rounded-3xl bg-brand-600 p-6 sm:p-10 shadow-lg relative overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-400 opacity-20 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-          <div>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap items-center gap-x-2">
-              <span>Laporan Perkembangan Siswa</span>
-              {activeBranchName && (
-                <span className="text-brand-100 font-normal text-lg sm:text-xl lg:text-2xl whitespace-nowrap">
-                  ({activeBranchName})
-                </span>
-              )}
+      {/* Judul halaman: satu kartu putih seperti halaman lain.
+          Tanpa blok biru penuh dan tanpa dekorasi blur. */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+              {activeBranchName ? `Cabang ${activeBranchName}` : "Laporan siswa"}
+            </p>
+            <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Laporan Perkembangan Siswa
             </h2>
-            <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
+            <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
               Catat laporan perkembangan, tugas, dan tautan file Google Drive
               yang dapat diakses oleh Orang Tua.
             </p>
@@ -582,30 +578,30 @@ export function WorksheetClientWrapper({
               setEditingWorksheet(null);
               setIsModalOpen(true);
             }}
-            className="inline-flex items-center gap-x-2 rounded-xl bg-white text-brand-700 px-5 py-3 text-sm font-bold shadow-md hover:bg-brand-50 focus-visible:outline-none shrink-0 w-full sm:w-auto justify-center transition-all active:scale-95 cursor-pointer"
-            style={{ color: "#1d4ed8", backgroundColor: "white" }}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] text-white px-5 py-3 text-sm font-semibold shrink-0 w-full sm:w-auto transition-colors cursor-pointer"
           >
-            <Icons.add className="-ml-0.5 h-5 w-5" />
+            <Icons.add className="h-5 w-5" aria-hidden="true" />
             Tambah Laporan Perkembangan
           </button>
         </div>
       </div>
 
       {/* Filters Toolbar */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm">
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-4 sm:p-5 shadow-sm">
         {/* Custom Student Select Filter (Opens Downward Always) */}
         <div className="relative w-full" ref={studentDropdownRef}>
           <button
             type="button"
             onClick={() => setIsStudentDropdownOpen(!isStudentDropdownOpen)}
-            className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-3 pl-10 pr-3.5 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-brand-600 focus:outline-none shadow-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/80 cursor-pointer"
+            aria-expanded={isStudentDropdownOpen}
+            className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 py-3 pl-10 pr-3.5 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-brand-600 focus:outline-none transition-colors hover:border-slate-300 dark:hover:border-zinc-600 cursor-pointer"
           >
             <span className="truncate">
               {selectedStudentId === "__none__"
-                ? "👤 Pilih Siswa..."
+                ? "Pilih Siswa..."
                 : selectedStudentObj
-                  ? `👤 ${selectedStudentObj.name} ${selectedStudentObj.nickname ? `(${selectedStudentObj.nickname})` : ""}`
-                  : `✨ Semua Siswa (${students.length})`}
+                  ? `${selectedStudentObj.name} ${selectedStudentObj.nickname ? `(${selectedStudentObj.nickname})` : ""}`
+                  : `Semua Siswa (${students.length})`}
             </span>
             <Icons.chevronDown
               className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${
@@ -620,7 +616,7 @@ export function WorksheetClientWrapper({
 
           {/* Dropdown Menu (Always Opens Downwards) */}
           {isStudentDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 animate-in fade-in slide-in-from-top-2 duration-150 space-y-1.5">
+            <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 p-2 space-y-1.5">
               {/* Quick Search inside dropdown */}
               <div className="p-1">
                 <input
@@ -628,8 +624,8 @@ export function WorksheetClientWrapper({
                   type="text"
                   value={studentDropdownFilter}
                   onChange={(e) => setStudentDropdownFilter(e.target.value)}
-                  placeholder="🔍 Cari nama siswa..."
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium"
+                  placeholder="Cari nama siswa..."
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white border border-slate-200 dark:border-zinc-700 focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium"
                   onClick={(e) => e.stopPropagation()}
                   autoFocus
                 />
@@ -645,11 +641,11 @@ export function WorksheetClientWrapper({
                   }}
                   className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
                     selectedStudentId === ""
-                      ? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 font-bold"
-                      : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 font-bold"
+                      : "text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
                   }`}
                 >
-                  <span>✨ Semua Siswa ({students.length})</span>
+                  <span>Semua Siswa ({students.length})</span>
                   {selectedStudentId === "" && <span>✓</span>}
                 </button>
 
@@ -669,12 +665,12 @@ export function WorksheetClientWrapper({
                       }}
                       className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors flex items-center justify-between cursor-pointer ${
                         selectedStudentId === s.id
-                          ? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 font-bold"
-                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium"
+                          ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 font-bold"
+                          : "text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 font-medium"
                       }`}
                     >
                       <span className="truncate">
-                        👤 {s.name} {s.nickname ? `(${s.nickname})` : ""}
+                        {s.name} {s.nickname ? `(${s.nickname})` : ""}
                       </span>
                       {selectedStudentId === s.id && (
                         <span className="font-bold">✓</span>
@@ -690,17 +686,17 @@ export function WorksheetClientWrapper({
 
       {/* Date Range Filter & Single Download PDF Control Panel (Same as Portal Ortu) */}
       {selectedStudentId !== "__none__" && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-4">
-          <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
-            <div>
-              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
-                📄 Filter & Download Laporan PDF
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-4 sm:p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-zinc-800">
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                Filter dan Download Laporan PDF
               </h3>
-              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
                 Filter berdasarkan tanggal dan unduh file PDF resmi.
               </p>
             </div>
-            <span className="shrink-0 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+            <span className="shrink-0 text-[11px] font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 px-3 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 tabular-nums">
               {filteredWorksheets.length} Sesi
             </span>
           </div>
@@ -708,26 +704,26 @@ export function WorksheetClientWrapper({
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                   Mulai Tanggal
                 </label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none transition-all cursor-pointer"
+                  className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none transition-colors cursor-pointer"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                   Sampai Tanggal
                 </label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none transition-all cursor-pointer"
+                  className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none transition-colors cursor-pointer"
                 />
               </div>
             </div>
@@ -740,7 +736,7 @@ export function WorksheetClientWrapper({
                     setStartDate("");
                     setEndDate("");
                   }}
-                  className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 underline cursor-pointer"
+                  className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 underline cursor-pointer"
                 >
                   Reset Filter Tanggal
                 </button>
@@ -752,7 +748,7 @@ export function WorksheetClientWrapper({
               type="button"
               onClick={handleDownloadPdf}
               disabled={isDownloadingPdf || filteredWorksheets.length === 0}
-              className="w-full py-2.5 sm:py-3 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 active:scale-98 transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 sm:py-3 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 active:translate-y-[1px] transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               {isDownloadingPdf ? (
                 <>
@@ -806,27 +802,27 @@ export function WorksheetClientWrapper({
       {/* Worksheets Grid / List Grouped By Student Table Document */}
       <div ref={printableRef} className="space-y-6">
         {selectedStudentId === "__none__" ? (
-          <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 p-8">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-2xl">
-              👤
+          <div className="py-14 text-center bg-white dark:bg-zinc-900 rounded-2xl border-2 border-dashed border-slate-300 dark:border-zinc-700 p-8">
+            <div className="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto mb-4">
+              <Icons.users className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-800 dark:text-white">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
               Pilih Siswa Terlebih Dahulu
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+            <p className="text-xs leading-relaxed text-slate-500 dark:text-zinc-400 mt-1 max-w-sm mx-auto">
               Silakan pilih siswa dari dropdown di atas untuk melihat atau
               menambahkan laporan perkembangan.
             </p>
           </div>
         ) : groupedWorksheets.length === 0 ? (
-          <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 p-8">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400">
+          <div className="py-14 text-center bg-white dark:bg-zinc-900 rounded-2xl border-2 border-dashed border-slate-300 dark:border-zinc-700 p-8">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 flex items-center justify-center mx-auto mb-4">
               <Icons.edit className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-800 dark:text-white">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
               Belum Ada Laporan Perkembangan Siswa
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+            <p className="text-xs leading-relaxed text-slate-500 dark:text-zinc-400 mt-1 max-w-sm mx-auto">
               Klik tombol &quot;Tambah Laporan Perkembangan&quot; untuk mulai
               mencatat evaluasi perkembangan siswa.
             </p>
@@ -893,31 +889,31 @@ export function WorksheetClientWrapper({
 
       {/* Modern Delete Confirmation Modal */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-4 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-zinc-800 text-center space-y-4">
             {/* Red Warning Badge */}
-            <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-200/80 dark:border-red-900/50 flex items-center justify-center mx-auto shadow-inner">
-              <Icons.trash className="w-8 h-8" />
+            <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 flex items-center justify-center mx-auto">
+              <Icons.trash className="w-6 h-6" />
             </div>
 
             <div className="space-y-1.5">
-              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white leading-tight">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
                 {deleteTarget.type === "sheet"
                   ? "Hapus Laporan Perkembangan?"
                   : "Hapus Baris Evaluasi?"}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
                 {deleteTarget.type === "sheet" ? (
                   <>
                     Apakah Anda yakin ingin menghapus{" "}
-                    <strong className="text-slate-800 dark:text-slate-200">
+                    <strong className="text-slate-800 dark:text-zinc-200">
                       Laporan Perkembangan{" "}
                       {deleteTarget.bulanKe != null
                         ? `Bulan ke-${deleteTarget.bulanKe}`
                         : ""}
                     </strong>{" "}
                     untuk siswa{" "}
-                    <strong className="text-slate-800 dark:text-slate-200">
+                    <strong className="text-slate-800 dark:text-zinc-200">
                       {deleteTarget.studentName}
                     </strong>
                     ? Seluruh baris data evaluasi pada laporan ini akan dihapus
@@ -939,7 +935,7 @@ export function WorksheetClientWrapper({
                 type="button"
                 onClick={() => setDeleteTarget(null)}
                 disabled={isDeleting}
-                className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer disabled:opacity-50"
+                className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50"
               >
                 Batal
               </button>
@@ -947,7 +943,7 @@ export function WorksheetClientWrapper({
                 type="button"
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:scale-95 transition-all shadow-md shadow-red-500/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:translate-y-[1px] transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isDeleting ? (
                   <>

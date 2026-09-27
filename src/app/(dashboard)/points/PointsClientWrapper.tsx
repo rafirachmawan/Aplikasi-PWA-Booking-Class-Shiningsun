@@ -458,50 +458,47 @@ export function PointsClientWrapper({
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header Card */}
-      <div className="rounded-3xl bg-linear-to-br from-brand-600 via-sky-600 to-indigo-700 p-6 sm:p-10 shadow-xl relative overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-sky-400 opacity-20 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap items-center gap-x-2">
-            <span>⭐ Poin Kehadiran & Hadiah</span>
-            {activeBranchName && (
-              <span className="text-sky-100 font-normal text-lg sm:text-xl lg:text-2xl whitespace-nowrap">
-                ({activeBranchName})
-              </span>
-            )}
+    <div className="space-y-6 sm:space-y-8">
+      {/* Judul halaman: satu kartu putih seperti halaman lain.
+          Tanpa gradient tiga warna dan tanpa kartu kaca.
+          Amber dicadangkan hanya untuk angka poin. */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-5 sm:p-6">
+          <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+            {activeBranchName ? `Cabang ${activeBranchName}` : "Poin siswa"}
+          </p>
+          <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Poin Kehadiran dan Hadiah
           </h2>
-          <p className="text-sky-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
+          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
             Kelola poin kehadiran (+1 tiap hadir), tambah poin manual
             (lomba/prestasi), dan potong poin saat siswa menukar hadiah.
           </p>
         </div>
 
         {/* Stats Row */}
-        <div className="relative z-10 grid grid-cols-3 gap-3 mt-6">
-          <div className="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center border border-white/20">
-            <div className="text-2xl sm:text-3xl font-black text-white">
+        <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-zinc-800 border-t border-slate-200 dark:border-zinc-800 rounded-b-2xl overflow-hidden">
+          <div className="p-3 sm:p-4 text-center">
+            <div className="text-2xl sm:text-3xl font-bold tabular-nums text-slate-900 dark:text-white">
               {totalStudents}
             </div>
-            <div className="text-[11px] sm:text-xs text-sky-100 font-semibold mt-0.5">
+            <div className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium mt-0.5">
               Siswa Aktif
             </div>
           </div>
-          <div className="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center border border-white/20">
-            <div className="text-2xl sm:text-3xl font-black text-white">
+          <div className="p-3 sm:p-4 text-center">
+            <div className="text-2xl sm:text-3xl font-bold tabular-nums text-amber-600 dark:text-amber-400">
               {totalNetPoints}
             </div>
-            <div className="text-[11px] sm:text-xs text-sky-100 font-semibold mt-0.5">
+            <div className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium mt-0.5">
               Total Poin Tersedia
             </div>
           </div>
-          <div className="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center border border-white/20">
-            <div className="text-2xl sm:text-3xl font-black text-white">
+          <div className="p-3 sm:p-4 text-center">
+            <div className="text-2xl sm:text-3xl font-bold tabular-nums text-slate-900 dark:text-white">
               {totalRedeemedPoints}
             </div>
-            <div className="text-[11px] sm:text-xs text-sky-100 font-semibold mt-0.5">
+            <div className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium mt-0.5">
               Total Poin Ditukar
             </div>
           </div>
@@ -509,44 +506,44 @@ export function PointsClientWrapper({
       </div>
 
       {/* Tab Navigation */}
-      <div className="grid grid-cols-3 gap-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 shadow-xs">
+      <div className="grid grid-cols-3 gap-1 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-1.5 shadow-sm">
         <button
           type="button"
           onClick={() => setSelectedTab("leaderboard")}
-          className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer text-center ${
+          className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer text-center ${
             selectedTab === "leaderboard"
-              ? "bg-brand-600 text-white shadow-md shadow-brand-500/20"
-              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+              ? "bg-brand-600 text-white"
+              : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800"
           }`}
         >
           <span>
-            🏆 <span className="hidden sm:inline">Leaderboard</span> Poin
+            <span className="hidden sm:inline">Leaderboard</span> Poin
           </span>
         </button>
         <button
           type="button"
           onClick={() => setSelectedTab("redeem")}
-          className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer text-center ${
+          className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer text-center ${
             selectedTab === "redeem"
-              ? "bg-brand-600 text-white shadow-md shadow-brand-500/20"
-              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+              ? "bg-brand-600 text-white"
+              : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800"
           }`}
         >
           <span>
-            🎁 Kelola <span className="hidden sm:inline">& Point Ditukar</span>
+            Kelola <span className="hidden sm:inline">dan Tukar</span>
           </span>
         </button>
         <button
           type="button"
           onClick={() => setSelectedTab("history")}
-          className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer text-center ${
+          className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer text-center ${
             selectedTab === "history"
-              ? "bg-brand-600 text-white shadow-md shadow-brand-500/20"
-              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+              ? "bg-brand-600 text-white"
+              : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800"
           }`}
         >
           <span>
-            📜 Riwayat <span className="hidden sm:inline">Poin & Hadiah</span> (
+            Riwayat <span className="hidden sm:inline">Poin</span> (
             {redemptions.length})
           </span>
         </button>
@@ -556,7 +553,7 @@ export function PointsClientWrapper({
       {selectedTab === "leaderboard" && (
         <>
           {/* Search Bar */}
-          <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-2xs">
+          <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-4 sm:p-6 shadow-sm">
             <div className="relative w-full">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
                 <Icons.search
@@ -565,11 +562,12 @@ export function PointsClientWrapper({
                 />
               </div>
               <input
-                type="text"
+                type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all h-11"
+                className="block w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-colors h-11"
                 placeholder="Cari nama siswa di leaderboard..."
+                aria-label="Cari nama siswa di leaderboard"
               />
             </div>
           </div>
@@ -579,46 +577,43 @@ export function PointsClientWrapper({
             <div className="grid grid-cols-3 gap-3 px-2">
               {/* 2nd Place */}
               <div className="flex flex-col items-center pt-6">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-linear-to-br from-slate-300 to-slate-400 flex items-center justify-center text-2xl sm:text-3xl font-black text-white shadow-lg border-2 border-white dark:border-slate-700">
-                  🥈
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-200 dark:bg-zinc-700 flex items-center justify-center text-2xl sm:text-3xl font-bold text-slate-600 dark:text-zinc-200">
+                  2
                 </div>
                 <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-2 text-center leading-tight line-clamp-2">
                   {leaderboardStudents[1]?.nickname ||
                     leaderboardStudents[1]?.name}
                 </h4>
-                <span className="mt-1 inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-full text-xs font-bold text-slate-700 dark:text-slate-300">
-                  ⭐ {leaderboardStudents[1]?.points || 0}
+                <span className="mt-1 inline-flex items-center bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-700 dark:text-zinc-200 tabular-nums">
+                  {leaderboardStudents[1]?.points || 0}
                 </span>
               </div>
 
               {/* 1st Place */}
               <div className="flex flex-col items-center">
-                <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-linear-to-br from-amber-400 to-amber-600 flex items-center justify-center text-3xl sm:text-4xl font-black text-white shadow-xl border-2 border-amber-300 relative">
-                  👑
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center text-[10px] font-black text-amber-900 border-2 border-white shadow-sm">
-                    1
-                  </div>
+                <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-brand-600 flex items-center justify-center text-3xl sm:text-4xl font-bold text-white relative">
+                  1
                 </div>
-                <h4 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-2 text-center leading-tight line-clamp-2">
+                <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mt-2 text-center leading-tight line-clamp-2">
                   {leaderboardStudents[0]?.nickname ||
                     leaderboardStudents[0]?.name}
                 </h4>
-                <span className="mt-1 inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-1.5 rounded-full text-xs font-extrabold text-amber-700 dark:text-amber-300">
-                  ⭐ {leaderboardStudents[0]?.points || 0} Poin
+                <span className="mt-1 inline-flex items-center bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-800/50 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-700 dark:text-amber-300 tabular-nums">
+                  {leaderboardStudents[0]?.points || 0} Poin
                 </span>
               </div>
 
               {/* 3rd Place */}
               <div className="flex flex-col items-center pt-8">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-linear-to-br from-amber-700 to-amber-800 flex items-center justify-center text-xl sm:text-2xl font-black text-white shadow-lg border-2 border-white dark:border-slate-700">
-                  🥉
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-slate-200 dark:bg-zinc-700 flex items-center justify-center text-xl sm:text-2xl font-bold text-slate-600 dark:text-zinc-200">
+                  3
                 </div>
                 <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-2 text-center leading-tight line-clamp-2">
                   {leaderboardStudents[2]?.nickname ||
                     leaderboardStudents[2]?.name}
                 </h4>
-                <span className="mt-1 inline-flex items-center gap-1 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 px-2.5 py-1 rounded-full text-xs font-bold text-orange-700 dark:text-orange-300">
-                  ⭐ {leaderboardStudents[2]?.points || 0}
+                <span className="mt-1 inline-flex items-center bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-700 dark:text-zinc-200 tabular-nums">
+                  {leaderboardStudents[2]?.points || 0}
                 </span>
               </div>
             </div>
@@ -627,30 +622,26 @@ export function PointsClientWrapper({
           {/* Full Leaderboard List */}
           <div className="space-y-2.5">
             {leaderboardStudents.length === 0 ? (
-              <div className="py-16 text-center text-sm text-slate-500 bg-white dark:bg-slate-900 rounded-2xl ring-1 ring-slate-900/5">
-                <div className="text-4xl mb-3">🔍</div>
-                Tidak ada siswa ditemukan.
+              <div className="py-14 text-center bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800">
+                <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">
+                  Tidak ada siswa ditemukan.
+                </p>
+                <p className="mt-1 text-xs text-slate-400 dark:text-zinc-500">
+                  Coba kata kunci pencarian lain.
+                </p>
               </div>
             ) : (
               leaderboardStudents.map((student, index) => {
                 const rank = index + 1;
                 const isTop3 = rank <= 3;
-                const medalEmoji =
-                  rank === 1
-                    ? "🥇"
-                    : rank === 2
-                      ? "🥈"
-                      : rank === 3
-                        ? "🥉"
-                        : null;
 
                 return (
                   <div
                     key={student.id}
-                    className={`bg-white dark:bg-slate-900 rounded-2xl border shadow-sm overflow-hidden transition-all hover:shadow-md ${
+                    className={`bg-white dark:bg-zinc-900 rounded-2xl border shadow-sm overflow-hidden ${
                       isTop3
-                        ? "border-amber-200 dark:border-amber-800/60"
-                        : "border-slate-200 dark:border-slate-800"
+                        ? "border-amber-200 dark:border-amber-800/50"
+                        : "border-slate-200 dark:border-zinc-800"
                     }`}
                     style={
                       student.label
@@ -662,17 +653,13 @@ export function PointsClientWrapper({
                       <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                         {/* Rank */}
                         <div
-                          className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-sm sm:text-base font-black shrink-0 ${
+                          className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-sm sm:text-base font-bold shrink-0 tabular-nums ${
                             rank === 1
-                              ? "bg-linear-to-br from-amber-400 to-amber-600 text-white shadow-md"
-                              : rank === 2
-                                ? "bg-linear-to-br from-slate-300 to-slate-400 text-white shadow-sm"
-                                : rank === 3
-                                  ? "bg-linear-to-br from-amber-700 to-amber-800 text-white shadow-sm"
-                                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+                              ? "bg-brand-600 text-white"
+                              : "bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300"
                           }`}
                         >
-                          {medalEmoji || `#${rank}`}
+                          {rank}
                         </div>
 
                         {/* Student Info */}
@@ -682,12 +669,12 @@ export function PointsClientWrapper({
                               {student.name}
                             </h4>
                             {student.nickname && (
-                              <span className="text-xs text-slate-400 dark:text-slate-500 font-normal">
+                              <span className="text-xs text-slate-400 dark:text-zinc-500 font-normal">
                                 ({student.nickname})
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                          <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-zinc-400 flex-wrap">
                             {student.label ? (
                               <span className="flex items-center gap-1 font-medium">
                                 <span
@@ -702,35 +689,31 @@ export function PointsClientWrapper({
                             ) : (
                               <span>Belum ada level</span>
                             )}
-                            <span className="text-slate-300 dark:text-slate-700">
+                            <span className="text-slate-300 dark:text-zinc-700">
                               ·
                             </span>
-                            <span>
+                            <span className="tabular-nums">
                               Poin Pertemuan: {student.gross_points || 0}
-                            </span>
-                            {student.redeemed_points > 0 && (
-                              <>
-                                <span className="text-slate-300 dark:text-slate-700">
-                                  ·
-                                </span>
+                              {student.redeemed_points > 0 && (
                                 <span className="text-rose-600 dark:text-rose-400 font-semibold">
-                                  Ditukar: {student.redeemed_points}
+                                  {" "}
+                                  (Ditukar: {student.redeemed_points})
                                 </span>
-                              </>
-                            )}
+                              )}
+                            </span>
                           </div>
                         </div>
                       </div>
 
                       {/* Points Showcase Badge */}
                       <div
-                        className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold ${
+                        className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold tabular-nums ${
                           isTop3
-                            ? "bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
-                            : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                            ? "bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50"
+                            : "bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700"
                         }`}
                       >
-                        ⭐ {student.points || 0}
+                        {student.points || 0}
                         <span className="hidden sm:inline text-[10px] font-bold opacity-70">
                           Poin
                         </span>
@@ -748,7 +731,7 @@ export function PointsClientWrapper({
       {selectedTab === "redeem" && (
         <div className="space-y-6">
           {/* Search Box */}
-          <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-2xs">
+          <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-4 sm:p-6 shadow-sm">
             <div className="relative w-full">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
                 <Icons.search
@@ -757,39 +740,44 @@ export function PointsClientWrapper({
                 />
               </div>
               <input
-                type="text"
+                type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all h-11"
+                className="block w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-colors h-11"
                 placeholder="Cari nama siswa..."
+                aria-label="Cari nama siswa"
               />
             </div>
           </div>
 
           {/* Information Card */}
-          <div className="bg-linear-to-r from-amber-500/10 via-orange-400/5 to-amber-500/10 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-4 sm:p-5 flex items-start gap-3 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-xl shrink-0 border border-amber-200 dark:border-amber-800">
-              💡
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 flex items-start gap-3 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+              <Icons.star className="w-5 h-5" />
             </div>
-            <div>
-              <h3 className="text-sm font-extrabold text-amber-900 dark:text-amber-200">
-                Fitur Kelola Poin Siswa (Tambah Extra / Point Ditukar)
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                Kelola Poin Siswa
               </h3>
-              <p className="text-[11px] sm:text-xs text-amber-800 dark:text-amber-300/80 mt-0.5 leading-relaxed">
-                Anda dapat menambahkan poin tambahan (lomba, event, prestasi)
-                menggunakan tombol <strong>&quot;+ Tambah Poin&quot;</strong>{" "}
-                atau memotong poin saat siswa menukar hadiah fisik menggunakan
-                tombol <strong>&quot;🎁 Point Ditukar&quot;</strong>.
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                Tambahkan poin tambahan (lomba, event, prestasi) dengan tombol
+                <strong> Tambah Poin </strong>
+                atau potong poin saat siswa menukar hadiah fisik dengan tombol
+                <strong> Point Ditukar</strong>.
               </p>
             </div>
           </div>
 
           {/* Student Grid for Redemption / Bonus */}
           {redeemFilteredStudents.length === 0 ? (
-            <div className="py-16 text-center text-sm text-slate-500 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-              <div className="text-4xl mb-3">🔍</div>
-              Tidak ada siswa ditemukan dengan kata kunci &quot;{searchQuery}
-              &quot;.
+            <div className="py-14 text-center bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800">
+              <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">
+                Tidak ada siswa ditemukan dengan kata kunci &quot;{searchQuery}
+                &quot;.
+              </p>
+              <p className="mt-1 text-xs text-slate-400 dark:text-zinc-500">
+                Coba kata kunci pencarian lain.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -824,7 +812,7 @@ export function PointsClientWrapper({
                 return (
                   <div
                     key={student.id}
-                    className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm flex flex-col justify-between"
+                    className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-4 shadow-sm flex flex-col justify-between"
                     style={
                       student.label
                         ? { borderTop: `4px solid ${student.label.hex_color}` }
@@ -833,32 +821,32 @@ export function PointsClientWrapper({
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
+                        <div className="min-w-0">
+                          <h4 className="text-base font-bold text-slate-900 dark:text-white truncate">
                             {student.name}
                           </h4>
                           {student.nickname && (
-                            <span className="text-xs text-slate-400">
+                            <span className="text-xs text-slate-400 dark:text-zinc-500">
                               ({student.nickname})
                             </span>
                           )}
                         </div>
-                        <span className="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 px-2.5 py-1 rounded-xl text-xs font-black border border-amber-200 dark:border-amber-800">
-                          ⭐ {student.points || 0} Poin
+                        <span className="inline-flex items-center bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 px-2.5 py-1 rounded-lg text-xs font-bold border border-amber-200 dark:border-amber-800/50 tabular-nums shrink-0">
+                          {student.points || 0} Poin
                         </span>
                       </div>
 
-                      <div className="mt-3 text-xs text-slate-500 space-y-1">
+                      <div className="mt-3 text-xs text-slate-500 dark:text-zinc-400 space-y-1 tabular-nums">
                         <div className="flex justify-between">
                           <span>Poin Pertemuan:</span>
-                          <span className="font-semibold text-slate-700 dark:text-slate-300">
+                          <span className="font-semibold text-slate-700 dark:text-zinc-200">
                             {meetingPoints} Pertemuan
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span>Poin Extra:</span>
                           <span
-                            className={`font-semibold ${extraPoints > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500"}`}
+                            className={`font-semibold ${extraPoints > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-zinc-400"}`}
                           >
                             {extraPoints > 0
                               ? `+${extraPoints} Poin`
@@ -868,7 +856,7 @@ export function PointsClientWrapper({
                         <div className="flex justify-between">
                           <span>Poin Ditukar:</span>
                           <span
-                            className={`font-semibold ${redeemedPoints > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-500"}`}
+                            className={`font-semibold ${redeemedPoints > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-500 dark:text-zinc-400"}`}
                           >
                             {redeemedPoints > 0
                               ? `-${redeemedPoints} Poin`
@@ -884,10 +872,10 @@ export function PointsClientWrapper({
                       <button
                         type="button"
                         onClick={() => handleAddPointsClick(student)}
-                        className="w-full py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        className="w-full py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] text-white transition-colors flex items-center justify-center gap-1 cursor-pointer"
                       >
                         <Icons.add className="w-3.5 h-3.5" />
-                        <span>+ Tambah Poin</span>
+                        <span>Tambah</span>
                       </button>
 
                       {/* Tombol Lihat Riwayat Siswa */}
@@ -897,21 +885,8 @@ export function PointsClientWrapper({
                           setSelectedStudentForHistory(student);
                           setIsHistoryModalOpen(true);
                         }}
-                        className="w-full py-2 rounded-xl text-xs font-extrabold bg-sky-600 hover:bg-sky-700 text-white shadow-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        className="w-full py-2 rounded-xl text-xs font-bold bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 active:translate-y-[1px] transition-colors flex items-center justify-center gap-1 cursor-pointer"
                       >
-                        <svg
-                          className="w-3.5 h-3.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                          />
-                        </svg>
                         <span>Riwayat</span>
                       </button>
 
@@ -920,13 +895,13 @@ export function PointsClientWrapper({
                         type="button"
                         onClick={() => handleOpenRedeemModal(student)}
                         disabled={!hasPoints}
-                        className={`w-full py-2 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                        className={`w-full py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer ${
                           hasPoints
-                            ? "bg-amber-600 hover:bg-amber-700 text-white shadow-xs"
-                            : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed"
+                            ? "bg-amber-600 hover:bg-amber-700 active:translate-y-[1px] text-white"
+                            : "bg-slate-100 text-slate-400 dark:bg-zinc-800 dark:text-zinc-600 cursor-not-allowed"
                         }`}
                       >
-                        <span>🎁 Point Ditukar</span>
+                        <span>Tukar</span>
                       </button>
                     </div>
                   </div>
@@ -941,36 +916,36 @@ export function PointsClientWrapper({
       {selectedTab === "history" && (
         <div className="space-y-6">
           {/* Controls: Student Dropdown Filter & Search Bar */}
-          <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-2xs space-y-4">
+          <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-4 sm:p-6 shadow-sm space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Custom Searchable Student Filter Dropdown */}
               <div className="relative" ref={historyStudentRef}>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  👤 Filter Siswa:
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
+                  Filter Siswa
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsHistoryStudentOpen(!isHistoryStudentOpen)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white flex items-center justify-between gap-2 h-11 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-xs"
+                  aria-expanded={isHistoryStudentOpen}
+                  className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white flex items-center justify-between gap-2 h-11 hover:border-slate-300 dark:hover:border-zinc-600 transition-colors cursor-pointer"
                 >
-                  <div className="flex items-center gap-2 truncate">
-                    <span className="text-amber-500 font-bold">👤</span>
-                    <span className="truncate">
-                      {selectedHistoryStudent
-                        ? activeStudents.find(
-                            (s) => s.id === selectedHistoryStudent,
-                          )?.name || "Siswa Terpilih"
-                        : `-- Semua Siswa (${activeStudents.length}) --`}
-                    </span>
-                  </div>
-                  <span className="text-slate-400 text-xs shrink-0">
-                    {isHistoryStudentOpen ? "▲" : "▼"}
+                  <span className="truncate">
+                    {selectedHistoryStudent
+                      ? activeStudents.find(
+                          (s) => s.id === selectedHistoryStudent,
+                        )?.name || "Siswa Terpilih"
+                      : `Semua Siswa (${activeStudents.length})`}
                   </span>
+                  <Icons.chevronDown
+                    className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                      isHistoryStudentOpen ? "rotate-180" : ""
+                    }`}
+                  />
                 </button>
 
                 {/* Popover Menu */}
                 {isHistoryStudentOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2.5 max-h-72 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xl p-2.5 max-h-72 overflow-hidden flex flex-col">
                     {/* Popover Search */}
                     <div className="relative mb-2 shrink-0">
                       <Icons.search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
@@ -981,7 +956,7 @@ export function PointsClientWrapper({
                           setHistoryStudentSearch(e.target.value)
                         }
                         placeholder="Cari siswa..."
-                        className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border-none focus:ring-2 focus:ring-amber-500 outline-none"
+                        className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white border border-slate-200 dark:border-zinc-700 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                       />
                     </div>
 
@@ -996,11 +971,11 @@ export function PointsClientWrapper({
                         }}
                         className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between cursor-pointer ${
                           !selectedHistoryStudent
-                            ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
-                            : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                            ? "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
+                            : "hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300"
                         }`}
                       >
-                        <span>✨ Semua Siswa ({activeStudents.length})</span>
+                        <span>Semua Siswa ({activeStudents.length})</span>
                         {!selectedHistoryStudent && <span>✓</span>}
                       </button>
 
@@ -1039,8 +1014,8 @@ export function PointsClientWrapper({
                               }}
                               className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
                                 isSelected
-                                  ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 font-bold"
-                                  : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
+                                  ? "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 font-bold"
+                                  : "hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-200"
                               }`}
                             >
                               <div className="truncate pr-2">
@@ -1052,7 +1027,7 @@ export function PointsClientWrapper({
                                 )}
                               </div>
                               {isSelected && (
-                                <span className="text-amber-600 font-black">
+                                <span className="text-brand-600 dark:text-brand-400 font-bold">
                                   ✓
                                 </span>
                               )}
@@ -1066,8 +1041,8 @@ export function PointsClientWrapper({
 
               {/* Text Search Bar */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  🔍 Pencarian Kata Kunci:
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
+                  Pencarian Kata Kunci
                 </label>
                 <div className="relative w-full">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -1077,29 +1052,30 @@ export function PointsClientWrapper({
                     />
                   </div>
                   <input
-                    type="text"
+                    type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all h-11"
+                    className="block w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-colors h-11"
                     placeholder="Cari materi, keterangan..."
+                    aria-label="Cari materi, keterangan"
                   />
                 </div>
               </div>
             </div>
 
             {/* Category Segmented Control Layout: Separate Extra and Redeem */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
-                🏷️ Kategori Riwayat:
+            <div className="pt-3 border-t border-slate-200 dark:border-zinc-800">
+              <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-2">
+                Kategori Riwayat
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-slate-100 dark:bg-zinc-800 rounded-2xl">
                 <button
                   type="button"
                   onClick={() => setHistoryTypeFilter("all")}
-                  className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer text-center truncate ${
+                  className={`py-2 px-2 rounded-xl text-xs font-bold transition-colors cursor-pointer text-center truncate ${
                     historyTypeFilter === "all"
-                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-sm"
+                      : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
                   <span>Semua</span>
@@ -1108,127 +1084,117 @@ export function PointsClientWrapper({
                 <button
                   type="button"
                   onClick={() => setHistoryTypeFilter("attendance")}
-                  className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer text-center truncate ${
+                  className={`py-2 px-2 rounded-xl text-xs font-bold transition-colors cursor-pointer text-center truncate ${
                     historyTypeFilter === "attendance"
-                      ? "bg-sky-600 text-white shadow-xs"
-                      : "text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400"
+                      ? "bg-brand-600 text-white"
+                      : "text-slate-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400"
                   }`}
                 >
-                  <span>📅 Pertemuan</span>
+                  <span>Pertemuan</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setHistoryTypeFilter("extra")}
-                  className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer text-center truncate ${
+                  className={`py-2 px-2 rounded-xl text-xs font-bold transition-colors cursor-pointer text-center truncate ${
                     historyTypeFilter === "extra"
-                      ? "bg-emerald-600 text-white shadow-xs"
-                      : "text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                      ? "bg-brand-600 text-white"
+                      : "text-slate-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400"
                   }`}
                 >
-                  <span>🏆 Poin Extra</span>
+                  <span>Poin Extra</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setHistoryTypeFilter("redeem")}
-                  className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer text-center truncate ${
+                  className={`py-2 px-2 rounded-xl text-xs font-bold transition-colors cursor-pointer text-center truncate ${
                     historyTypeFilter === "redeem"
-                      ? "bg-rose-600 text-white shadow-xs"
-                      : "text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400"
+                      ? "bg-brand-600 text-white"
+                      : "text-slate-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400"
                   }`}
                 >
-                  <span>🎁 Point Ditukar</span>
+                  <span>Point Ditukar</span>
                 </button>
               </div>
             </div>
           </div>
 
           {/* History List Card */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                  📜 Log Riwayat Aktivitas Poin
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/60 flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Log Riwayat Aktivitas Poin
                 </h3>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
                   {selectedHistoryStudent
                     ? "Menampilkan riwayat aktivitas untuk siswa terpilih"
                     : "Catatan presensi kelas, poin extra manual, dan penukaran hadiah"}
                 </p>
               </div>
-              <span className="text-xs font-extrabold text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-800 px-2.5 py-1 rounded-full">
+              <span className="text-xs font-bold text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-800 px-2.5 py-1 rounded-lg tabular-nums">
                 {combinedHistory.length} Record
               </span>
             </div>
 
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            <div className="divide-y divide-slate-200 dark:divide-zinc-800">
               {combinedHistory.length === 0 ? (
-                <div className="py-16 text-center text-sm text-slate-400">
-                  <div className="text-3xl mb-2">📜</div>
-                  {searchQuery || selectedHistoryStudent
-                    ? "Tidak ada data riwayat sesuai filter yang dipilih."
-                    : "Belum ada riwayat aktivitas poin."}
+                <div className="py-14 text-center">
+                  <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">
+                    {searchQuery || selectedHistoryStudent
+                      ? "Tidak ada data riwayat sesuai filter yang dipilih."
+                      : "Belum ada riwayat aktivitas poin."}
+                  </p>
                 </div>
               ) : (
                 combinedHistory.map((item) => {
                   const isAttendance = item.kind === "attendance";
                   const isBonus = item.is_bonus;
                   const isAbsent = item.is_absent;
+                  const KindIcon = isAttendance
+                    ? Icons.calendar
+                    : isBonus
+                      ? Icons.star
+                      : Icons.gift;
 
                   return (
                     <div
                       key={item.id}
-                      className="p-4 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors"
+                      className="p-4 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${
-                            isAttendance
-                              ? isAbsent
-                                ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
-                                : "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200 dark:border-sky-800"
-                              : isBonus
-                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                                : "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
-                          }`}
-                        >
-                          {isAttendance
-                            ? isAbsent
-                              ? "⏸️"
-                              : "📅"
-                            : isBonus
-                              ? "🏆"
-                              : "🎁"}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-300">
+                          <KindIcon className="w-5 h-5" />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
                               {item.student?.name || "Siswa"}
                             </h4>
                             {item.student?.nickname && (
-                              <span className="text-xs text-slate-400">
+                              <span className="text-xs text-slate-400 dark:text-zinc-500">
                                 ({item.student.nickname})
                               </span>
                             )}
                             <span
-                              className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${
                                 isAttendance
                                   ? isAbsent
-                                    ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                                    : "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300"
+                                    ? "bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300"
+                                    : "bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300"
                                   : isBonus
-                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                    : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300"
+                                    : "bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300"
                               }`}
                             >
                               {item.badgeLabel}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
+                          <p className="text-xs text-slate-600 dark:text-zinc-300 mt-0.5 font-medium truncate">
                             {item.note}
                           </p>
-                          <span className="text-[10px] text-slate-400 block mt-0.5">
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 block mt-0.5">
                             {item.created_at
                               ? formatShortDate(item.created_at)
                               : "-"}
@@ -1238,14 +1204,14 @@ export function PointsClientWrapper({
 
                       <div className="shrink-0">
                         <span
-                          className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-black border ${
+                          className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold border tabular-nums ${
                             isAttendance
                               ? isAbsent
-                                ? "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700"
-                                : "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 border-sky-200 dark:border-sky-800"
+                                ? "bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400 border-slate-200 dark:border-zinc-700"
+                                : "bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300 border-sky-200 dark:border-sky-800/50"
                               : isBonus
-                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                                : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800"
+                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50"
+                                : "bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 border-rose-200 dark:border-rose-800/50"
                           }`}
                         >
                           {item.displayPoints}
@@ -1264,19 +1230,21 @@ export function PointsClientWrapper({
       {selectedStudentForRedeem && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => !isSubmitting && setSelectedStudentForRedeem(null)}
           />
 
-          <div className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-left animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between mb-4 border-b pb-3 border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🎁</span>
-                <div>
-                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+          <div className="relative z-10 w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 text-left">
+            <div className="flex items-center justify-between mb-4 border-b pb-3 border-slate-200 dark:border-zinc-800">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
+                  <Icons.gift className="w-5 h-5" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     ACC / Point Ditukar
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">
                     Konfirmasi penukaran poin siswa untuk hadiah
                   </p>
                 </div>
@@ -1286,40 +1254,41 @@ export function PointsClientWrapper({
                 onClick={() =>
                   !isSubmitting && setSelectedStudentForRedeem(null)
                 }
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold cursor-pointer"
+                aria-label="Tutup"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
               >
-                ✕
+                <Icons.close className="w-5 h-5" />
               </button>
             </div>
 
             {/* Student Info Box */}
-            <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-3.5 mb-4 text-xs">
-              <div className="font-extrabold text-amber-900 dark:text-amber-200 text-sm">
+            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-3.5 mb-4 text-xs">
+              <div className="font-bold text-amber-900 dark:text-amber-200 text-sm truncate">
                 {selectedStudentForRedeem.name}
               </div>
               <div className="flex justify-between mt-1 text-amber-800 dark:text-amber-300">
                 <span>Poin Tersedia Saat Ini:</span>
-                <span className="font-black text-amber-700 dark:text-amber-300">
-                  ⭐ {selectedStudentForRedeem.points || 0} Poin
+                <span className="font-bold tabular-nums">
+                  {selectedStudentForRedeem.points || 0} Poin
                 </span>
               </div>
             </div>
 
             {errorMsg && (
-              <div className="mb-4 p-3 bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 rounded-xl text-xs font-semibold border border-red-200 dark:border-red-800">
-                ⚠️ {errorMsg}
+              <div className="mb-4 p-3 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 rounded-xl text-xs font-semibold border border-red-200 dark:border-red-800/50">
+                {errorMsg}
               </div>
             )}
 
             {successMsg && (
-              <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-xl text-xs font-semibold border border-emerald-200 dark:border-emerald-800">
-                ✅ {successMsg}
+              <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 rounded-xl text-xs font-semibold border border-emerald-200 dark:border-emerald-800/50">
+                {successMsg}
               </div>
             )}
 
             <form onSubmit={handleConfirmRedeem} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                   Jumlah Point Ditukar <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -1334,12 +1303,12 @@ export function PointsClientWrapper({
                     )
                   }
                   placeholder="Contoh: 5"
-                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                   Keterangan Hadiah / Barang{" "}
                   <span className="text-slate-400 font-normal">(Opsional)</span>
                 </label>
@@ -1348,7 +1317,7 @@ export function PointsClientWrapper({
                   value={rewardNote}
                   onChange={(e) => setRewardNote(e.target.value)}
                   placeholder="Contoh: Pensil Warna 12 Warna / Mainan Puzzle"
-                  className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
 
@@ -1357,14 +1326,14 @@ export function PointsClientWrapper({
                   type="button"
                   onClick={() => setSelectedStudentForRedeem(null)}
                   disabled={isSubmitting}
-                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-2.5 rounded-xl text-xs font-extrabold text-white bg-amber-600 hover:bg-amber-700 transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-1 cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 active:translate-y-[1px] transition-colors flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? "Memproses..." : "Konfirmasi Point Ditukar"}
                 </button>
@@ -1378,20 +1347,22 @@ export function PointsClientWrapper({
       {selectedStudentForAdd && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => !isSubmittingAdd && setSelectedStudentForAdd(null)}
           />
 
-          <div className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-left animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between mb-4 border-b pb-3 border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🏆</span>
-                <div>
-                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                    Tambah Poin Manual (Bonus / Lomba)
+          <div className="relative z-10 w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 text-left">
+            <div className="flex items-center justify-between mb-4 border-b pb-3 border-slate-200 dark:border-zinc-800">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 shrink-0">
+                  <Icons.add className="w-5 h-5" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Tambah Poin Manual
                   </h3>
-                  <p className="text-xs text-slate-500">
-                    Berikan tambahan poin prestasi atau lomba
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    Bonus prestasi atau lomba
                   </p>
                 </div>
               </div>
@@ -1400,22 +1371,24 @@ export function PointsClientWrapper({
                 onClick={() =>
                   !isSubmittingAdd && setSelectedStudentForAdd(null)
                 }
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold cursor-pointer"
+                aria-label="Tutup"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
               >
-                ✕
+                <Icons.close className="w-5 h-5" />
               </button>
             </div>
 
             {/* Custom Dropdown Student Picker */}
             <div className="relative mb-4">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                 Pilih Siswa <span className="text-red-500">*</span>
               </label>
 
               <button
                 type="button"
                 onClick={() => setIsStudentDropdownOpen(!isStudentDropdownOpen)}
-                className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-bold shadow-xs hover:border-emerald-500 cursor-pointer text-left transition-all"
+                aria-expanded={isStudentDropdownOpen}
+                className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white text-xs sm:text-sm font-bold hover:border-slate-400 dark:hover:border-zinc-600 cursor-pointer text-left transition-colors"
               >
                 <div className="flex items-center gap-2 truncate min-w-0">
                   <span className="truncate">
@@ -1424,8 +1397,8 @@ export function PointsClientWrapper({
                       ? `(${selectedStudentForAdd.nickname})`
                       : ""}
                   </span>
-                  <span className="shrink-0 text-[11px] font-extrabold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800">
-                    ⭐ {selectedStudentForAdd.points || 0} Poin
+                  <span className="shrink-0 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800/50 tabular-nums">
+                    {selectedStudentForAdd.points || 0} Poin
                   </span>
                 </div>
                 <Icons.chevronDown
@@ -1434,21 +1407,21 @@ export function PointsClientWrapper({
               </button>
 
               {isStudentDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="sticky top-0 bg-white dark:bg-slate-900 pb-1 z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 p-2 space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar">
+                  <div className="sticky top-0 bg-white dark:bg-zinc-900 pb-1 z-10">
                     <input
                       ref={studentSearchInputRef}
                       type="text"
                       value={studentSearchInModal}
                       onChange={(e) => setStudentSearchInModal(e.target.value)}
-                      placeholder="🔍 Cari nama siswa dalam daftar..."
-                      className="w-full px-3 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                      placeholder="Cari nama siswa dalam daftar..."
+                      className="w-full px-3 py-2 rounded-xl text-xs border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
                       autoFocus
                     />
                   </div>
 
                   {filteredModalStudents.length === 0 ? (
-                    <div className="py-4 text-center text-xs text-slate-400">
+                    <div className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500">
                       Tidak ada siswa ditemukan.
                     </div>
                   ) : (
@@ -1462,21 +1435,21 @@ export function PointsClientWrapper({
                             setSelectedStudentForAdd(st);
                             setIsStudentDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between gap-2 cursor-pointer ${
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors flex items-center justify-between gap-2 cursor-pointer ${
                             isSel
-                              ? "bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 font-extrabold"
-                              : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                              ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 font-bold"
+                              : "text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 font-semibold"
                           }`}
                         >
                           <span className="truncate">
                             {st.name} {st.nickname ? `(${st.nickname})` : ""}
                           </span>
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
-                              ⭐ {st.points || 0}
+                            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15 px-1.5 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800/50 tabular-nums">
+                              {st.points || 0}
                             </span>
                             {isSel && (
-                              <span className="text-emerald-600 text-xs font-bold">
+                              <span className="text-brand-600 dark:text-brand-400 text-xs font-bold">
                                 ✓
                               </span>
                             )}
@@ -1490,20 +1463,20 @@ export function PointsClientWrapper({
             </div>
 
             {addErrorMsg && (
-              <div className="mb-4 p-3 bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 rounded-xl text-xs font-semibold border border-red-200 dark:border-red-800">
-                ⚠️ {addErrorMsg}
+              <div className="mb-4 p-3 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 rounded-xl text-xs font-semibold border border-red-200 dark:border-red-800/50">
+                {addErrorMsg}
               </div>
             )}
 
             {addSuccessMsg && (
-              <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-xl text-xs font-semibold border border-emerald-200 dark:border-emerald-800">
-                ✅ {addSuccessMsg}
+              <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 rounded-xl text-xs font-semibold border border-emerald-200 dark:border-emerald-800/50">
+                {addSuccessMsg}
               </div>
             )}
 
             <form onSubmit={handleConfirmAddPoints} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                   Jumlah Poin Tambahan <span className="text-red-500">*</span>
                 </label>
                 <div className="flex items-center gap-2">
@@ -1519,7 +1492,7 @@ export function PointsClientWrapper({
                       )
                     }
                     placeholder="Contoh: 5"
-                    className="flex-1 px-4 py-2.5 rounded-xl text-sm border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm border border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-brand-500 tabular-nums"
                   />
                   {/* Preset point buttons */}
                   {[1, 2, 5, 10].map((num) => (
@@ -1527,10 +1500,10 @@ export function PointsClientWrapper({
                       key={num}
                       type="button"
                       onClick={() => setAddPointsVal(num)}
-                      className={`px-3 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                      className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer tabular-nums ${
                         addPointsVal === num
-                          ? "bg-emerald-600 text-white shadow-xs"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+                          ? "bg-brand-600 text-white"
+                          : "bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700"
                       }`}
                     >
                       +{num}
@@ -1540,7 +1513,7 @@ export function PointsClientWrapper({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                   Keterangan / Alasan Penambahan{" "}
                   <span className="text-red-500">*</span>
                 </label>
@@ -1550,7 +1523,7 @@ export function PointsClientWrapper({
                   value={addNote}
                   onChange={(e) => setAddNote(e.target.value)}
                   placeholder="Contoh: Juara 1 Lomba Mewarnai / Event Khusus"
-                  className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
 
@@ -1559,16 +1532,16 @@ export function PointsClientWrapper({
                   type="button"
                   onClick={() => setSelectedStudentForAdd(null)}
                   disabled={isSubmittingAdd}
-                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingAdd}
-                  className="flex-1 py-2.5 rounded-xl text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1 cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] transition-colors flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
                 >
-                  {isSubmittingAdd ? "Memproses..." : "⭐ Tambah Poin Sekarang"}
+                  {isSubmittingAdd ? "Memproses..." : "Tambah Poin Sekarang"}
                 </button>
               </div>
             </form>
@@ -1580,18 +1553,18 @@ export function PointsClientWrapper({
       {showAddLockModal && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => setShowAddLockModal(false)}
           />
-          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center animate-in zoom-in-95 duration-200 space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-2xl shadow-sm">
-              🔒
+          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 text-center space-y-4">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-300 flex items-center justify-center mx-auto">
+              <Icons.shield className="w-6 h-6" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Akses Tambah Poin Dikunci
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 leading-relaxed">
                 Fitur Tambah Poin Manual dilindungi SuperAdmin. Masukkan
                 password PIN untuk membuka fitur ini.
               </p>
@@ -1609,10 +1582,10 @@ export function PointsClientWrapper({
                     setLockError("");
                   }}
                   placeholder="Masukkan password PIN..."
-                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                  className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
                 />
                 {lockError && (
-                  <p className="text-xs text-red-500 font-semibold mt-2 animate-in fade-in">
+                  <p className="text-xs text-red-600 dark:text-red-400 font-semibold mt-2">
                     {lockError}
                   </p>
                 )}
@@ -1622,13 +1595,13 @@ export function PointsClientWrapper({
                 <button
                   type="button"
                   onClick={() => setShowAddLockModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 transition-colors shadow-sm"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] transition-colors cursor-pointer"
                 >
                   Buka Akses
                 </button>
@@ -1692,50 +1665,35 @@ export function PointsClientWrapper({
                 className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
                 onClick={() => setIsHistoryModalOpen(false)}
               />
-              <div className="relative z-10 w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+              <div className="relative z-10 w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-slate-200 dark:border-zinc-800 overflow-hidden">
                 {/* Header */}
-                <div className="bg-linear-to-r from-sky-600 to-indigo-600 p-5 text-white shrink-0">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-extrabold flex items-center gap-2">
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                          />
-                        </svg>
-                        Riwayat Point {selectedStudentForHistory.name}
+                <div className="p-5 border-b border-slate-200 dark:border-zinc-800 shrink-0">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white truncate">
+                        Riwayat Poin {selectedStudentForHistory.name}
                       </h3>
-                      <p className="text-xs text-sky-100 mt-0.5">
+                      <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
                         {selectedStudentForHistory.nickname
                           ? `(${selectedStudentForHistory.nickname})`
-                          : ""}
+                          : "Kehadiran, bonus manual, dan penukaran"}
                       </p>
                     </div>
                     <button
                       onClick={() => setIsHistoryModalOpen(false)}
-                      className="p-2 rounded-full hover:bg-white/20 transition-colors"
+                      aria-label="Tutup"
+                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
                     >
-                      ✕
+                      <Icons.close className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
 
                 {/* Content */}
-                <div className="overflow-y-auto max-h-96 p-4 space-y-4">
+                <div className="overflow-y-auto max-h-96 p-4 space-y-5">
                   {/* Point Masuk: Kehadiran Otomatis */}
                   <div>
-                    <h4 className="text-xs font-bold text-sky-700 dark:text-sky-300 mb-3 flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-sky-100 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 text-[10px] font-black">
-                        OTOMATIS
-                      </span>
+                    <h4 className="text-xs font-bold text-slate-700 dark:text-zinc-200 mb-2.5">
                       Kehadiran dari Lembar Perkembangan
                     </h4>
                     <div className="space-y-2">
@@ -1743,19 +1701,14 @@ export function PointsClientWrapper({
                         attendanceOnly.map((historyItem: any) => (
                           <div
                             key={historyItem.id}
-                            className="bg-sky-50 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-800 rounded-xl p-3"
+                            className="bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800 rounded-xl p-3"
                           >
                             <div className="flex justify-between items-start gap-2">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300">
-                                    📅 Kehadiran
-                                  </span>
-                                </div>
-                                <p className="text-xs font-bold text-sky-900 dark:text-sky-200">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate">
                                   {historyItem.description}
                                 </p>
-                                <p className="text-[10px] text-sky-700 dark:text-sky-300 mt-1">
+                                <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1">
                                   {new Date(
                                     historyItem.created_at,
                                   ).toLocaleDateString("id-ID", {
@@ -1766,28 +1719,23 @@ export function PointsClientWrapper({
                                   })}
                                 </p>
                               </div>
-                              <span className="text-sm font-black text-sky-700 dark:text-sky-300 whitespace-nowrap ml-2">
+                              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap ml-2 tabular-nums">
                                 +{Math.abs(historyItem.displayPoints)}
                               </span>
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="py-4 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                        <div className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-800/60 rounded-xl">
                           Belum ada riwayat kehadiran
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <hr className="border-slate-200 dark:border-slate-700 my-4" />
-
                   {/* Point Masuk: Bonus Manual */}
                   <div>
-                    <h4 className="text-xs font-bold text-yellow-700 dark:text-yellow-300 mb-3 flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-yellow-100 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-300 text-[10px] font-black">
-                        MANUAL
-                      </span>
+                    <h4 className="text-xs font-bold text-slate-700 dark:text-zinc-200 mb-2.5">
                       Bonus Poin Input Manual
                     </h4>
                     <div className="space-y-2">
@@ -1795,19 +1743,14 @@ export function PointsClientWrapper({
                         bonusManualOnly.map((historyItem: any) => (
                           <div
                             key={historyItem.id}
-                            className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-3"
+                            className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3"
                           >
                             <div className="flex justify-between items-start gap-2">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-yellow-100 text-yellow-700 dark:bg-yellow-950/60 dark:text-yellow-300">
-                                    ⭐ Bonus
-                                  </span>
-                                </div>
-                                <p className="text-xs font-bold text-yellow-900 dark:text-yellow-200">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-amber-900 dark:text-amber-200 truncate">
                                   {historyItem.description}
                                 </p>
-                                <p className="text-[10px] text-yellow-700 dark:text-yellow-300 mt-1">
+                                <p className="text-[10px] text-amber-700 dark:text-amber-300 mt-1">
                                   {new Date(
                                     historyItem.created_at,
                                   ).toLocaleDateString("id-ID", {
@@ -1818,28 +1761,23 @@ export function PointsClientWrapper({
                                   })}
                                 </p>
                               </div>
-                              <span className="text-sm font-black text-yellow-700 dark:text-yellow-300 whitespace-nowrap ml-2">
+                              <span className="text-sm font-bold text-amber-700 dark:text-amber-300 whitespace-nowrap ml-2 tabular-nums">
                                 +{Math.abs(historyItem.displayPoints)}
                               </span>
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="py-4 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                        <div className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-800/60 rounded-xl">
                           Belum ada bonus poin manual
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <hr className="border-slate-200 dark:border-slate-700 my-4" />
-
                   {/* Point Keluar: Tukar Hadiah */}
                   <div>
-                    <h4 className="text-xs font-bold text-rose-700 dark:text-rose-300 mb-3 flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-[10px] font-black">
-                        KELUAR
-                      </span>
+                    <h4 className="text-xs font-bold text-slate-700 dark:text-zinc-200 mb-2.5">
                       Point Ditukar Hadiah
                     </h4>
                     <div className="space-y-2">
@@ -1847,19 +1785,14 @@ export function PointsClientWrapper({
                         redeemOnly.map((historyItem: any) => (
                           <div
                             key={historyItem.id}
-                            className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800 rounded-xl p-3"
+                            className="bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800 rounded-xl p-3"
                           >
                             <div className="flex justify-between items-start gap-2">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
-                                    🎁 Ditukar
-                                  </span>
-                                </div>
-                                <p className="text-xs font-bold text-rose-900 dark:text-rose-200">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate">
                                   {historyItem.description}
                                 </p>
-                                <p className="text-[10px] text-rose-700 dark:text-rose-300 mt-1">
+                                <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1">
                                   {new Date(
                                     historyItem.created_at,
                                   ).toLocaleDateString("id-ID", {
@@ -1870,14 +1803,14 @@ export function PointsClientWrapper({
                                   })}
                                 </p>
                               </div>
-                              <span className="text-sm font-black text-rose-700 dark:text-rose-300 whitespace-nowrap ml-2">
+                              <span className="text-sm font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap ml-2 tabular-nums">
                                 -{Math.abs(historyItem.displayPoints)}
                               </span>
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="py-4 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                        <div className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-800/60 rounded-xl">
                           Belum ada riwayat penukaran
                         </div>
                       )}
@@ -1886,10 +1819,10 @@ export function PointsClientWrapper({
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 shrink-0">
+                <div className="p-4 border-t border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/50 shrink-0">
                   <button
                     onClick={() => setIsHistoryModalOpen(false)}
-                    className="w-full py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                    className="w-full py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-200 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                   >
                     Tutup
                   </button>

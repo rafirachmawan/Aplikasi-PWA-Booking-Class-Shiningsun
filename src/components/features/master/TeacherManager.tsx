@@ -82,26 +82,26 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5 sm:rounded-2xl overflow-hidden">
+    <div className="bg-white dark:bg-zinc-900 shadow-sm border border-slate-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
       {isSubmitting && <LoadingSpinner usePortal={true} />}
 
       {/* Delete Confirmation Modal */}
       {deleteModal && teacherToDelete && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => !isDeleting && setDeleteModal(false)}
           />
-          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto mb-4 text-red-600 dark:text-red-400">
+          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 p-6 text-center">
+            <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-500/15 flex items-center justify-center mx-auto mb-4 text-red-600 dark:text-red-400">
               <Icons.trash className="w-6 h-6" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
               Hapus Data Guru?
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-2 leading-relaxed">
               Apakah Anda yakin ingin menghapus guru{" "}
-              <strong className="text-slate-700 dark:text-slate-300">
+              <strong className="text-slate-700 dark:text-zinc-200">
                 "{teacherToDelete.name}"
               </strong>
               ? Data guru ini tidak akan lagi muncul di dropdown pilihan
@@ -109,7 +109,7 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
             </p>
 
             {deleteError && (
-              <p className="text-xs text-red-500 mt-3 text-center font-medium bg-red-50 dark:bg-red-950/20 p-2.5 rounded-xl border border-red-100 dark:border-red-900/50">
+              <p className="text-xs text-red-600 dark:text-red-400 mt-3 text-center font-medium bg-red-50 dark:bg-red-500/10 p-2.5 rounded-xl border border-red-200 dark:border-red-800/50">
                 {deleteError}
               </p>
             )}
@@ -119,7 +119,7 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
                 type="button"
                 disabled={isDeleting}
                 onClick={() => setDeleteModal(false)}
-                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 Batal
               </button>
@@ -127,7 +127,7 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
                 type="button"
                 disabled={isDeleting}
                 onClick={handleExecuteDelete}
-                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:translate-y-[1px] transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
               >
                 {isDeleting ? "Menghapus..." : "Ya, Hapus"}
               </button>
@@ -137,17 +137,17 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
       )}
 
       {/* Section Header */}
-      <div className="px-5 py-5 sm:px-6 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/30">
-        <div className="space-y-1">
+      <div className="px-5 py-5 sm:px-6 border-b border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              👩‍🏫 Daftar Nama Guru / Miss
+              Daftar Nama Guru / Miss
             </h3>
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-brand-50 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300 border border-brand-200/60 dark:border-brand-800/40">
+            <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 border border-brand-200 dark:border-brand-800/50 tabular-nums">
               {teachers.length} Guru
             </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
             Kelola nama-nama guru/pembimbing yang nantinya dapat dipilih
             langsung melalui dropdown saat pengisian Laporan Perkembangan.
           </p>
@@ -159,9 +159,9 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
             setIsAdding(true);
             setSubmitError("");
           }}
-          className="inline-flex items-center justify-center gap-x-1.5 rounded-xl bg-brand-600 text-white px-4 py-2.5 text-xs font-bold shadow-md hover:bg-brand-700 transition-all active:scale-95 cursor-pointer shrink-0 w-full sm:w-auto"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-600 text-white px-4 py-2.5 text-xs font-bold hover:bg-brand-700 active:translate-y-[1px] transition-colors cursor-pointer shrink-0 w-full sm:w-auto"
         >
-          <Icons.add className="-ml-0.5 h-4 w-4" />
+          <Icons.add className="h-4 w-4" />
           Tambah Guru
         </button>
       </div>
@@ -170,7 +170,7 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
       {isAdding && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => {
               if (!isSubmitting) {
                 setIsAdding(false);
@@ -179,18 +179,18 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
               }
             }}
           />
-          <div className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="relative z-10 w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden">
             {/* Modal Header */}
-            <div className="relative flex items-center justify-between p-5 bg-linear-to-r from-brand-600 to-sky-600 text-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg">
-                  👩‍🏫
+            <div className="flex items-center justify-between gap-3 p-5 border-b border-slate-200 dark:border-zinc-800">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+                  <Icons.userCheck className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-extrabold uppercase tracking-wide">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">
                     {editingTeacher ? "Edit Data Guru" : "Tambah Guru Baru"}
                   </h3>
-                  <p className="text-[11px] text-brand-100">
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400">
                     Opsi ini akan muncul di dropdown Laporan Siswa
                   </p>
                 </div>
@@ -202,22 +202,23 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
                   setEditingTeacher(null);
                   setName("");
                 }}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+                aria-label="Tutup"
+                className="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors cursor-pointer shrink-0"
               >
-                ✕
+                <Icons.close className="w-4 h-4" />
               </button>
             </div>
 
             {/* Modal Form Content */}
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {submitError && (
-                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-xs font-semibold text-red-600 dark:text-red-300">
-                  ⚠️ {submitError}
+                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-800/50 text-xs font-semibold text-red-600 dark:text-red-400">
+                  {submitError}
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                   Nama Guru / Miss <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -226,7 +227,7 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
                   placeholder="Contoh: Miss Sarah, Miss Rina"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-4 py-2.5 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none placeholder:text-slate-400"
+                  className="w-full rounded-xl border border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-4 py-2.5 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none placeholder:text-slate-400"
                 />
               </div>
 
@@ -238,20 +239,20 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
                     setEditingTeacher(null);
                     setName("");
                   }}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting
                     ? "Menyimpan..."
                     : editingTeacher
-                      ? "✓ Simpan Perubahan"
-                      : "✓ Tambah Guru"}
+                      ? "Simpan Perubahan"
+                      : "Tambah Guru"}
                 </button>
               </div>
             </form>
@@ -262,17 +263,17 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
       {/* Teachers List */}
       <ul
         role="list"
-        className="divide-y divide-slate-100 dark:divide-slate-800"
+        className="divide-y divide-slate-200 dark:divide-zinc-800"
       >
         {teachers.length === 0 ? (
           <li className="px-6 py-12 text-center">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-2xl">
-              👩‍🏫
+            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 flex items-center justify-center mx-auto mb-3">
+              <Icons.userCheck className="w-6 h-6" />
             </div>
-            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+            <p className="text-sm font-bold text-slate-700 dark:text-zinc-200">
               Belum Ada Data Guru
             </p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">
               Klik tombol &quot;Tambah Guru&quot; di atas untuk menambahkan
               daftar nama guru/pembimbing.
             </p>
@@ -281,34 +282,36 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
           teachers.map((t) => (
             <li
               key={t.id}
-              className="flex items-center justify-between gap-x-6 px-5 py-4 sm:px-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+              className="flex items-center justify-between gap-x-6 px-5 py-4 sm:px-6 hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-950/80 dark:text-brand-300 font-bold flex items-center justify-center text-sm shrink-0 border border-brand-200/80 dark:border-brand-800/50">
+                <div className="w-9 h-9 rounded-xl bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 font-bold flex items-center justify-center text-sm shrink-0">
                   {t.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
                     {t.name}
                   </p>
-                  <p className="text-[11px] text-slate-400">
-                    Aktif & Siap dipilih di dropdown
+                  <p className="text-[11px] text-slate-400 dark:text-zinc-500">
+                    Aktif dan siap dipilih di dropdown
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   onClick={() => handleEdit(t)}
-                  className="p-2 rounded-xl text-slate-500 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/50 transition-colors cursor-pointer"
+                  className="p-2 rounded-xl text-slate-500 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-500/15 transition-colors cursor-pointer"
                   title="Edit Nama Guru"
+                  aria-label={`Edit ${t.name}`}
                 >
                   <Icons.edit className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => confirmDelete(t.id, t.name)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
+                  className="p-2 rounded-xl text-slate-400 dark:text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
                   title="Hapus Guru"
+                  aria-label={`Hapus ${t.name}`}
                 >
                   <Icons.trash className="w-4 h-4" />
                 </button>

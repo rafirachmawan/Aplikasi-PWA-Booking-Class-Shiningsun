@@ -12,23 +12,37 @@ import {
   updateModuleLockPassword,
 } from "@/lib/actions";
 
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: Icons.home },
-  { name: "Jadwal Kelas", href: "/schedule", icon: Icons.calendar },
-  { name: "Penjadwalan Siswa", href: "/scheduling", icon: Icons.users },
-  { name: "Kelola Siswa", href: "/students", icon: Icons.users },
-  { name: "Laporan Perkembangan", href: "/worksheets", icon: Icons.edit },
-  { name: "Poin Kehadiran", href: "/points", icon: Icons.star },
-  { name: "Kelola Guru", href: "/teachers", icon: Icons.userCheck },
-  { name: "Template Penilaian", href: "/templates", icon: Icons.fileText },
-  { name: "Master Data", href: "/master", icon: Icons.settings },
-  // Only visible for superadmin
+// Menu dikelompokkan agar mudah dipindai: Utama, Operasional, Pengaturan.
+// Urutan, href, dan ikon sama seperti sebelumnya. Hanya pengelompokan visual.
+const navGroups = [
+  {
+    label: "Utama",
+    items: [{ name: "Dashboard", href: "/dashboard", icon: Icons.home }],
+  },
+  {
+    label: "Operasional",
+    items: [
+      { name: "Jadwal Kelas", href: "/schedule", icon: Icons.calendar },
+      { name: "Penjadwalan Siswa", href: "/scheduling", icon: Icons.users },
+      { name: "Kelola Siswa", href: "/students", icon: Icons.users },
+      { name: "Laporan Perkembangan", href: "/worksheets", icon: Icons.edit },
+      { name: "Poin Kehadiran", href: "/points", icon: Icons.star },
+      { name: "Kelola Guru", href: "/teachers", icon: Icons.userCheck },
+    ],
+  },
+  {
+    label: "Pengaturan",
+    items: [
+      { name: "Template Penilaian", href: "/templates", icon: Icons.fileText },
+      { name: "Master Data", href: "/master", icon: Icons.settings },
+    ],
+  },
 ];
 
 // Special routes for superadmin only
 const superAdminMenus = [
   {
-    name: "📝 Template Ulang Tahun",
+    name: "Template Ulang Tahun",
     href: "/birthday-templates",
     icon: Icons.fileText,
   },
@@ -191,9 +205,9 @@ export function Sidebar({
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setShowDevLockModal(false)}
           />
-          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 text-2xl shadow-sm">
-              🔒
+          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 text-center">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-300 flex items-center justify-center mx-auto mb-4">
+              <Icons.shield className="h-5 w-5" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
               Akses {lockedRoutes[devLockTarget].label} Dikunci
@@ -251,11 +265,11 @@ export function Sidebar({
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => !isSavingAll && setShowSuperAdminModal(false)}
           />
-          <div className="relative z-10 w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="relative z-10 w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-zinc-800 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shadow-xs">
-                  🛡️
+                <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center">
+                  <Icons.shield className="h-5 w-5" />
                 </div>
                 <div>
                   <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
@@ -273,14 +287,14 @@ export function Sidebar({
             </div>
 
             {superAdminSuccessMsg && (
-              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-600 dark:text-emerald-300 animate-in fade-in">
-                ✅ {superAdminSuccessMsg}
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-800/50 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                {superAdminSuccessMsg}
               </div>
             )}
 
             {superAdminErrorMsg && (
-              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-xs font-bold text-red-600 dark:text-red-300 animate-in fade-in">
-                ⚠️ {superAdminErrorMsg}
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-800/50 text-xs font-semibold text-red-700 dark:text-red-300">
+                {superAdminErrorMsg}
               </div>
             )}
 
@@ -289,7 +303,6 @@ export function Sidebar({
                 {
                   route: "/points",
                   name: "Fitur Tambah Poin",
-                  icon: "⭐",
                   desc: "Password akses untuk tombol Tambah Poin Manual",
                 },
               ].map((item) => {
@@ -302,18 +315,18 @@ export function Sidebar({
                 return (
                   <div
                     key={item.route}
-                    className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 space-y-2.5"
+                    className="p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/50 space-y-2.5"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-base sm:text-lg">
-                          {item.icon}
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-500/15">
+                          <Icons.star className="h-4 w-4 text-brand-600 dark:text-brand-400" />
                         </span>
                         <div>
                           <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                             {item.name}
                           </h4>
-                          <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
+                          <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400">
                             {item.desc}
                           </p>
                         </div>
@@ -330,7 +343,7 @@ export function Sidebar({
                             [item.route]: e.target.value,
                           })
                         }
-                        className="w-full px-3.5 py-2 text-xs font-mono font-bold rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 pr-16"
+                        className="w-full px-3.5 py-2 text-xs font-mono font-bold rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 pr-16"
                         placeholder="Kosongkan jika tidak ingin dikunci..."
                       />
                       <button
@@ -388,11 +401,11 @@ export function Sidebar({
               })}
             </div>
 
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+            <div className="pt-3 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowSuperAdminModal(false)}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors"
               >
                 Batal
               </button>
@@ -400,7 +413,7 @@ export function Sidebar({
                 type="button"
                 disabled={isSavingAll}
                 onClick={handleSaveAllPasswords}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 active:scale-95 transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50"
               >
                 {isSavingAll ? "Menyimpan..." : "Simpan Semua Password"}
               </button>
@@ -422,11 +435,11 @@ export function Sidebar({
       {/* Sidebar Content */}
       <div
         className={`
-        fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 lg:shadow-sm lg:pointer-events-auto lg:visible
+        fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 lg:shadow-sm lg:pointer-events-auto lg:visible
         ${isOpen ? "translate-x-0 pointer-events-auto visible" : "-translate-x-full pointer-events-none invisible peer-checked/sidebar:translate-x-0 peer-checked/sidebar:pointer-events-auto peer-checked/sidebar:visible"}
       `}
       >
-        <div className="flex h-16 shrink-0 items-center justify-between px-6 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex h-16 shrink-0 items-center justify-between px-6 border-b border-slate-200 dark:border-zinc-800">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center p-1 bg-white rounded-lg shadow-sm">
               <Image
@@ -465,91 +478,101 @@ export function Sidebar({
           </label>
         </div>
 
-        <nav className="flex flex-1 flex-col p-4 space-y-1 overflow-y-auto">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block px-3 mt-2">
-            Menu
-          </label>
-          {[
-            ...navigation,
-            ...(role === "SUPERADMIN"
-              ? [
+        <nav className="flex flex-1 flex-col p-4 overflow-y-auto">
+          {navGroups.map((group, gi) => (
+            <div key={group.label} className={gi > 0 ? "mt-5" : "mt-1"}>
+              <p className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                {group.label}
+              </p>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const isActive = pathname.startsWith(item.href);
+                  return (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      onClick={(e) => handleNavClick(e, item.href)}
+                      className={`
+                        group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer
+                        ${
+                          isActive
+                            ? "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 font-semibold"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+                        }
+                      `}
+                    >
+                      <item.icon
+                        className={`h-5 w-5 transition-colors ${
+                          isActive
+                            ? "text-brand-600 dark:text-brand-400"
+                            : "text-slate-400 group-hover:text-slate-600 dark:text-zinc-500 dark:group-hover:text-zinc-300"
+                        }`}
+                      />
+                      <span className="flex-1 truncate">{item.name}</span>
+                      {lockedRoutes[item.href] &&
+                        (lockPasswords[item.href] ?? "123") !== "" && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400 shrink-0">
+                            PIN
+                          </span>
+                        )}
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {/* Super Admin Special Menus */}
+          {role === "SUPERADMIN" && (
+            <div className="mt-5">
+              <p className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                Super Admin
+              </p>
+              <div className="space-y-1">
+                {[
+                  ...superAdminMenus,
                   {
                     name: "Kelola Akun",
                     href: "/accounts",
                     icon: Icons.settings,
                   },
-                ]
-              : []),
-          ].map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            return (
-              <a
-                key={item.name}
-                href={item.href}
-                onClick={(e) => handleNavClick(e, item.href)}
-                className={`
-                  group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 cursor-pointer
-                  ${
-                    isActive
-                      ? "bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400 font-bold"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-                  }
-                `}
-              >
-                <item.icon
-                  className={`w-5 h-5 transition-colors ${
-                    isActive
-                      ? "text-brand-600 dark:text-brand-400"
-                      : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300"
-                  }`}
-                />
-                <span className="flex-1">{item.name}</span>
-                {lockedRoutes[item.href] &&
-                  (lockPasswords[item.href] ?? "123") !== "" && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-300/40">
-                      🔒
-                    </span>
-                  )}
-              </a>
-            );
-          })}
-
-          {/* Super Admin Special Menus */}
-          {role === "SUPERADMIN" &&
-            superAdminMenus.map((item) => {
-              const isActive = pathname.startsWith(item.href);
-              return (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  onClick={(e) => handleNavClick(e, item.href)}
-                  className={`
-                  group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 cursor-pointer
-                  ${
-                    isActive
-                      ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 font-bold"
-                      : "text-slate-600 hover:bg-amber-50 hover:text-amber-900 dark:text-slate-400 dark:hover:bg-amber-950/20 dark:hover:text-amber-300"
-                  }
-                `}
-                >
-                  <item.icon
-                    className={`w-5 h-5 transition-colors ${
-                      isActive
-                        ? "text-amber-600 dark:text-amber-400"
-                        : "text-slate-400 group-hover:text-amber-600 dark:group-hover:text-amber-400"
-                    }`}
-                  />
-                  <span className="flex-1">{item.name}</span>
-                </a>
-              );
-            })}
+                ].map((item) => {
+                  const isActive = pathname.startsWith(item.href);
+                  return (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      onClick={(e) => handleNavClick(e, item.href)}
+                      className={`
+                        group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer
+                        ${
+                          isActive
+                            ? "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 font-semibold"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+                        }
+                      `}
+                    >
+                      <item.icon
+                        className={`h-5 w-5 transition-colors ${
+                          isActive
+                            ? "text-brand-600 dark:text-brand-400"
+                            : "text-slate-400 group-hover:text-slate-600 dark:text-zinc-500 dark:group-hover:text-zinc-300"
+                        }`}
+                      />
+                      <span className="flex-1 truncate">{item.name}</span>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Khusus Super Admin Section */}
           {role === "SUPERADMIN" && (
-            <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 space-y-1">
-              <label className="text-[11px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2 block px-3 flex items-center gap-1.5">
-                <span>🛡️</span> Khusus Super Admin
-              </label>
+            <div className="pt-4 mt-4 border-t border-slate-200 dark:border-zinc-800 space-y-1">
+              <p className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                Keamanan Modul
+              </p>
 
               <button
                 type="button"
@@ -558,14 +581,14 @@ export function Sidebar({
                   setSuperAdminErrorMsg("");
                   setShowSuperAdminModal(true);
                 }}
-                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs sm:text-sm font-bold text-amber-800 bg-amber-50/90 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/60 transition-all duration-200 cursor-pointer shadow-2xs"
+                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700/70 border border-slate-200 dark:border-zinc-700 transition-colors cursor-pointer"
               >
-                <Icons.settings className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <Icons.shield className="h-4 w-4 text-brand-600 dark:text-brand-400 shrink-0" />
                 <span className="flex-1 text-left truncate">
                   Password Tambah Point
                 </span>
-                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 dark:bg-amber-800 dark:text-amber-100 shrink-0">
-                  🔑 PIN
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-slate-200 text-slate-600 dark:bg-zinc-700 dark:text-zinc-300 shrink-0">
+                  PIN
                 </span>
               </button>
             </div>
@@ -575,9 +598,9 @@ export function Sidebar({
         {/* Bottom Section */}
         <div className="mt-auto">
           {/* User Profile Card */}
-          <div className="p-4 border-t border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 shadow-sm border border-slate-200 dark:border-slate-700 bg-white flex items-center justify-center">
+          <div className="p-4 border-t border-slate-200 dark:border-zinc-800">
+            <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-800/60">
+              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-slate-200 dark:border-zinc-700 bg-white flex items-center justify-center">
                 <Image
                   src="/logo.png"
                   alt="User Profile"
@@ -590,7 +613,7 @@ export function Sidebar({
                 <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
                   {userName}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                <span className="text-xs text-slate-500 dark:text-zinc-400 truncate">
                   {branchName}
                 </span>
               </div>

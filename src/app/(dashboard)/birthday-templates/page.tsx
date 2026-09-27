@@ -11,11 +11,10 @@ export default async function BirthdayTemplatePage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
-          <div className="text-6xl mb-4">🔒</div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
             Akses Dibatasi
           </h2>
-          <p className="text-slate-600 dark:text-slate-400">
+          <p className="text-slate-600 dark:text-zinc-400">
             Halaman ini hanya dapat diakses oleh Super Admin.
           </p>
         </div>
@@ -24,17 +23,17 @@ export default async function BirthdayTemplatePage() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header */}
-      <div className="rounded-3xl bg-brand-600 p-6 sm:p-10 shadow-lg relative overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
-
-        <div className="relative z-10">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap items-center gap-x-2">
-            📝 Template Ucapan Ulang Tahun
+    <div className="space-y-6 sm:space-y-8">
+      {/* Judul halaman: satu kartu putih seperti halaman lain. Tanpa blok biru. */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-5 sm:p-6">
+          <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+            Portal orang tua
+          </p>
+          <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Template Ucapan Ulang Tahun
           </h2>
-          <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
+          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
             Kelola dan edit template ucapan ulang tahun untuk portal orang tua.
             Template akan otomatis digunakan saat siswa punya ulang tahun.
           </p>

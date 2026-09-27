@@ -49,14 +49,14 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 lg:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 sm:space-y-8">
       {/* Branch Selector Card for Superadmin */}
       {isSuperadmin && branches.length > 0 && (
-        <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <div className="p-4 sm:p-6">
+        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+          <div className="p-4 sm:p-5">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="rounded-xl p-2.5 bg-linear-to-br from-brand-500 via-brand-600 to-indigo-600 text-white shadow-md shrink-0">
+                <div className="rounded-xl p-2.5 bg-brand-600 text-white shrink-0">
                   <svg
                     className="h-5 w-5"
                     xmlns="http://www.w3.org/2000/svg"
@@ -75,14 +75,14 @@ export default async function DashboardPage() {
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
                     Cabang Aktif
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 truncate mt-0.5">
                     {hasBranchSelected
                       ? `Data ditampilkan untuk: ${selectedBranchName}`
                       : "Pilih cabang untuk melihat data"}
                   </p>
                 </div>
               </div>
-              <div className="w-full sm:w-auto shrink-0">
+              <div className="w-full sm:w-64 shrink-0">
                 <BranchSelector
                   branches={branches}
                   currentBranchId={currentBranchId}
@@ -97,10 +97,10 @@ export default async function DashboardPage() {
       {/* Kondisi sama seperti sebelumnya: superadmin tanpa cabang -> placeholder,
           selain itu data utama di-streaming agar selector langsung tampil. */}
       {isSuperadmin && !hasBranchSelected ? (
-        <div className="rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-slate-700 p-8 sm:p-16 flex flex-col items-center justify-center text-center">
-          <div className="rounded-xl p-4 bg-white dark:bg-slate-800 shadow-sm mb-6">
+        <div className="rounded-2xl bg-white dark:bg-zinc-900 border-2 border-dashed border-slate-300 dark:border-zinc-700 p-8 sm:p-14 flex flex-col items-center justify-center text-center">
+          <div className="rounded-xl p-3.5 bg-brand-50 dark:bg-brand-500/15 mb-5">
             <svg
-              className="h-10 w-10 text-brand-500"
+              className="h-8 w-8 text-brand-600 dark:text-brand-400"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="none"
@@ -113,10 +113,10 @@ export default async function DashboardPage() {
               <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
           </div>
-          <h3 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white mb-2">
+          <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">
             Selamat Datang!
           </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md leading-relaxed mb-4">
+          <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-md leading-relaxed">
             Silakan pilih cabang menggunakan dropdown di atas untuk melihat data
             dashboard.
           </p>
@@ -189,7 +189,7 @@ async function DashboardMain({
       statusFilter: "CG" as const,
     },
     {
-      name: "Laporan Terlewat - Mohon Segera Diisi",
+      name: "Laporan Terlewat",
       value: overdueList.length.toString(),
       iconName: "alert-circle",
       statusFilter: "OVERDUE_WORKSHEETS" as const,
@@ -198,60 +198,25 @@ async function DashboardMain({
 
   return (
     <>
-      {/* Hero Banner */}
-      <div className="rounded-2xl bg-linear-to-br from-brand-600 via-brand-600 to-indigo-700 dark:from-brand-700 dark:via-brand-800 dark:to-indigo-950 p-6 shadow-xl border border-brand-500/30 relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-indigo-500/20 rounded-full blur-2xl"></div>
-
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white/95 text-xs font-semibold backdrop-blur-md">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                {formatFullIndonesianDate(new Date())}
-              </div>
-              {activeBranchName && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-300/30 text-amber-100 text-xs font-bold backdrop-blur-md">
-                  <svg
-                    className="w-3.5 h-3.5 text-amber-300"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  Cabang: {activeBranchName}
-                </div>
-              )}
-            </div>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight drop-shadow-sm">
-              Hallo, ShiningSun!
-              {activeBranchName && (
-                <span className="text-amber-200/90 font-semibold text-lg sm:text-2xl ml-2">
-                  ({activeBranchName})
-                </span>
-              )}
-            </h2>
-            <p className="text-brand-100 text-sm mt-2 max-w-xl leading-relaxed opacity-95">
-              Ringkasan sistem pendaftaran dan penjadwalan. Semoga aktivitas
-              berjalan lancar.
-            </p>
-          </div>
+      {/* Ringkasan: satu kartu putih, tanpa gradient dan tanpa dekorasi blur.
+          Bentuk dan warna mengikuti sistem login: kartu 16px, aksen tunggal brand-600. */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-5 sm:p-6">
+          <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+            {formatFullIndonesianDate(new Date())}
+            {activeBranchName ? ` - Cabang ${activeBranchName}` : ""}
+          </p>
+          <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Hallo, ShiningSun!
+          </h2>
+          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
+            Ringkasan pendaftaran dan penjadwalan hari ini.
+          </p>
         </div>
 
-        {/* Glassmorphic Stats Cards */}
-        <DashboardStatsPanel stats={stats} />
+        <div className="border-t border-slate-200 dark:border-zinc-800 px-5 sm:px-6 py-5">
+          <DashboardStatsPanel stats={stats} />
+        </div>
       </div>
 
       {/* Notification & Schedule Section */}
@@ -304,13 +269,14 @@ async function DashboardDocs({ isSuperadmin }: { isSuperadmin: boolean }) {
 // Skeleton selama streaming (tampilan sementara, bukan data).
 function DashboardMainSkeleton() {
   return (
-    <div className="rounded-2xl bg-slate-200/60 dark:bg-slate-800/60 p-6 sm:p-10 animate-pulse">
-      <div className="h-6 w-48 rounded-lg bg-slate-300 dark:bg-slate-700" />
-      <div className="mt-3 h-4 w-72 max-w-full rounded-lg bg-slate-300/70 dark:bg-slate-700/70" />
-      <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-4">
-        <div className="h-20 rounded-2xl bg-slate-300/70 dark:bg-slate-700/70" />
-        <div className="h-20 rounded-2xl bg-slate-300/70 dark:bg-slate-700/70" />
-        <div className="h-20 rounded-2xl bg-slate-300/70 dark:bg-slate-700/70" />
+    <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-5 sm:p-6 animate-pulse">
+      <div className="h-4 w-40 rounded-lg bg-slate-200 dark:bg-zinc-800" />
+      <div className="mt-2 h-7 w-56 max-w-full rounded-lg bg-slate-200 dark:bg-zinc-800" />
+      <div className="mt-2 h-4 w-72 max-w-full rounded-lg bg-slate-100 dark:bg-zinc-800/70" />
+      <div className="mt-5 grid grid-cols-3 gap-3">
+        <div className="h-24 rounded-2xl bg-slate-100 dark:bg-zinc-800/70" />
+        <div className="h-24 rounded-2xl bg-slate-100 dark:bg-zinc-800/70" />
+        <div className="h-24 rounded-2xl bg-slate-100 dark:bg-zinc-800/70" />
       </div>
     </div>
   );
@@ -319,8 +285,8 @@ function DashboardMainSkeleton() {
 function DashboardDocsSkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
-      <div className="h-32 rounded-2xl bg-slate-200/60 dark:bg-slate-800/60" />
-      <div className="h-32 rounded-2xl bg-slate-200/60 dark:bg-slate-800/60" />
+      <div className="h-32 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800" />
+      <div className="h-32 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800" />
     </div>
   );
 }

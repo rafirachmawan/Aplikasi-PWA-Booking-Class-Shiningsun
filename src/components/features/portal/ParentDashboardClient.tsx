@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { Icons } from "@/components/ui/icons";
 import { StudentScheduleCard } from "./StudentScheduleCard";
 import { StudentWorksheetTable } from "@/components/features/worksheets/StudentWorksheetTable";
 import { DatePickerInput } from "@/components/ui/DatePickerInput";
@@ -43,6 +44,7 @@ export function ParentDashboardClient({
   const [showPointsModal, setShowPointsModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Viewer PDF hanya-lihat (tanpa download)
   const [previewDoc, setPreviewDoc] = useState<
@@ -577,12 +579,12 @@ export function ParentDashboardClient({
     student?.points ?? Math.max(0, grossPoints - redeemedPoints);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans pb-12">
+    <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 font-sans pb-12">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+      <header className="sticky top-0 z-40 bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-white rounded-2xl shadow-xs border border-slate-100 p-1 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center justify-center w-10 h-10 bg-white rounded-xl border border-slate-200 p-1 shrink-0">
               <Image
                 src="/logo.png"
                 alt="ShiningSun Logo"
@@ -591,11 +593,11 @@ export function ParentDashboardClient({
                 className="object-contain"
               />
             </div>
-            <div>
-              <h1 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-white leading-none">
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white leading-none truncate">
                 Portal Orang Tua & Siswa
               </h1>
-              <p className="text-[11px] text-brand-600 dark:text-brand-400 font-bold mt-0.5">
+              <p className="text-[11px] text-brand-600 dark:text-brand-400 font-bold mt-0.5 truncate">
                 ShiningSun Preschool & Academy
               </p>
             </div>
@@ -603,11 +605,10 @@ export function ParentDashboardClient({
 
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             disabled={isLoggingOut}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/40 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-red-600 dark:text-zinc-300 dark:hover:text-red-400 bg-slate-100 dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-red-500/10 active:translate-y-[1px] transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-50"
           >
-            <span>🚪</span>
             <span className="hidden sm:inline">
               {isLoggingOut ? "Keluar..." : "Keluar / Ganti Akses"}
             </span>
@@ -634,8 +635,10 @@ export function ParentDashboardClient({
       ) : (
         /* SHOW FULL DASHBOARD */
         <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 space-y-6">
-          {/* Student Profile Card (Clean Brand Blue Banner) */}
-          <div className="rounded-3xl bg-brand-600 dark:bg-brand-700 border border-brand-500/40 p-5 sm:p-7 text-white shadow-xl space-y-4">
+          {/* Student Profile Card: satu-satunya color block di halaman.
+              Dipertahankan sebagai blok brand (sapaan hangat untuk orang tua),
+              tanpa gradient dan tanpa dekorasi blur. */}
+          <div className="rounded-2xl bg-brand-600 p-5 sm:p-7 text-white shadow-sm space-y-4">
             {/* Top: Photo + Name + Nickname + Branch */}
             <div className="flex items-center gap-3.5 sm:gap-5">
               {/* Hidden File Input */}
@@ -653,7 +656,8 @@ export function ParentDashboardClient({
                 onClick={handlePhotoClick}
                 disabled={isUploadingPhoto}
                 title="Klik untuk mengubah foto profil anak"
-                className="group relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white p-1 shrink-0 flex items-center justify-center shadow-md border-2 border-white/80 overflow-hidden cursor-pointer hover:opacity-95 active:scale-95 transition-all"
+                aria-label="Ubah foto profil anak"
+                className="group relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white p-1 shrink-0 flex items-center justify-center shadow-sm overflow-hidden cursor-pointer hover:opacity-95 active:translate-y-[1px] transition-opacity"
               >
                 {photoUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
@@ -674,16 +678,15 @@ export function ParentDashboardClient({
                 )}
 
                 {/* Camera Overlay Icon */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white rounded-xl">
-                  <span className="text-base sm:text-lg">📷</span>
-                  <span className="text-[9px] font-bold uppercase tracking-tighter">
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity flex flex-col items-center justify-center text-white rounded-xl">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">
                     Ubah
                   </span>
                 </div>
 
                 {/* Mobile Camera Indicator Badge */}
-                <div className="absolute bottom-0 right-0 bg-brand-700 text-white w-5 h-5 rounded-tl-lg flex items-center justify-center text-[10px] shadow-xs sm:hidden">
-                  📷
+                <div className="absolute bottom-0 right-0 bg-brand-800 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-tl-lg sm:hidden">
+                  Ubah
                 </div>
 
                 {/* Uploading Spinner */}
@@ -695,7 +698,7 @@ export function ParentDashboardClient({
               </button>
 
               <div className="min-w-0 flex-1">
-                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight truncate">
+                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-tight truncate">
                   {student.name}
                 </h2>
                 <div className="flex items-center gap-1.5 flex-wrap text-xs mt-0.5">
@@ -710,10 +713,10 @@ export function ParentDashboardClient({
                   {student.branch?.name && (
                     <>
                       {student.nickname && (
-                        <span className="text-brand-300/60">•</span>
+                        <span className="text-white/40">•</span>
                       )}
                       <span className="font-semibold text-brand-100">
-                        📍 {student.branch.name}
+                        {student.branch.name}
                       </span>
                     </>
                   )}
@@ -723,18 +726,18 @@ export function ParentDashboardClient({
 
             {/* Middle: Info Grid — DOB, Usia, Jadwal */}
             {(student.date_of_birth || student.schedule_detail) && (
-              <div className="bg-white rounded-2xl p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 shadow-md border border-white divide-y divide-slate-100 sm:divide-y-0 sm:divide-x sm:divide-slate-100">
+              <div className="bg-white rounded-2xl p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 shadow-sm divide-y divide-slate-200 sm:divide-y-0 sm:divide-x sm:divide-slate-200">
                 {student.date_of_birth && dobInfo && (
                   <div className="flex items-start gap-2.5 text-[12px] pb-2 sm:pb-0">
-                    <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center text-base shrink-0 mt-0.5">
-                      🎂
+                    <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center shrink-0 mt-0.5">
+                      <Icons.gift className="w-4 h-4 text-brand-600" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
                         Tanggal Lahir
                       </span>
                       <span
-                        className="font-bold text-slate-800 leading-snug block"
+                        className="font-bold text-slate-800 leading-snug block tabular-nums"
                         suppressHydrationWarning
                       >
                         {dobInfo.formatted}
@@ -753,18 +756,18 @@ export function ParentDashboardClient({
                     type="button"
                     onClick={() => setShowScheduleModal(true)}
                     title="Klik untuk melihat rincian jadwal kelas"
-                    className="flex items-start gap-2.5 text-[12px] pt-2.5 sm:pt-0 sm:pl-3 text-left w-full cursor-pointer hover:bg-slate-50/80 p-2 rounded-xl transition-all group"
+                    className="flex items-start gap-2.5 text-[12px] pt-2.5 sm:pt-0 sm:pl-3 text-left w-full cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition-colors group"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center text-base shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
-                      📅
+                    <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center shrink-0 mt-0.5">
+                      <Icons.calendar className="w-4 h-4 text-brand-600" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1 mb-1">
                         <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                           Jadwal Kelas
                         </span>
-                        <span className="text-[10px] font-extrabold text-brand-600 dark:text-brand-400 group-hover:underline flex items-center gap-0.5">
-                          Lihat ↗
+                        <span className="text-[10px] font-bold text-brand-600 group-hover:underline">
+                          Lihat
                         </span>
                       </div>
                       <div className="space-y-1.5">
@@ -785,12 +788,12 @@ export function ParentDashboardClient({
                                 key={idx}
                                 className="flex items-center gap-2 text-xs font-bold text-slate-800"
                               >
-                                <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-brand-600 shrink-0" />
                                 <span className="w-16 shrink-0 text-slate-700">
                                   {dayName}
                                 </span>
                                 {timeStr && (
-                                  <span className="text-[11px] font-bold text-brand-700 bg-brand-50/80 px-2 py-0.5 rounded-md border border-brand-100/80 font-mono tracking-tight">
+                                  <span className="text-[11px] font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-md font-mono tracking-tight tabular-nums">
                                     {timeStr}
                                   </span>
                                 )}
@@ -807,7 +810,7 @@ export function ParentDashboardClient({
             {/* Bottom: Level Badge + Status Badge */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* PROMINENT LEVEL PILL */}
-              <div className="bg-white text-slate-900 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md border border-white flex items-center gap-2">
+              <div className="bg-white text-slate-900 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-sm flex items-center gap-2">
                 <span
                   className="w-2.5 h-2.5 rounded-full shrink-0"
                   style={{
@@ -817,7 +820,7 @@ export function ParentDashboardClient({
                 <span className="text-slate-500 font-bold text-[11px] uppercase tracking-wider">
                   Level:
                 </span>
-                <span className="font-black text-brand-700 uppercase tracking-wide">
+                <span className="font-bold text-brand-700 uppercase tracking-wide">
                   {student.label
                     ? `${student.label.main_level} ${student.label.sub_level}`
                     : "Belum Diatur"}
@@ -825,8 +828,8 @@ export function ParentDashboardClient({
               </div>
 
               {/* STATUS BADGE */}
-              <span className="bg-white text-emerald-700 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md border border-white inline-flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+              <span className="bg-white text-emerald-700 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-sm inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                 <span>
                   {student.status === "REGISTERED"
                     ? "Siswa Reguler"
@@ -842,60 +845,48 @@ export function ParentDashboardClient({
               type="button"
               onClick={() => setShowPointsModal(true)}
               title="Klik untuk melihat riwayat poin"
-              className="w-full bg-white rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-md border border-white text-slate-900 cursor-pointer hover:bg-amber-50/60 active:scale-[0.99] transition-all group text-left"
+              className="w-full bg-white rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-sm text-slate-900 cursor-pointer hover:bg-amber-50 active:translate-y-[1px] transition-colors group text-left"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-xl font-black shrink-0 shadow-sm border border-amber-300 group-hover:scale-105 transition-transform">
-                  ⭐
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-xl bg-amber-400 text-white flex items-center justify-center shrink-0">
+                  <Icons.star className="w-5 h-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="block text-[10px] font-extrabold text-amber-600 uppercase tracking-wider">
+                    <span className="block text-[10px] font-bold text-amber-600 uppercase tracking-wider">
                       Poin
                     </span>
-                    <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-md group-hover:bg-amber-200 transition-colors">
-                      Lihat Riwayat ↗
+                    <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-md">
+                      Lihat Riwayat
                     </span>
                   </div>
                   <div className="flex items-baseline gap-1.5 mt-0.5">
-                    <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                    <span className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight tabular-nums">
                       {netPoints}
                     </span>
-                    <span className="text-sm font-extrabold text-slate-600">
+                    <span className="text-sm font-bold text-slate-600">
                       Poin
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 {(student.redeemed_points || 0) > 0 && (
-                  <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 shrink-0">
+                  <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-xl tabular-nums">
                     Ditukar:{" "}
-                    <strong className="text-rose-600 font-extrabold">
+                    <strong className="text-rose-600 font-bold">
                       {student.redeemed_points}
                     </strong>
                   </span>
                 )}
-                <svg
-                  className="w-5 h-5 text-slate-400 group-hover:text-amber-600 transition-colors shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
+                <Icons.chevronRight className="w-5 h-5 text-slate-400 group-hover:text-amber-600 transition-colors shrink-0" />
               </div>
             </button>
           </div>
 
           {/* Ulang Tahun Hari Ini Section */}
           {birthdayData && !loadingBirthday && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div>
               <BirthdayGreetingCard
                 student={birthdayData}
                 parentUserId={student.id} // Pass student ID as parent user id for this demo
@@ -917,29 +908,17 @@ export function ParentDashboardClient({
           {/* Hanya tampil jika sudah submit feedback atau bukan hari ini */}
           {rulesDocuments.length > 0 &&
             (!birthdayData || hasSubmittedFeedback) && (
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-3">
+              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-4 sm:p-5 shadow-sm space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-xl p-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
-                    <svg
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
+                  <div className="rounded-xl p-2.5 bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 shrink-0">
+                    <Icons.fileText className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
-                      📖 Informasi Bimba
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                      Informasi Bimba
                     </h3>
-                    <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Dokumen PDF dari admin — terbaru di atas.
+                    <p className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                      Dokumen PDF dari admin, terbaru di atas.
                     </p>
                   </div>
                 </div>
@@ -948,39 +927,21 @@ export function ParentDashboardClient({
                   {rulesDocuments.map((doc) => (
                     <div
                       key={doc.id}
-                      className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3"
+                      className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/60 p-3"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-bold text-slate-800 dark:text-white truncate">
                           {doc.file_name}
                         </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
                           Diunggah {formatShortDate(doc.uploaded_at)}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setPreviewDoc(doc)}
-                        className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 active:scale-98 transition-all shadow-md shadow-brand-500/20 cursor-pointer"
+                        className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] transition-colors cursor-pointer"
                       >
-                        <svg
-                          className="h-3.5 w-3.5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
                         Lihat PDF
                       </button>
                     </div>
@@ -990,8 +951,7 @@ export function ParentDashboardClient({
             )}
 
           {/* Info Penting — Red Card */}
-          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-start gap-3 shadow-xs">
-            <div className="text-lg shrink-0">⚠️</div>
+          <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-800/50 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
             <div className="text-xs text-red-700 dark:text-red-300 leading-relaxed">
               <strong>Info Poin Kehadiran:</strong> Siswa mendapatkan{" "}
               <strong>+1 Poin</strong> setiap kali masuk kelas. Hadiah dapat
@@ -1010,49 +970,37 @@ export function ParentDashboardClient({
               setPinSuccessMsg("");
               setShowPinText(false);
             }}
-            className="w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800/80 active:scale-[0.98] transition-all cursor-pointer group"
+            className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-sm hover:bg-slate-50 dark:hover:bg-zinc-800/70 active:translate-y-[1px] transition-colors cursor-pointer group"
           >
-            <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-lg shrink-0 group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20 transition-colors">
-              🔑
+            <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+              <Icons.shield className="w-5 h-5" />
             </div>
-            <div className="flex-1 text-left">
+            <div className="flex-1 text-left min-w-0">
               <span className="block text-sm font-bold text-slate-900 dark:text-white">
                 Ganti PIN Akses
               </span>
-              <span className="block text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              <span className="block text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
                 Ubah PIN login Portal Orang Tua. Perubahan langsung berlaku.
               </span>
             </div>
-            <svg
-              className="w-5 h-5 text-slate-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            <Icons.chevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors shrink-0" />
           </button>
 
           {/* Rapor & Laporan Content — Always Visible */}
           <div className="space-y-4">
             {/* Header & Date Range Download Control Panel */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-4">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-4 sm:p-5 shadow-sm space-y-4">
               {/* Header Title & Badge */}
-              <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
-                <div>
-                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
-                    📄 Laporan Perkembangan Siswa
+              <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-zinc-800">
+                <div className="min-w-0">
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                    Laporan Perkembangan Siswa
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
                     Filter berdasarkan tanggal dan unduh file PDF resmi.
                   </p>
                 </div>
-                <span className="shrink-0 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+                <span className="shrink-0 text-[11px] font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 px-3 py-1 rounded-lg tabular-nums">
                   {filteredWorksheets.length} Sesi
                 </span>
               </div>
@@ -1061,7 +1009,7 @@ export function ParentDashboardClient({
               <div className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                       Mulai Tanggal
                     </label>
                     <DatePickerInput
@@ -1072,7 +1020,7 @@ export function ParentDashboardClient({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                       Sampai Tanggal
                     </label>
                     <DatePickerInput
@@ -1091,7 +1039,7 @@ export function ParentDashboardClient({
                         setStartDate("");
                         setEndDate("");
                       }}
-                      className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 underline cursor-pointer"
+                      className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 underline cursor-pointer"
                     >
                       Reset Filter Tanggal
                     </button>
@@ -1103,7 +1051,7 @@ export function ParentDashboardClient({
                   type="button"
                   onClick={handleDownloadPdf}
                   disabled={isDownloadingPdf || filteredWorksheets.length === 0}
-                  className="w-full py-2.5 sm:py-3 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 active:scale-98 transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-2.5 sm:py-3 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 active:translate-y-[1px] transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isDownloadingPdf ? (
                     <>
@@ -1158,9 +1106,11 @@ export function ParentDashboardClient({
             {/* Printable Container for PDF Export */}
             <div ref={printableRef} className="space-y-6">
               {filteredWorksheets.length === 0 ? (
-                <div className="py-12 text-center text-slate-400 italic bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                  Tidak ada data laporan perkembangan untuk rentang tanggal yang
-                  dipilih.
+                <div className="py-12 px-4 text-center bg-white dark:bg-zinc-900 rounded-2xl border-2 border-dashed border-slate-300 dark:border-zinc-700">
+                  <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">
+                    Tidak ada data laporan perkembangan untuk rentang tanggal
+                    yang dipilih.
+                  </p>
                 </div>
               ) : (
                 (() => {
@@ -1197,7 +1147,7 @@ export function ParentDashboardClient({
 
       {/* Footer - Show only when full dashboard is displayed */}
       {shouldShowFullDashboard && (
-        <footer className="mt-16 py-6 border-t border-slate-200/60 dark:border-slate-800 text-center text-xs text-slate-400">
+        <footer className="mt-16 py-6 border-t border-slate-200 dark:border-zinc-800 text-center text-xs text-slate-400 dark:text-zinc-500">
           <p>
             © {new Date().getFullYear()} ShiningSun Preschool & Academy. Portal
             Orang Tua & Rapor Digital.
@@ -1205,23 +1155,68 @@ export function ParentDashboardClient({
         </footer>
       )}
 
-      {/* Back Button Confirmation Modal */}
-      {showBackConfirm && (
-        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/50 backdrop-blur-sm px-5 animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 max-w-sm w-full space-y-5 animate-in zoom-in-95 duration-200">
-            {/* Icon */}
+      {/* Logout Confirmation Modal (tombol Keluar navbar) */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/50 backdrop-blur-sm px-5">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 p-6 sm:p-8 max-w-sm w-full space-y-5">
             <div className="flex justify-center">
-              <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-3xl border-2 border-amber-200 dark:border-amber-700">
-                ⚠️
+              <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"
+                  />
+                </svg>
               </div>
             </div>
+            <div className="text-center space-y-1.5">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                Yakin Ingin Keluar?
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-zinc-400 leading-relaxed">
+                Apakah Anda yakin ingin keluar dari Portal Orang Tua? Anda
+                perlu memasukkan nama dan PIN kembali untuk masuk.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                disabled={isLoggingOut}
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 transition-colors cursor-pointer active:translate-y-[1px] disabled:opacity-50"
+              >
+                Tetap di Sini
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors cursor-pointer active:translate-y-[1px]"
+              >
+                {isLoggingOut ? "Keluar..." : "Ya, Keluar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* Back Button Confirmation Modal */}
+      {showBackConfirm && (
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/50 backdrop-blur-sm px-5">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 p-6 sm:p-8 max-w-sm w-full space-y-5">
             {/* Text */}
             <div className="text-center space-y-1.5">
-              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Keluar dari Portal?
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-500 dark:text-zinc-400 leading-relaxed">
                 Apakah Anda yakin ingin keluar dari Portal Orang Tua? Anda perlu
                 memasukkan kode akses kembali untuk masuk.
               </p>
@@ -1232,7 +1227,7 @@ export function ParentDashboardClient({
               <button
                 type="button"
                 onClick={handleBackCancel}
-                className="flex-1 py-3 rounded-xl text-sm font-extrabold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer active:scale-95"
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 transition-colors cursor-pointer active:translate-y-[1px]"
               >
                 Tetap di Sini
               </button>
@@ -1240,7 +1235,7 @@ export function ParentDashboardClient({
                 type="button"
                 onClick={handleBackConfirmLogout}
                 disabled={isLoggingOut}
-                className="flex-1 py-3 rounded-xl text-sm font-extrabold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 transition-all cursor-pointer active:scale-95 shadow-md shadow-rose-500/20"
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors cursor-pointer active:translate-y-[1px]"
               >
                 {isLoggingOut ? "Keluar..." : "Ya, Keluar"}
               </button>
@@ -1251,35 +1246,33 @@ export function ParentDashboardClient({
 
       {/* Interactive Photo Crop Modal */}
       {showCropModal && (
-        <div className="fixed inset-0 z-99999 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 text-white rounded-3xl shadow-2xl border border-slate-800 p-5 sm:p-7 max-w-md w-full space-y-5 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-99999 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="bg-zinc-900 text-white rounded-2xl shadow-2xl border border-zinc-800 p-5 sm:p-7 max-w-md w-full space-y-5">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">✂️</span>
-                <h3 className="text-base font-extrabold text-white">
-                  Atur & Potong Foto Profil
-                </h3>
-              </div>
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <h3 className="text-base font-bold text-white">
+                Atur dan Potong Foto Profil
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowCropModal(false)}
-                className="text-slate-400 hover:text-white text-lg p-1 transition-colors"
+                aria-label="Tutup"
+                className="text-zinc-400 hover:text-white p-1.5 rounded-xl hover:bg-zinc-800 transition-colors cursor-pointer"
               >
-                ✕
+                <Icons.close className="w-5 h-5" />
               </button>
             </div>
 
             {/* Instruction */}
-            <p className="text-xs text-slate-300 text-center">
-              Geser posisi foto & atur perbesaran (zoom) agar sesuai dalam
+            <p className="text-xs text-zinc-300 text-center">
+              Geser posisi foto dan atur perbesaran (zoom) agar sesuai dalam
               bingkai lingkaran.
             </p>
 
             {/* Interactive Preview Container (260x260px) */}
             <div className="flex justify-center my-2">
               <div
-                className="relative w-65 h-65 rounded-full overflow-hidden border-4 border-brand-500 shadow-2xl bg-black cursor-grab active:cursor-grabbing select-none touch-none"
+                className="relative w-65 h-65 rounded-full overflow-hidden border-4 border-brand-600 bg-black cursor-grab active:cursor-grabbing select-none touch-none"
                 onMouseDown={(e) => handleDragStart(e.clientX, e.clientY)}
                 onMouseMove={(e) => handleDragMove(e.clientX, e.clientY)}
                 onMouseUp={handleDragEnd}
@@ -1302,7 +1295,7 @@ export function ParentDashboardClient({
                     src={rawImageSrc}
                     alt="Preview Crop"
                     draggable={false}
-                    className="absolute max-w-none transition-transform duration-75 pointer-events-none"
+                    className="absolute max-w-none pointer-events-none"
                     style={{
                       transform: `translate(-50%, -50%) translate(${cropOffset.x}px, ${cropOffset.y}px) scale(${cropZoom})`,
                       left: "50%",
@@ -1317,10 +1310,10 @@ export function ParentDashboardClient({
             </div>
 
             {/* Zoom Slider Control */}
-            <div className="space-y-2 bg-slate-800/70 p-3 rounded-2xl border border-slate-700/60">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+            <div className="space-y-2 bg-zinc-800/70 p-3 rounded-2xl border border-zinc-700/60">
+              <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
                 <span>Perbesaran (Zoom):</span>
-                <span className="text-brand-400">
+                <span className="text-brand-400 tabular-nums">
                   {Math.round(cropZoom * 100)}%
                 </span>
               </div>
@@ -1328,9 +1321,10 @@ export function ParentDashboardClient({
                 <button
                   type="button"
                   onClick={() => setCropZoom((z) => Math.max(1, z - 0.2))}
-                  className="w-8 h-8 rounded-xl bg-slate-700 hover:bg-slate-600 font-bold text-white shrink-0 active:scale-95 transition-all"
+                  aria-label="Perkecil"
+                  className="w-8 h-8 rounded-xl bg-zinc-700 hover:bg-zinc-600 font-bold text-white shrink-0 active:translate-y-[1px] transition-colors cursor-pointer"
                 >
-                  ➖
+                  -
                 </button>
                 <input
                   type="range"
@@ -1338,15 +1332,17 @@ export function ParentDashboardClient({
                   max="3"
                   step="0.05"
                   value={cropZoom}
+                  aria-label="Perbesaran foto"
                   onChange={(e) => setCropZoom(parseFloat(e.target.value))}
                   className="w-full accent-brand-500 cursor-pointer"
                 />
                 <button
                   type="button"
                   onClick={() => setCropZoom((z) => Math.min(3, z + 0.2))}
-                  className="w-8 h-8 rounded-xl bg-slate-700 hover:bg-slate-600 font-bold text-white shrink-0 active:scale-95 transition-all"
+                  aria-label="Perbesar"
+                  className="w-8 h-8 rounded-xl bg-zinc-700 hover:bg-zinc-600 font-bold text-white shrink-0 active:translate-y-[1px] transition-colors cursor-pointer"
                 >
-                  ➕
+                  +
                 </button>
               </div>
             </div>
@@ -1356,7 +1352,7 @@ export function ParentDashboardClient({
               <button
                 type="button"
                 onClick={() => setShowCropModal(false)}
-                className="flex-1 py-3 rounded-2xl text-xs font-extrabold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-all cursor-pointer active:scale-95"
+                className="flex-1 py-3 rounded-xl text-xs font-bold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors cursor-pointer active:translate-y-[1px]"
               >
                 Batal
               </button>
@@ -1364,7 +1360,7 @@ export function ParentDashboardClient({
                 type="button"
                 onClick={handleSaveCrop}
                 disabled={isUploadingPhoto}
-                className="flex-1 py-3 rounded-2xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-500 disabled:opacity-50 transition-all cursor-pointer active:scale-95 shadow-lg shadow-brand-500/30 flex items-center justify-center gap-2"
+                className="flex-1 py-3 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors cursor-pointer active:translate-y-[1px] flex items-center justify-center gap-2"
               >
                 {isUploadingPhoto ? (
                   <>
@@ -1372,9 +1368,7 @@ export function ParentDashboardClient({
                     Menyimpan...
                   </>
                 ) : (
-                  <>
-                    <span>✂️</span> Simpan Foto
-                  </>
+                  <>Simpan Foto</>
                 )}
               </button>
             </div>
@@ -1386,19 +1380,19 @@ export function ParentDashboardClient({
       {showChangePinModal && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => !isSubmittingPin && setShowChangePinModal(false)}
           />
-          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden">
             {/* Header */}
             <div className="px-6 pt-6 pb-3 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center mx-auto mb-3 text-2xl">
-                🔑
+              <div className="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto mb-3">
+                <Icons.shield className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Ganti PIN Akses
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
                 PIN baru akan langsung berlaku untuk login Portal Orang Tua dan
                 juga terupdate di sisi Admin.
               </p>
@@ -1407,14 +1401,12 @@ export function ParentDashboardClient({
             {/* Form */}
             <form onSubmit={handleChangePin} className="px-6 pb-2 space-y-3">
               {pinErrorMsg && (
-                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-3 rounded-xl text-xs font-semibold flex items-start gap-2 animate-in fade-in duration-200">
-                  <span className="shrink-0 mt-0.5">⚠️</span>
+                <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 p-3 rounded-xl text-xs font-semibold">
                   <span>{pinErrorMsg}</span>
                 </div>
               )}
               {pinSuccessMsg && (
-                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 p-3 rounded-xl text-xs font-semibold flex items-start gap-2 animate-in fade-in duration-200">
-                  <span className="shrink-0 mt-0.5">✅</span>
+                <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-300 p-3 rounded-xl text-xs font-semibold">
                   <span>{pinSuccessMsg}</span>
                 </div>
               )}
@@ -1423,7 +1415,7 @@ export function ParentDashboardClient({
               <div>
                 <label
                   htmlFor="newPin"
-                  className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                  className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5"
                 >
                   PIN Baru
                 </label>
@@ -1437,13 +1429,14 @@ export function ParentDashboardClient({
                     required
                     value={newPin}
                     onChange={(e) => setNewPin(e.target.value)}
-                    className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3.5 pr-10 py-2.5 text-sm font-bold tracking-widest text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none placeholder:text-slate-400 placeholder:font-normal placeholder:tracking-normal transition-all"
+                    className="block w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-3.5 pr-10 py-2.5 text-sm font-bold tracking-widest text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none placeholder:text-slate-400 placeholder:font-normal placeholder:tracking-normal transition-colors"
                     placeholder="Masukkan PIN baru (min. 4)"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPinText(!showPinText)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 transition-colors rounded-lg"
+                    aria-label={showPinText ? "Sembunyikan PIN" : "Tampilkan PIN"}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-1 transition-colors rounded-lg cursor-pointer"
                   >
                     {showPinText ? (
                       <svg
@@ -1489,7 +1482,7 @@ export function ParentDashboardClient({
               <div>
                 <label
                   htmlFor="confirmPin"
-                  className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                  className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5"
                 >
                   Konfirmasi PIN Baru
                 </label>
@@ -1502,7 +1495,7 @@ export function ParentDashboardClient({
                   required
                   value={confirmPin}
                   onChange={(e) => setConfirmPin(e.target.value)}
-                  className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3.5 py-2.5 text-sm font-bold tracking-widest text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none placeholder:text-slate-400 placeholder:font-normal placeholder:tracking-normal transition-all"
+                  className="block w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-3.5 py-2.5 text-sm font-bold tracking-widest text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none placeholder:text-slate-400 placeholder:font-normal placeholder:tracking-normal transition-colors"
                   placeholder="Ulangi PIN baru"
                 />
               </div>
@@ -1513,14 +1506,14 @@ export function ParentDashboardClient({
                   type="button"
                   disabled={isSubmittingPin}
                   onClick={() => setShowChangePinModal(false)}
-                  className="flex-1 py-2.5 px-4 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-11"
+                  className="flex-1 py-2.5 px-4 text-xs font-semibold rounded-xl border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors min-h-11 cursor-pointer disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingPin}
-                  className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-500/20 transition-all disabled:opacity-50 min-h-11 flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] text-white transition-colors disabled:opacity-50 min-h-11 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmittingPin ? (
                     <>
@@ -1528,7 +1521,7 @@ export function ParentDashboardClient({
                       Menyimpan...
                     </>
                   ) : (
-                    <>🔑 Simpan PIN Baru</>
+                    <>Simpan PIN Baru</>
                   )}
                 </button>
               </div>
@@ -1539,33 +1532,34 @@ export function ParentDashboardClient({
 
       {/* ── Schedule Modal ── */}
       {showScheduleModal && (
-        <div className="fixed inset-0 z-200 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-200 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => setShowScheduleModal(false)}
           />
-          <div className="relative z-10 w-full max-w-lg max-h-[85vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+          <div className="relative z-10 w-full max-w-lg max-h-[85vh] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="px-5 pt-5 pb-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-lg">
-                  📅
+            <div className="px-5 pt-5 pb-3 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+                  <Icons.calendar className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     Jadwal Kelas
                   </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Jadwal mendatang & riwayat kelas
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Jadwal mendatang dan riwayat kelas
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setShowScheduleModal(false)}
-                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+                aria-label="Tutup"
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer shrink-0"
               >
-                ✕
+                <Icons.close className="w-4 h-4" />
               </button>
             </div>
             {/* Body */}
@@ -1581,58 +1575,59 @@ export function ParentDashboardClient({
 
       {/* ── Points & Redemption History Modal ── */}
       {showPointsModal && (
-        <div className="fixed inset-0 z-200 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-200 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => setShowPointsModal(false)}
           />
-          <div className="relative z-10 w-full max-w-lg max-h-[85vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+          <div className="relative z-10 w-full max-w-lg max-h-[85vh] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="px-5 pt-5 pb-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center text-lg">
-                  ⭐
+            <div className="px-5 pt-5 pb-3 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Icons.star className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     Riwayat Poin
                   </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Rincian kehadiran & penukaran hadiah
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Rincian kehadiran dan penukaran hadiah
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setShowPointsModal(false)}
-                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+                aria-label="Tutup"
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer shrink-0"
               >
-                ✕
+                <Icons.close className="w-4 h-4" />
               </button>
             </div>
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
               {/* Points Summary */}
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+              <div className="bg-slate-50 dark:bg-zinc-800/60 rounded-2xl border border-slate-200 dark:border-zinc-800 p-4">
                 <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-3">
-                    <div className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-300">
+                  <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3">
+                    <div className="text-xl sm:text-2xl font-bold tabular-nums text-amber-700 dark:text-amber-300">
                       +{grossPoints}
                     </div>
                     <div className="text-[10px] sm:text-xs text-amber-800 dark:text-amber-400 font-semibold mt-0.5">
                       Total Hadir
                     </div>
                   </div>
-                  <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl p-3">
-                    <div className="text-xl sm:text-2xl font-black text-rose-700 dark:text-rose-300">
+                  <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-800/50 rounded-xl p-3">
+                    <div className="text-xl sm:text-2xl font-bold tabular-nums text-rose-700 dark:text-rose-300">
                       -{Math.max(0, redeemedPoints)}
                     </div>
                     <div className="text-[10px] sm:text-xs text-rose-800 dark:text-rose-400 font-semibold mt-0.5">
                       Sudah Ditukar
                     </div>
                   </div>
-                  <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-3">
-                    <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">
+                  <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-3">
+                    <div className="text-xl sm:text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
                       {netPoints}
                     </div>
                     <div className="text-[10px] sm:text-xs text-emerald-800 dark:text-emerald-400 font-semibold mt-0.5">
@@ -1643,26 +1638,23 @@ export function ParentDashboardClient({
               </div>
 
               {/* ── Section 1: Kehadiran ── */}
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-amber-50 dark:bg-amber-950/30 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">📋</span>
-                    <div>
-                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
-                        Poin Kehadiran
-                      </h4>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                        +1 poin setiap hadir kelas
-                      </p>
-                    </div>
+              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                <div className="p-3.5 border-b border-slate-200 dark:border-zinc-800 bg-amber-50 dark:bg-amber-500/10 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                      Poin Kehadiran
+                    </h4>
+                    <p className="text-[10px] text-slate-500 dark:text-zinc-400">
+                      +1 poin setiap hadir kelas
+                    </p>
                   </div>
-                  <span className="text-xs font-black text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-700">
+                  <span className="text-xs font-bold tabular-nums text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-500/15 px-2.5 py-1 rounded-lg shrink-0">
                     +{grossPoints} Poin
                   </span>
                 </div>
-                <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-48 overflow-y-auto">
+                <div className="divide-y divide-slate-200 dark:divide-zinc-800 max-h-48 overflow-y-auto">
                   {worksheets.length === 0 ? (
-                    <div className="py-6 text-center text-xs text-slate-400 italic">
+                    <div className="py-6 text-center text-xs text-slate-400 dark:text-zinc-500 italic">
                       Belum ada data kehadiran.
                     </div>
                   ) : (
@@ -1699,10 +1691,10 @@ export function ParentDashboardClient({
                               className="px-4 py-2.5 flex items-center justify-between gap-2"
                             >
                               <div className="min-w-0 flex-1">
-                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
+                                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate block">
                                   {w.materi || w.title || "Kelas"}
                                 </span>
-                                <span className="text-[10px] text-slate-400">
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500">
                                   {w.worksheet_date
                                     ? formatShortDate(w.worksheet_date)
                                     : w.created_at
@@ -1710,7 +1702,7 @@ export function ParentDashboardClient({
                                       : "-"}
                                 </span>
                               </div>
-                              <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 shrink-0">
+                              <span className="text-[11px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400 shrink-0">
                                 +1
                               </span>
                             </div>
@@ -1721,10 +1713,10 @@ export function ParentDashboardClient({
                               className="px-4 py-2.5 flex items-center justify-between gap-2 opacity-50"
                             >
                               <div className="min-w-0 flex-1">
-                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate block">
+                                <span className="text-xs font-bold text-slate-500 dark:text-zinc-400 truncate block">
                                   {w.materi || w.title || "Tidak Hadir"}
                                 </span>
-                                <span className="text-[10px] text-slate-400">
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500">
                                   {w.worksheet_date
                                     ? formatShortDate(w.worksheet_date)
                                     : w.created_at
@@ -1732,7 +1724,7 @@ export function ParentDashboardClient({
                                       : "-"}
                                 </span>
                               </div>
-                              <span className="text-[11px] font-bold text-slate-400 shrink-0">
+                              <span className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 shrink-0 tabular-nums">
                                 0
                               </span>
                             </div>
@@ -1754,26 +1746,23 @@ export function ParentDashboardClient({
                   0,
                 );
                 return (
-                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                    <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-sky-50 dark:bg-sky-950/30 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">➕</span>
-                        <div>
-                          <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
-                            Manual Poin
-                          </h4>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                            Bonus poin dari Admin
-                          </p>
-                        </div>
+                  <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                    <div className="p-3.5 border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/60 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                          Manual Poin
+                        </h4>
+                        <p className="text-[10px] text-slate-500 dark:text-zinc-400">
+                          Bonus poin dari Admin
+                        </p>
                       </div>
-                      <span className="text-xs font-black text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/40 px-2.5 py-1 rounded-lg border border-sky-200 dark:border-sky-700">
+                      <span className="text-xs font-bold tabular-nums text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/15 px-2.5 py-1 rounded-lg shrink-0">
                         +{totalBonus} Poin
                       </span>
                     </div>
-                    <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-48 overflow-y-auto">
+                    <div className="divide-y divide-slate-200 dark:divide-zinc-800 max-h-48 overflow-y-auto">
                       {bonusItems.length === 0 ? (
-                        <div className="py-6 text-center text-xs text-slate-400 italic">
+                        <div className="py-6 text-center text-xs text-slate-400 dark:text-zinc-500 italic">
                           Belum ada bonus poin manual.
                         </div>
                       ) : (
@@ -1785,16 +1774,16 @@ export function ParentDashboardClient({
                               className="px-4 py-2.5 flex items-center justify-between gap-2"
                             >
                               <div className="min-w-0 flex-1">
-                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
+                                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate block">
                                   {item.reward_note || "Bonus Poin Manual"}
                                 </span>
-                                <span className="text-[10px] text-slate-400">
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500">
                                   {item.created_at
                                     ? formatShortDate(item.created_at)
                                     : "-"}
                                 </span>
                               </div>
-                              <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800 shrink-0">
+                              <span className="text-[11px] font-bold tabular-nums text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/15 px-2 py-0.5 rounded-lg shrink-0">
                                 +{pointsAmount} Poin
                               </span>
                             </div>
@@ -1816,26 +1805,23 @@ export function ParentDashboardClient({
                   0,
                 );
                 return (
-                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                    <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-rose-50 dark:bg-rose-950/30 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">🎁</span>
-                        <div>
-                          <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
-                            Penukaran Hadiah
-                          </h4>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                            Poin ditukar menjadi hadiah
-                          </p>
-                        </div>
+                  <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                    <div className="p-3.5 border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/60 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                          Penukaran Hadiah
+                        </h4>
+                        <p className="text-[10px] text-slate-500 dark:text-zinc-400">
+                          Poin ditukar menjadi hadiah
+                        </p>
                       </div>
-                      <span className="text-xs font-black text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-900/40 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-700">
+                      <span className="text-xs font-bold tabular-nums text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/15 px-2.5 py-1 rounded-lg shrink-0">
                         -{totalRedeemed} Poin
                       </span>
                     </div>
-                    <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-48 overflow-y-auto">
+                    <div className="divide-y divide-slate-200 dark:divide-zinc-800 max-h-48 overflow-y-auto">
                       {redeemItems.length === 0 ? (
-                        <div className="py-6 text-center text-xs text-slate-400 italic">
+                        <div className="py-6 text-center text-xs text-slate-400 dark:text-zinc-500 italic">
                           Belum ada penukaran hadiah.
                         </div>
                       ) : (
@@ -1847,16 +1833,16 @@ export function ParentDashboardClient({
                               className="px-4 py-2.5 flex items-center justify-between gap-2"
                             >
                               <div className="min-w-0 flex-1">
-                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
+                                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate block">
                                   {item.reward_note || "Penukaran Hadiah"}
                                 </span>
-                                <span className="text-[10px] text-slate-400">
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500">
                                   {item.created_at
                                     ? formatShortDate(item.created_at)
                                     : "-"}
                                 </span>
                               </div>
-                              <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800 shrink-0">
+                              <span className="text-[11px] font-bold tabular-nums text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/15 px-2 py-0.5 rounded-lg shrink-0">
                                 -{pointsAmount} Poin
                               </span>
                             </div>

@@ -22,7 +22,7 @@ type CategoryType =
 const CATEGORIES: {
   id: CategoryType;
   label: string;
-  icon: string;
+  icon: (props: React.SVGProps<SVGSVGElement>) => React.ReactElement;
   desc: string;
   placeholderTitle: string;
   placeholderDesc: string;
@@ -30,7 +30,7 @@ const CATEGORIES: {
   {
     id: "materi",
     label: "Materi Yang Diajarkan",
-    icon: "📚",
+    icon: Icons.fileText,
     desc: "Daftar topik/materi pembelajaran utama",
     placeholderTitle: "Mengenal Huruf Vokal (A, I, U, E, O)",
     placeholderDesc: "Materi dasar membaca",
@@ -38,7 +38,7 @@ const CATEGORIES: {
   {
     id: "kegiatan",
     label: "Poin 1: Kegiatan Pembelajaran",
-    icon: "📘",
+    icon: Icons.edit,
     desc: "Awalan kalimat kegiatan pembelajaran kelas",
     placeholderTitle: "Belajar mengenal",
     placeholderDesc: "Opsi ini digunakan untuk materi baru",
@@ -46,7 +46,7 @@ const CATEGORIES: {
   {
     id: "pemahaman",
     label: "Poin 2: Pemahaman Ananda",
-    icon: "🟢",
+    icon: Icons.check,
     desc: "Tingkat pemahaman & hasil evaluasi siswa",
     placeholderTitle: "Sudah bisa secara mandiri",
     placeholderDesc: "Tingkat pemahaman 4",
@@ -54,7 +54,7 @@ const CATEGORIES: {
   {
     id: "rumah",
     label: "Poin 3: Rekomendasi di Rumah",
-    icon: "🟡",
+    icon: Icons.home,
     desc: "Saran kegiatan latihan rumah untuk orang tua",
     placeholderTitle: "Mengulang materi hari ini",
     placeholderDesc: "Saran untuk orang tua di rumah",
@@ -62,7 +62,7 @@ const CATEGORIES: {
   {
     id: "afirmasi",
     label: "Poin 4: Catatan & Afirmasi Guru",
-    icon: "✨",
+    icon: Icons.star,
     desc: "Kalimat motivasi hangat & catatan perkembangan",
     placeholderTitle: "Untuk Opsi Pemahaman 1 (Masih bingung)",
     placeholderDesc: "Tetap semangat ya, sedikit demi sedikit pasti bisa",
@@ -70,7 +70,7 @@ const CATEGORIES: {
   {
     id: "ijin",
     label: "Alasan Ijin",
-    icon: "📩",
+    icon: Icons.calendar,
     desc: "Opsi alasan ketidakhadiran karena Ijin (dropdown di laporan)",
     placeholderTitle: "Ijin acara keluarga",
     placeholderDesc: "Opsi alasan ijin untuk Miss",
@@ -78,7 +78,7 @@ const CATEGORIES: {
   {
     id: "sakit",
     label: "Alasan Sakit",
-    icon: "🤒",
+    icon: Icons.alertCircle,
     desc: "Opsi alasan ketidakhadiran karena Sakit (dropdown di laporan)",
     placeholderTitle: "Sakit demam, istirahat di rumah",
     placeholderDesc: "Opsi alasan sakit untuk Miss",
@@ -271,33 +271,33 @@ export function AssessmentTemplateManager({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5 sm:rounded-2xl relative">
+    <div className="bg-white dark:bg-zinc-900 shadow-sm border border-slate-200 dark:border-zinc-800 rounded-2xl relative">
       {isSubmitting && <LoadingSpinner usePortal={true} />}
 
       {/* Delete Confirmation Modal */}
       {deleteModal && templateToDelete && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => !isDeleting && setDeleteModal(false)}
           />
-          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto mb-4 text-red-600 dark:text-red-400">
+          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 p-6 text-center">
+            <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-500/15 flex items-center justify-center mx-auto mb-4 text-red-600 dark:text-red-400">
               <Icons.trash className="w-6 h-6" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
               Hapus Opsi Template?
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-2 leading-relaxed">
               Apakah Anda yakin ingin menghapus opsi{" "}
-              <strong className="text-slate-700 dark:text-slate-300">
+              <strong className="text-slate-700 dark:text-zinc-200">
                 &quot;{templateToDelete.title}&quot;
               </strong>
               ? Opsi ini tidak akan tampil lagi di form penilaian.
             </p>
 
             {deleteError && (
-              <p className="text-xs text-red-500 mt-3 text-center font-medium bg-red-50 dark:bg-red-950/20 p-2.5 rounded-xl border border-red-100 dark:border-red-900/50">
+              <p className="text-xs text-red-600 dark:text-red-400 mt-3 text-center font-medium bg-red-50 dark:bg-red-500/10 p-2.5 rounded-xl border border-red-200 dark:border-red-800/50">
                 {deleteError}
               </p>
             )}
@@ -307,7 +307,7 @@ export function AssessmentTemplateManager({
                 type="button"
                 disabled={isDeleting}
                 onClick={() => setDeleteModal(false)}
-                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 Batal
               </button>
@@ -315,7 +315,7 @@ export function AssessmentTemplateManager({
                 type="button"
                 disabled={isDeleting}
                 onClick={handleExecuteDelete}
-                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:translate-y-[1px] transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
               >
                 {isDeleting ? "Menghapus..." : "Ya, Hapus"}
               </button>
@@ -325,13 +325,13 @@ export function AssessmentTemplateManager({
       )}
 
       {/* Section Header */}
-      <div className="px-5 py-5 sm:px-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+      <div className="px-5 py-5 sm:px-6 border-b border-slate-200 dark:border-zinc-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-base font-bold leading-6 text-slate-900 dark:text-white flex items-center gap-2">
-              <span>📝 Kelola Template Opsi Penilaian</span>
+          <div className="min-w-0">
+            <h3 className="text-base font-bold leading-6 text-slate-900 dark:text-white">
+              Kelola Template Opsi Penilaian
             </h3>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
               Atur opsi pilihan per-poin untuk memudahkan Miss menilai siswa
               cukup dengan 1-klik (Format 1/2/3/4 Client).
             </p>
@@ -344,47 +344,48 @@ export function AssessmentTemplateManager({
               setIsAdding(true);
               setSubmitError("");
             }}
-            className="inline-flex items-center justify-center gap-x-1.5 rounded-xl bg-sky-600 text-white px-4 py-2.5 text-xs font-bold shadow-md hover:bg-sky-700 transition-all active:scale-95 cursor-pointer shrink-0 w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-600 text-white px-4 py-2.5 text-xs font-bold hover:bg-brand-700 active:translate-y-[1px] transition-colors cursor-pointer shrink-0 w-full sm:w-auto"
           >
-            <Icons.add className="-ml-0.5 h-4 w-4" />
+            <Icons.add className="h-4 w-4" />
             Tambah Opsi Baru
           </button>
         </div>
 
         {/* Category Popover Dropdown Selector */}
         <div className="relative mt-4">
-          <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-1 uppercase tracking-wider">
+          <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
             Kategori Penilaian
           </label>
           <button
             type="button"
             onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-            className="w-full flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-sky-500/60 rounded-xl shadow-xs transition-all text-left cursor-pointer"
+            aria-expanded={isCategoryDropdownOpen}
+            className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-600 rounded-xl transition-colors text-left cursor-pointer"
           >
             {currentCategoryObj ? (
               <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                <span className="text-lg shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-300">
-                  {currentCategoryObj.icon}
+                <span className="shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400">
+                  <currentCategoryObj.icon className="w-4 h-4" />
                 </span>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                     {currentCategoryObj.label}
                   </div>
-                  <div className="text-[11px] text-slate-400 truncate">
+                  <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate">
                     {currentCategoryObj.desc}
                   </div>
                 </div>
               </div>
             ) : (
               <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                <span className="text-lg shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
-                  📋
+                <span className="shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500">
+                  <Icons.fileText className="w-4 h-4" />
                 </span>
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">
+                  <div className="text-xs font-bold text-slate-500 dark:text-zinc-400 truncate">
                     Pilih Kategori Penilaian
                   </div>
-                  <div className="text-[11px] text-slate-400 truncate">
+                  <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate">
                     Klik untuk memilih kategori template
                   </div>
                 </div>
@@ -392,13 +393,13 @@ export function AssessmentTemplateManager({
             )}
             <div className="flex items-center gap-2 shrink-0">
               {currentCategoryObj && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300 border border-sky-100 dark:border-sky-900">
+                <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 border border-brand-200 dark:border-brand-800/50 tabular-nums">
                   {filteredTemplates.length} Opsi
                 </span>
               )}
               <Icons.chevronDown
                 className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
-                  isCategoryDropdownOpen ? "rotate-180 text-sky-600" : ""
+                  isCategoryDropdownOpen ? "rotate-180 text-brand-600" : ""
                 }`}
               />
             </div>
@@ -411,7 +412,7 @@ export function AssessmentTemplateManager({
                 className="fixed inset-0 z-40"
                 onClick={() => setIsCategoryDropdownOpen(false)}
               />
-              <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-72 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150 divide-y divide-slate-100 dark:divide-slate-800/60">
+              <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden max-h-72 overflow-y-auto divide-y divide-slate-200 dark:divide-zinc-800">
                 {CATEGORIES.map((cat) => {
                   const count = templates.filter(
                     (t) => (t.category || "kegiatan") === cat.id,
@@ -430,35 +431,43 @@ export function AssessmentTemplateManager({
                       }}
                       className={`w-full flex items-center justify-between p-3 sm:p-3.5 text-left transition-colors cursor-pointer ${
                         isActive
-                          ? "bg-sky-50/80 dark:bg-sky-950/50 font-bold"
-                          : "hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                          ? "bg-brand-50 dark:bg-brand-500/15 font-bold"
+                          : "hover:bg-slate-50 dark:hover:bg-zinc-800/60"
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                        <span className="text-base shrink-0">{cat.icon}</span>
+                        <span
+                          className={`shrink-0 flex items-center justify-center w-8 h-8 rounded-lg ${
+                            isActive
+                              ? "bg-brand-600 text-white"
+                              : "bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400"
+                          }`}
+                        >
+                          <cat.icon className="w-4 h-4" />
+                        </span>
                         <div className="min-w-0">
                           <div
-                            className={`text-xs ${isActive ? "text-sky-600 dark:text-sky-400 font-bold" : "text-slate-800 dark:text-slate-200 font-medium"} truncate`}
+                            className={`text-xs ${isActive ? "text-brand-700 dark:text-brand-300 font-bold" : "text-slate-800 dark:text-zinc-200 font-medium"} truncate`}
                           >
                             {cat.label}
                           </div>
-                          <div className="text-[11px] text-slate-400 truncate">
+                          <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate">
                             {cat.desc}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span
-                          className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-lg tabular-nums ${
                             isActive
-                              ? "bg-sky-600 text-white"
-                              : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                              ? "bg-brand-600 text-white"
+                              : "bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400"
                           }`}
                         >
                           {count} Opsi
                         </span>
                         {isActive && (
-                          <span className="text-sky-600 font-bold text-xs">
+                          <span className="text-brand-600 dark:text-brand-400 font-bold text-xs">
                             ✓
                           </span>
                         )}
@@ -476,7 +485,7 @@ export function AssessmentTemplateManager({
       {isAdding && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => {
               if (!isSubmitting) {
                 setIsAdding(false);
@@ -485,20 +494,24 @@ export function AssessmentTemplateManager({
               }
             }}
           />
-          <div className="relative z-10 w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+          <div className="relative z-10 w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden">
             {/* Modal Header */}
-            <div className="relative flex items-center justify-between p-5 bg-linear-to-r from-sky-600 to-indigo-600 text-white rounded-t-3xl">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg">
-                  {currentCategoryObj?.icon || "📋"}
+            <div className="flex items-center justify-between gap-3 p-5 border-b border-slate-200 dark:border-zinc-800">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+                  {currentCategoryObj ? (
+                    <currentCategoryObj.icon className="w-5 h-5" />
+                  ) : (
+                    <Icons.fileText className="w-5 h-5" />
+                  )}
                 </div>
-                <div>
-                  <h3 className="text-sm font-extrabold uppercase tracking-wide">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">
                     {editingTemplate
                       ? "Edit Opsi Template"
                       : "Tambah Opsi Template Baru"}
                   </h3>
-                  <p className="text-[11px] text-sky-100 font-medium">
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-medium truncate">
                     Kategori: {currentCategoryObj?.label || "-"}
                   </p>
                 </div>
@@ -510,22 +523,23 @@ export function AssessmentTemplateManager({
                   setEditingTemplate(null);
                   resetForm();
                 }}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+                aria-label="Tutup"
+                className="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors cursor-pointer shrink-0"
               >
-                ✕
+                <Icons.close className="w-4 h-4" />
               </button>
             </div>
 
             {/* Modal Form Content */}
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {submitError && (
-                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-xs font-semibold text-red-600 dark:text-red-300">
-                  ⚠️ {submitError}
+                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-800/50 text-xs font-semibold text-red-600 dark:text-red-400">
+                  {submitError}
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                   Teks / Judul Opsi Pilihan{" "}
                   <span className="text-red-500">*</span>
                 </label>
@@ -538,7 +552,7 @@ export function AssessmentTemplateManager({
                   }
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-4 py-2.5 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none placeholder:text-slate-400"
+                  className="w-full rounded-xl border border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-4 py-2.5 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none placeholder:text-slate-400"
                 />
               </div>
 
@@ -546,10 +560,10 @@ export function AssessmentTemplateManager({
               {activeTab === "materi" && labels.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                      🎯 Pilih Level Siswa
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300">
+                      Pilih Level Siswa
                     </label>
-                    <span className="text-[10px] font-extrabold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
+                    <span className="text-[10px] font-bold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-500/15 px-2.5 py-0.5 rounded-lg border border-brand-200 dark:border-brand-800/50 tabular-nums">
                       {selectedLabelIds.length === 0
                         ? "Semua Level"
                         : `${selectedLabelIds.length} Level Dipilih`}
@@ -563,16 +577,17 @@ export function AssessmentTemplateManager({
                       onClick={() =>
                         setIsLabelDropdownOpen(!isLabelDropdownOpen)
                       }
-                      className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold shadow-xs cursor-pointer text-left transition-all ${
+                      aria-expanded={isLabelDropdownOpen}
+                      className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold cursor-pointer text-left transition-colors ${
                         isLabelDropdownOpen
-                          ? "border-sky-500 ring-2 ring-sky-500/20 bg-white dark:bg-slate-900"
-                          : "border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800"
+                          ? "border-brand-500 ring-2 ring-brand-500/30 bg-white dark:bg-zinc-900"
+                          : "border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 hover:border-slate-400 dark:hover:border-zinc-600"
                       }`}
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         {selectedLabelIds.length === 0 ? (
-                          <span className="truncate text-slate-600 dark:text-slate-300 font-semibold">
-                            🌐 Semua Level (Materi Bebas / Global)
+                          <span className="truncate text-slate-600 dark:text-zinc-300 font-semibold">
+                            Semua Level (Materi Bebas / Global)
                           </span>
                         ) : selectedLabelIds.length === 1 ? (
                           (() => {
@@ -580,9 +595,9 @@ export function AssessmentTemplateManager({
                               (l) => l.id === selectedLabelIds[0],
                             );
                             return (
-                              <span className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-100 truncate">
+                              <span className="flex items-center gap-2 font-bold text-slate-800 dark:text-zinc-100 truncate">
                                 <span
-                                  className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
+                                  className="w-2.5 h-2.5 rounded-full shrink-0"
                                   style={{
                                     backgroundColor:
                                       lbl?.hex_color || "#94a3b8",
@@ -595,15 +610,15 @@ export function AssessmentTemplateManager({
                             );
                           })()
                         ) : (
-                          <span className="font-extrabold text-sky-600 dark:text-sky-400 truncate">
-                            ✨ {selectedLabelIds.length} Level Terpilih (Klik
+                          <span className="font-bold text-brand-700 dark:text-brand-300 truncate">
+                            {selectedLabelIds.length} Level Terpilih (Klik
                             untuk ubah)
                           </span>
                         )}
                       </div>
                       <Icons.chevronDown
                         className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
-                          isLabelDropdownOpen ? "rotate-180 text-sky-500" : ""
+                          isLabelDropdownOpen ? "rotate-180 text-brand-600" : ""
                         }`}
                       />
                     </button>
@@ -615,19 +630,19 @@ export function AssessmentTemplateManager({
                           className="fixed inset-0 z-40"
                           onClick={() => setIsLabelDropdownOpen(false)}
                         />
-                        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+                        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 p-2 space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar">
                           {/* Quick action bar */}
-                          <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100 dark:border-slate-800/80 px-1">
+                          <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-200 dark:border-zinc-800 px-1">
                             <button
                               type="button"
                               onClick={() => setSelectedLabelIds([])}
-                              className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors cursor-pointer ${
                                 selectedLabelIds.length === 0
-                                  ? "bg-sky-600 text-white shadow-xs"
-                                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
+                                  ? "bg-brand-600 text-white"
+                                  : "bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700"
                               }`}
                             >
-                              🌐 Semua Level
+                              Semua Level
                             </button>
                             <div className="flex items-center gap-1">
                               <button
@@ -635,7 +650,7 @@ export function AssessmentTemplateManager({
                                 onClick={() =>
                                   setSelectedLabelIds(labels.map((l) => l.id))
                                 }
-                                className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300 hover:bg-sky-100 cursor-pointer"
+                                className="px-2 py-1 rounded-lg text-[10px] font-bold bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-500/25 cursor-pointer transition-colors"
                               >
                                 ✓ Pilih Semua
                               </button>
@@ -643,7 +658,7 @@ export function AssessmentTemplateManager({
                                 <button
                                   type="button"
                                   onClick={() => setSelectedLabelIds([])}
-                                  className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer"
+                                  className="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 cursor-pointer transition-colors"
                                 >
                                   Reset
                                 </button>
@@ -672,10 +687,10 @@ export function AssessmentTemplateManager({
                                     ]);
                                   }
                                 }}
-                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between cursor-pointer ${
+                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors flex items-center justify-between cursor-pointer ${
                                   isSel
-                                    ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 font-extrabold"
-                                    : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium"
+                                    ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 font-bold"
+                                    : "text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 font-medium"
                                 }`}
                               >
                                 <span className="flex items-center gap-2.5 min-w-0">
@@ -683,10 +698,10 @@ export function AssessmentTemplateManager({
                                     type="checkbox"
                                     checked={isSel}
                                     readOnly
-                                    className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-700 cursor-pointer pointer-events-none"
+                                    className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 dark:border-zinc-700 cursor-pointer pointer-events-none"
                                   />
                                   <span
-                                    className="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                                    className="w-3 h-3 rounded-full shrink-0"
                                     style={{ backgroundColor: lbl.hex_color }}
                                   />
                                   <span className="truncate">
@@ -694,7 +709,7 @@ export function AssessmentTemplateManager({
                                   </span>
                                 </span>
                                 {isSel && (
-                                  <span className="text-sky-600 shrink-0 text-xs font-bold">
+                                  <span className="text-brand-600 dark:text-brand-400 shrink-0 text-xs font-bold">
                                     ✓
                                   </span>
                                 )}
@@ -707,24 +722,19 @@ export function AssessmentTemplateManager({
                   </div>
 
                   {/* Penjelasan Jelas Mengenai Dampak Pilihan Level */}
-                  <div className="mt-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
+                  <div className="mt-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800">
                     {selectedLabelIds.length === 0 ? (
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
-                        <span>ℹ️</span>
-                        <span>
-                          <strong>Materi Bebas/Global:</strong> Materi ini akan
-                          langsung muncul untuk semua siswa di cabang Anda.
-                        </span>
+                      <p className="text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400 font-medium">
+                        <strong className="text-slate-700 dark:text-zinc-200">Materi Bebas/Global:</strong>{" "}
+                        Materi ini akan langsung muncul untuk semua siswa di
+                        cabang Anda.
                       </p>
                     ) : (
                       <div>
-                        <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-                          <span>📌</span>
-                          <span>
-                            Materi ini otomatis terdaftar untuk{" "}
-                            <strong>{selectedLabelIds.length} level</strong>{" "}
-                            berikut:
-                          </span>
+                        <p className="text-[11px] font-bold text-slate-700 dark:text-zinc-200 mb-1.5">
+                          Materi ini otomatis terdaftar untuk{" "}
+                          <strong>{selectedLabelIds.length} level</strong>{" "}
+                          berikut:
                         </p>
                         <div className="flex flex-wrap gap-1">
                           {selectedLabelIds.map((id) => {
@@ -733,7 +743,7 @@ export function AssessmentTemplateManager({
                             return (
                               <span
                                 key={id}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-xs"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700"
                               >
                                 <span
                                   className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10"
@@ -762,20 +772,20 @@ export function AssessmentTemplateManager({
                     setEditingTemplate(null);
                     resetForm();
                   }}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting
                     ? "Menyimpan..."
                     : editingTemplate
-                      ? "✓ Simpan Perubahan"
-                      : "✓ Tambah Opsi"}
+                      ? "Simpan Perubahan"
+                      : "Tambah Opsi"}
                 </button>
               </div>
             </form>
@@ -785,25 +795,27 @@ export function AssessmentTemplateManager({
 
       {/* Search & Level Filter Bar */}
       {activeTab && (
-        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20 space-y-3">
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/40 space-y-3">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             {/* Search Input Box */}
             <div className="relative flex-1">
               <Icons.search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
-                type="text"
+                type="search"
                 placeholder={`Cari opsi ${currentCategoryObj?.label.toLowerCase() || ""}...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all shadow-2xs"
+                aria-label="Cari opsi template"
+                className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold w-5 h-5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 flex items-center justify-center transition-all cursor-pointer"
+                  aria-label="Hapus pencarian"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 w-5 h-5 rounded-lg hover:bg-slate-200 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors cursor-pointer"
                 >
-                  ✕
+                  <Icons.close className="w-3 h-3" />
                 </button>
               )}
             </div>
@@ -817,20 +829,21 @@ export function AssessmentTemplateManager({
                     onClick={() =>
                       setIsFilterLevelDropdownOpen(!isFilterLevelDropdownOpen)
                     }
-                    className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs font-bold shadow-2xs cursor-pointer text-left transition-all ${
+                    aria-expanded={isFilterLevelDropdownOpen}
+                    className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs font-bold cursor-pointer text-left transition-colors ${
                       isFilterLevelDropdownOpen
-                        ? "border-sky-500 ring-2 ring-sky-500/20 bg-white dark:bg-slate-900"
-                        : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        ? "border-brand-500 ring-2 ring-brand-500/20 bg-white dark:bg-zinc-900"
+                        : "border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-slate-400 dark:hover:border-zinc-600"
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0 truncate">
                       {!selectedFilterLabelId ? (
-                        <span className="truncate text-slate-700 dark:text-slate-200 font-semibold">
-                          🎯 Semua Level
+                        <span className="truncate text-slate-700 dark:text-zinc-200 font-semibold">
+                          Semua Level
                         </span>
                       ) : selectedFilterLabelId === "GLOBAL" ? (
-                        <span className="truncate text-slate-700 dark:text-slate-200 font-semibold">
-                          🌐 Materi Bebas (Global)
+                        <span className="truncate text-slate-700 dark:text-zinc-200 font-semibold">
+                          Materi Bebas (Global)
                         </span>
                       ) : (
                         (() => {
@@ -838,11 +851,11 @@ export function AssessmentTemplateManager({
                             (l) => l.id === selectedFilterLabelId,
                           );
                           return (
-                            <span className="flex items-center gap-2 truncate text-slate-800 dark:text-slate-100 font-bold">
+                            <span className="flex items-center gap-2 truncate text-slate-800 dark:text-zinc-100 font-bold">
                               <span
-                                className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs border border-black/10"
+                                className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10"
                                 style={{
-                                  backgroundColor: lbl?.hex_color || "#0ea5e9",
+                                  backgroundColor: lbl?.hex_color || "#3b82f6",
                                 }}
                               />
                               <span className="truncate">
@@ -858,7 +871,7 @@ export function AssessmentTemplateManager({
                     <Icons.chevronDown
                       className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
                         isFilterLevelDropdownOpen
-                          ? "rotate-180 text-sky-500"
+                          ? "rotate-180 text-brand-600"
                           : ""
                       }`}
                     />
@@ -871,7 +884,7 @@ export function AssessmentTemplateManager({
                         className="fixed inset-0 z-40"
                         onClick={() => setIsFilterLevelDropdownOpen(false)}
                       />
-                      <div className="absolute top-full left-0 mt-1.5 z-50 w-64 max-w-[calc(100vw-2.5rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 space-y-1 max-h-64 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+                      <div className="absolute top-full left-0 mt-1.5 z-50 w-64 max-w-[calc(100vw-2.5rem)] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 p-1.5 space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
                         {/* Option: Semua Level */}
                         <button
                           type="button"
@@ -879,15 +892,15 @@ export function AssessmentTemplateManager({
                             setSelectedFilterLabelId("");
                             setIsFilterLevelDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between cursor-pointer ${
                             !selectedFilterLabelId
-                              ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300"
-                              : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300"
+                              : "text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
                           }`}
                         >
-                          <span>🎯 Semua Level</span>
+                          <span>Semua Level</span>
                           {!selectedFilterLabelId && (
-                            <span className="text-sky-600 font-bold">✓</span>
+                            <span className="text-brand-600 dark:text-brand-400 font-bold">✓</span>
                           )}
                         </button>
 
@@ -898,19 +911,19 @@ export function AssessmentTemplateManager({
                             setSelectedFilterLabelId("GLOBAL");
                             setIsFilterLevelDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between cursor-pointer ${
                             selectedFilterLabelId === "GLOBAL"
-                              ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300"
-                              : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300"
+                              : "text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
                           }`}
                         >
-                          <span>🌐 Materi Bebas (Global)</span>
+                          <span>Materi Bebas (Global)</span>
                           {selectedFilterLabelId === "GLOBAL" && (
-                            <span className="text-sky-600 font-bold">✓</span>
+                            <span className="text-brand-600 dark:text-brand-400 font-bold">✓</span>
                           )}
                         </button>
 
-                        <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+                        <div className="border-t border-slate-200 dark:border-zinc-800 my-1" />
 
                         {/* List of Levels with Colorful Dots */}
                         {labels.map((lbl) => {
@@ -923,17 +936,17 @@ export function AssessmentTemplateManager({
                                 setSelectedFilterLabelId(lbl.id);
                                 setIsFilterLevelDropdownOpen(false);
                               }}
-                              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between cursor-pointer ${
                                 isSel
-                                  ? "bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300"
-                                  : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                  ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300"
+                                  : "text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
                               }`}
                             >
                               <span className="flex items-center gap-2.5 min-w-0">
                                 <span
-                                  className="w-3 h-3 rounded-full shrink-0 shadow-2xs border border-black/10"
+                                  className="w-3 h-3 rounded-full shrink-0 border border-black/10"
                                   style={{
-                                    backgroundColor: lbl.hex_color || "#0ea5e9",
+                                    backgroundColor: lbl.hex_color || "#3b82f6",
                                   }}
                                 />
                                 <span className="truncate">
@@ -941,7 +954,7 @@ export function AssessmentTemplateManager({
                                 </span>
                               </span>
                               {isSel && (
-                                <span className="text-sky-600 shrink-0 font-bold">
+                                <span className="text-brand-600 dark:text-brand-400 shrink-0 font-bold">
                                   ✓
                                 </span>
                               )}
@@ -961,7 +974,7 @@ export function AssessmentTemplateManager({
                       setSelectedFilterLabelId("");
                       setIsFilterLevelDropdownOpen(false);
                     }}
-                    className="px-2.5 py-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-all cursor-pointer shrink-0"
+                    className="px-2.5 py-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-300 dark:hover:bg-zinc-700 transition-colors cursor-pointer shrink-0"
                     title="Reset Filter"
                   >
                     Reset
@@ -972,13 +985,13 @@ export function AssessmentTemplateManager({
           </div>
 
           {/* Counter & Status Info */}
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-semibold px-0.5">
-            <span>
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 font-semibold px-0.5">
+            <span className="tabular-nums">
               Menampilkan <strong>{searchedAndFilteredTemplates.length}</strong>{" "}
               dari {groupedTemplates.length} Opsi
             </span>
             {(searchQuery || selectedFilterLabelId) && (
-              <span className="text-sky-600 dark:text-sky-400 font-bold">
+              <span className="text-brand-600 dark:text-brand-400 font-bold">
                 Filter Aktif
               </span>
             )}
@@ -987,29 +1000,29 @@ export function AssessmentTemplateManager({
       )}
 
       {/* Templates List per Tab */}
-      <div className="divide-y divide-slate-100 dark:divide-slate-800">
+      <div className="divide-y divide-slate-200 dark:divide-zinc-800">
         {!activeTab ? (
           <div className="px-6 py-12 text-center">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-2xl">
-              📋
+            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 flex items-center justify-center mx-auto mb-3">
+              <Icons.fileText className="w-6 h-6" />
             </div>
-            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+            <p className="text-sm font-bold text-slate-700 dark:text-zinc-200">
               Pilih Kategori Penilaian
             </p>
-            <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
+            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 max-w-md mx-auto leading-relaxed">
               Silakan pilih salah satu kategori di dropdown di atas untuk
               melihat dan mengelola opsi template penilaian.
             </p>
           </div>
         ) : searchedAndFilteredTemplates.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-2xl">
-              🔍
+            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 flex items-center justify-center mx-auto mb-3">
+              <Icons.search className="w-6 h-6" />
             </div>
-            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+            <p className="text-sm font-bold text-slate-700 dark:text-zinc-200">
               Tidak Ada Opsi Materi Yang Cocok
             </p>
-            <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
+            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 max-w-md mx-auto leading-relaxed">
               {searchQuery || selectedFilterLabelId
                 ? "Coba ubah kata kunci pencarian atau filter level Anda."
                 : 'Klik tombol "Tambah Opsi Baru" di atas untuk menambahkan materi baru.'}
@@ -1021,7 +1034,7 @@ export function AssessmentTemplateManager({
                   setSearchQuery("");
                   setSelectedFilterLabelId("");
                 }}
-                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 cursor-pointer"
+                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800/50 hover:bg-brand-100 dark:hover:bg-brand-500/25 cursor-pointer transition-colors"
               >
                 Reset Filter
               </button>
@@ -1031,10 +1044,10 @@ export function AssessmentTemplateManager({
           searchedAndFilteredTemplates.map((tpl: any, index: number) => (
             <div
               key={tpl.id}
-              className="p-4 sm:p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+              className="p-4 sm:p-5 hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors"
             >
               <div className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-xl bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5 border border-sky-200 dark:border-sky-800">
+                <div className="w-7 h-7 rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5 tabular-nums">
                   {index + 1}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -1051,13 +1064,13 @@ export function AssessmentTemplateManager({
                             tpl.labels.map((labelObj: any) => (
                               <span
                                 key={labelObj.id}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-2xs"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700"
                               >
                                 <span
-                                  className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs border border-black/10"
+                                  className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10"
                                   style={{
                                     backgroundColor:
-                                      labelObj.hex_color || "#0ea5e9",
+                                      labelObj.hex_color || "#3b82f6",
                                   }}
                                 />
                                 <span>
@@ -1066,8 +1079,8 @@ export function AssessmentTemplateManager({
                               </span>
                             ))
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                              🌐 Semua Level (Materi Bebas)
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700">
+                              Semua Level (Materi Bebas)
                             </span>
                           )}
                         </div>
@@ -1076,15 +1089,17 @@ export function AssessmentTemplateManager({
                     <div className="flex items-center gap-0.5 shrink-0 -mt-0.5">
                       <button
                         onClick={() => handleEdit(tpl)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/50 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-500/15 transition-colors cursor-pointer"
                         title="Edit Opsi"
+                        aria-label={`Edit ${tpl.title}`}
                       >
                         <Icons.edit className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => confirmDelete(tpl)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
                         title="Hapus Opsi"
+                        aria-label={`Hapus ${tpl.title}`}
                       >
                         <Icons.trash className="w-3.5 h-3.5" />
                       </button>

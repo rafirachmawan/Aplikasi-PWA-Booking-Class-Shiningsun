@@ -23,29 +23,23 @@ export function MasterClientWrapper({
   role,
 }: MasterClientWrapperProps) {
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header Card - Unified Design */}
-      <div className="rounded-3xl bg-brand-600 p-6 sm:p-10 shadow-lg relative overflow-hidden">
-        {/* Abstract Background Decoration */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
-
-        <div className="relative z-10">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap items-center gap-x-2">
-            <span>Konfigurasi Cabang (Master Data)</span>
-            {activeBranchName && (
-              <span className="text-brand-100 font-normal text-lg sm:text-xl lg:text-2xl whitespace-nowrap">
-                ({activeBranchName})
-              </span>
-            )}
+    <div className="space-y-6 sm:space-y-8">
+      {/* Judul halaman: satu kartu putih seperti halaman lain. Tanpa blok biru. */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-5 sm:p-6">
+          <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+            {activeBranchName ? `Cabang ${activeBranchName}` : "Konfigurasi"}
+          </p>
+          <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Konfigurasi Cabang (Master Data)
           </h2>
-          <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
+          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
             Kelola profil cabang, ruang kelas, label kustom, daftar guru/miss, dan template penilaian.
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Kolom Kiri: Ruang Kelas */}
         <div>
           <ClassManager classes={classes} role={role} />
@@ -58,7 +52,7 @@ export function MasterClientWrapper({
       </div>
 
       {/* Section Data Guru & Template Penilaian */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
         <div>
           <TeacherManager teachers={teachers} />
         </div>

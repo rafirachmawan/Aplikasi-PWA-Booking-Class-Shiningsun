@@ -17,18 +17,17 @@ export function TemplateClientWrapper({
 }: TemplateClientWrapperProps) {
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-sky-600 via-indigo-600 to-purple-600 p-6 sm:p-8 text-white shadow-xl">
-        <div className="relative z-10">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2">
-            <span>Template Penilaian Siswa</span>
-            {activeBranchName && (
-              <span className="text-sky-100 font-normal text-lg sm:text-xl">
-                ({activeBranchName})
-              </span>
-            )}
+      {/* Judul halaman: satu kartu putih seperti halaman lain.
+          Halaman ini sebelumnya memakai aksen sky, disatukan ke brand-600. */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-5 sm:p-6">
+          <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+            {activeBranchName ? `Cabang ${activeBranchName}` : "Template penilaian"}
+          </p>
+          <h1 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Template Penilaian Siswa
           </h1>
-          <p className="mt-2 text-xs sm:text-sm text-sky-100 max-w-2xl leading-relaxed">
+          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
             Buat template materi &amp; hasil penilaian standar yang dapat
             di-autofill secara otomatis ketika membuat Laporan Perkembangan
             Siswa.

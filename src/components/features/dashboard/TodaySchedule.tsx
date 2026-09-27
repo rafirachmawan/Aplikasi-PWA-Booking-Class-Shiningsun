@@ -115,10 +115,10 @@ export function TodaySchedule({
   return (
     <>
       {isLoading && <LoadingSpinner usePortal={true} />}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden">
-        <div className="px-5 py-4 bg-linear-to-r from-slate-50/80 via-white to-slate-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/80 border-b border-slate-200/80 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-2xl p-2.5 bg-linear-to-br from-brand-500 to-indigo-600 text-white shadow-md shadow-brand-500/20 shrink-0">
+            <div className="rounded-xl p-2.5 bg-brand-600 text-white shrink-0">
               <Icons.calendar className="h-5 w-5" />
             </div>
             <div>
@@ -140,7 +140,7 @@ export function TodaySchedule({
                   </button>
                 )}
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
                 {formatIndonesianDate(selectedDate)}
               </p>
             </div>
@@ -148,7 +148,7 @@ export function TodaySchedule({
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
             {/* Date Selector Navigation */}
-            <div className="flex items-center justify-between sm:justify-start rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-1 shadow-sm flex-1 sm:flex-initial">
+            <div className="flex items-center justify-between sm:justify-start rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 p-1 flex-1 sm:flex-initial">
               <button
                 type="button"
                 onClick={handlePrevDay}
@@ -166,6 +166,7 @@ export function TodaySchedule({
                 <input
                   type="date"
                   value={selectedDate}
+                  aria-label="Pilih tanggal jadwal"
                   onChange={(e) =>
                     e.target.value && handleDateChange(e.target.value)
                   }
@@ -189,7 +190,7 @@ export function TodaySchedule({
                 <select
                   value={selectedClass}
                   onChange={(e) => setSelectedClass(e.target.value)}
-                  className="appearance-none text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-xl pl-3.5 pr-8 py-2 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none cursor-pointer shadow-sm w-full sm:w-auto transition-all"
+                  className="appearance-none text-xs font-semibold border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 rounded-xl pl-3.5 pr-8 py-2 text-slate-800 dark:text-zinc-200 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none cursor-pointer w-full sm:w-auto transition-colors"
                 >
                   <option value="ALL">Semua Kelas</option>
                   {uniqueClasses.map((className: any) => (
@@ -207,7 +208,7 @@ export function TodaySchedule({
         </div>
 
         <div
-          className={`divide-y-2 divide-slate-200 dark:divide-slate-700 border-t border-slate-200 dark:border-slate-700 transition-opacity duration-200 ${isLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}
+          className={`divide-y divide-slate-200 dark:divide-zinc-800 border-t border-slate-200 dark:border-zinc-800 transition-opacity duration-200 ${isLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}
         >
           {FIXED_TIMES.map(({ time, range }) => {
             const slotsAtTime = filteredSlots.filter((s) =>
@@ -216,14 +217,14 @@ export function TodaySchedule({
 
             return (
               <div key={time} className="flex min-h-14">
-                <div className="w-20 shrink-0 px-3 py-3 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 border-r-2 border-slate-300 dark:border-slate-600">
-                  <span className="text-xs font-extrabold text-slate-700 dark:text-slate-200">
+                <div className="w-20 shrink-0 px-3 py-3 flex items-center justify-center bg-slate-50 dark:bg-zinc-800/60 border-r border-slate-200 dark:border-zinc-800">
+                  <span className="text-xs font-bold text-slate-600 dark:text-zinc-300 tabular-nums">
                     {range}
                   </span>
                 </div>
                 <div className="flex-1 p-3 flex items-center">
                   {slotsAtTime.length === 0 ? (
-                    <span className="text-xs text-slate-400 dark:text-slate-500 italic">
+                    <span className="text-xs text-slate-400 dark:text-zinc-500 italic">
                       Tidak ada kelas
                     </span>
                   ) : (
@@ -243,9 +244,9 @@ export function TodaySchedule({
                                 : ""
                             }
                           >
-                            <div className="flex items-center justify-between mb-2 pb-1 border-b border-slate-200 dark:border-slate-700/60">
-                              <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-brand-500 inline-block"></span>
+                            <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-200 dark:border-zinc-800">
+                              <span className="text-xs font-semibold text-slate-700 dark:text-zinc-200 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-brand-600 inline-block"></span>
                                 {slot.class?.name}
                               </span>
                               <span

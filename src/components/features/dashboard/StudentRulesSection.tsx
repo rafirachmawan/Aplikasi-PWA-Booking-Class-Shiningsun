@@ -213,12 +213,12 @@ export function StudentRulesSection({
   };
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+    <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
       <div className="p-4 sm:p-6 space-y-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start gap-3">
           <div className="flex items-start gap-3 min-w-0 flex-1">
-            <div className="rounded-xl p-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
+            <div className="rounded-xl p-2.5 bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 shrink-0">
               <svg
                 className="h-5 w-5"
                 fill="none"
@@ -237,9 +237,9 @@ export function StudentRulesSection({
               <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
                 Informasi Bimba
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
                 Unggah dokumen PDF (bisa lebih dari satu). Dokumen terbaru
-                otomatis tampil di Portal Orang Tua — nama bisa diganti kapan
+                otomatis tampil di Portal Orang Tua dan nama bisa diganti kapan
                 saja.
               </p>
             </div>
@@ -248,7 +248,7 @@ export function StudentRulesSection({
             type="button"
             onClick={openUploadModal}
             disabled={isUploading}
-            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3.5 py-2.5 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors shadow-md shadow-brand-500/20 cursor-pointer shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3.5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] disabled:opacity-50 transition-colors cursor-pointer shrink-0"
           >
             {isUploading ? (
               <>
@@ -313,10 +313,10 @@ export function StudentRulesSection({
             {docs.map((doc) => (
               <div
                 key={doc.id}
-                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3.5 sm:p-4 space-y-3"
+                className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/50 p-3.5 sm:p-4 space-y-3"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="rounded-lg p-2 bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 shrink-0">
+                  <div className="rounded-lg p-2 bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 shrink-0">
                     <svg
                       className="h-5 w-5"
                       fill="none"
@@ -332,10 +332,10 @@ export function StudentRulesSection({
                     </svg>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-slate-800 dark:text-white truncate">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
                       {doc.file_name}
                     </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
                       Diunggah: {formatShortDate(doc.uploaded_at)}
                     </p>
                   </div>
@@ -345,7 +345,7 @@ export function StudentRulesSection({
                   <button
                     type="button"
                     onClick={() => setPreviewDoc(doc)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 hover:bg-brand-100 dark:hover:bg-brand-500/20 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/15 hover:bg-brand-100 dark:hover:bg-brand-500/25 transition-colors cursor-pointer"
                   >
                     <svg
                       className="h-3.5 w-3.5"
@@ -371,7 +371,7 @@ export function StudentRulesSection({
                     type="button"
                     onClick={() => openRenameModal(doc)}
                     disabled={isRenaming}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 disabled:opacity-50 transition-colors cursor-pointer"
                   >
                     <svg
                       className="h-3.5 w-3.5"
@@ -401,8 +401,8 @@ export function StudentRulesSection({
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-6 flex flex-col items-center justify-center text-center gap-3">
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="rounded-xl border-2 border-dashed border-slate-300 dark:border-zinc-700 p-6 flex flex-col items-center justify-center text-center gap-3">
+            <p className="text-xs text-slate-500 dark:text-zinc-400">
               Belum ada dokumen PDF. Unggah file PDF untuk menampilkannya di
               Portal Orang Tua.
             </p>
@@ -410,7 +410,7 @@ export function StudentRulesSection({
               type="button"
               onClick={openUploadModal}
               disabled={isUploading}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors shadow-md shadow-brand-500/20 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] disabled:opacity-50 transition-colors cursor-pointer"
             >
               {isUploading ? (
                 <>
@@ -465,7 +465,7 @@ export function StudentRulesSection({
               onClick={() => !isUploading && setIsUploadModalOpen(false)}
             >
             <div
-              className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-5 space-y-4"
+              className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xl p-5 space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">
@@ -473,7 +473,7 @@ export function StudentRulesSection({
               </h4>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-400">
                   Nama Dokumen <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -482,12 +482,12 @@ export function StudentRulesSection({
                   onChange={(e) => setUploadName(e.target.value)}
                   placeholder="Cth: Informasi Bimba Agustus 2026"
                   disabled={isUploading}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs placeholder:text-slate-400"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none placeholder:text-slate-400"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-400">
                   File PDF <span className="text-red-500">*</span>
                 </label>
                 <button
@@ -496,8 +496,8 @@ export function StudentRulesSection({
                   disabled={isUploading}
                   className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 ${
                     pendingFile
-                      ? "border-brand-300 dark:border-brand-700 bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300"
-                      : "border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 hover:border-brand-400 hover:text-brand-600"
+                      ? "border-brand-300 dark:border-brand-700 bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300"
+                      : "border-dashed border-slate-300 dark:border-zinc-600 bg-slate-50 dark:bg-zinc-800/60 text-slate-500 dark:text-zinc-400 hover:border-brand-400 hover:text-brand-600"
                   }`}
                 >
                   <span className="truncate">
@@ -513,7 +513,7 @@ export function StudentRulesSection({
                   type="button"
                   onClick={() => setIsUploadModalOpen(false)}
                   disabled={isUploading}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 disabled:opacity-50 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
@@ -521,7 +521,7 @@ export function StudentRulesSection({
                   type="button"
                   onClick={handleUpload}
                   disabled={isUploading || !uploadName.trim() || !pendingFile}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] disabled:opacity-50 transition-colors cursor-pointer"
                 >
                   {isUploading ? "Mengunggah..." : "Unggah"}
                 </button>
@@ -539,7 +539,7 @@ export function StudentRulesSection({
               onClick={() => !isRenaming && setRenameTarget(null)}
             >
             <div
-              className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-5 space-y-4"
+              className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xl p-5 space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">
@@ -547,7 +547,7 @@ export function StudentRulesSection({
               </h4>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-400">
                   Nama Baru <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -555,7 +555,7 @@ export function StudentRulesSection({
                   value={renameValue}
                   onChange={(e) => setRenameValue(e.target.value)}
                   disabled={isRenaming}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
               </div>
 
@@ -564,7 +564,7 @@ export function StudentRulesSection({
                   type="button"
                   onClick={() => setRenameTarget(null)}
                   disabled={isRenaming}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 disabled:opacity-50 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
@@ -572,7 +572,7 @@ export function StudentRulesSection({
                   type="button"
                   onClick={handleRename}
                   disabled={isRenaming || !renameValue.trim()}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] disabled:opacity-50 transition-colors cursor-pointer"
                 >
                   {isRenaming ? "Menyimpan..." : "Simpan"}
                 </button>

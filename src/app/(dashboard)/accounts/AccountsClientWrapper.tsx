@@ -62,53 +62,54 @@ export function AccountsClientWrapper({ initialUsers }: { initialUsers: User[] }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Kelola Akun</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Manajemen akun cabang dan superadmin (Khusus Superadmin).
-          </p>
-        </div>
+      <div>
+        <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+          Khusus Superadmin
+        </p>
+        <h1 className="mt-1.5 text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Kelola Akun</h1>
+        <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 max-w-[65ch] leading-relaxed">
+          Manajemen akun cabang dan superadmin.
+        </p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-200 dark:border-zinc-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nama Akun</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Peran & Cabang</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Aksi</th>
+              <tr className="bg-slate-50 dark:bg-zinc-800/60 border-b border-slate-200 dark:border-zinc-800">
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Nama Akun</th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Peran & Cabang</th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+            <tbody className="divide-y divide-slate-200 dark:divide-zinc-800">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors">
                   <td className="px-6 py-4">
-                    <div className="font-medium text-slate-900 dark:text-white">{user.name}</div>
+                    <div className="font-semibold text-slate-900 dark:text-white">{user.name}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm text-slate-500 dark:text-slate-400">{user.email}</div>
+                    <div className="text-sm text-slate-500 dark:text-zinc-400">{user.email}</div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col gap-1">
-                      <span className={`inline-flex items-center w-fit px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        user.role === 'SUPERADMIN' 
-                          ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' 
-                          : 'bg-brand-100 text-brand-800 dark:bg-brand-900/30 dark:text-brand-400'
+                      <span className={`inline-flex items-center w-fit px-2.5 py-0.5 rounded-lg text-xs font-bold ${
+                        user.role === 'SUPERADMIN'
+                          ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                          : 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
                       }`}>
                         {user.role}
                       </span>
                       {user.branch && (
-                        <span className="text-xs text-slate-500 dark:text-slate-400">{user.branch.name}</span>
+                        <span className="text-xs text-slate-500 dark:text-zinc-400">{user.branch.name}</span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => openModal(user)}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 rounded-lg transition-colors"
+                      className="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-brand-700 dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-brand-500/15 bg-brand-50/50 dark:bg-brand-500/10 rounded-xl transition-colors cursor-pointer"
                     >
                       <Icons.settings className="w-4 h-4" />
                       Ganti Password
@@ -116,11 +117,13 @@ export function AccountsClientWrapper({ initialUsers }: { initialUsers: User[] }
                   </td>
                 </tr>
               ))}
-              
+
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                    Belum ada data akun.
+                  <td colSpan={4} className="px-6 py-12 text-center">
+                    <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">
+                      Belum ada data akun.
+                    </p>
                   </td>
                 </tr>
               )}
@@ -133,23 +136,31 @@ export function AccountsClientWrapper({ initialUsers }: { initialUsers: User[] }
       {selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Ganti Password</h3>
-              <button onClick={closeModal} className="text-slate-400 hover:text-slate-500">
+          <div className="relative z-10 w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-slate-200 dark:border-zinc-800 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-zinc-800">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Ganti Password</h3>
+              <button
+                onClick={closeModal}
+                aria-label="Tutup"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
                 <Icons.close className="w-5 h-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-6">
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Akun: {selectedUser.name} ({selectedUser.email})
-                </label>
+              <div className="mb-4 p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800">
+                <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Akun</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5 truncate">
+                  {selectedUser.name}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">
+                  {selectedUser.email}
+                </p>
               </div>
-              
+
               <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Password Baru</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">Password Baru</label>
                 <input
                   type="text"
                   required
@@ -157,20 +168,21 @@ export function AccountsClientWrapper({ initialUsers }: { initialUsers: User[] }
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Masukkan password baru..."
-                  className="w-full rounded-xl border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                  autoComplete="new-password"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 text-sm font-medium focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none dark:bg-zinc-900 dark:border-zinc-700 dark:text-white placeholder:text-slate-400"
                 />
-                <p className="text-xs text-slate-500 mt-2">Minimal 6 karakter.</p>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-2">Minimal 6 karakter.</p>
               </div>
 
               {errorMsg && (
-                <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm font-medium flex items-start gap-2">
+                <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm font-medium flex items-start gap-2 border border-red-200 dark:border-red-800/50">
                   <Icons.close className="w-4 h-4 mt-0.5 shrink-0" />
                   <p>{errorMsg}</p>
                 </div>
               )}
 
               {successMsg && (
-                <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-sm font-medium flex items-center gap-2">
+                <div className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-sm font-medium flex items-center gap-2 border border-emerald-200 dark:border-emerald-800/50">
                   <Icons.check className="w-4 h-4 shrink-0" />
                   <p>{successMsg}</p>
                 </div>
@@ -180,14 +192,14 @@ export function AccountsClientWrapper({ initialUsers }: { initialUsers: User[] }
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !newPassword}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? "Menyimpan..." : "Simpan Password"}
                 </button>

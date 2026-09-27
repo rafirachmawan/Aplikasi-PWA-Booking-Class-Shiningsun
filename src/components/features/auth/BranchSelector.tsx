@@ -80,10 +80,10 @@ export function BranchSelector({
           type="button"
           disabled={isUpdating}
           onClick={() => setIsOpen(!isOpen)}
-          className={`relative w-full flex items-center justify-between gap-2 rounded-xl border px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white shadow-xs transition-all cursor-pointer disabled:opacity-60 ${
+          className={`relative w-full flex items-center justify-between gap-2 rounded-xl border px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white transition-colors cursor-pointer disabled:opacity-60 ${
             isOpen
-              ? "border-brand-500 ring-2 ring-brand-500/30 bg-white dark:bg-slate-900"
-              : "border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700"
+              ? "border-brand-500 ring-2 ring-brand-500/30 bg-white dark:bg-zinc-900"
+              : "border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700"
           }`}
         >
           <span
@@ -123,7 +123,7 @@ export function BranchSelector({
             />
 
             {/* Menu Popover Container */}
-            <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+            <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-1.5 space-y-1">
               {/* Search */}
               <div className="p-1">
                 <input
@@ -132,7 +132,7 @@ export function BranchSelector({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Cari cabang..."
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
                 />
               </div>
 
@@ -141,10 +141,10 @@ export function BranchSelector({
                 <button
                   type="button"
                   onClick={() => selectBranch("")}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                     selectedId === ""
-                      ? "bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 font-bold border border-brand-200/60 dark:border-brand-800/40"
-                      : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                      ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 font-semibold border border-brand-200 dark:border-brand-800/50"
+                      : "text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800"
                   }`}
                 >
                   <span className="truncate text-left">-- Pilih Cabang --</span>
@@ -173,16 +173,13 @@ export function BranchSelector({
                       key={b.id}
                       type="button"
                       onClick={() => selectBranch(b.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                         isSelected
-                          ? "bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 font-bold border border-brand-200/60 dark:border-brand-800/40"
-                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                          ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 font-semibold border border-brand-200 dark:border-brand-800/50"
+                          : "text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
                       }`}
                     >
-                      <div className="flex items-center gap-2.5 min-w-0 text-left">
-                        <span className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-sm shrink-0">
-                          🏫
-                        </span>
+                      <div className="flex items-center min-w-0 text-left">
                         <span className="truncate font-semibold text-slate-900 dark:text-white">
                           {b.name}
                         </span>

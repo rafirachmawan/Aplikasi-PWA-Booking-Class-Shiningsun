@@ -62,8 +62,9 @@ async function ScheduleData({
 function SchedulePageSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
-      <div className="h-40 rounded-3xl bg-slate-200/60 dark:bg-slate-800/60" />
-      <div className="h-96 rounded-2xl bg-slate-200/60 dark:bg-slate-800/60" />
+      <div className="h-36 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800" />
+      <div className="h-16 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800" />
+      <div className="h-96 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800" />
     </div>
   );
 }

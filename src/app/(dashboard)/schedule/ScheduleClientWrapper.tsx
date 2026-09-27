@@ -314,36 +314,30 @@ export function ScheduleClientWrapper({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6">
       {isLoadingMonth && <LoadingSpinner usePortal={true} />}
 
-      {/* Header Card - Unified Design */}
-      <div className="rounded-3xl bg-brand-600 p-6 sm:p-10 shadow-lg relative overflow-hidden mb-6 sm:mb-8 no-print">
-        {/* Abstract Background Decoration */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
-
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-          <div>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap items-center gap-x-2">
-              <span>Jadwal Keseluruhan</span>
-              {activeBranchName && (
-                <span className="text-brand-100 font-normal text-lg sm:text-xl lg:text-2xl whitespace-nowrap">
-                  ({activeBranchName})
-                </span>
-              )}
-            </h2>
-            <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
-              Lihat jadwal operasional seluruh kelas dan siswa bulan ini.
-            </p>
-          </div>
+      {/* Judul halaman: satu kartu putih seperti ringkasan dashboard.
+          Tanpa blok biru penuh dan tanpa dekorasi blur. */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm no-print">
+        <div className="p-5 sm:p-6">
+          <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+            {MONTH_NAMES[currentMonth - 1]} {currentYear}
+            {activeBranchName ? ` - Cabang ${activeBranchName}` : ""}
+          </p>
+          <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Jadwal Keseluruhan
+          </h2>
+          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
+            Lihat jadwal operasional seluruh kelas dan siswa bulan ini.
+          </p>
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm mb-6 flex flex-col xl:flex-row xl:items-center justify-between gap-6 no-print">
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-5 sm:p-6 shadow-sm mb-6 flex flex-col xl:flex-row xl:items-end justify-between gap-5 no-print">
         {/* Filter */}
         <div className="flex flex-col gap-1.5 w-full xl:w-64 no-print">
-          <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1">
+          <label className="text-xs font-semibold text-slate-600 dark:text-zinc-300">
             Filter Kelas
           </label>
           <div className="relative w-full">
@@ -351,10 +345,10 @@ export function ScheduleClientWrapper({
             <button
               type="button"
               onClick={() => setIsClassFilterOpen(!isClassFilterOpen)}
-              className={`w-full flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 pl-4 pr-3 py-2 rounded-lg border text-sm font-medium text-slate-700 dark:text-slate-300 shadow-2xs transition-all cursor-pointer h-10.5 ${
+              className={`w-full flex items-center justify-between gap-2 bg-white dark:bg-zinc-900 pl-4 pr-3 rounded-xl border text-sm font-medium text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer h-11 ${
                 isClassFilterOpen
                   ? "border-brand-500 ring-2 ring-brand-500/30"
-                  : "border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/60"
+                  : "border-slate-200 dark:border-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600"
               }`}
             >
               <span className="truncate text-left">
@@ -391,7 +385,7 @@ export function ScheduleClientWrapper({
                 />
 
                 {/* Menu Popover Container */}
-                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-1.5 space-y-1">
                   {/* Search */}
                   <div className="p-1">
                     <input
@@ -400,7 +394,7 @@ export function ScheduleClientWrapper({
                       value={classFilterSearch}
                       onChange={(e) => setClassFilterSearch(e.target.value)}
                       placeholder="Cari kelas..."
-                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
                     />
                   </div>
 
@@ -415,10 +409,10 @@ export function ScheduleClientWrapper({
                             setFilterClassId(c.id);
                             setIsClassFilterOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                             isSelected
-                              ? "bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 font-bold border border-brand-200/60 dark:border-brand-800/40"
-                              : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                              ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 font-semibold border border-brand-200 dark:border-brand-800/50"
+                              : "text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
                           }`}
                         >
                           <span className="truncate text-left font-semibold text-slate-900 dark:text-white">
@@ -457,15 +451,15 @@ export function ScheduleClientWrapper({
         </div>
 
         {/* Actions & Navigation */}
-        <div className="flex flex-row flex-wrap items-end gap-4 w-full xl:w-auto justify-start xl:justify-end no-print">
+        <div className="flex flex-row flex-wrap items-end gap-3 w-full xl:w-auto justify-start xl:justify-end no-print">
           <div className="flex flex-col gap-1.5 w-full sm:w-auto order-3 sm:order-1">
-            <label className="hidden sm:block text-[10px] font-semibold text-transparent uppercase tracking-wider pl-1">
+            <span className="hidden sm:block text-xs font-semibold pl-1 select-none" aria-hidden="true">
               &nbsp;
-            </label>
+            </span>
             <div className="flex items-center gap-2 w-full">
               <button
                 onClick={() => window.print()}
-                className="flex-1 sm:flex-none justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg border border-transparent shadow-sm flex items-center gap-2 h-10.5 font-medium text-sm transition-colors"
+                className="flex-1 sm:flex-none justify-center bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 px-4 rounded-xl border border-slate-300 dark:border-zinc-700 flex items-center gap-2 h-11 font-semibold text-sm transition-colors cursor-pointer"
                 title="Export ke PDF (A4 Landscape)"
               >
                 <svg
@@ -488,7 +482,7 @@ export function ScheduleClientWrapper({
               <button
                 onClick={handleDownload}
                 disabled={isDownloading}
-                className="flex-1 sm:flex-none justify-center bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg border border-transparent shadow-sm flex items-center gap-2 h-10.5 font-medium text-sm transition-colors"
+                className="flex-1 sm:flex-none justify-center bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 rounded-xl border border-transparent flex items-center gap-2 h-11 font-semibold text-sm transition-colors cursor-pointer"
                 title="Download Jadwal (PDF)"
               >
                 {isDownloading ? (
@@ -535,10 +529,10 @@ export function ScheduleClientWrapper({
           </div>
 
           <div className="flex flex-col gap-1.5 flex-1 sm:flex-none order-1 sm:order-2">
-            <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1">
+            <label className="text-xs font-semibold text-slate-600 dark:text-zinc-300">
               Bulan
             </label>
-            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 justify-center h-11">
+            <div className="flex items-center gap-1 bg-slate-50 dark:bg-zinc-800 p-1 rounded-xl border border-slate-200 dark:border-zinc-700 justify-center h-11">
               {(() => {
                 const prevM = currentMonth === 1 ? 12 : currentMonth - 1;
                 const prevY =
@@ -550,19 +544,21 @@ export function ScheduleClientWrapper({
                   <>
                     <a
                       href={`/schedule?month=${prevM}&year=${prevY}`}
-                      className="min-w-11 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 transition-all font-bold text-base cursor-pointer"
+                      className="min-w-11 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-zinc-300 hover:text-brand-600 hover:bg-white dark:hover:bg-zinc-700 active:translate-y-[1px] transition-colors font-bold text-base cursor-pointer"
                       title="Bulan Sebelumnya"
+                      aria-label="Bulan sebelumnya"
                     >
                       &larr;
                     </a>
-                    <span className="font-bold text-slate-900 dark:text-white text-sm whitespace-nowrap px-2 text-center select-none">
+                    <span className="font-bold text-slate-900 dark:text-white text-sm whitespace-nowrap px-2 text-center select-none tabular-nums">
                       {MONTH_NAMES[currentMonth - 1].substring(0, 3)}{" "}
                       {currentYear}
                     </span>
                     <a
                       href={`/schedule?month=${nextM}&year=${nextY}`}
-                      className="min-w-11 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 transition-all font-bold text-base cursor-pointer"
+                      className="min-w-11 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-zinc-300 hover:text-brand-600 hover:bg-white dark:hover:bg-zinc-700 active:translate-y-[1px] transition-colors font-bold text-base cursor-pointer"
                       title="Bulan Berikutnya"
+                      aria-label="Bulan berikutnya"
                     >
                       &rarr;
                     </a>
@@ -573,20 +569,21 @@ export function ScheduleClientWrapper({
           </div>
 
           <div className="flex flex-col gap-1.5 flex-1 sm:flex-none order-2 sm:order-3">
-            <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1">
+            <label className="text-xs font-semibold text-slate-600 dark:text-zinc-300">
               Minggu Ke
             </label>
-            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 justify-center h-11">
+            <div className="flex items-center gap-1 bg-slate-50 dark:bg-zinc-800 p-1 rounded-xl border border-slate-200 dark:border-zinc-700 justify-center h-11">
               <button
                 type="button"
                 onClick={() => setWeekIndex((i) => Math.max(0, i - 1))}
                 disabled={weekIndex === 0}
-                className="min-w-11 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-base cursor-pointer"
+                className="min-w-11 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-zinc-300 hover:text-brand-600 hover:bg-white dark:hover:bg-zinc-700 active:translate-y-[1px] disabled:opacity-30 disabled:pointer-events-none transition-colors font-bold text-base cursor-pointer"
                 title="Minggu Sebelumnya"
+                aria-label="Minggu sebelumnya"
               >
                 &larr;
               </button>
-              <span className="text-sm font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap px-2 text-center select-none">
+              <span className="text-sm font-bold text-slate-700 dark:text-zinc-200 whitespace-nowrap px-2 text-center select-none tabular-nums">
                 {weekIndex + 1} / {weeks.length}
               </span>
               <button
@@ -595,8 +592,9 @@ export function ScheduleClientWrapper({
                   setWeekIndex((i) => Math.min(weeks.length - 1, i + 1))
                 }
                 disabled={weekIndex >= weeks.length - 1}
-                className="min-w-11 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 active:bg-slate-300 dark:active:bg-slate-600 disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-base cursor-pointer"
+                className="min-w-11 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-zinc-300 hover:text-brand-600 hover:bg-white dark:hover:bg-zinc-700 active:translate-y-[1px] disabled:opacity-30 disabled:pointer-events-none transition-colors font-bold text-base cursor-pointer"
                 title="Minggu Berikutnya"
+                aria-label="Minggu berikutnya"
               >
                 &rarr;
               </button>
@@ -676,7 +674,7 @@ export function ScheduleClientWrapper({
       {/* Timetable Grid */}
       <div
         id="printable-schedule"
-        className="bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5 sm:rounded-xl overflow-hidden relative"
+        className="bg-white dark:bg-zinc-900 shadow-sm border border-slate-200 dark:border-zinc-800 rounded-2xl overflow-hidden relative"
       >
         {/* Print Header (Only visible in PDF/Print) */}
         <div className="hidden print:block print:pb-4 border-b border-slate-200 mb-4">
@@ -693,8 +691,8 @@ export function ScheduleClientWrapper({
         <div className="overflow-x-auto">
           <table className="w-full min-w-175 border-collapse table-fixed">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/50 border-b-2 border-slate-300 dark:border-slate-600">
-                <th className="w-22.5 px-2 py-2.5 text-[10px] lg:text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center border-b border-r border-slate-200 dark:border-slate-700">
+              <tr className="bg-slate-50 dark:bg-zinc-800/60 border-b border-slate-200 dark:border-zinc-800">
+                <th className="w-22.5 px-2 py-2.5 text-[10px] lg:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider text-center border-b border-r border-slate-200 dark:border-zinc-800">
                   Jam
                 </th>
                 {currentWeek.map((date, colIdx) => {
@@ -705,22 +703,22 @@ export function ScheduleClientWrapper({
                     <th
                       key={colIdx}
                       onClick={() => isValid && setSelectedDate(todayStr)}
-                      className={`px-1 py-2.5 text-center border-b-2 border-r-2 last:border-r-0 border-slate-300 dark:border-slate-600 ${isValid ? "cursor-pointer hover:bg-brand-50 dark:hover:bg-slate-800 transition-colors" : ""}`}
+                      className={`px-1 py-2.5 text-center border-b border-r last:border-r-0 border-slate-200 dark:border-zinc-800 ${isValid ? "cursor-pointer hover:bg-brand-50 dark:hover:bg-zinc-800 transition-colors" : ""}`}
                     >
                       <div
-                        className={`text-[10px] lg:text-xs font-semibold uppercase tracking-wider ${isToday ? "text-brand-600 dark:text-brand-400" : "text-slate-500 dark:text-slate-400"}`}
+                        className={`text-[10px] lg:text-xs font-semibold uppercase tracking-wider ${isToday ? "text-brand-600 dark:text-brand-400" : "text-slate-500 dark:text-zinc-400"}`}
                       >
                         {DAY_LABELS[colIdx]}
                       </div>
                       {isValid && (
                         <>
                           <div
-                            className={`mt-0.5 text-xs lg:text-sm font-bold ${isToday ? "w-7 h-7 rounded-full bg-brand-500 text-white flex items-center justify-center mx-auto" : "text-slate-700 dark:text-slate-300"}`}
+                            className={`mt-0.5 text-xs lg:text-sm font-bold tabular-nums ${isToday ? "w-7 h-7 rounded-full bg-brand-600 text-white flex items-center justify-center mx-auto" : "text-slate-700 dark:text-zinc-200"}`}
                           >
                             {date!.getDate()}
                           </div>
                           <div
-                            className={`text-[8px] lg:text-[10px] font-medium ${isToday ? "text-brand-500 dark:text-brand-400" : "text-slate-400 dark:text-slate-500"}`}
+                            className={`text-[8px] lg:text-[10px] font-medium ${isToday ? "text-brand-600 dark:text-brand-400" : "text-slate-400 dark:text-zinc-500"}`}
                           >
                             {MONTH_NAMES[date!.getMonth()].substring(0, 3)}{" "}
                             {date!.getFullYear()}
@@ -736,10 +734,10 @@ export function ScheduleClientWrapper({
               {FIXED_TIMES.map(({ time, range }) => (
                 <tr
                   key={time}
-                  className="border-b-2 border-slate-200 dark:border-slate-700 last:border-b-0"
+                  className="border-b border-slate-200 dark:border-zinc-800 last:border-b-0"
                 >
-                  <td className="px-2 py-3 text-center border-r-2 border-slate-300 dark:border-slate-600 align-top bg-slate-100/70 dark:bg-slate-800/50 w-22.5">
-                    <span className="text-[10px] lg:text-xs font-extrabold text-slate-700 dark:text-slate-300 whitespace-nowrap tracking-tight">
+                  <td className="px-2 py-3 text-center border-r border-slate-200 dark:border-zinc-800 align-top bg-slate-50 dark:bg-zinc-800/60 w-22.5">
+                    <span className="text-[10px] lg:text-xs font-bold text-slate-600 dark:text-zinc-300 whitespace-nowrap tabular-nums">
                       {range}
                     </span>
                   </td>
@@ -748,7 +746,7 @@ export function ScheduleClientWrapper({
                       return (
                         <td
                           key={colIdx}
-                          className="border-r-2 last:border-r-0 border-slate-200 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-900/50"
+                          className="border-r last:border-r-0 border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900"
                         >
                           <div className="h-18" />
                         </td>
@@ -764,13 +762,11 @@ export function ScheduleClientWrapper({
                       <td
                         key={colIdx}
                         onClick={() => setSelectedDate(dateString)}
-                        className="px-1 py-1.5 border-r-2 last:border-r-0 border-slate-200 dark:border-slate-700 align-top cursor-pointer hover:bg-brand-50/50 dark:hover:bg-slate-800/30 transition-colors"
+                        className="px-1 py-1.5 border-r last:border-r-0 border-slate-200 dark:border-zinc-800 align-top cursor-pointer hover:bg-brand-50 dark:hover:bg-zinc-800/60 transition-colors"
                       >
                         <div className="h-18 overflow-y-auto">
                           {slotsAtTime.length === 0 ? (
-                            <div className="text-center py-2 text-[9px] text-slate-300 dark:text-slate-600 font-medium italic">
-                              &mdash;
-                            </div>
+                            <div className="py-2" aria-hidden="true" />
                           ) : (
                             slotsAtTime.map((slot: any) => {
                               const bookedCount = slot.bookings?.length || 0;
@@ -779,9 +775,9 @@ export function ScheduleClientWrapper({
                               const isEmpty = bookedCount === 0;
 
                               const quotaColor = isFull
-                                ? "text-red-500 dark:text-red-400"
+                                ? "text-red-600 dark:text-red-400"
                                 : isEmpty
-                                  ? "text-slate-400 dark:text-slate-500"
+                                  ? "text-slate-400 dark:text-zinc-500"
                                   : "text-brand-600 dark:text-brand-400";
 
                               return (
@@ -794,9 +790,7 @@ export function ScheduleClientWrapper({
                                       : `${bookedCount}/${slot.class.max_quota}`}
                                   </div>
                                   {isEmpty ? (
-                                    <div className="text-center py-0.5 text-[9px] text-slate-300 dark:text-slate-600 italic">
-                                      &mdash;
-                                    </div>
+                                    <div className="py-0.5" aria-hidden="true" />
                                   ) : (
                                     slot.bookings.map((b: any) => {
                                       const isCG = b.student?.status === "CG";
@@ -808,8 +802,8 @@ export function ScheduleClientWrapper({
                                           key={b.student_id}
                                           className={`px-1.5 py-0.5 text-[9px] lg:text-[10px] font-bold rounded truncate leading-tight ${
                                             isCG
-                                              ? "bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
-                                              : "text-slate-900 dark:text-slate-100"
+                                              ? "bg-slate-50 dark:bg-zinc-800/60 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700"
+                                              : "text-slate-900 dark:text-zinc-100"
                                           }`}
                                           style={
                                             isCG
@@ -825,7 +819,7 @@ export function ScheduleClientWrapper({
                                           title={`${isCG ? "(CG) " : ""}${b.student?.nickname || b.student?.name}`}
                                         >
                                           {isCG && (
-                                            <span className="text-slate-500 dark:text-slate-400 font-extrabold mr-0.5">
+                                            <span className="text-slate-500 dark:text-zinc-400 font-bold mr-0.5">
                                               (CG)
                                             </span>
                                           )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Icons } from "@/components/ui/icons";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Template {
@@ -220,40 +221,19 @@ export function BirthdayTemplateManager() {
   return (
     <div className="space-y-6">
       {isSaving && <LoadingSpinner usePortal={true} />}
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-            📝 Template Ucapan Ulang Tahun
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-            Kelola template ucapan ulang tahun untuk portal orang tua
-          </p>
-        </div>
-      </div>
 
       {/* Info Box */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+      <div className="bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-800/50 rounded-2xl p-4">
         <div className="flex items-start gap-3">
-          <svg
-            className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <div className="text-sm">
-            <p className="font-semibold text-blue-800 dark:text-blue-400 mb-1">
+          <div className="w-8 h-8 rounded-xl bg-brand-600 text-white flex items-center justify-center shrink-0">
+            <span className="text-xs font-bold">{"{ } "}</span>
+          </div>
+          <div className="text-sm min-w-0">
+            <p className="font-semibold text-brand-900 dark:text-brand-200 mb-1">
               Template ucapan ulang tahun untuk portal orang tua
             </p>
-            <p className="text-blue-700 dark:text-blue-500">
-              Gunakan variabel seperti {"{"}name{'}"}, {"{"}age{'}", dll dalam
+            <p className="text-xs text-brand-800 dark:text-brand-300 leading-relaxed">
+              Gunakan variabel seperti {"{"}name{"}"}, {"{"}age{"}"}, dll dalam
               teks ucapan.
             </p>
           </div>
@@ -263,44 +243,44 @@ export function BirthdayTemplateManager() {
       {loading ? (
         <div className="text-center py-12">
           <div className="inline-block w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin mb-3" />
-          <p className="text-slate-500">Memuat template...</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400">Memuat template...</p>
         </div>
       ) : error ? (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-center">
-          <p className="text-red-600 dark:text-red-400">{error}</p>
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-800/50 rounded-2xl p-4 text-center">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         </div>
       ) : (
         <div className="space-y-4">
           {templates.map((template) => (
             <div
               key={template.id}
-              className={`rounded-lg border ${
+              className={`rounded-2xl border bg-white dark:bg-zinc-900 shadow-sm ${
                 template.is_active
-                  ? "border-brand-300 dark:border-brand-700 bg-brand-50/50 dark:bg-brand-900/10"
-                  : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                  ? "border-brand-300 dark:border-brand-800/60"
+                  : "border-slate-200 dark:border-zinc-800"
               } p-5`}
             >
               {editingId === template.id ? (
                 // Edit Mode
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-slate-900 dark:text-white">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-bold text-slate-900 dark:text-white">
                       {template.id === "default"
                         ? "Edit Template Utama"
                         : "Edit Template"}
                     </h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => !isSaving && setEditingId(null)}
                         disabled={isSaving}
-                        className="text-sm text-slate-500 hover:text-slate-700 disabled:opacity-50"
+                        className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white disabled:opacity-50 cursor-pointer"
                       >
                         Batal
                       </button>
                       <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="inline-flex items-center gap-1 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+                        className="inline-flex items-center gap-1 rounded-xl bg-brand-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-brand-700 active:translate-y-[1px] disabled:opacity-50 transition-colors cursor-pointer"
                       >
                         {isSaving ? "Menyimpan..." : "Simpan"}
                       </button>
@@ -309,7 +289,7 @@ export function BirthdayTemplateManager() {
 
                   <div className="grid grid-cols-1 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                         Judul Template
                       </label>
                       <input
@@ -318,19 +298,19 @@ export function BirthdayTemplateManager() {
                         onChange={(e) =>
                           setFormData({ ...formData, title: e.target.value })
                         }
-                        className="w-full rounded-md border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                        className="w-full rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm font-medium text-slate-900 dark:text-white focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 placeholder:text-slate-400"
                         placeholder="Contoh: Template Ucapan Standar"
                       />
                       {template.id === "default" && (
-                        <p className="text-xs text-brand-600 dark:text-brand-400 mt-1">
-                          ℹ️ Template ini adalah template utama yang digunakan
+                        <p className="text-xs text-brand-600 dark:text-brand-400 mt-1.5">
+                          Template ini adalah template utama yang digunakan
                           sistem
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                         Teks Ucapan Ulang Tahun
                       </label>
                       <textarea
@@ -342,16 +322,16 @@ export function BirthdayTemplateManager() {
                           })
                         }
                         rows={4}
-                        className="w-full rounded-md border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 bg-white dark:bg-slate-900"
-                        placeholder="🎉 Selamat Ulang Tahun yang ke-{age} tahun, {name}! ..."
+                        className="w-full rounded-xl border border-slate-300 dark:border-zinc-700 px-3 py-2.5 text-sm font-medium text-slate-900 dark:text-white focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 bg-white dark:bg-zinc-900 placeholder:text-slate-400"
+                        placeholder="Selamat Ulang Tahun yang ke-{age} tahun, {name}! ..."
                       />
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1.5">
                         Gunakan variabel seperti{" "}
-                        <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">
+                        <code className="bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-lg font-mono">
                           {"{name}"}
                         </code>
                         ,{" "}
-                        <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">
+                        <code className="bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-lg font-mono">
                           {"{age}"}
                         </code>
                         , dll
@@ -360,23 +340,23 @@ export function BirthdayTemplateManager() {
 
                     {/* Real-time Preview */}
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        📋 Preview Real-time:
+                      <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
+                        Preview Real-time
                       </label>
-                      <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
-                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                      <div className="rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800 p-4">
+                        <p className="text-sm text-slate-700 dark:text-zinc-200 leading-relaxed">
                           {formData.greeting_text ||
-                            "💬 Preview akan muncul di sini saat Anda mengetik..."}
+                            "Preview akan muncul di sini saat Anda mengetik..."}
                         </p>
                       </div>
-                      <p className="text-[10px] text-slate-400 mt-1 italic">
+                      <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-1 italic">
                         *Preview ini akan ditampilkan saat siswa memiliki ulang
                         tahun
                       </p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                         Kutipan Motivasi (Opsional)
                       </label>
                       <textarea
@@ -388,7 +368,7 @@ export function BirthdayTemplateManager() {
                           })
                         }
                         rows={2}
-                        className="w-full rounded-md border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 bg-white dark:bg-slate-900"
+                        className="w-full rounded-xl border border-slate-300 dark:border-zinc-700 px-3 py-2.5 text-sm font-medium text-slate-900 dark:text-white focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 bg-white dark:bg-zinc-900 placeholder:text-slate-400"
                         placeholder="Setiap bertambah usia adalah kesempatan baru untuk tumbuh..."
                       />
                     </div>
@@ -404,11 +384,11 @@ export function BirthdayTemplateManager() {
                             is_active: e.target.checked,
                           })
                         }
-                        className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                        className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
                       />
                       <label
                         htmlFor="is_active"
-                        className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                        className="text-sm font-medium text-slate-700 dark:text-zinc-300 cursor-pointer"
                       >
                         Aktifkan template ini
                       </label>
@@ -419,34 +399,33 @@ export function BirthdayTemplateManager() {
                 // View Mode
                 <>
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-3">
                         <h3 className="font-bold text-slate-900 dark:text-white text-base sm:text-lg">
                           {template.title}
                         </h3>
-                        {template.is_active && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/40 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
+                        {template.is_active ? (
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/15 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
                             ✓ Aktif
                           </span>
-                        )}
-                        {!template.is_active && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:text-slate-400 border border-slate-200 dark:border-slate-600">
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 dark:bg-zinc-800 px-2.5 py-0.5 text-xs font-bold text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700">
                             Tidak Aktif
                           </span>
                         )}
                         {template.id === "default" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-brand-100 dark:bg-brand-900/40 px-2.5 py-0.5 text-xs font-semibold text-brand-700 dark:text-brand-400 border border-brand-200 dark:border-brand-800">
-                            📛 Utama
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-brand-50 dark:bg-brand-500/15 px-2.5 py-0.5 text-xs font-bold text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800/50">
+                            Utama
                           </span>
                         )}
                       </div>
 
                       <div className="space-y-3">
                         <div>
-                          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
-                            Preview Template:
+                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1.5">
+                            Preview Template
                           </p>
-                          <p className="text-sm text-slate-800 dark:text-white bg-white dark:bg-slate-700/50 rounded p-3 leading-relaxed border border-slate-200 dark:border-slate-600">
+                          <p className="text-sm text-slate-800 dark:text-zinc-100 bg-slate-50 dark:bg-zinc-800/60 rounded-xl p-3 leading-relaxed border border-slate-200 dark:border-zinc-800">
                             {previewTemplate(template.greeting_text, {
                               name: "Ahmad Abdullah",
                               nickname: "Tom",
@@ -456,17 +435,17 @@ export function BirthdayTemplateManager() {
                               days_until_birthday: 0, // Since this is used on birthday day
                             })}
                           </p>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 italic">
+                          <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-1 italic">
                             *Preview ini akan muncul saat siswa ultah hari ini
                           </p>
                         </div>
 
                         {template.motivational_quote && (
                           <div>
-                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
-                              Motivasi:
+                            <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1.5">
+                              Motivasi
                             </p>
-                            <p className="text-sm text-slate-800 dark:text-white italic bg-white dark:bg-slate-700/50 rounded p-3 border border-slate-200 dark:border-slate-600">
+                            <p className="text-sm text-slate-800 dark:text-zinc-100 italic bg-slate-50 dark:bg-zinc-800/60 rounded-xl p-3 border border-slate-200 dark:border-zinc-800">
                               "{template.motivational_quote}"
                             </p>
                           </div>
@@ -474,24 +453,12 @@ export function BirthdayTemplateManager() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-2 shrink-0">
+                    <div className="flex flex-row sm:flex-col gap-2 shrink-0">
                       <button
                         onClick={() => handleEdit(template)}
-                        className="inline-flex items-center gap-2 rounded-md bg-brand-600 hover:bg-brand-700 px-4 py-2 text-sm sm:text-base font-semibold text-white shadow-sm hover:shadow-md transition-all"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] px-4 py-2.5 text-xs font-bold text-white transition-colors cursor-pointer"
                       >
-                        <svg
-                          className="w-3 h-3 sm:w-3.5 sm:h-3.5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
+                        <Icons.edit className="w-3.5 h-3.5" />
                         <span>Edit Template</span>
                       </button>
 
@@ -500,21 +467,9 @@ export function BirthdayTemplateManager() {
                         <button
                           onClick={() => handleDelete(template.id)}
                           disabled={isSaving}
-                          className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md bg-red-50 dark:bg-red-900/20 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 disabled:opacity-50"
+                          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white dark:bg-zinc-900 px-4 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 hover:bg-red-50 dark:hover:bg-red-500/10 active:translate-y-[1px] transition-colors disabled:opacity-50 cursor-pointer"
                         >
-                          <svg
-                            className="w-3 h-3 sm:w-3.5 sm:h-3.5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
+                          <Icons.trash className="w-3.5 h-3.5" />
                           <span>Hapus</span>
                         </button>
                       )}

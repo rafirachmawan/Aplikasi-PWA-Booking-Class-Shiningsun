@@ -494,32 +494,34 @@ export function SchedulingClientWrapper({
     <>
       {isSubmitting && <LoadingSpinner usePortal={true} />}
 
-      <div className="bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5 sm:rounded-xl overflow-hidden">
+      <div className="bg-white dark:bg-zinc-900 shadow-sm border border-slate-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
         {/* Tabs */}
-        <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex">
+        <div className="border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/50 flex">
           <button
+            type="button"
             onClick={() => setActiveMode("auto")}
-            className={`flex-1 py-4 text-sm font-semibold transition-colors border-b-2 ${
+            className={`flex-1 py-4 text-sm font-semibold transition-colors cursor-pointer border-b-2 ${
               activeMode === "auto"
-                ? "border-brand-500 text-brand-600 dark:text-brand-400 bg-white dark:bg-slate-900"
-                : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                ? "border-brand-600 text-brand-700 dark:text-brand-300 bg-white dark:bg-zinc-900"
+                : "border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200"
             }`}
           >
             Otomatis (Bulanan)
           </button>
           <button
+            type="button"
             onClick={() => setActiveMode("manual")}
-            className={`flex-1 py-4 text-sm font-semibold transition-colors border-b-2 ${
+            className={`flex-1 py-4 text-sm font-semibold transition-colors cursor-pointer border-b-2 ${
               activeMode === "manual"
-                ? "border-brand-500 text-brand-600 dark:text-brand-400 bg-white dark:bg-slate-900"
-                : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                ? "border-brand-600 text-brand-700 dark:text-brand-300 bg-white dark:bg-zinc-900"
+                : "border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200"
             }`}
           >
             Manual (Pilih 1 Sesi)
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Month Navigator */}
           {(() => {
             const prevM = currentMonth === 1 ? 12 : currentMonth - 1;
@@ -527,22 +529,24 @@ export function SchedulingClientWrapper({
             const nextM = currentMonth === 12 ? 1 : currentMonth + 1;
             const nextY = currentMonth === 12 ? currentYear + 1 : currentYear;
             return (
-              <div className="mb-6 flex items-center justify-between bg-white dark:bg-slate-900 p-2 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="mb-6 flex items-center justify-between bg-slate-50 dark:bg-zinc-800/60 p-1.5 rounded-xl border border-slate-200 dark:border-zinc-800">
                 <a
                   href={`/scheduling?month=${prevM}&year=${prevY}`}
-                  className="px-3 py-2.5 sm:px-4 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all flex items-center gap-2 text-sm font-medium min-h-11 min-w-11 justify-center active:bg-slate-200 dark:active:bg-slate-700 cursor-pointer"
+                  className="px-3 py-2.5 sm:px-4 rounded-xl hover:bg-white dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 transition-colors flex items-center gap-2 text-sm font-semibold min-h-11 min-w-11 justify-center active:translate-y-[1px] cursor-pointer"
                   title="Bulan Sebelumnya"
+                  aria-label="Bulan sebelumnya"
                 >
                   <Icons.chevronLeft className="w-5 h-5 shrink-0" />
                   <span className="hidden sm:inline">Bulan Sebelumnya</span>
                 </a>
-                <div className="font-bold text-base sm:text-lg text-slate-800 dark:text-slate-200 text-center px-2 select-none">
+                <div className="font-bold text-base sm:text-lg text-slate-900 dark:text-white text-center px-2 select-none tabular-nums">
                   {monthNames[currentMonth - 1]} {currentYear}
                 </div>
                 <a
                   href={`/scheduling?month=${nextM}&year=${nextY}`}
-                  className="px-3 py-2.5 sm:px-4 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all flex items-center gap-2 text-sm font-medium min-h-11 min-w-11 justify-center active:bg-slate-200 dark:active:bg-slate-700 cursor-pointer"
+                  className="px-3 py-2.5 sm:px-4 rounded-xl hover:bg-white dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 transition-colors flex items-center gap-2 text-sm font-semibold min-h-11 min-w-11 justify-center active:translate-y-[1px] cursor-pointer"
                   title="Bulan Berikutnya"
+                  aria-label="Bulan berikutnya"
                 >
                   <span className="hidden sm:inline">Bulan Berikutnya</span>
                   <Icons.chevronRight className="w-5 h-5 shrink-0" />
@@ -552,8 +556,8 @@ export function SchedulingClientWrapper({
           })()}
 
           {/* Global Student Selector */}
-          <div className="mb-8 p-4 bg-brand-50 dark:bg-brand-500/10 rounded-xl border border-brand-100 dark:border-brand-500/20">
-            <label className="block text-sm font-semibold text-brand-900 dark:text-brand-100 mb-2">
+          <div className="mb-8 p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800">
+            <label className="block text-sm font-semibold text-slate-900 dark:text-white mb-2">
               Langkah 1: Pilih Siswa
             </label>
 
@@ -582,18 +586,18 @@ export function SchedulingClientWrapper({
                     setStudentSearchQuery(e.target.value);
                     if (!isOpenStudentDropdown) setIsOpenStudentDropdown(true);
                   }}
-                  className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-10 pr-24 py-3 text-slate-900 dark:text-white text-sm font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all cursor-pointer min-h-12"
+                  className="block w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-10 pr-24 py-3 text-slate-900 dark:text-white text-sm font-medium placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors cursor-pointer min-h-12"
                 />
 
                 <div className="absolute inset-y-0 right-0 pr-2 flex items-center gap-1">
                   {selectedStudent && (
                     <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-lg shrink-0 ${
                         selectedStudent.status === "REGISTERED"
-                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50"
                           : selectedStudent.status === "CG"
-                            ? "bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
-                            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                            ? "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50"
+                            : "bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400"
                       }`}
                     >
                       {selectedStudent.status === "REGISTERED"
@@ -645,7 +649,7 @@ export function SchedulingClientWrapper({
               </div>
 
               {isOpenStudentDropdown && (
-                <div className="absolute z-50 mt-1.5 w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-2 animate-in fade-in slide-in-from-top-1 duration-100">
+                <div className="absolute z-50 mt-1.5 w-full rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl p-2">
                   {/* Options List */}
                   <div className="max-h-55 overflow-y-auto space-y-1">
                     {filteredStudents.length === 0 ? (
@@ -669,39 +673,39 @@ export function SchedulingClientWrapper({
                                 rememberRecentStudent(s.id);
                               }
                             }}
-                            className={`w-full px-3 py-2.5 text-xs text-left rounded-lg transition-colors flex items-center justify-between min-h-11 ${
+                            className={`w-full px-3 py-2.5 text-xs text-left rounded-xl transition-colors flex items-center justify-between min-h-11 ${
                               isInactive
-                                ? "opacity-60 cursor-not-allowed bg-slate-50 dark:bg-slate-800/30"
-                                : "hover:bg-brand-50/70 dark:hover:bg-brand-950/40 active:bg-brand-100 dark:active:bg-brand-900/60 cursor-pointer " +
+                                ? "opacity-60 cursor-not-allowed bg-slate-50 dark:bg-zinc-800/40"
+                                : "hover:bg-brand-50 dark:hover:bg-brand-500/15 active:bg-brand-100 cursor-pointer " +
                                   (isSelected
-                                    ? "font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/30"
-                                    : "text-slate-700 dark:text-slate-300")
+                                    ? "font-bold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-500/15"
+                                    : "text-slate-700 dark:text-zinc-300")
                             }`}
                           >
                             <div className="truncate pr-2 flex flex-col">
                               <span
-                                className={`font-medium ${isSelected ? "text-brand-700 dark:text-brand-300 font-semibold" : isInactive ? "text-slate-500 dark:text-slate-400" : ""}`}
+                                className={`font-medium ${isSelected ? "text-brand-700 dark:text-brand-300 font-semibold" : isInactive ? "text-slate-500 dark:text-zinc-400" : ""}`}
                               >
                                 {s.name}
                                 {s.nickname ? (
-                                  <span className="text-slate-400 dark:text-slate-500 font-normal ml-1">
+                                  <span className="text-slate-400 dark:text-zinc-500 font-normal ml-1">
                                     ({s.nickname})
                                   </span>
                                 ) : null}
                               </span>
                               {isInactive && (
-                                <span className="text-[9px] text-red-500 dark:text-red-400 font-medium mt-0.5">
-                                  *Siswa nonaktif
+                                <span className="text-[9px] text-red-600 dark:text-red-400 font-medium mt-0.5">
+                                  Siswa nonaktif
                                 </span>
                               )}
                             </div>
                             <span
-                              className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                              className={`text-[9px] font-bold px-1.5 py-0.5 rounded-lg shrink-0 ${
                                 s.status === "REGISTERED"
-                                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+                                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
                                   : s.status === "CG"
-                                    ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400"
-                                    : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                                    ? "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+                                    : "bg-slate-200 text-slate-600 dark:bg-zinc-700 dark:text-zinc-400"
                               }`}
                             >
                               {s.status === "REGISTERED"
@@ -721,14 +725,14 @@ export function SchedulingClientWrapper({
 
             {/* Level Siswa & Button Ganti Level */}
             {selectedStudent && (
-              <div className="mt-3 p-3 bg-white dark:bg-slate-900 rounded-xl border border-brand-200/80 dark:border-brand-500/30 shadow-2xs flex flex-col gap-2.5">
+              <div className="mt-3 p-3 bg-slate-50 dark:bg-zinc-800/60 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col gap-2.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 shrink-0">
+                  <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 shrink-0">
                     Level Siswa:
                   </span>
                   {selectedStudent.label ? (
                     <span
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700"
                       style={{
                         borderLeft: `3px solid ${selectedStudent.label.hex_color}`,
                       }}
@@ -743,7 +747,7 @@ export function SchedulingClientWrapper({
                       {selectedStudent.label.sub_level}
                     </span>
                   ) : (
-                    <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <span className="text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800/50">
                       Belum Memiliki Level
                     </span>
                   )}
@@ -752,7 +756,7 @@ export function SchedulingClientWrapper({
                 <button
                   type="button"
                   onClick={() => handleOpenChangeLabel(selectedStudent)}
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white transition-all shadow-xs cursor-pointer active:scale-[0.98]"
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-zinc-900 hover:bg-brand-50 dark:hover:bg-brand-500/15 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800/50 transition-colors cursor-pointer active:translate-y-[1px]"
                 >
                   <Icons.edit className="w-3.5 h-3.5" />
                   <span>Ganti Level</span>
@@ -762,8 +766,8 @@ export function SchedulingClientWrapper({
 
             {/* Tampilkan Jadwal Siswa yang Terdaftar */}
             {studentId && (
-              <div className="mt-4 pt-4 border-t border-brand-200 dark:border-brand-500/30">
-                <h4 className="text-sm font-medium text-brand-800 dark:text-brand-200 mb-2">
+              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-zinc-800">
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-zinc-100 mb-2">
                   Jadwal Terdaftar (Bulan {monthNames[currentMonth - 1]}):
                 </h4>
                 {(() => {
@@ -773,7 +777,7 @@ export function SchedulingClientWrapper({
 
                   if (studentSchedules.length === 0) {
                     return (
-                      <p className="text-xs text-brand-600/70 dark:text-brand-300/70 italic">
+                      <p className="text-xs text-slate-500 dark:text-zinc-400 italic">
                         Belum ada jadwal untuk siswa ini di bulan{" "}
                         {monthNames[currentMonth - 1]}.
                       </p>
@@ -786,7 +790,7 @@ export function SchedulingClientWrapper({
                         <button
                           type="button"
                           onClick={() => setCopyConfirm(true)}
-                          className="w-full sm:w-auto px-3.5 py-2 text-xs font-bold bg-brand-600 text-white rounded-xl hover:bg-brand-700 shadow-2xs transition-colors flex items-center justify-center gap-2"
+                          className="w-full sm:w-auto px-3.5 py-2 text-xs font-bold bg-brand-600 text-white rounded-xl hover:bg-brand-700 active:translate-y-[1px] transition-colors cursor-pointer flex items-center justify-center gap-2"
                         >
                           <Icons.calendar className="w-3.5 h-3.5" />
                           <span>Gunakan jadwal untuk bulan depan</span>
@@ -799,7 +803,7 @@ export function SchedulingClientWrapper({
                               studentSchedules,
                             })
                           }
-                          className="w-full sm:w-auto px-3.5 py-2 text-xs font-bold bg-red-600 text-white rounded-xl hover:bg-red-700 shadow-2xs transition-colors flex items-center justify-center gap-2"
+                          className="w-full sm:w-auto px-3.5 py-2 text-xs font-bold bg-white dark:bg-zinc-900 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 active:translate-y-[1px] transition-colors cursor-pointer flex items-center justify-center gap-2"
                         >
                           <Icons.trash className="w-3.5 h-3.5" />
                           <span>Hapus semua</span>
@@ -828,17 +832,17 @@ export function SchedulingClientWrapper({
                           return (
                             <div
                               key={slot.id}
-                              className="flex items-center justify-between p-2.5 rounded-xl text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs gap-2"
+                              className="flex items-center justify-between p-2.5 rounded-xl text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 gap-2"
                             >
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
-                                <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                                  <Icons.calendar className="w-3.5 h-3.5 text-brand-500 shrink-0" />
+                                <span className="font-semibold text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
+                                  <Icons.calendar className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" />
                                   {hari}, {tgl} {monthNames[currentMonth - 1]}
                                 </span>
-                                <span className="text-brand-600 dark:text-brand-400 font-bold bg-brand-50 dark:bg-brand-500/10 px-2 py-0.5 rounded-md">
+                                <span className="text-brand-700 dark:text-brand-300 font-bold bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 rounded-lg tabular-nums">
                                   {slot.time.substring(0, 5)}
                                 </span>
-                                <span className="font-bold text-slate-700 dark:text-slate-300">
+                                <span className="font-bold text-slate-700 dark:text-zinc-300">
                                   {slot.class?.name}
                                 </span>
                               </div>
@@ -856,8 +860,9 @@ export function SchedulingClientWrapper({
                                       label: jadwalLabel,
                                     })
                                   }
-                                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-500/20 transition-colors"
+                                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-500/15 transition-colors cursor-pointer"
                                   title="Edit jadwal ini"
+                                  aria-label="Edit jadwal ini"
                                 >
                                   <Icons.edit className="w-3.5 h-3.5" />
                                 </button>
@@ -871,8 +876,9 @@ export function SchedulingClientWrapper({
                                       label: jadwalLabel,
                                     })
                                   }
-                                  className="p-1.5 rounded-lg bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/40 transition-colors"
+                                  className="p-1.5 rounded-lg bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/25 transition-colors cursor-pointer"
                                   title="Hapus jadwal ini"
+                                  aria-label="Hapus jadwal ini"
                                 >
                                   <Icons.trash className="w-3.5 h-3.5" />
                                 </button>
@@ -889,15 +895,12 @@ export function SchedulingClientWrapper({
           </div>
 
           {activeMode === "auto" ? (
-            <form
-              onSubmit={handleAutoSubmit}
-              className="space-y-6 animate-in slide-in-from-left-4"
-            >
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                <div className="space-y-3 mt-4">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <form onSubmit={handleAutoSubmit} className="space-y-6">
+              <div className="bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800">
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
                     Pilih Jadwal Rutin
-                  </label>
+                  </h3>
                   {autoSchedules.map((schedule, index) => {
                     // Helper untuk menampilkan hari dari tanggal
                     const dateObj = new Date(schedule.startDate);
@@ -916,15 +919,15 @@ export function SchedulingClientWrapper({
                     return (
                       <div
                         key={index}
-                        className="grid grid-cols-1 md:grid-cols-12 gap-3.5 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs items-end"
+                        className="grid grid-cols-1 md:grid-cols-12 gap-3.5 bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 items-end"
                       >
                         <div className="md:col-span-4">
-                          <div className="flex items-center justify-between mb-1.5 px-1">
-                            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                              📅 Tanggal
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-xs font-semibold text-slate-600 dark:text-zinc-300">
+                              Tanggal
                             </label>
                             {hari && (
-                              <span className="text-[10px] font-extrabold text-brand-700 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/30 px-2 py-0.5 rounded-md shadow-xs">
+                              <span className="text-[11px] font-bold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 rounded-lg">
                                 {hari}
                               </span>
                             )}
@@ -944,9 +947,9 @@ export function SchedulingClientWrapper({
                         </div>
 
                         <div className="md:col-span-4">
-                          <div className="flex items-center justify-between mb-1.5 px-1">
-                            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                              🕒 Jam Sesi
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-xs font-semibold text-slate-600 dark:text-zinc-300">
+                              Jam Sesi
                               {schedule.classId &&
                                 schedule.startDate &&
                                 schedule.time &&
@@ -957,7 +960,7 @@ export function SchedulingClientWrapper({
                                     schedule.classId,
                                   );
                                   return r !== null ? (
-                                    <span className="text-brand-600 dark:text-brand-400 font-extrabold ml-1 normal-case">
+                                    <span className="text-brand-600 dark:text-brand-400 font-bold ml-1">
                                       (Sisa {r})
                                     </span>
                                   ) : null;
@@ -992,10 +995,10 @@ export function SchedulingClientWrapper({
                                   openAutoTimeIndex === index ? null : index,
                                 )
                               }
-                              className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-slate-900 pl-3.5 pr-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white shadow-2xs transition-all cursor-pointer h-11 ${
+                              className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-zinc-900 pl-3.5 pr-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white transition-colors cursor-pointer h-11 ${
                                 openAutoTimeIndex === index
                                   ? "border-brand-500 ring-2 ring-brand-500/30"
-                                  : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                  : "border-slate-200 dark:border-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600"
                               }`}
                             >
                               {schedule.time ? (
@@ -1038,7 +1041,7 @@ export function SchedulingClientWrapper({
                                   className="fixed inset-0 z-40"
                                   onClick={() => setOpenAutoTimeIndex(null)}
                                 />
-                                <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                                <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-1.5 space-y-1">
                                   <div className="max-h-52 overflow-y-auto space-y-1">
                                     {timeSlots.map((t) => {
                                       const rem = schedule.classId
@@ -1067,25 +1070,25 @@ export function SchedulingClientWrapper({
                                             );
                                             setOpenAutoTimeIndex(null);
                                           }}
-                                          className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                                          className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
                                             isFull
-                                              ? "opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800/40"
-                                              : "cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                                              ? "opacity-50 cursor-not-allowed bg-slate-50 dark:bg-zinc-800/40"
+                                              : "cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800"
                                           } ${
                                             isSelected
-                                              ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40 text-brand-600 dark:text-brand-400 font-bold"
+                                              ? "bg-brand-50 dark:bg-brand-500/15 border border-brand-200 dark:border-brand-800/50 text-brand-700 dark:text-brand-300 font-semibold"
                                               : "text-slate-900 dark:text-white"
                                           }`}
                                         >
-                                          <span className="truncate text-left font-semibold">
+                                          <span className="truncate text-left font-semibold tabular-nums">
                                             {t} - {endHour}:00
                                           </span>
                                           {rem !== null && (
                                             <span
-                                              className={`shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                                              className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-lg ${
                                                 isFull
-                                                  ? "bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300"
-                                                  : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300"
+                                                  ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300"
+                                                  : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
                                               }`}
                                             >
                                               {isFull ? "Penuh" : `Sisa ${rem}`}
@@ -1108,9 +1111,9 @@ export function SchedulingClientWrapper({
                               : "md:col-span-4"
                           }
                         >
-                          <div className="flex items-center justify-between mb-1.5 px-1">
-                            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                              🏫 Tipe Kelas
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-xs font-semibold text-slate-600 dark:text-zinc-300">
+                              Tipe Kelas
                             </label>
                           </div>
                           <div className="relative">
@@ -1145,10 +1148,10 @@ export function SchedulingClientWrapper({
                                   openClassIdx === index ? null : index,
                                 )
                               }
-                              className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-slate-900 pl-3.5 pr-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white shadow-2xs transition-all cursor-pointer h-11 ${
+                              className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-zinc-900 pl-3.5 pr-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white transition-colors cursor-pointer h-11 ${
                                 openClassIdx === index
                                   ? "border-brand-500 ring-2 ring-brand-500/30"
-                                  : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                  : "border-slate-200 dark:border-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600"
                               }`}
                             >
                               {schedule.classId ? (
@@ -1192,7 +1195,7 @@ export function SchedulingClientWrapper({
                                 />
 
                                 {/* Menu Popover Container */}
-                                <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                                <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-1.5 space-y-1">
                                   {/* Search */}
                                   <div className="p-1">
                                     <input
@@ -1203,7 +1206,7 @@ export function SchedulingClientWrapper({
                                         setClassTypeSearch(e.target.value)
                                       }
                                       placeholder="Cari tipe kelas..."
-                                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
+                                      className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
                                     />
                                   </div>
 
@@ -1245,32 +1248,32 @@ export function SchedulingClientWrapper({
                                               );
                                               setOpenClassIdx(null);
                                             }}
-                                            className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                                            className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
                                               isFull
                                                 ? "opacity-50 cursor-not-allowed"
                                                 : "cursor-pointer"
                                             } ${
                                               isSelected
-                                                ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40"
+                                                ? "bg-brand-50 dark:bg-brand-500/15 border border-brand-200 dark:border-brand-800/50"
                                                 : isFull
-                                                  ? "bg-slate-50 dark:bg-slate-800/40"
-                                                  : "hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                                                  ? "bg-slate-50 dark:bg-zinc-800/40"
+                                                  : "hover:bg-slate-100 dark:hover:bg-zinc-800"
                                             }`}
                                           >
                                             <span
                                               className={`truncate text-left font-semibold ${
                                                 isSelected
-                                                  ? "text-brand-600 dark:text-brand-400"
+                                                  ? "text-brand-700 dark:text-brand-300"
                                                   : "text-slate-900 dark:text-white"
                                               }`}
                                             >
                                               {c.name}
                                             </span>
                                             <span
-                                              className={`shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                                              className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-lg ${
                                                 isFull
-                                                  ? "bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300"
-                                                  : "bg-brand-100 text-brand-700 dark:bg-brand-950/80 dark:text-brand-300"
+                                                  ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300"
+                                                  : "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
                                               }`}
                                             >
                                               {isFull
@@ -1294,7 +1297,7 @@ export function SchedulingClientWrapper({
                                               .toLowerCase(),
                                           ),
                                     ) && (
-                                      <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500 text-center font-medium">
+                                      <p className="px-3 py-2 text-xs text-slate-400 dark:text-zinc-500 text-center font-medium">
                                         Tipe kelas tidak ditemukan.
                                       </p>
                                     )}
@@ -1310,8 +1313,9 @@ export function SchedulingClientWrapper({
                             <button
                               type="button"
                               onClick={() => removeAutoScheduleRow(index)}
-                              className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-colors border border-red-100 dark:border-red-900/30 cursor-pointer"
-                              title="Hapus Baris"
+                              className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors border border-red-200 dark:border-red-800/50 cursor-pointer h-11 w-11 flex items-center justify-center"
+                              title="Hapus baris"
+                              aria-label="Hapus baris jadwal"
                             >
                               <Icons.close className="w-4 h-4" />
                             </button>
@@ -1325,12 +1329,12 @@ export function SchedulingClientWrapper({
                 <button
                   type="button"
                   onClick={addAutoScheduleRow}
-                  className="mt-3 text-sm font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1"
+                  className="mt-3 text-sm font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 flex items-center gap-1 cursor-pointer"
                 >
                   <Icons.add className="w-4 h-4" /> Tambah Jadwal Lainnya
                 </button>
 
-                <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-4 text-xs leading-relaxed text-slate-500 dark:text-zinc-400">
                   Sistem akan secara otomatis membuatkan jadwal hingga akhir
                   bulan berdasarkan Tanggal yang Anda pilih pada baris di atas.
                 </p>
@@ -1339,19 +1343,16 @@ export function SchedulingClientWrapper({
               <button
                 type="submit"
                 disabled={isSubmitting || !studentId}
-                className="w-full flex justify-center py-3 px-4 rounded-xl shadow-sm text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50"
+                className="w-full flex justify-center py-3 px-4 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? "Memproses Data..." : "Jalankan Auto-Booking"}
               </button>
             </form>
           ) : (
-            <form
-              onSubmit={handleManualSubmit}
-              className="space-y-6 animate-in slide-in-from-right-4"
-            >
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
-                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                  <Icons.calendar className="w-4 h-4 text-brand-500" /> Langkah
+            <form onSubmit={handleManualSubmit} className="space-y-6">
+              <div className="bg-slate-50 dark:bg-zinc-800/50 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-zinc-800">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Icons.calendar className="w-4 h-4 text-brand-600 dark:text-brand-400" /> Langkah
                   2: Pilih Sesi Manual
                 </h3>
 
@@ -1371,12 +1372,12 @@ export function SchedulingClientWrapper({
                             "Sabtu",
                           ][d.getDay()];
                       return (
-                        <div className="flex items-center justify-between mb-1.5 px-1">
-                          <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                            📅 Tanggal
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300">
+                            Tanggal
                           </label>
                           {manualHari && (
-                            <span className="text-[10px] font-extrabold text-brand-700 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/30 px-2 py-0.5 rounded-md shadow-xs">
+                            <span className="text-[11px] font-bold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 rounded-lg">
                               {manualHari}
                             </span>
                           )}
@@ -1391,8 +1392,8 @@ export function SchedulingClientWrapper({
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 px-1">
-                      🕒 Pilih Jam
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
+                      Pilih Jam
                       {manualClassId &&
                         manualDate &&
                         manualTime &&
@@ -1403,7 +1404,7 @@ export function SchedulingClientWrapper({
                             manualClassId,
                           );
                           return r !== null ? (
-                            <span className="text-brand-600 dark:text-brand-400 font-extrabold ml-1 normal-case">
+                            <span className="text-brand-600 dark:text-brand-400 font-bold ml-1">
                               (Sisa {r})
                             </span>
                           ) : null;
@@ -1433,10 +1434,10 @@ export function SchedulingClientWrapper({
                         onClick={() =>
                           setOpenManualDD(openManualDD === "jam" ? null : "jam")
                         }
-                        className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-slate-900 pl-3.5 pr-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white shadow-2xs transition-all cursor-pointer h-11 ${
+                        className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-zinc-900 pl-3.5 pr-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white transition-colors cursor-pointer h-11 ${
                           openManualDD === "jam"
                             ? "border-brand-500 ring-2 ring-brand-500/30"
-                            : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            : "border-slate-200 dark:border-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600"
                         }`}
                       >
                         {manualTime ? (
@@ -1481,7 +1482,7 @@ export function SchedulingClientWrapper({
                             onClick={() => setOpenManualDD(null)}
                           />
 
-                          <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                          <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-1.5 space-y-1">
                             <div className="p-1">
                               <input
                                 type="text"
@@ -1490,7 +1491,7 @@ export function SchedulingClientWrapper({
                                   setManualDDSearch(e.target.value)
                                 }
                                 placeholder="Cari jam..."
-                                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
+                                className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
                               />
                             </div>
 
@@ -1523,22 +1524,22 @@ export function SchedulingClientWrapper({
                                         setManualTime(t);
                                         setOpenManualDD(null);
                                       }}
-                                      className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                                      className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
                                         isFull
                                           ? "opacity-50 cursor-not-allowed"
                                           : "cursor-pointer"
                                       } ${
                                         isSelected
-                                          ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40"
+                                          ? "bg-brand-50 dark:bg-brand-500/15 border border-brand-200 dark:border-brand-800/50"
                                           : isFull
-                                            ? "bg-slate-50 dark:bg-slate-800/40"
-                                            : "hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                                            ? "bg-slate-50 dark:bg-zinc-800/40"
+                                            : "hover:bg-slate-100 dark:hover:bg-zinc-800"
                                       }`}
                                     >
                                       <span
                                         className={`truncate text-left font-semibold ${
                                           isSelected
-                                            ? "text-brand-600 dark:text-brand-400"
+                                            ? "text-brand-700 dark:text-brand-300"
                                             : "text-slate-900 dark:text-white"
                                         }`}
                                       >
@@ -1546,10 +1547,10 @@ export function SchedulingClientWrapper({
                                       </span>
                                       {rem !== null && (
                                         <span
-                                          className={`shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                                          className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-lg ${
                                             isFull
-                                              ? "bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300"
-                                              : "bg-brand-100 text-brand-700 dark:bg-brand-950/80 dark:text-brand-300"
+                                              ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300"
+                                              : "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
                                           }`}
                                         >
                                           {isFull ? "Penuh" : `Sisa ${rem}`}
@@ -1564,7 +1565,7 @@ export function SchedulingClientWrapper({
                                   manualDDSearch.trim() &&
                                   !t.includes(manualDDSearch.trim()),
                               ) && (
-                                <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500 text-center font-medium">
+                                <p className="px-3 py-2 text-xs text-slate-400 dark:text-zinc-500 text-center font-medium">
                                   Jam tidak ditemukan.
                                 </p>
                               )}
@@ -1575,8 +1576,8 @@ export function SchedulingClientWrapper({
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 px-1">
-                      🏫 Pilih Kelas
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
+                      Pilih Kelas
                     </label>
                     <div className="relative">
                       {/* Hidden native select — hanya untuk semantik form (required) */}
@@ -1604,10 +1605,10 @@ export function SchedulingClientWrapper({
                             openManualDD === "kelas" ? null : "kelas",
                           )
                         }
-                        className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-slate-900 pl-3.5 pr-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white shadow-2xs transition-all cursor-pointer h-11 ${
+                        className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-zinc-900 pl-3.5 pr-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white transition-colors cursor-pointer h-11 ${
                           openManualDD === "kelas"
                             ? "border-brand-500 ring-2 ring-brand-500/30"
-                            : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            : "border-slate-200 dark:border-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600"
                         }`}
                       >
                         {manualClassId ? (
@@ -1649,7 +1650,7 @@ export function SchedulingClientWrapper({
                             onClick={() => setOpenManualDD(null)}
                           />
 
-                          <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                          <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-1.5 space-y-1">
                             <div className="p-1">
                               <input
                                 type="text"
@@ -1658,7 +1659,7 @@ export function SchedulingClientWrapper({
                                   setManualDDSearch(e.target.value)
                                 }
                                 placeholder="Cari tipe kelas..."
-                                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
+                                className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
                               />
                             </div>
 
@@ -1693,32 +1694,32 @@ export function SchedulingClientWrapper({
                                         setManualClassId(c.id);
                                         setOpenManualDD(null);
                                       }}
-                                      className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                                      className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
                                         isFull
                                           ? "opacity-50 cursor-not-allowed"
                                           : "cursor-pointer"
                                       } ${
                                         isSelected
-                                          ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40"
+                                          ? "bg-brand-50 dark:bg-brand-500/15 border border-brand-200 dark:border-brand-800/50"
                                           : isFull
-                                            ? "bg-slate-50 dark:bg-slate-800/40"
-                                            : "hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                                            ? "bg-slate-50 dark:bg-zinc-800/40"
+                                            : "hover:bg-slate-100 dark:hover:bg-zinc-800"
                                       }`}
                                     >
                                       <span
                                         className={`truncate text-left font-semibold ${
                                           isSelected
-                                            ? "text-brand-600 dark:text-brand-400"
+                                            ? "text-brand-700 dark:text-brand-300"
                                             : "text-slate-900 dark:text-white"
                                         }`}
                                       >
                                         {c.name}
                                       </span>
                                       <span
-                                        className={`shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                                        className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-lg ${
                                           isFull
-                                            ? "bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300"
-                                            : "bg-brand-100 text-brand-700 dark:bg-brand-950/80 dark:text-brand-300"
+                                            ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300"
+                                            : "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
                                         }`}
                                       >
                                         {isFull
@@ -1740,7 +1741,7 @@ export function SchedulingClientWrapper({
                                       manualDDSearch.trim().toLowerCase(),
                                     ),
                               ) && (
-                                <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500 text-center font-medium">
+                                <p className="px-3 py-2 text-xs text-slate-400 dark:text-zinc-500 text-center font-medium">
                                   Tipe kelas tidak ditemukan.
                                 </p>
                               )}
@@ -1751,7 +1752,7 @@ export function SchedulingClientWrapper({
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">
+                <p className="text-xs leading-relaxed text-slate-500 dark:text-zinc-400 mt-2">
                   Sistem akan secara otomatis membuatkan kotak jadwal di
                   kalender jika belum ada, lalu mendaftarkan siswa ke kelas
                   tersebut.
@@ -1761,7 +1762,7 @@ export function SchedulingClientWrapper({
               <button
                 type="submit"
                 disabled={isSubmitting || !studentId || !manualClassId}
-                className="w-full flex justify-center py-3 px-4 rounded-xl shadow-sm text-sm font-semibold text-white bg-slate-800 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50 dark:bg-slate-700 dark:hover:bg-slate-600"
+                className="w-full flex justify-center py-3 px-4 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? "Memproses Data..." : "Booking Sesi Ini"}
               </button>
@@ -1772,11 +1773,11 @@ export function SchedulingClientWrapper({
 
       {/* Custom Notification Modal */}
       {modalConfig.isOpen && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-zinc-800">
             <div className="p-6 text-center">
               {modalConfig.type === "success" && (
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/10 mb-4">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/15 mb-4">
                   <svg
                     className="h-7 w-7 text-emerald-600 dark:text-emerald-500"
                     fill="none"
@@ -1793,7 +1794,7 @@ export function SchedulingClientWrapper({
                 </div>
               )}
               {modalConfig.type === "warning" && (
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/10 mb-4">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-500/15 mb-4">
                   <svg
                     className="h-7 w-7 text-amber-600 dark:text-amber-500"
                     fill="none"
@@ -1810,7 +1811,7 @@ export function SchedulingClientWrapper({
                 </div>
               )}
               {modalConfig.type === "error" && (
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/10 mb-4">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 dark:bg-red-500/15 mb-4">
                   <svg
                     className="h-7 w-7 text-red-600 dark:text-red-500"
                     fill="none"
@@ -1827,23 +1828,23 @@ export function SchedulingClientWrapper({
                 </div>
               )}
 
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                 {modalConfig.type === "success"
                   ? "Berhasil!"
                   : modalConfig.type === "warning"
                     ? "Perhatian"
                     : "Terjadi Kesalahan"}
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-slate-500 dark:text-zinc-400">
                 {modalConfig.message}
               </p>
             </div>
-            <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4">
+            <div className="bg-slate-50 dark:bg-zinc-800/50 px-6 py-4 border-t border-slate-200 dark:border-zinc-800">
               <button
                 onClick={() =>
                   setModalConfig({ ...modalConfig, isOpen: false })
                 }
-                className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 rounded-xl hover:bg-brand-700 transition-colors shadow-sm"
+                className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 rounded-xl hover:bg-brand-700 active:translate-y-[1px] transition-colors cursor-pointer"
               >
                 Tutup
               </button>
@@ -1854,18 +1855,19 @@ export function SchedulingClientWrapper({
 
       {/* Edit Booking Modal */}
       {editModal.isOpen && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800 flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-900">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <span className="p-1.5 bg-brand-50 dark:bg-brand-500/10 rounded-lg text-brand-600 dark:text-brand-400">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-zinc-800 flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-zinc-800 shrink-0">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span className="p-1.5 bg-brand-50 dark:bg-brand-500/15 rounded-lg text-brand-600 dark:text-brand-400">
                   <Icons.edit className="w-5 h-5" />
                 </span>
                 Edit Jadwal
               </h3>
               <button
                 onClick={() => setEditModal({ ...editModal, isOpen: false })}
-                className="text-slate-400 hover:text-slate-500 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                aria-label="Tutup"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               >
                 <Icons.close className="w-5 h-5" />
               </button>
@@ -1875,17 +1877,17 @@ export function SchedulingClientWrapper({
               onSubmit={handleEditBooking}
               className="flex-1 overflow-y-auto p-6 space-y-4"
             >
-              <div className="mb-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+              <div className="mb-2 p-3 bg-slate-50 dark:bg-zinc-800/60 rounded-xl border border-slate-200 dark:border-zinc-800">
+                <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1">
                   Jadwal Lama
                 </p>
-                <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                <p className="text-xs font-medium text-slate-700 dark:text-zinc-200">
                   {editModal.label}
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                   Pilih Tanggal Baru
                 </label>
                 <DatePickerInput
@@ -1898,7 +1900,7 @@ export function SchedulingClientWrapper({
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                   Pilih Jam Sesi Baru
                   {editModal.classId &&
                     editModal.date &&
@@ -1940,10 +1942,10 @@ export function SchedulingClientWrapper({
                   <button
                     type="button"
                     onClick={() => setOpenEditTimeDD(!openEditTimeDD)}
-                    className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white shadow-2xs transition-all cursor-pointer h-11 ${
+                    className={`w-full flex items-center justify-between gap-2 rounded-xl border bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white transition-colors cursor-pointer h-11 ${
                       openEditTimeDD
                         ? "border-brand-500 ring-2 ring-brand-500/30"
-                        : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        : "border-slate-200 dark:border-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600"
                     }`}
                   >
                     {editModal.time ? (
@@ -1983,7 +1985,7 @@ export function SchedulingClientWrapper({
                         className="fixed inset-0 z-40"
                         onClick={() => setOpenEditTimeDD(false)}
                       />
-                      <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-1.5 space-y-1">
                         <div className="max-h-52 overflow-y-auto space-y-1">
                           {timeSlots.map((t) => {
                             const rem = editModal.classId
@@ -2008,25 +2010,25 @@ export function SchedulingClientWrapper({
                                   setEditModal({ ...editModal, time: t });
                                   setOpenEditTimeDD(false);
                                 }}
-                                className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                                className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
                                   isFull
-                                    ? "opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800/40"
-                                    : "cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                                    ? "opacity-50 cursor-not-allowed bg-slate-50 dark:bg-zinc-800/40"
+                                    : "cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800"
                                 } ${
                                   isSelected
-                                    ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40 text-brand-600 dark:text-brand-400 font-bold"
+                                    ? "bg-brand-50 dark:bg-brand-500/15 border border-brand-200 dark:border-brand-800/50 text-brand-700 dark:text-brand-300 font-semibold"
                                     : "text-slate-900 dark:text-white"
                                 }`}
                               >
-                                <span className="truncate text-left font-semibold">
+                                <span className="truncate text-left font-semibold tabular-nums">
                                   {t} - {endHour}:00
                                 </span>
                                 {rem !== null && (
                                   <span
-                                    className={`shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                                    className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-lg ${
                                       isFull
-                                        ? "bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300"
-                                        : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300"
+                                        ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300"
+                                        : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
                                     }`}
                                   >
                                     {isFull ? "Penuh" : `Sisa ${rem}`}
@@ -2043,7 +2045,7 @@ export function SchedulingClientWrapper({
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-300 mb-1.5">
                   Pilih Kelas Baru
                 </label>
                 <div className="relative">
@@ -2053,7 +2055,7 @@ export function SchedulingClientWrapper({
                     onChange={(e) =>
                       setEditModal({ ...editModal, classId: e.target.value })
                     }
-                    className="appearance-none block w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white cursor-pointer"
+                    className="appearance-none block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-brand-500 focus:ring-brand-500 sm:text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:text-white cursor-pointer"
                   >
                     <option value="" disabled>
                       -- Pilih Tipe Kelas --
@@ -2109,7 +2111,7 @@ export function SchedulingClientWrapper({
                     !editModal.time ||
                     !editModal.classId
                   }
-                  className="w-full flex justify-center py-2.5 px-4 rounded-xl shadow-sm text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50"
+                  className="w-full flex justify-center py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 cursor-pointer"
                 >
                   {isEditing ? "Menyimpan..." : "Simpan Perubahan"}
                 </button>
@@ -2121,24 +2123,24 @@ export function SchedulingClientWrapper({
 
       {/* Delete Booking Confirmation Modal */}
       {deleteConfirm.isOpen && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-zinc-800">
             <div className="p-6 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/10 mb-4">
-                <Icons.trash className="h-7 w-7 text-red-600 dark:text-red-500" />
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 dark:bg-red-500/15 mb-4">
+                <Icons.trash className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                 Hapus Jadwal Siswa?
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
+              <p className="text-sm text-slate-500 dark:text-zinc-400 mb-1">
                 Apakah Anda yakin ingin menghapus jadwal berikut?
               </p>
-              <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                <Icons.calendar className="w-3 h-3 text-brand-500" />
+              <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700">
+                <Icons.calendar className="w-3 h-3 text-brand-600 dark:text-brand-400" />
                 {deleteConfirm.label}
               </div>
             </div>
-            <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 flex gap-3">
+            <div className="bg-slate-50 dark:bg-zinc-800/50 px-6 py-4 flex gap-3 border-t border-slate-200 dark:border-zinc-800">
               <button
                 onClick={() =>
                   setDeleteConfirm({
@@ -2149,14 +2151,14 @@ export function SchedulingClientWrapper({
                   })
                 }
                 disabled={isDeleting}
-                className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm border border-slate-200 dark:border-slate-700 disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-zinc-200 bg-white dark:bg-zinc-800 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors border border-slate-200 dark:border-zinc-700 disabled:opacity-50 cursor-pointer"
               >
                 Batal
               </button>
               <button
                 onClick={handleDeleteBooking}
                 disabled={isDeleting}
-                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 active:translate-y-[1px] transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {isDeleting ? "Menghapus..." : "Ya, Hapus"}
               </button>
@@ -2166,35 +2168,35 @@ export function SchedulingClientWrapper({
       )}
       {/* Bulk Delete Booking Confirmation Modal */}
       {bulkDeleteConfirm.isOpen && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-zinc-800">
             <div className="p-6 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/10 mb-4">
-                <Icons.trash className="h-7 w-7 text-red-600 dark:text-red-500" />
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 dark:bg-red-500/15 mb-4">
+                <Icons.trash className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                 Hapus Semua Jadwal?
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
+              <p className="text-sm text-slate-500 dark:text-zinc-400 mb-1">
                 Apakah Anda yakin ingin menghapus semua (
                 {bulkDeleteConfirm.studentSchedules.length}) jadwal di bulan ini
                 untuk siswa ini?
               </p>
             </div>
-            <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 flex gap-3">
+            <div className="bg-slate-50 dark:bg-zinc-800/50 px-6 py-4 flex gap-3 border-t border-slate-200 dark:border-zinc-800">
               <button
                 onClick={() =>
                   setBulkDeleteConfirm({ isOpen: false, studentSchedules: [] })
                 }
                 disabled={isSubmitting}
-                className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm border border-slate-200 dark:border-slate-700 disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-zinc-200 bg-white dark:bg-zinc-800 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors border border-slate-200 dark:border-zinc-700 disabled:opacity-50 cursor-pointer"
               >
                 Batal
               </button>
               <button
                 onClick={executeBulkDelete}
                 disabled={isSubmitting}
-                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 active:translate-y-[1px] transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? "Menghapus..." : "Ya, Hapus Semua"}
               </button>
@@ -2205,32 +2207,32 @@ export function SchedulingClientWrapper({
 
       {/* Copy To Next Month Modal */}
       {copyConfirm && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-zinc-800">
             <div className="p-6 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-500/10 mb-4">
-                <Icons.calendar className="h-7 w-7 text-brand-600 dark:text-brand-500" />
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 dark:bg-brand-500/15 mb-4">
+                <Icons.calendar className="h-6 w-6 text-brand-600 dark:text-brand-400" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                 Salin Jadwal ke Bulan Depan?
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
+              <p className="text-sm text-slate-500 dark:text-zinc-400 mb-1">
                 Apakah Anda yakin ingin menyalin pola jadwal bulan ini ke bulan
                 depan?
               </p>
             </div>
-            <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 flex gap-3">
+            <div className="bg-slate-50 dark:bg-zinc-800/50 px-6 py-4 flex gap-3 border-t border-slate-200 dark:border-zinc-800">
               <button
                 onClick={() => setCopyConfirm(false)}
                 disabled={isSubmitting}
-                className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm border border-slate-200 dark:border-slate-700 disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-zinc-200 bg-white dark:bg-zinc-800 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors border border-slate-200 dark:border-zinc-700 disabled:opacity-50 cursor-pointer"
               >
                 Batal
               </button>
               <button
                 onClick={executeCopyToNextMonth}
                 disabled={isSubmitting}
-                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 rounded-xl hover:bg-brand-700 transition-colors shadow-sm disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 rounded-xl hover:bg-brand-700 active:translate-y-[1px] transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? "Memproses..." : "Ya, Salin"}
               </button>

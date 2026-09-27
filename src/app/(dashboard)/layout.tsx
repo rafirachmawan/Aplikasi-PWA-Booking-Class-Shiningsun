@@ -72,7 +72,7 @@ export default async function DashboardLayout({
     <SidebarProvider>
       <BackButtonHandler />
       <SessionKeepAlive />
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950">
         {/* Native HTML checkbox for CSS-only sidebar toggle fallback */}
         <input
           type="checkbox"

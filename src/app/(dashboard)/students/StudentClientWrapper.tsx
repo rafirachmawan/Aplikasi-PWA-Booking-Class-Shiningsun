@@ -260,7 +260,7 @@ export function StudentClientWrapper({
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 sm:space-y-8">
       {isProcessing && <LoadingSpinner usePortal={true} />}
 
       {/* Custom Confirm Modal */}
@@ -268,18 +268,18 @@ export function StudentClientWrapper({
         createPortal(
           <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
             <div
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
               onClick={() =>
                 !isProcessing &&
                 setConfirmModal((prev) => ({ ...prev, isOpen: false }))
               }
             />
-            <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative z-10 w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 p-6 overflow-hidden">
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 ${
                   confirmModal.type === "delete"
-                    ? "bg-red-100 dark:bg-red-500/10"
-                    : "bg-brand-100 dark:bg-brand-500/10"
+                    ? "bg-red-50 dark:bg-red-500/15"
+                    : "bg-brand-50 dark:bg-brand-500/15"
                 }`}
               >
                 {confirmModal.type === "delete" ? (
@@ -297,11 +297,11 @@ export function StudentClientWrapper({
                     : "Aktifkan Siswa?"}
               </h3>
 
-              <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-2 leading-relaxed">
+              <p className="text-sm text-slate-500 dark:text-zinc-400 text-center mt-2 leading-relaxed">
                 {confirmModal.type === "delete" ? (
                   <>
                     Apakah Anda yakin ingin menghapus data siswa{" "}
-                    <strong className="text-slate-700 dark:text-slate-300">
+                    <strong className="text-slate-700 dark:text-zinc-200">
                       "{confirmModal.studentName}"
                     </strong>{" "}
                     secara permanen? Data yang dihapus tidak dapat dikembalikan.
@@ -309,7 +309,7 @@ export function StudentClientWrapper({
                 ) : confirmModal.newStatus === "INACTIVE" ? (
                   <>
                     Apakah Anda yakin ingin menonaktifkan siswa{" "}
-                    <strong className="text-slate-700 dark:text-slate-300">
+                    <strong className="text-slate-700 dark:text-zinc-200">
                       "{confirmModal.studentName}"
                     </strong>
                     ? Data siswa akan dipindah ke tab Nonaktif.
@@ -317,7 +317,7 @@ export function StudentClientWrapper({
                 ) : (
                   <>
                     Apakah Anda yakin ingin mengaktifkan kembali siswa{" "}
-                    <strong className="text-slate-700 dark:text-slate-300">
+                    <strong className="text-slate-700 dark:text-zinc-200">
                       "{confirmModal.studentName}"
                     </strong>{" "}
                     sebagai siswa Reguler?
@@ -326,7 +326,7 @@ export function StudentClientWrapper({
               </p>
 
               {modalError && (
-                <p className="text-xs text-red-500 mt-3 text-center font-medium bg-red-50 dark:bg-red-950/20 p-2.5 rounded-xl border border-red-100 dark:border-red-900/50">
+                <p className="text-xs text-red-600 dark:text-red-400 mt-3 text-center font-medium bg-red-50 dark:bg-red-500/10 p-2.5 rounded-xl border border-red-200 dark:border-red-800/50">
                   {modalError}
                 </p>
               )}
@@ -338,7 +338,7 @@ export function StudentClientWrapper({
                   onClick={() =>
                     setConfirmModal((prev) => ({ ...prev, isOpen: false }))
                   }
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   Batal
                 </button>
@@ -346,7 +346,7 @@ export function StudentClientWrapper({
                   type="button"
                   disabled={isProcessing}
                   onClick={handleExecuteAction}
-                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 active:translate-y-[1px] ${
                     confirmModal.type === "delete"
                       ? "bg-red-600 hover:bg-red-700"
                       : "bg-brand-600 hover:bg-brand-700"
@@ -364,23 +364,18 @@ export function StudentClientWrapper({
           document.body,
         )}
 
-      {/* Header Card - Unified Design */}
-      <div className="rounded-3xl bg-brand-600 p-6 sm:p-10 shadow-lg relative overflow-hidden">
-        {/* Abstract Background Decoration */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
-
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-          <div>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap items-center gap-x-2">
-              <span>Kelola Siswa</span>
-              {activeBranchName && (
-                <span className="text-brand-100 font-normal text-lg sm:text-xl lg:text-2xl whitespace-nowrap">
-                  ({activeBranchName})
-                </span>
-              )}
+      {/* Judul halaman: satu kartu putih seperti halaman lain.
+          Tanpa blok biru penuh dan tanpa dekorasi blur. */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+              {activeBranchName ? `Cabang ${activeBranchName}` : "Data siswa"}
+            </p>
+            <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Kelola Siswa
             </h2>
-            <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
+            <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
               Kelola data siswa, tingkat level, dan status percobaan gratis
               (CG).
             </p>
@@ -388,17 +383,16 @@ export function StudentClientWrapper({
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-x-2 rounded-xl bg-white text-brand-700 px-5 py-3 text-sm font-bold shadow-md hover:bg-brand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white shrink-0 w-full sm:w-auto justify-center transition-all active:scale-95"
-            style={{ color: "#1d4ed8", backgroundColor: "white" }}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] text-white px-5 py-3 text-sm font-semibold shrink-0 w-full sm:w-auto transition-colors cursor-pointer"
           >
-            <Icons.add className="-ml-0.5 h-5 w-5" aria-hidden="true" />
+            <Icons.add className="h-5 w-5" aria-hidden="true" />
             Pendaftaran Baru
           </button>
         </div>
       </div>
 
       {/* Toolbar / Search / Filters */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-2xs space-y-3.5">
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-4 sm:p-6 shadow-sm space-y-3.5">
         {/* Search */}
         <div className="relative">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -408,11 +402,12 @@ export function StudentClientWrapper({
             />
           </div>
           <input
-            type="text"
+            type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all h-11"
+            className="block w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 pl-10 pr-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-colors h-11"
             placeholder="Cari nama siswa..."
+            aria-label="Cari nama siswa"
           />
         </div>
 
@@ -426,10 +421,10 @@ export function StudentClientWrapper({
                 if (!isLevelOpen) setLevelSearch("");
                 setIsLevelOpen(!isLevelOpen);
               }}
-              className={`w-full flex items-center rounded-xl border bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs transition-all cursor-pointer h-11 text-left ${
+              className={`w-full flex items-center rounded-xl border bg-slate-50 dark:bg-zinc-800 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-zinc-200 transition-colors cursor-pointer h-11 text-left ${
                 isLevelOpen
                   ? "border-brand-500 ring-2 ring-brand-500/20"
-                  : "border-slate-200 dark:border-slate-700"
+                  : "border-slate-200 dark:border-zinc-700"
               }`}
             >
               <span className="truncate">
@@ -438,9 +433,9 @@ export function StudentClientWrapper({
                       const l = labels.find((x) => x.id === selectedLabelId);
                       return l
                         ? `${l.main_level} - ${l.sub_level}`
-                        : "✨ Semua Level / Tingkat";
+                        : "Semua Level / Tingkat";
                     })()
-                  : "✨ Semua Level / Tingkat"}
+                  : "Semua Level / Tingkat"}
               </span>
             </button>
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -469,14 +464,14 @@ export function StudentClientWrapper({
 
             {/* Floating Menu Popover */}
             {isLevelOpen && (
-              <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-1.5 space-y-1">
                 <div className="p-1">
                   <input
                     type="text"
                     value={levelSearch}
                     onChange={(e) => setLevelSearch(e.target.value)}
                     placeholder="Cari level..."
-                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none"
                   />
                 </div>
 
@@ -487,20 +482,20 @@ export function StudentClientWrapper({
                       setSelectedLabelId("");
                       setIsLevelOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                    className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                       selectedLabelId === ""
-                        ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40"
-                        : "hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                        ? "bg-brand-50 dark:bg-brand-500/15 border border-brand-200 dark:border-brand-800/50"
+                        : "hover:bg-slate-100 dark:hover:bg-zinc-800"
                     }`}
                   >
                     <span
                       className={`truncate text-left font-semibold ${
                         selectedLabelId === ""
-                          ? "text-brand-600 dark:text-brand-400"
+                          ? "text-brand-700 dark:text-brand-300"
                           : "text-slate-900 dark:text-white"
                       }`}
                     >
-                      ✨ Semua Level / Tingkat
+                      Semua Level / Tingkat
                     </span>
                     {selectedLabelId === "" && (
                       <svg
@@ -537,16 +532,16 @@ export function StudentClientWrapper({
                             setSelectedLabelId(label.id);
                             setIsLevelOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                          className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                             isSelected
-                              ? "bg-brand-50 dark:bg-brand-950/60 border border-brand-200/60 dark:border-brand-800/40"
-                              : "hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                              ? "bg-brand-50 dark:bg-brand-500/15 border border-brand-200 dark:border-brand-800/50"
+                              : "hover:bg-slate-100 dark:hover:bg-zinc-800"
                           }`}
                         >
                           <span
                             className={`truncate text-left font-semibold ${
                               isSelected
-                                ? "text-brand-600 dark:text-brand-400"
+                                ? "text-brand-700 dark:text-brand-300"
                                 : "text-slate-900 dark:text-white"
                             }`}
                           >
@@ -577,8 +572,8 @@ export function StudentClientWrapper({
                       !`${l.main_level} - ${l.sub_level}`
                         .toLowerCase()
                         .includes(levelSearch.trim().toLowerCase()),
-                  ) && (
-                    <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500 text-center font-medium">
+                    ) && (
+                    <p className="px-3 py-2 text-xs text-slate-400 dark:text-zinc-500 text-center font-medium">
                       Level tidak ditemukan.
                     </p>
                   )}
@@ -592,12 +587,13 @@ export function StudentClientWrapper({
             <select
               value={selectedGender}
               onChange={(e) => setSelectedGender(e.target.value)}
-              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
+              aria-label="Filter jenis kelamin"
+              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-zinc-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-colors cursor-pointer h-11 leading-tight truncate"
             >
-              <option value="">👥 Semua Jenis Kelamin</option>
-              <option value="Laki-laki">👦 Laki-laki</option>
-              <option value="Perempuan">👧 Perempuan</option>
-              <option value="unset">❓ Belum Ada (Kosong)</option>
+              <option value="">Semua Jenis Kelamin</option>
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+              <option value="unset">Belum Ada (Kosong)</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
               <Icons.users
@@ -627,12 +623,13 @@ export function StudentClientWrapper({
             <select
               value={activeTab}
               onChange={(e) => setActiveTab(e.target.value)}
-              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all cursor-pointer h-11 leading-tight truncate"
+              aria-label="Filter status siswa"
+              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-zinc-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-colors cursor-pointer h-11 leading-tight truncate"
             >
-              <option value="all">📋 Semua Siswa ({allCount})</option>
-              <option value="reguler">✅ Reguler ({regulerCount})</option>
-              <option value="cg">🆓 Coba Gratis ({cgCount})</option>
-              <option value="inactive">🚫 Nonaktif ({inactiveCount})</option>
+              <option value="all">Semua Siswa ({allCount})</option>
+              <option value="reguler">Reguler ({regulerCount})</option>
+              <option value="cg">Coba Gratis ({cgCount})</option>
+              <option value="inactive">Nonaktif ({inactiveCount})</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
               <Icons.filter
@@ -660,10 +657,10 @@ export function StudentClientWrapper({
       </div>
 
       {/* Desktop Table (Sembunyi di Mobile) */}
-      <div className="hidden sm:block bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5 sm:rounded-xl overflow-hidden">
+      <div className="hidden sm:block bg-white dark:bg-zinc-900 shadow-sm border border-slate-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-            <thead className="bg-slate-50 dark:bg-slate-800/50">
+          <table className="min-w-full divide-y divide-slate-200 dark:divide-zinc-800">
+            <thead className="bg-slate-50 dark:bg-zinc-800/60">
               <tr>
                 <th
                   scope="col"
@@ -709,11 +706,16 @@ export function StudentClientWrapper({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
+            <tbody className="divide-y divide-slate-200 dark:divide-zinc-800 bg-white dark:bg-zinc-900">
               {displayedStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-slate-500">
-                    Belum ada data siswa untuk kategori ini.
+                  <td colSpan={7} className="py-12 text-center">
+                    <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">
+                      Belum ada data siswa untuk kategori ini.
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400 dark:text-zinc-500">
+                      Ubah filter atau daftarkan siswa baru.
+                    </p>
                   </td>
                 </tr>
               ) : (
@@ -758,15 +760,15 @@ export function StudentClientWrapper({
                             </span>
                           ) : null}
                           {person.gender === "Perempuan" ? (
-                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-pink-50 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400 border border-pink-200/50 dark:border-pink-800/50">
-                              👧 P
+                            <span className="inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-bold bg-pink-600 text-white">
+                              P
                             </span>
                           ) : person.gender === "Laki-laki" ? (
-                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50">
-                              👦 L
+                            <span className="inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-bold bg-blue-600 text-white">
+                              L
                             </span>
                           ) : (
-                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700">
+                            <span className="inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400">
                               Belum ada
                             </span>
                           )}
@@ -779,7 +781,7 @@ export function StudentClientWrapper({
                               ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20"
                               : person.status === "CG"
                                 ? "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20"
-                                : "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-500/20"
+                                : "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-500/20"
                           }`}
                         >
                           {person.status === "REGISTERED"
@@ -804,9 +806,9 @@ export function StudentClientWrapper({
                           "-"
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm font-bold text-amber-600 dark:text-amber-400">
-                        <span className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-2.5 py-1 rounded-xl text-xs">
-                          ⭐ {person.points || 0} Poin
+                      <td className="whitespace-nowrap px-3 py-4 text-sm font-bold text-amber-700 dark:text-amber-300">
+                        <span className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-800/50 px-2.5 py-1 rounded-lg text-xs tabular-nums">
+                          {person.points || 0} Poin
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500 dark:text-slate-400">
@@ -825,9 +827,9 @@ export function StudentClientWrapper({
                               setSelectedStudentForFeedback(person);
                               setFeedbackModalOpen(true);
                             }}
-                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 ring-1 ring-blue-200/60 transition-colors dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 dark:ring-blue-800/40"
+                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-brand-50 text-brand-700 hover:bg-brand-100 ring-1 ring-brand-200/60 transition-colors dark:bg-brand-500/15 dark:text-brand-300 dark:hover:bg-brand-500/25 dark:ring-brand-800/50 cursor-pointer"
                           >
-                            💬 Feedback
+                            Feedback
                           </button>
                           <button
                             onClick={() =>
@@ -837,10 +839,10 @@ export function StudentClientWrapper({
                                 person.status,
                               )
                             }
-                            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ring-1 ${
+                            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ring-1 cursor-pointer ${
                               person.status === "INACTIVE"
-                                ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ring-emerald-200/60 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 dark:ring-emerald-800/40"
-                                : "bg-slate-50 text-slate-600 hover:bg-slate-100 ring-slate-200/60 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:ring-slate-700"
+                                ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ring-emerald-200/60 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25 dark:ring-emerald-800/50"
+                                : "bg-slate-50 text-slate-600 hover:bg-slate-100 ring-slate-200/60 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:ring-zinc-700"
                             }`}
                           >
                             {person.status === "INACTIVE"
@@ -853,14 +855,14 @@ export function StudentClientWrapper({
                               setEditingStudent(person);
                               setIsModalOpen(true);
                             }}
-                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-brand-50 text-brand-700 hover:bg-brand-100 ring-1 ring-brand-200/60 transition-colors dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20 dark:ring-brand-800/40"
+                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-brand-50 text-brand-700 hover:bg-brand-100 ring-1 ring-brand-200/60 transition-colors dark:bg-brand-500/15 dark:text-brand-300 dark:hover:bg-brand-500/25 dark:ring-brand-800/50 cursor-pointer"
                           >
                             Edit
                             <span className="sr-only">, {person.name}</span>
                           </button>
                           <button
                             onClick={() => handleDelete(person.id, person.name)}
-                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 ring-1 ring-red-200/60 transition-colors dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 dark:ring-red-800/40"
+                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 ring-1 ring-red-200/60 transition-colors dark:bg-red-500/15 dark:text-red-400 dark:hover:bg-red-500/25 dark:ring-red-800/50 cursor-pointer"
                           >
                             Hapus
                             <span className="sr-only">, {person.name}</span>
@@ -879,8 +881,13 @@ export function StudentClientWrapper({
       {/* Mobile Card Layout (Sembunyi di Desktop) */}
       <div className="block sm:hidden space-y-3">
         {displayedStudents.length === 0 ? (
-          <div className="py-10 text-center text-sm text-slate-500 bg-white dark:bg-slate-900 rounded-xl ring-1 ring-slate-900/5">
-            Belum ada data siswa untuk kategori ini.
+          <div className="py-10 text-center bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800">
+            <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">
+              Belum ada data siswa untuk kategori ini.
+            </p>
+            <p className="mt-1 text-xs text-slate-400 dark:text-zinc-500">
+              Ubah filter atau daftarkan siswa baru.
+            </p>
           </div>
         ) : (
           displayedStudents.map((person) => {
@@ -904,19 +911,13 @@ export function StudentClientWrapper({
             return (
               <div
                 key={person.id}
-                className="bg-white dark:bg-slate-900 rounded-xl shadow-sm ring-1 ring-slate-900/5 p-4 relative overflow-hidden"
+                className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-200 dark:border-zinc-800 p-4 relative overflow-hidden"
                 style={
                   person.label
                     ? { borderLeft: `4px solid ${person.label.hex_color}` }
                     : {}
                 }
               >
-                {person.label && (
-                  <div
-                    className="absolute inset-0 w-full opacity-[0.03] pointer-events-none"
-                    style={{ backgroundColor: person.label.hex_color }}
-                  ></div>
-                )}
 
                 <div className="flex justify-between items-start mb-3 relative z-10">
                   <div className="flex-1 pr-3">
@@ -928,15 +929,15 @@ export function StudentClientWrapper({
                         </span>
                       ) : null}
                       {person.gender === "Perempuan" ? (
-                        <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold bg-pink-50 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400 border border-pink-200/50 dark:border-pink-800/50">
-                          👧 P
+                        <span className="inline-flex items-center rounded-lg px-1.5 py-0.5 text-[9px] font-bold bg-pink-600 text-white">
+                          P
                         </span>
                       ) : person.gender === "Laki-laki" ? (
-                        <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50">
-                          👦 L
+                        <span className="inline-flex items-center rounded-lg px-1.5 py-0.5 text-[9px] font-bold bg-blue-600 text-white">
+                          L
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700">
+                        <span className="inline-flex items-center rounded-lg px-1.5 py-0.5 text-[9px] font-semibold bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400">
                           Belum ada
                         </span>
                       )}
@@ -944,7 +945,7 @@ export function StudentClientWrapper({
                         ( {ageText} )
                       </span>
                     </h3>
-                    <div className="mt-1.5 flex items-center gap-2 text-xs text-slate-500">
+                    <div className="mt-1.5 flex items-center gap-2 text-xs text-slate-500 dark:text-zinc-400">
                       {person.label ? (
                         <span className="flex items-center gap-1.5 font-medium">
                           <span
@@ -959,12 +960,12 @@ export function StudentClientWrapper({
                     </div>
                   </div>
                   <span
-                    className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold ring-1 ring-inset ${
+                    className={`inline-flex items-center rounded-lg px-2 py-1 text-[10px] font-bold ring-1 ring-inset ${
                       person.status === "REGISTERED"
-                        ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20"
+                        ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-500/20"
                         : person.status === "CG"
-                          ? "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20"
-                          : "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-500/20"
+                          ? "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-500/20"
+                          : "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-500/20"
                     }`}
                   >
                     {person.status === "REGISTERED"
@@ -975,53 +976,53 @@ export function StudentClientWrapper({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 text-xs text-slate-500 mb-4 relative z-10 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                <div className="grid grid-cols-3 gap-2 text-xs text-slate-500 dark:text-zinc-400 mb-4 relative z-10 bg-slate-50 dark:bg-zinc-800/60 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800">
                   <div>
-                    <span className="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+                    <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500 mb-0.5">
                       Tgl Lahir
                     </span>
-                    <span className="block font-medium text-slate-700 dark:text-slate-300">
+                    <span className="block font-medium text-slate-700 dark:text-zinc-200">
                       {formatNumericDate(person.date_of_birth)}
                     </span>
                   </div>
                   <div>
-                    <span className="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+                    <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500 mb-0.5">
                       Tgl Masuk
                     </span>
-                    <span className="block font-medium text-slate-700 dark:text-slate-300">
+                    <span className="block font-medium text-slate-700 dark:text-zinc-200">
                       {formatNumericDate(person.registration_date)}
                     </span>
                   </div>
                   <div>
-                    <span className="block text-[9px] font-bold text-amber-500 uppercase tracking-wider mb-0.5">
-                      ⭐ Poin
+                    <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500 mb-0.5">
+                      Poin
                     </span>
-                    <span className="block font-extrabold text-amber-600 dark:text-amber-400">
+                    <span className="block font-bold text-amber-700 dark:text-amber-300 tabular-nums">
                       {person.points || 0} Poin
                     </span>
                   </div>
                 </div>
 
-                <div className="flex gap-2 relative z-10 border-t border-slate-100 dark:border-slate-800 pt-3 flex-wrap">
+                <div className="flex gap-2 relative z-10 border-t border-slate-200 dark:border-zinc-800 pt-3 flex-wrap">
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedStudentForFeedback(person);
                       setFeedbackModalOpen(true);
                     }}
-                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 transition-colors text-center ring-1 ring-blue-200/50 dark:ring-blue-900/30 min-h-11 flex items-center justify-center gap-1"
+                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-xl bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-500/15 dark:text-brand-300 dark:hover:bg-brand-500/25 transition-colors text-center ring-1 ring-brand-200/50 dark:ring-brand-800/50 min-h-11 flex items-center justify-center gap-1 cursor-pointer"
                   >
-                    💬 Feedback
+                    Feedback
                   </button>
                   <button
                     type="button"
                     onClick={() =>
                       handleToggleActive(person.id, person.name, person.status)
                     }
-                    className={`flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg transition-colors text-center ring-1 min-h-11 flex items-center justify-center ${
+                    className={`flex-1 py-2.5 px-2 text-xs font-semibold rounded-xl transition-colors text-center ring-1 min-h-11 flex items-center justify-center cursor-pointer ${
                       person.status === "INACTIVE"
-                        ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ring-emerald-200/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 dark:ring-emerald-900/30"
-                        : "bg-slate-50 text-slate-700 hover:bg-slate-100 ring-slate-200/50 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:ring-slate-700"
+                        ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ring-emerald-200/50 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25 dark:ring-emerald-800/50"
+                        : "bg-slate-50 text-slate-700 hover:bg-slate-100 ring-slate-200/50 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:ring-zinc-700"
                     }`}
                   >
                     {person.status === "INACTIVE" ? "Aktifkan" : "Nonaktifkan"}
@@ -1032,14 +1033,14 @@ export function StudentClientWrapper({
                       setEditingStudent(person);
                       setIsModalOpen(true);
                     }}
-                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20 transition-colors text-center ring-1 ring-brand-200/50 dark:ring-brand-900/30 min-h-11 flex items-center justify-center"
+                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 active:translate-y-[1px] transition-colors text-center min-h-11 flex items-center justify-center cursor-pointer"
                   >
                     Edit
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDelete(person.id, person.name)}
-                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors text-center ring-1 ring-red-200/50 dark:ring-red-900/30 min-h-11 flex items-center justify-center"
+                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-xl bg-white dark:bg-zinc-900 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 hover:bg-red-50 dark:hover:bg-red-500/10 active:translate-y-[1px] transition-colors text-center min-h-11 flex items-center justify-center cursor-pointer"
                   >
                     Hapus
                   </button>

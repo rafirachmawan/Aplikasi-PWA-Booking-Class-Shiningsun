@@ -9,78 +9,70 @@ import {
   updateModuleLockPassword,
 } from "@/lib/actions";
 
+// Satu aksen untuk semua jalan pintas (sistem login: brand-600).
+// Ikon dibedakan dari bentuk glyph, bukan warna pelangi.
+const quickActionTone = {
+  color: "text-brand-600 dark:text-brand-400",
+  bg: "bg-brand-50 dark:bg-brand-500/15",
+  borderHover: "hover:border-brand-200 dark:hover:border-brand-800/60",
+};
+
 const quickActions = [
   {
     name: "Jadwal Kelas",
     description: "Atur jadwal dan sesi pertemuan",
     href: "/schedule",
     icon: Icons.calendar,
-    color: "text-emerald-600 dark:text-emerald-400",
-    bg: "bg-emerald-50 dark:bg-emerald-500/10",
-    borderHover: "hover:border-emerald-200 dark:hover:border-emerald-800",
+    ...quickActionTone,
   },
   {
     name: "Penjadwalan Siswa",
-    description: "Plotting kelas & jadwal siswa",
+    description: "Plotting kelas dan jadwal siswa",
     href: "/scheduling",
     icon: Icons.users,
-    color: "text-indigo-600 dark:text-indigo-400",
-    bg: "bg-indigo-50 dark:bg-indigo-500/10",
-    borderHover: "hover:border-indigo-200 dark:hover:border-indigo-800",
+    ...quickActionTone,
   },
   {
     name: "Kelola Siswa",
     description: "Kelola data dan status siswa",
     href: "/students",
     icon: Icons.users,
-    color: "text-blue-600 dark:text-blue-400",
-    bg: "bg-blue-50 dark:bg-blue-500/10",
-    borderHover: "hover:border-blue-200 dark:hover:border-blue-800",
+    ...quickActionTone,
   },
   {
     name: "Laporan Perkembangan",
-    description: "Catatan & hasil belajar siswa",
+    description: "Catatan dan hasil belajar siswa",
     href: "/worksheets",
     icon: Icons.edit,
-    color: "text-amber-600 dark:text-amber-400",
-    bg: "bg-amber-50 dark:bg-amber-500/10",
-    borderHover: "hover:border-amber-200 dark:hover:border-amber-800",
+    ...quickActionTone,
   },
   {
     name: "Poin Kehadiran",
-    description: "Leaderboard & katalog tukar hadiah",
+    description: "Leaderboard dan katalog hadiah",
     href: "/points",
     icon: Icons.star,
-    color: "text-orange-600 dark:text-orange-400",
-    bg: "bg-orange-50 dark:bg-orange-500/10",
-    borderHover: "hover:border-orange-200 dark:hover:border-orange-800",
+    ...quickActionTone,
   },
   {
     name: "Kelola Guru",
-    description: "Kelola data guru & pengajar",
+    description: "Kelola data guru dan pengajar",
     href: "/teachers",
     icon: Icons.userCheck,
-    color: "text-teal-600 dark:text-teal-400",
-    bg: "bg-teal-50 dark:bg-teal-500/10",
-    borderHover: "hover:border-teal-200 dark:hover:border-teal-800",
+    ...quickActionTone,
   },
   {
     name: "Template Penilaian",
-    description: "Atur template evaluasi & catatan",
+    description: "Atur template evaluasi",
     href: "/templates",
     icon: Icons.fileText,
-    color: "text-rose-600 dark:text-rose-400",
-    bg: "bg-rose-50 dark:bg-rose-500/10",
-    borderHover: "hover:border-rose-200 dark:hover:border-rose-800",
+    ...quickActionTone,
   },
   {
     name: "Master Data",
-    description: "Kelola cabang, kelas, & label",
+    description: "Kelola cabang, kelas, label",
     href: "/master",
     icon: Icons.settings,
-    color: "text-purple-600 dark:text-purple-400",
-    bg: "bg-purple-50 dark:bg-purple-500/10",
-    borderHover: "hover:border-purple-200 dark:hover:border-purple-800",
+    ...quickActionTone,
   },
 ];
 
@@ -174,12 +166,10 @@ export function QuickAccessLinks({
       ? [
           {
             name: "Password Tambah Point",
-            description: "Atur PIN/password modul terkunci",
+            description: "Atur PIN modul terkunci",
             href: "#superadmin-lock-settings",
             icon: Icons.shield,
-            color: "text-amber-600 dark:text-amber-400",
-            bg: "bg-amber-50 dark:bg-amber-500/10",
-            borderHover: "hover:border-amber-300 dark:hover:border-amber-700",
+            ...quickActionTone,
             isSuperAdminOnly: true,
           },
         ]
@@ -265,9 +255,9 @@ export function QuickAccessLinks({
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setShowDevLockModal(false)}
           />
-          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 text-2xl shadow-sm">
-              🔒
+          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 text-center">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-300 flex items-center justify-center mx-auto mb-4">
+              <Icons.shield className="h-5 w-5" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
               Akses {lockedRoutes[devLockTarget].label} Dikunci
@@ -325,11 +315,11 @@ export function QuickAccessLinks({
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => !isSavingAll && setShowSuperAdminModal(false)}
           />
-          <div className="relative z-10 w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="relative z-10 w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-zinc-800 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shadow-xs">
-                  🛡️
+                <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center">
+                  <Icons.shield className="h-5 w-5" />
                 </div>
                 <div>
                   <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
@@ -347,14 +337,14 @@ export function QuickAccessLinks({
             </div>
 
             {superAdminSuccessMsg && (
-              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-600 dark:text-emerald-300 animate-in fade-in">
-                ✅ {superAdminSuccessMsg}
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-800/50 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                {superAdminSuccessMsg}
               </div>
             )}
 
             {superAdminErrorMsg && (
-              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-xs font-bold text-red-600 dark:text-red-300 animate-in fade-in">
-                ⚠️ {superAdminErrorMsg}
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-800/50 text-xs font-semibold text-red-700 dark:text-red-300">
+                {superAdminErrorMsg}
               </div>
             )}
 
@@ -363,7 +353,6 @@ export function QuickAccessLinks({
                 {
                   route: "/points",
                   name: "Fitur Tambah Poin",
-                  icon: "⭐",
                   desc: "Password akses untuk tombol Tambah Poin Manual",
                 },
               ].map((item) => {
@@ -380,14 +369,14 @@ export function QuickAccessLinks({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-base sm:text-lg">
-                          {item.icon}
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-500/15">
+                          <Icons.star className="h-4 w-4 text-brand-600 dark:text-brand-400" />
                         </span>
                         <div>
                           <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                             {item.name}
                           </h4>
-                          <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
+                          <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400">
                             {item.desc}
                           </p>
                         </div>
@@ -404,7 +393,7 @@ export function QuickAccessLinks({
                             [item.route]: e.target.value,
                           })
                         }
-                        className="w-full px-3.5 py-2 text-xs font-mono font-bold rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 pr-16"
+                        className="w-full px-3.5 py-2 text-xs font-mono font-bold rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 pr-16"
                         placeholder="Kosongkan jika tidak ingin dikunci..."
                       />
                       <button
@@ -472,7 +461,7 @@ export function QuickAccessLinks({
                 type="button"
                 disabled={isSavingAll}
                 onClick={handleSaveAllPasswords}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 active:scale-95 transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50"
               >
                 {isSavingAll ? "Menyimpan..." : "Simpan Semua Password"}
               </button>
@@ -487,10 +476,10 @@ export function QuickAccessLinks({
             key={action.name}
             href={action.href}
             onClick={(e) => handleActionClick(e, action)}
-            className={`relative flex items-center space-x-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-xs transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:scale-98 ${action.borderHover} group cursor-pointer`}
+            className={`relative flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm transition-colors hover:shadow-md active:translate-y-[1px] ${action.borderHover} group cursor-pointer`}
           >
             <div
-              className={`shrink-0 rounded-xl p-3 ${action.bg} transition-transform duration-300 group-hover:scale-110 shadow-xs`}
+              className={`shrink-0 rounded-xl p-3 ${action.bg}`}
             >
               <action.icon
                 className={`h-5 w-5 ${action.color}`}
@@ -501,7 +490,7 @@ export function QuickAccessLinks({
               <h4 className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors truncate">
                 {action.name}
               </h4>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 truncate">
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400 truncate">
                 {action.description}
               </p>
             </div>

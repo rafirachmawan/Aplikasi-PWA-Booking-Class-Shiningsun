@@ -23,23 +23,18 @@ export default async function SchedulingPage({ searchParams }: { searchParams: P
   const activeBranchName = role === 'SUPERADMIN' ? await getActiveBranchName() : null;
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header Card - Unified Design */}
-      <div className="rounded-3xl bg-brand-600 p-6 sm:p-10 shadow-lg relative overflow-hidden">
-        {/* Abstract Background Decoration */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
-
-        <div className="relative z-10">
-          <h2 className="text-xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-snug flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span>Penjadwalan Siswa</span>
-            {activeBranchName && (
-              <span className="text-brand-100 font-normal text-base sm:text-xl lg:text-2xl">
-                ({activeBranchName})
-              </span>
-            )}
+    <div className="space-y-6 sm:space-y-8">
+      {/* Judul halaman: satu kartu putih seperti halaman lain.
+          Tanpa blok biru penuh dan tanpa dekorasi blur. */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-5 sm:p-6">
+          <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+            {activeBranchName ? `Cabang ${activeBranchName}` : "Penjadwalan"}
+          </p>
+          <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Penjadwalan Siswa
           </h2>
-          <p className="text-brand-100 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
+          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
             Kelola jadwal pendaftaran siswa ke kelas secara manual ataupun otomatis.
           </p>
         </div>
@@ -81,8 +76,8 @@ async function SchedulingData({
 function SchedulingDataSkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
-      <div className="h-24 rounded-2xl bg-slate-200/60 dark:bg-slate-800/60" />
-      <div className="h-96 rounded-2xl bg-slate-200/60 dark:bg-slate-800/60" />
+      <div className="h-24 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800" />
+      <div className="h-96 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800" />
     </div>
   );
 }
