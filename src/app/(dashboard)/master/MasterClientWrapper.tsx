@@ -24,16 +24,16 @@ export function MasterClientWrapper({
 }: MasterClientWrapperProps) {
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Judul halaman: satu kartu putih seperti halaman lain. Tanpa blok biru. */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+      {/* Judul halaman: hero biru solid selaras dashboard Hallo. */}
+      <div className="overflow-hidden rounded-2xl bg-brand-600 border border-brand-700/30 shadow-sm">
         <div className="p-5 sm:p-6">
-          <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+          <p className="text-xs font-medium text-white/85">
             {activeBranchName ? `Cabang ${activeBranchName}` : "Konfigurasi"}
           </p>
-          <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Konfigurasi Cabang (Master Data)
           </h2>
-          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
+          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-white/85">
             Kelola profil cabang, ruang kelas, label kustom, daftar guru/miss, dan template penilaian.
           </p>
         </div>

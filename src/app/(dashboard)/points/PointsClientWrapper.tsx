@@ -459,25 +459,23 @@ export function PointsClientWrapper({
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Judul halaman: satu kartu putih seperti halaman lain.
-          Tanpa gradient tiga warna dan tanpa kartu kaca.
-          Amber dicadangkan hanya untuk angka poin. */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+      {/* Judul halaman: hero biru solid selaras dashboard Hallo, stats netral di body putih. */}
+      <div className="overflow-hidden rounded-2xl bg-brand-600 border border-brand-700/30 shadow-sm">
         <div className="p-5 sm:p-6">
-          <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+          <p className="text-xs font-medium text-white/85">
             {activeBranchName ? `Cabang ${activeBranchName}` : "Poin siswa"}
           </p>
-          <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Poin Kehadiran dan Hadiah
           </h2>
-          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
+          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-white/85">
             Kelola poin kehadiran (+1 tiap hadir), tambah poin manual
             (lomba/prestasi), dan potong poin saat siswa menukar hadiah.
           </p>
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-zinc-800 border-t border-slate-200 dark:border-zinc-800 rounded-b-2xl overflow-hidden">
+        <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-zinc-800 border-t border-white/20 bg-white dark:bg-zinc-900 overflow-hidden">
           <div className="p-3 sm:p-4 text-center">
             <div className="text-2xl sm:text-3xl font-bold tabular-nums text-slate-900 dark:text-white">
               {totalStudents}

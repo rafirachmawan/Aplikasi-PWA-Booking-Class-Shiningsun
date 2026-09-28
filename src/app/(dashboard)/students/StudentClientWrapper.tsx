@@ -364,18 +364,17 @@ export function StudentClientWrapper({
           document.body,
         )}
 
-      {/* Judul halaman: satu kartu putih seperti halaman lain.
-          Tanpa blok biru penuh dan tanpa dekorasi blur. */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+      {/* Judul halaman: hero biru solid selaras dashboard Hallo. */}
+      <div className="overflow-hidden rounded-2xl bg-brand-600 border border-brand-700/30 shadow-sm">
         <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+            <p className="text-xs font-medium text-white/85">
               {activeBranchName ? `Cabang ${activeBranchName}` : "Data siswa"}
             </p>
-            <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-white">
               Kelola Siswa
             </h2>
-            <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
+            <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-white/85">
               Kelola data siswa, tingkat level, dan status percobaan gratis
               (CG).
             </p>
@@ -383,7 +382,7 @@ export function StudentClientWrapper({
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] text-white px-5 py-3 text-sm font-semibold shrink-0 w-full sm:w-auto transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-brand-700 hover:bg-blue-50 active:translate-y-[1px] px-5 py-3 text-sm font-semibold shrink-0 w-full sm:w-auto transition-colors cursor-pointer"
           >
             <Icons.add className="h-5 w-5" aria-hidden="true" />
             Pendaftaran Baru

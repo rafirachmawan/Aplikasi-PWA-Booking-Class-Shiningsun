@@ -198,23 +198,22 @@ async function DashboardMain({
 
   return (
     <>
-      {/* Ringkasan: satu kartu putih, tanpa gradient dan tanpa dekorasi blur.
-          Bentuk dan warna mengikuti sistem login: kartu 16px, aksen tunggal brand-600. */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+      {/* Ringkasan: hero satu kartu — header solid brand-600, body putih untuk stat netral. */}
+      <div className="overflow-hidden rounded-2xl bg-brand-600 border border-brand-700/30 shadow-sm">
         <div className="p-5 sm:p-6">
-          <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+          <p className="text-xs font-medium text-white/85">
             {formatFullIndonesianDate(new Date())}
             {activeBranchName ? ` - Cabang ${activeBranchName}` : ""}
           </p>
-          <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h2 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Hallo, ShiningSun!
           </h2>
-          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
+          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-white/85">
             Ringkasan pendaftaran dan penjadwalan hari ini.
           </p>
         </div>
 
-        <div className="border-t border-slate-200 dark:border-zinc-800 px-5 sm:px-6 py-5">
+        <div className="border-t border-white/20 bg-white dark:bg-zinc-900 px-5 sm:px-6 py-5">
           <DashboardStatsPanel stats={stats} />
         </div>
       </div>
@@ -269,14 +268,18 @@ async function DashboardDocs({ isSuperadmin }: { isSuperadmin: boolean }) {
 // Skeleton selama streaming (tampilan sementara, bukan data).
 function DashboardMainSkeleton() {
   return (
-    <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-5 sm:p-6 animate-pulse">
-      <div className="h-4 w-40 rounded-lg bg-slate-200 dark:bg-zinc-800" />
-      <div className="mt-2 h-7 w-56 max-w-full rounded-lg bg-slate-200 dark:bg-zinc-800" />
-      <div className="mt-2 h-4 w-72 max-w-full rounded-lg bg-slate-100 dark:bg-zinc-800/70" />
-      <div className="mt-5 grid grid-cols-3 gap-3">
-        <div className="h-24 rounded-2xl bg-slate-100 dark:bg-zinc-800/70" />
-        <div className="h-24 rounded-2xl bg-slate-100 dark:bg-zinc-800/70" />
-        <div className="h-24 rounded-2xl bg-slate-100 dark:bg-zinc-800/70" />
+    <div className="overflow-hidden rounded-2xl bg-brand-600 border border-brand-700/30 animate-pulse">
+      <div className="p-5 sm:p-6">
+        <div className="h-4 w-40 rounded-lg bg-white/30" />
+        <div className="mt-2 h-7 w-56 max-w-full rounded-lg bg-white/40" />
+        <div className="mt-2 h-4 w-72 max-w-full rounded-lg bg-white/25" />
+      </div>
+      <div className="border-t border-white/20 bg-white dark:bg-zinc-900 px-5 sm:px-6 py-5">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="h-24 rounded-xl bg-slate-100 dark:bg-zinc-800/70" />
+          <div className="h-24 rounded-xl bg-slate-100 dark:bg-zinc-800/70" />
+          <div className="h-24 rounded-xl bg-slate-100 dark:bg-zinc-800/70" />
+        </div>
       </div>
     </div>
   );

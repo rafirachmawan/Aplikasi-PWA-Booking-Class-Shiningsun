@@ -32,6 +32,34 @@ const iconMap: Record<string, any> = {
   "alert-circle": Icons.alertCircle,
 };
 
+// Warna header panel detail per-tab — presentasi saja, selaras hero Hallo (solid, tanpa gradient).
+// Logika activeTab / fetch / filter / sort tidak berubah.
+const panelThemeByTab: Record<
+  TabType,
+  { outer: string; header: string; divider: string }
+> = {
+  REGISTERED: {
+    outer: "border-brand-700/30",
+    header: "bg-brand-600",
+    divider: "border-white/20",
+  },
+  CG: {
+    outer: "border-amber-800/30",
+    header: "bg-amber-700",
+    divider: "border-white/20",
+  },
+  OVERDUE_WORKSHEETS: {
+    outer: "border-red-700/30",
+    header: "bg-red-600",
+    divider: "border-white/20",
+  },
+  CLASSES: {
+    outer: "border-brand-700/30",
+    header: "bg-brand-600",
+    divider: "border-white/20",
+  },
+};
+
 export function DashboardStatsCards({
   stats,
   activeTab,
@@ -629,6 +657,11 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     );
   };
 
+  // Tema header panel per-tab (visual saja — tidak memengaruhi fetch/filter/sort).
+  const panelTheme = activeTab
+    ? panelThemeByTab[activeTab]
+    : panelThemeByTab.CLASSES;
+
   return (
     <>
       {/* Stats Cards - rendered inside the hero banner */}
@@ -638,16 +671,20 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
         onCardClick={handleCardClick}
       />
 
-      {/* Detail List Panel - satu kartu 16px, aksen tunggal brand */}
+      {/* Detail List Panel - header solid per-tab, selaras hero Hallo */}
       {activeTab && (
         <div ref={panelRef} className="mt-4 relative z-10">
-          <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-sm border border-slate-200 dark:border-zinc-800 overflow-hidden">
+          <div
+            className={`rounded-2xl bg-white dark:bg-zinc-900 shadow-sm border ${panelTheme.outer} overflow-hidden`}
+          >
             {/* Panel Header */}
-            <div className="sticky top-0 z-20 px-4 py-3 sm:px-6 sm:py-4 bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 flex flex-col gap-3">
+            <div
+              className={`sticky top-0 z-20 px-4 py-3 sm:px-6 sm:py-4 ${panelTheme.header} border-b ${panelTheme.divider} flex flex-col gap-3`}
+            >
               {/* Header Top Row: Title & Close Button */}
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="p-2 rounded-xl bg-brand-600 text-white shrink-0">
+                  <div className="p-2 rounded-xl bg-white/15 border border-white/25 text-white shrink-0">
                     {activeTab === "REGISTERED" ? (
                       <Icons.users className="h-4 w-4" />
                     ) : activeTab === "CG" ? (
@@ -657,7 +694,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
+                    <h4 className="text-sm sm:text-base font-bold text-white truncate">
                       {activeTab === "REGISTERED"
                         ? "Daftar Siswa Aktif"
                         : activeTab === "CG"
@@ -666,7 +703,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                             ? "Laporan Terlewat"
                             : "Daftar Tipe Kelas"}
                     </h4>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
+                    <p className="text-[11px] text-white/85 truncate mt-0.5">
                       {activeTab === "CLASSES"
                         ? `${sortedItems.length} tipe kelas tersedia`
                         : activeTab === "CG"
@@ -687,7 +724,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                     setSearchQuery("");
                     setExpandedItemId(null);
                   }}
-                  className="p-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0 ml-auto"
+                  className="p-1.5 rounded-lg bg-white/15 border border-white/25 text-white hover:bg-white/25 transition-colors cursor-pointer shrink-0 ml-auto"
                   title="Tutup"
                 >
                   <Icons.close className="w-4 h-4" />
@@ -695,7 +732,9 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
               </div>
 
               {/* Sub-filter tabs & Controls Row */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-3 border-t border-slate-200/60">
+              <div
+                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-3 border-t ${panelTheme.divider}`}
+              >
                 {/* Sub-filter dropdown for CG only - not shown for OVERDUE_WORKSHEETS */}
                 {activeTab === "CG" ? (
                   <div className="relative w-full sm:w-auto min-w-35">
