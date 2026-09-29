@@ -70,13 +70,30 @@ export function DashboardStatsCards({
   onCardClick: (stat: StatItem) => void;
 }) {
   return (
-    <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-zinc-800 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-800/40 overflow-hidden">
+    <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-zinc-800 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
       {stats.map((item) => {
         const IconComponent = iconMap[item.iconName] || Icons.users;
         const isClickable = !!item.statusFilter;
         const isActive = activeTab === item.statusFilter;
-        const isAlert =
-          item.statusFilter === "OVERDUE_WORKSHEETS" && item.value !== "0";
+
+        // Satu warna selaras (biru brand) untuk semua kartu — presentasi
+        // saja, selaras hero. Logika klik/aktif tidak berubah.
+        const theme = {
+          topBar: "bg-brand-500 dark:bg-brand-400",
+          iconIdle:
+            "bg-brand-50 text-brand-700 ring-brand-100 dark:bg-brand-500/15 dark:text-brand-300 dark:ring-brand-500/20",
+          iconActive:
+            "bg-brand-600 text-white ring-brand-600 dark:ring-brand-500",
+          cardIdle:
+            "bg-brand-50/40 hover:bg-brand-50 dark:bg-brand-500/[0.06] dark:hover:bg-brand-500/[0.10]",
+          cardActive:
+            "bg-brand-50 dark:bg-brand-500/[0.13] ring-1 ring-inset ring-brand-200 dark:ring-brand-500/30",
+          detailIdle:
+            "text-slate-500 dark:text-zinc-400 group-hover:text-brand-600 dark:group-hover:text-brand-400",
+          detailActive: "text-brand-700 dark:text-brand-300",
+          chevronActive: "text-brand-600 dark:text-brand-400",
+          focus: "focus-visible:outline-brand-600",
+        };
 
         return (
           <button
@@ -84,43 +101,35 @@ export function DashboardStatsCards({
             type="button"
             onClick={() => onCardClick(item)}
             disabled={!isClickable}
-            className={`group p-3 sm:p-5 transition-colors duration-200 flex flex-col justify-between min-w-0 text-left ${
-              isActive
-                ? "bg-brand-50 dark:bg-brand-500/10"
-                : "hover:bg-white dark:hover:bg-zinc-900 active:bg-brand-50/60 dark:active:bg-brand-500/10"
+            className={`group relative p-3 sm:p-5 transition-colors duration-200 flex flex-col justify-between min-w-0 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px] ${theme.focus} ${
+              isActive ? theme.cardActive : theme.cardIdle
             } ${isClickable ? "cursor-pointer" : "cursor-default"}`}
           >
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none absolute inset-x-0 top-0 h-[2px] ${theme.topBar}`}
+            />
             <div className="flex flex-col items-start gap-1.5 mb-1.5 min-w-0">
               <span
-                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                  isAlert
-                    ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                    : isActive
-                      ? "bg-brand-600 text-white"
-                      : "bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300"
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset ${
+                  isActive ? theme.iconActive : theme.iconIdle
                 }`}
               >
                 <IconComponent className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </span>
-              <dt className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 leading-snug line-clamp-2 min-h-8 sm:min-h-9">
+              <dt className="text-[11px] sm:text-xs font-bold text-slate-700 dark:text-zinc-200 leading-snug line-clamp-2 min-h-8 sm:min-h-9">
                 {item.name}
               </dt>
             </div>
 
             <dd className="flex flex-col">
-              <span
-                className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums ${
-                  isAlert
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-slate-900 dark:text-white"
-                }`}
-              >
+              <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white">
                 {item.value}
               </span>
               {/* Show "X sesi" message for CG */}
               {item.statusFilter === "CG" && (
                 <div className="mt-1">
-                  <span className="inline-flex items-center text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-zinc-400 leading-tight">
+                  <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] sm:text-[11px] font-bold ring-1 ring-inset bg-brand-50 text-brand-700 ring-brand-100 dark:bg-brand-500/15 dark:text-brand-300 dark:ring-brand-500/20 leading-tight">
                     {item.subValue ? (
                       <span>{item.subValue}</span>
                     ) : (
@@ -134,16 +143,14 @@ export function DashboardStatsCards({
             {isClickable && (
               <div className="mt-2 flex items-center gap-1">
                 <span
-                  className={`text-[10px] sm:text-[11px] font-semibold ${
-                    isActive
-                      ? "text-brand-700 dark:text-brand-300"
-                      : "text-slate-400 dark:text-zinc-500 group-hover:text-brand-600 dark:group-hover:text-brand-400"
+                  className={`text-[10px] sm:text-[11px] font-bold ${
+                    isActive ? theme.detailActive : theme.detailIdle
                   }`}
                 >
                   {isActive ? "Tutup Detail" : "Lihat Detail"}
                 </span>
                 <svg
-                  className={`w-3 h-3 transition-transform duration-200 ${isActive ? "rotate-180 text-brand-600" : "text-slate-400 dark:text-zinc-500"} `}
+                  className={`w-3 h-3 transition-transform duration-200 ${isActive ? `rotate-180 ${theme.chevronActive}` : "text-slate-500 dark:text-zinc-400"} `}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
