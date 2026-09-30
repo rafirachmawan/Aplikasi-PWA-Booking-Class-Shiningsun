@@ -558,7 +558,9 @@ export function WorksheetFormModal({
     setIsUploadingGDrive(true);
     setUploadError(null);
 
-    try {
+    // Upload terpisah dari Simpan: gagal upload tidak boleh blokir Simpan.
+    // Tambah timeout 25s + 1x retry agar HP sinyal lemot tetap bisa coba lagi.
+    const uploadOnce = async (signal: AbortSignal) => {
       // Kompresi gambar client-side (kamera HP 15MB -> ~300KB) agar cepat & tidak error 413
       const compressedFile = target.type?.startsWith("image/")
         ? await compressImage(target)
@@ -570,19 +572,50 @@ export function WorksheetFormModal({
       const res = await fetch("/api/upload-gdrive", {
         method: "POST",
         body: formData,
+        signal,
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(data.error || "Gagal mengunggah ke Google Drive");
       }
+      return data;
+    };
 
-      if (data.gdriveLink) {
-        setGdriveLink(data.gdriveLink);
+    try {
+      let lastErr: any = null;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 25000);
+        try {
+          const data = await uploadOnce(ctrl.signal);
+          clearTimeout(timer);
+          if (data.gdriveLink) {
+            setGdriveLink(data.gdriveLink);
+          }
+          lastErr = null;
+          break;
+        } catch (e: any) {
+          clearTimeout(timer);
+          lastErr = e;
+          if (e?.name === "AbortError") {
+            setUploadError(
+              attempt === 1
+                ? "Upload timeout (25 dtk), mencoba lagi..."
+                : "Upload timeout. Foto belum terkirim — laporan tetap bisa Disimpan dulu, foto bisa diunggah ulang.",
+            );
+          }
+          if (attempt === 2) throw e;
+        }
       }
+      if (lastErr) throw lastErr;
     } catch (err: any) {
       console.error("Upload error:", err);
-      setUploadError(err.message || "Gagal mengunggah file");
+      setUploadError(
+        err?.name === "AbortError"
+          ? "Upload timeout. Laporan tetap bisa Disimpan dulu tanpa foto."
+          : err.message || "Gagal mengunggah file",
+      );
     } finally {
       setIsUploadingGDrive(false);
     }
@@ -590,6 +623,167 @@ export function WorksheetFormModal({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  // --- Anti-kehilangan data: deteksi form kotor (tanpa merubah logika utama) ---
+  const isDirty = useMemo(() => {
+    const hasText =
+      (title || "").trim() !== "" ||
+      (materi || "").trim() !== "" ||
+      (description || "").trim() !== "" ||
+      (catatanGuru || "").trim() !== "" ||
+      (rekomendasiRumah || "").trim() !== "" ||
+      (ttdGuru || "").trim() !== "" ||
+      (gdriveLink || "").trim() !== "" ||
+      (manualBulanKe || "").trim() !== "" ||
+      (bulanKe || "").trim() !== "";
+    const hasItems =
+      (kegiatanItems || []).some((x) => (x || "").trim() !== "") ||
+      (hasilBelajarItems || []).some((x) => (x || "").trim() !== "");
+    return hasText || hasItems || (studentId || "") !== "";
+  }, [
+    title,
+    materi,
+    description,
+    catatanGuru,
+    rekomendasiRumah,
+    ttdGuru,
+    gdriveLink,
+    manualBulanKe,
+    bulanKe,
+    kegiatanItems,
+    hasilBelajarItems,
+    studentId,
+  ]);
+
+  const getDraftKey = () => {
+    // Hanya untuk entri baru agar tidak menimpa data edit yang sudah ada
+    const scope = initialData?.id ? `edit-${initialData.id}` : `new-${lockedStudentId || "all"}`;
+    return `ws-draft-v1:${scope}`;
+  };
+
+  const handleSafeClose = () => {
+    if (isSubmitting) return;
+    if (
+      isDirty &&
+      !window.confirm(
+        "Form belum disimpan. Tutup dan simpan sebagai draft otomatis di HP ini?",
+      )
+    ) {
+      return;
+    }
+    onClose();
+  };
+
+  // Restore draft sekali saat modal dibuka (hanya entri baru, tidak merubah data lama)
+  // Catatan: tanggal dipulihkan di efek terpisah setelah worksheetDateInput dideklarasikan
+  useEffect(() => {
+    if (isEditing || draftRestored) return;
+    try {
+      const raw = localStorage.getItem(getDraftKey());
+      if (!raw) {
+        setDraftRestored(true);
+        return;
+      }
+      const d = JSON.parse(raw);
+      if (d.studentId) setStudentId(d.studentId);
+      if (d.title) setTitle(d.title);
+      if (d.description) setDescription(d.description);
+      if (d.materi) setMateri(d.materi);
+      if (Array.isArray(d.kegiatanItems) && d.kegiatanItems.length)
+        setKegiatanItems(d.kegiatanItems);
+      if (Array.isArray(d.hasilBelajarItems) && d.hasilBelajarItems.length)
+        setHasilBelajarItems(d.hasilBelajarItems);
+      if (d.catatanGuru) setCatatanGuru(d.catatanGuru);
+      if (d.rekomendasiRumah) setRekomendasiRumah(d.rekomendasiRumah);
+      if (d.ttdGuru) setTtdGuru(d.ttdGuru);
+      if (d.bulanKe) setBulanKe(d.bulanKe);
+      if (d.manualBulanKe) setManualBulanKe(d.manualBulanKe);
+      if (d.gdriveLink) setGdriveLink(d.gdriveLink);
+    } catch {
+      // abaikan draft rusak
+    } finally {
+      setDraftRestored(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Autosave draft tiap 2 detik jika kotor (hanya entri baru, lokal saja)
+  // Tanggal disimpan di efek terpisah setelah worksheetDateInput dideklarasikan
+  useEffect(() => {
+    if (isEditing || !draftRestored) return;
+    if (!isDirty) return;
+    const t = setTimeout(() => {
+      try {
+        const prevRaw = localStorage.getItem(getDraftKey());
+        const prev = prevRaw ? JSON.parse(prevRaw) : {};
+        localStorage.setItem(
+          getDraftKey(),
+          JSON.stringify({
+            ...prev,
+            studentId,
+            title,
+            description,
+            materi,
+            kegiatanItems,
+            hasilBelajarItems,
+            catatanGuru,
+            rekomendasiRumah,
+            ttdGuru,
+            bulanKe,
+            manualBulanKe,
+            gdriveLink,
+            savedAt: new Date().toISOString(),
+          }),
+        );
+      } catch {
+        // storage penuh / private mode -> abaikan
+      }
+    }, 2000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    studentId,
+    title,
+    description,
+    materi,
+    kegiatanItems,
+    hasilBelajarItems,
+    catatanGuru,
+    rekomendasiRumah,
+    ttdGuru,
+    bulanKe,
+    manualBulanKe,
+    gdriveLink,
+    isDirty,
+    draftRestored,
+  ]);
+
+  // Trap tombol Back Android / swipe saat modal terbuka (tanpa merubah navigasi utama)
+  useEffect(() => {
+    try {
+      window.history.pushState({ wsModal: true }, "");
+    } catch {
+      // abaikan webview ketat
+    }
+    const onPop = () => {
+      // Jika form kotor, tahan di halaman dan minta konfirmasi via handleSafeClose
+      if (isDirty && !isSubmitting) {
+        try {
+          window.history.pushState({ wsModal: true }, "");
+        } catch {
+          // abaikan
+        }
+        handleSafeClose();
+      } else {
+        // Form bersih -> biarkan Back menutup modal saja, jangan pindah ke /dashboard
+        onClose();
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDirty, isSubmitting]);
 
   const activeStudent =
     students.find(
@@ -924,6 +1118,41 @@ export function WorksheetFormModal({
     initialData?.worksheet_date ||
       (!initialData?.id && currentDate ? currentDate : getTodayISO()),
   );
+
+  // Sinkron tanggal dengan draft (terpisah agar tidak dipakai sebelum deklarasi)
+  useEffect(() => {
+    if (isEditing || !draftRestored) return;
+    try {
+      const raw = localStorage.getItem(getDraftKey());
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.worksheetDateInput) {
+        setWorksheetDateInput(d.worksheetDateInput);
+        setWorksheetDate(d.worksheetDateInput);
+      }
+    } catch {
+      // abaikan
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftRestored]);
+
+  useEffect(() => {
+    if (isEditing || !draftRestored || !isDirty) return;
+    const t = setTimeout(() => {
+      try {
+        const prevRaw = localStorage.getItem(getDraftKey());
+        const prev = prevRaw ? JSON.parse(prevRaw) : {};
+        localStorage.setItem(
+          getDraftKey(),
+          JSON.stringify({ ...prev, worksheetDateInput }),
+        );
+      } catch {
+        // abaikan
+      }
+    }, 2000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [worksheetDateInput, draftRestored, isDirty]);
 
   // Hidden date input for native calendar picker
   const [isCalendarPickerOpen, setIsCalendarPickerOpen] = useState(false);
@@ -1345,6 +1574,12 @@ export function WorksheetFormModal({
         await createWorksheet(formData);
       }
 
+      // Sukses: hapus draft lokal (tidak menyentuh data server selain insert/update di atas)
+      try {
+        localStorage.removeItem(getDraftKey());
+      } catch {
+        // abaikan
+      }
       onClose();
       if (onSuccess) {
         try {
@@ -1355,7 +1590,20 @@ export function WorksheetFormModal({
       }
     } catch (err: any) {
       console.error("Failed to save worksheet:", err);
-      setErrorMsg(err.message || "Gagal menyimpan laporan perkembangan.");
+      const raw = (err?.message || "").toString();
+      // Terjemahkan error teknis menjadi pesan ramah tanpa merubah logika simpan
+      let friendly = raw || "Gagal menyimpan laporan perkembangan.";
+      if (/unexpected response|failed to fetch|network|load failed/i.test(raw)) {
+        friendly =
+          "Koneksi/server terputus saat menyimpan. Data Anda tetap aman sebagai draft otomatis — coba tekan Simpan lagi. Jika masih gagal, refresh halaman lalu buka form (draft akan kembali).";
+      } else if (/auth session missing|jwt expired|invalid jwt|refresh token|not authenticated|user.*null/i.test(raw)) {
+        friendly =
+          "Sesi login kedaluwarsa. Refresh halaman / login ulang, lalu buka form lagi — draft Anda tersimpan otomatis di HP ini.";
+      } else if (/row-level security|policy|permission denied|42501/i.test(raw)) {
+        friendly =
+          "Izin database menolak penyimpanan. Hubungi admin (jangan logout dulu) — draft Anda tersimpan otomatis.";
+      }
+      setErrorMsg(friendly);
       formRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setIsSubmitting(false);
@@ -1367,7 +1615,7 @@ export function WorksheetFormModal({
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/70 animate-in fade-in duration-200"
-        onClick={() => !isSubmitting && onClose()}
+        onClick={handleSafeClose}
       />
 
       {/* Modal Card */}
@@ -1394,7 +1642,7 @@ export function WorksheetFormModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleSafeClose}
             disabled={isSubmitting}
             className="relative z-10 p-1.5 sm:p-2 rounded-full text-white/80 hover:text-white hover:bg-white/20 active:scale-95 transition-all cursor-pointer shrink-0"
             title="Tutup"
@@ -1412,6 +1660,25 @@ export function WorksheetFormModal({
           {errorMsg && (
             <div className="p-3 rounded-xl bg-red-50 text-red-700 text-xs font-semibold border border-red-200/60 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50">
               {errorMsg}
+            </div>
+          )}
+          {!isEditing && isDirty && (
+            <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-[11px] font-semibold border border-emerald-200/60 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/50">
+              <span>💾 Draft otomatis tersimpan di HP ini</span>
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    localStorage.removeItem(getDraftKey());
+                  } catch {
+                    // abaikan
+                  }
+                  onClose();
+                }}
+                className="underline underline-offset-2 hover:opacity-80 shrink-0"
+              >
+                Buang draft
+              </button>
             </div>
           )}
 
@@ -2920,7 +3187,11 @@ export function WorksheetFormModal({
                     onClick={() => {
                       setSelectedFile(null);
                       setFilePreviewUrl(null);
-                      setGdriveLink("");
+                      // Mode edit: kembalikan link lama agar tidak ikut terhapus.
+                      // Mode baru: kosongkan.
+                      setGdriveLink(
+                        isEditing ? initialData?.gdrive_link || "" : "",
+                      );
                     }}
                     className="absolute top-1.5 right-1.5 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 shadow-md cursor-pointer"
                     title="Hapus Foto"
@@ -2935,6 +3206,10 @@ export function WorksheetFormModal({
                   <div className="flex items-start gap-1.5 font-medium">
                     <span className="shrink-0">⚠️</span>
                     <span>{uploadError}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Foto gagal tidak menghalangi Simpan — laporan tetap bisa
+                    disimpan dulu, foto bisa diunggah ulang / paste link manual.
                   </div>
                   {(uploadError.includes("/api/auth/gdrive") ||
                     uploadError.includes("Google Drive belum terhubung") ||
@@ -3247,7 +3522,7 @@ export function WorksheetFormModal({
           <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleSafeClose}
               disabled={isSubmitting}
               className="w-full sm:w-auto px-6 py-3 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
             >

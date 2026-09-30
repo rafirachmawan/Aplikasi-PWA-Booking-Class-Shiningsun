@@ -67,6 +67,16 @@ export async function updateSession(request: NextRequest) {
       return redirectWithCookies(user ? '/dashboard' : '/login')
     }
 
+    // Server Action (Next-Action header) jangan di-redirect ke /login:
+    // redirect HTML adalah penyebab "An unexpected response was received from the server".
+    // Biarkan action berjalan dan gagal dengan pesan 401 yang jelas di level action.
+    const isServerAction =
+      request.headers.has('next-action') ||
+      request.headers.get('x-nextjs-action') !== null;
+    if (isServerAction) {
+      return supabaseResponse
+    }
+
     // Protect Dashboard and private routes
     if (
       !user &&

@@ -2045,6 +2045,18 @@ export async function createWorksheet(formData: FormData) {
     throw new Error("Siswa dan Judul Laporan Perkembangan wajib diisi.");
   }
 
+  const supabaseAuthCheck = await createClient();
+  const {
+    data: { user: worksheetUser },
+  } = await supabaseAuthCheck.auth.getUser();
+  if (!worksheetUser) {
+    // Pesan jelas agar client tidak bingung + tidak perlu logout (cukup refresh).
+    // Tidak merubah data / payload apapun.
+    throw new Error(
+      "Sesi login kedaluwarsa. Refresh halaman lalu coba Simpan lagi (draft tersimpan otomatis di HP). Jika masih gagal, login ulang.",
+    );
+  }
+
   const branchId = await getBranchId();
   const supabaseServer = await createClient();
 
@@ -2106,6 +2118,16 @@ export async function updateWorksheet(id: string, formData: FormData) {
 
   if (!title) {
     throw new Error("Judul Laporan Perkembangan wajib diisi.");
+  }
+
+  const supabaseAuthCheckUpdate = await createClient();
+  const {
+    data: { user: worksheetUpdateUser },
+  } = await supabaseAuthCheckUpdate.auth.getUser();
+  if (!worksheetUpdateUser) {
+    throw new Error(
+      "Sesi login kedaluwarsa. Refresh halaman lalu coba Simpan lagi (draft tersimpan otomatis di HP). Jika masih gagal, login ulang.",
+    );
   }
 
   const supabaseServer = await createClient();
