@@ -25,10 +25,17 @@ export async function GET(request: NextRequest) {
 
       if (error) throw error;
 
-      return NextResponse.json({
-        success: true,
-        templates: templates || [],
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          templates: templates || [],
+        },
+        {
+          headers: {
+            "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+          },
+        },
+      );
     }
 
     // Toggle active action

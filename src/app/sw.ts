@@ -2,7 +2,7 @@
 
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist, NetworkFirst, ExpirationPlugin } from "serwist";
+import { Serwist } from "serwist";
 
 // Declare global types for Serwist Service Worker
 declare global {
@@ -13,34 +13,16 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope & WorkerGlobalScope;
 
-// Override: force NetworkFirst for JS bundles to prevent stale cache on mobile
-const customCache = defaultCache.map((entry: any) => {
-  // Override CacheFirst JS bundles → NetworkFirst
-  if (entry.matcher instanceof RegExp && entry.matcher.source.includes('_next') && entry.matcher.source.includes('js')) {
-    return {
-      ...entry,
-      handler: new NetworkFirst({
-        cacheName: "next-js-assets-nf",
-        plugins: [new ExpirationPlugin({
-          maxEntries: 64,
-          maxAgeSeconds: 24 * 60 * 60, // 1 day max
-          maxAgeFrom: "last-used" as const,
-        })],
-        // Timeout pendek agar di koneksi lemot langsung jatuh ke cache
-        // (hanya perilaku cache, bukan logika aplikasi).
-        networkTimeoutSeconds: 3,
-      }),
-    };
-  }
-  return entry;
-});
+// Batch 1: pakai defaultCache Serwist apa adanya (JS CacheFirst).
+// Override NetworkFirst sebelumnya dihapus agar chunk _next/static hemat Origin.
+// Tidak ada logika push/notifikasi yang diubah.
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: customCache,
+  runtimeCaching: defaultCache,
 });
 
 serwist.addEventListeners();
