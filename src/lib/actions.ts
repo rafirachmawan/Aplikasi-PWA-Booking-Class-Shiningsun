@@ -382,21 +382,56 @@ export async function getOverdueWorksheets(branchId = "ALL") {
     const startDate = "2026-09-23";
 
     // 1. Get all active students for this branch - ONLY REGISTERED (NOT CG or INACTIVE)
-    let studentsQuery = supabaseServer
-      .from("students")
-      .select(
-        `
+    // registered_at menandai kapan siswa menjadi REGISTERED agar periode CG tidak masuk overdue.
+    // Fallback: jika kolom belum ada (migrasi belum dijalankan), pakai query lama tanpa filter tanggal.
+    let students: any[] | null = null;
+    let studentError: any = null;
+    let hasRegisteredAtColumn = true;
+    {
+      let q = supabaseServer
+        .from("students")
+        .select(
+          `
+        id, name, nickname, gender, status, label_id, registered_at,
+        label:labels(id, main_level, sub_level, hex_color)
+      `,
+        )
+        .eq("status", "REGISTERED"); // Only registered students, not CG or INACTIVE
+
+      if (branchId !== "ALL") {
+        q = q.eq("branch_id", branchId);
+      }
+
+      const res = await q;
+      students = res.data;
+      studentError = res.error;
+      if (
+        studentError &&
+        ((studentError.message &&
+          studentError.message.toLowerCase().includes("registered_at")) ||
+          (studentError.details &&
+            studentError.details.toLowerCase().includes("registered_at")) ||
+          studentError.code === "PGRST204" ||
+          studentError.code === "42703")
+      ) {
+        hasRegisteredAtColumn = false;
+        let fallbackQ = supabaseServer
+          .from("students")
+          .select(
+            `
         id, name, nickname, gender, status, label_id,
         label:labels(id, main_level, sub_level, hex_color)
       `,
-      )
-      .eq("status", "REGISTERED"); // Only registered students, not CG or INACTIVE
-
-    if (branchId !== "ALL") {
-      studentsQuery = studentsQuery.eq("branch_id", branchId);
+          )
+          .eq("status", "REGISTERED");
+        if (branchId !== "ALL") {
+          fallbackQ = fallbackQ.eq("branch_id", branchId);
+        }
+        const fallbackRes = await fallbackQ;
+        students = fallbackRes.data;
+        studentError = fallbackRes.error;
+      }
     }
-
-    const { data: students, error: studentError } = await studentsQuery;
 
     if (studentError) {
       console.error("❌ Error fetching students:", studentError);
@@ -405,6 +440,26 @@ export async function getOverdueWorksheets(branchId = "ALL") {
 
     const studentList = students || [];
     if (studentList.length === 0) return [];
+
+    // Tanggal efektif per siswa: booking sebelum tanggal ini adalah era CG → abaikan.
+    // Hanya pakai registered_at. NULL / kolom belum ada = perilaku lama (mulai dari startDate).
+    const effectiveStartByStudent = new Map<string, string>();
+    if (hasRegisteredAtColumn) {
+      for (const s of studentList) {
+        const regAt =
+          typeof s.registered_at === "string"
+            ? s.registered_at.split("T")[0]
+            : null;
+        effectiveStartByStudent.set(
+          s.id,
+          regAt && regAt > startDate ? regAt : startDate,
+        );
+      }
+    } else {
+      for (const s of studentList) {
+        effectiveStartByStudent.set(s.id, startDate);
+      }
+    }
 
     // 2. Fetch ALL bookings for these students from September 1, 2026 until today
     // CRITICAL: Only fetch schedules for currently active students (filter by student_id)
@@ -535,6 +590,14 @@ export async function getOverdueWorksheets(branchId = "ALL") {
 
         // CRITICAL FIX: Skip schedules on today because we can't check +1 hour properly from server
         if (schedDate === todayISO) {
+          continue;
+        }
+
+        // Periode CG tidak masuk overdue: abaikan booking sebelum tanggal jadi REGISTERED.
+        // Logika lain di bawah tidak berubah.
+        const effectiveStart =
+          effectiveStartByStudent.get(student.id) || startDate;
+        if (schedDate < effectiveStart) {
           continue;
         }
 
@@ -835,6 +898,8 @@ export async function createStudent(formData: FormData) {
     status,
     label_id: label_id ? label_id : null,
     registration_date,
+    // Tandai kapan jadi REGISTERED. CG = NULL agar periode CG tidak masuk overdue.
+    registered_at: status === "REGISTERED" ? registration_date : null,
   };
 
   if (gender) {
@@ -843,6 +908,23 @@ export async function createStudent(formData: FormData) {
 
   const supabaseServer = await createClient();
   let { error } = await supabaseServer.from("students").insert(insertPayload);
+
+  // Fallback jika kolom registered_at belum ada (migrasi belum dijalankan)
+  if (
+    error &&
+    ((error.message && error.message.toLowerCase().includes("registered_at")) ||
+      (error.details && error.details.toLowerCase().includes("registered_at")) ||
+      error.code === "PGRST204" ||
+      error.code === "42703")
+  ) {
+    delete insertPayload.registered_at;
+    const retry = await supabaseServer.from("students").insert(insertPayload);
+    error = retry.error;
+    // Jangan timpa error gender di bawah jika masih ada; lanjutkan ke fallback gender
+    if (!error) {
+      return true;
+    }
+  }
 
   // Fallback jika kolom gender belum ada di database Supabase
   if (
@@ -855,6 +937,17 @@ export async function createStudent(formData: FormData) {
     delete insertPayload.gender;
     const retry = await supabaseServer.from("students").insert(insertPayload);
     error = retry.error;
+    if (
+      error &&
+      ((error.message &&
+        error.message.toLowerCase().includes("registered_at")) ||
+        (error.details &&
+          error.details.toLowerCase().includes("registered_at")))
+    ) {
+      delete insertPayload.registered_at;
+      const retry2 = await supabaseServer.from("students").insert(insertPayload);
+      error = retry2.error;
+    }
   }
 
   if (error) {
@@ -1458,10 +1551,50 @@ export async function deleteStudent(id: string) {
 
 export async function updateStudentStatus(id: string, status: string) {
   const supabaseServer = await createClient();
-  const { error } = await supabaseServer
+  const today = new Date().toISOString().split("T")[0];
+
+  // Ambil nilai registered_at saat ini agar tidak menimpa tanggal promosi sebelumnya.
+  // Read-only, tidak menambah data.
+  let currentRegisteredAt: string | null = null;
+  try {
+    const { data: cur } = await supabaseServer
+      .from("students")
+      .select("registered_at")
+      .eq("id", id)
+      .maybeSingle();
+    if (cur && typeof (cur as any).registered_at === "string") {
+      currentRegisteredAt = (cur as any).registered_at.split("T")[0];
+    }
+  } catch {
+    // Kolom belum ada → abaikan, lanjut dengan update status saja.
+  }
+
+  const payload: any = { status };
+  if (status === "REGISTERED") {
+    if (!currentRegisteredAt) payload.registered_at = today;
+  } else if (status === "CG") {
+    payload.registered_at = null;
+  }
+
+  let { error } = await supabaseServer
     .from("students")
-    .update({ status })
+    .update(payload)
     .eq("id", id);
+
+  // Fallback jika kolom registered_at belum ada (migrasi belum dijalankan)
+  if (
+    error &&
+    ((error.message && error.message.toLowerCase().includes("registered_at")) ||
+      (error.details && error.details.toLowerCase().includes("registered_at")) ||
+      error.code === "PGRST204" ||
+      error.code === "42703")
+  ) {
+    const retry = await supabaseServer
+      .from("students")
+      .update({ status })
+      .eq("id", id);
+    error = retry.error;
+  }
 
   if (error) throw new Error(error.message);
   return true;
@@ -1510,10 +1643,55 @@ export async function updateStudent(id: string, formData: FormData) {
   }
 
   const supabaseServer = await createClient();
+
+  // Tandai promosi CG -> REGISTERED agar periode CG tidak masuk overdue.
+  // Read-only untuk cek status lama, tidak menambah data baru.
+  if (status === "REGISTERED" || status === "CG") {
+    try {
+      const { data: cur } = await supabaseServer
+        .from("students")
+        .select("status, registered_at")
+        .eq("id", id)
+        .maybeSingle();
+      const oldStatus = (cur as any)?.status as string | undefined;
+      const oldRegisteredAt =
+        typeof (cur as any)?.registered_at === "string"
+          ? ((cur as any).registered_at as string).split("T")[0]
+          : null;
+      if (status === "REGISTERED" && oldStatus !== "REGISTERED") {
+        if (!oldRegisteredAt) {
+          updatePayload.registered_at = new Date()
+            .toISOString()
+            .split("T")[0];
+        }
+      } else if (status === "CG" && oldStatus !== "CG") {
+        updatePayload.registered_at = null;
+      }
+    } catch {
+      // Kolom belum ada → abaikan, lanjut update seperti biasa.
+    }
+  }
+
   let { error } = await supabaseServer
     .from("students")
     .update(updatePayload)
     .eq("id", id);
+
+  // Fallback jika kolom registered_at belum ada di database Supabase
+  if (
+    error &&
+    ((error.message && error.message.toLowerCase().includes("registered_at")) ||
+      (error.details && error.details.toLowerCase().includes("registered_at")) ||
+      error.code === "PGRST204" ||
+      error.code === "42703")
+  ) {
+    delete updatePayload.registered_at;
+    const retry = await supabaseServer
+      .from("students")
+      .update(updatePayload)
+      .eq("id", id);
+    error = retry.error;
+  }
 
   // Fallback jika kolom gender belum ada di database Supabase
   if (
