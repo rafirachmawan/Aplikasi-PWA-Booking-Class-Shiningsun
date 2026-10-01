@@ -1125,7 +1125,10 @@ export function ParentDashboardClient({
                     (a, b) => {
                       const aNum = a[0] === "none" ? 0 : parseInt(a[0]);
                       const bNum = b[0] === "none" ? 0 : parseInt(b[0]);
-                      return aNum - bNum;
+                      if (aNum !== bNum) return bNum - aNum;
+                      const dateA = a[1][0]?.worksheet_date || "";
+                      const dateB = b[1][0]?.worksheet_date || "";
+                      return dateB.localeCompare(dateA);
                     },
                   );
                   return sortedGroups.map(([bk, wsGroup]) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import { Icons } from "@/components/ui/icons";
 import { formatShortDate, calculateStudentPoints } from "@/lib/dateUtils";
@@ -686,14 +686,25 @@ export function StudentWorksheetTable({
 }: StudentWorksheetTableProps) {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
+  const sortedWorksheets = useMemo(() => {
+    return [...worksheets].sort((a, b) => {
+      const dateA = a.worksheet_date || a.created_at || "";
+      const dateB = b.worksheet_date || b.created_at || "";
+      if (dateA !== dateB) return dateB.localeCompare(dateA);
+      const createdA = a.created_at || "";
+      const createdB = b.created_at || "";
+      return createdB.localeCompare(createdA);
+    });
+  }, [worksheets]);
+
   const currentBulanKe =
     bulanKe !== undefined && bulanKe !== null
       ? bulanKe
-      : (worksheets.find((w) => w.bulan_ke != null)?.bulan_ke ?? null);
+      : (sortedWorksheets.find((w) => w.bulan_ke != null)?.bulan_ke ?? null);
 
   const latestMonth =
     currentBulanKe ??
-    [...worksheets].reverse().find((w) => w.bulan_ke != null)?.bulan_ke;
+    sortedWorksheets.find((w) => w.bulan_ke != null)?.bulan_ke;
   const firstLetter = student?.name
     ? student.name.charAt(0).toUpperCase()
     : "S";
@@ -1098,12 +1109,12 @@ export function StudentWorksheetTable({
       {/* 2. WORKSHEET ENTRIES / SESSIONS (PER HARI DENGAN BOX SARAN)  */}
       {/* ============================================================ */}
       <div className="p-4 sm:p-6 space-y-6">
-        {worksheets.length === 0 ? (
+        {sortedWorksheets.length === 0 ? (
           <div className="py-12 text-center text-slate-400 italic bg-amber-50/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
             Belum ada baris evaluasi perkembangan untuk siswa ini.
           </div>
         ) : (
-          worksheets.map((item) => (
+          sortedWorksheets.map((item) => (
             <DailyWorksheetSessionItem
               key={item.id}
               item={item}

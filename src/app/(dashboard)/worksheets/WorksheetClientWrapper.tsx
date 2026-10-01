@@ -345,12 +345,26 @@ export function WorksheetClientWrapper({
       }
     }
 
-    // Sort: by student name, then by bulan_ke ascending
+    // Sort: by student name, then by newest month/date descending (terbaru paling atas)
     return Array.from(map.values()).sort((a, b) => {
       const nameA = a.student?.name || "";
       const nameB = b.student?.name || "";
       if (nameA !== nameB) return nameA.localeCompare(nameB);
-      return (a.bulanKe ?? 0) - (b.bulanKe ?? 0);
+
+      const getLatestDate = (g: { bulanKe: number | null; worksheets: any[] }) => {
+        let maxDate = "";
+        for (const w of g.worksheets) {
+          const d = w.worksheet_date || w.created_at || "";
+          if (d > maxDate) maxDate = d;
+        }
+        return maxDate;
+      };
+
+      const dateA = getLatestDate(a);
+      const dateB = getLatestDate(b);
+      if (dateA !== dateB) return dateB.localeCompare(dateA);
+
+      return (b.bulanKe ?? 0) - (a.bulanKe ?? 0);
     });
   }, [filteredWorksheets, selectedStudentId, students]);
 

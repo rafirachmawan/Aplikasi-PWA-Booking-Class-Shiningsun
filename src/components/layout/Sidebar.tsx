@@ -42,6 +42,11 @@ const navGroups = [
 // Special routes for superadmin only
 const superAdminMenus = [
   {
+    name: "Laporan Siswa",
+    href: "/reports/students",
+    icon: Icons.users,
+  },
+  {
     name: "Template Ulang Tahun",
     href: "/birthday-templates",
     icon: Icons.fileText,

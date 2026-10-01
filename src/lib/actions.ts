@@ -465,21 +465,31 @@ export async function getOverdueWorksheets(branchId = "ALL") {
     // CRITICAL: Only fetch schedules for currently active students (filter by student_id)
     const studentIds = studentList.map((s) => s.id);
 
-    const { data: allBookings, error: bookingsError } = await supabaseServer
-      .from("schedule_student")
-      .select(
-        `
-        student_id,
-        slot:schedule_slots!inner(date, time, class_id)
-      `,
-      )
-      .in("student_id", studentIds)
-      .gte("slot.date", startDate)
-      .lte("slot.date", todayISO);
+    const PAGE = 1000;
+    const allBookings: any[] = [];
+    for (let page = 0; ; page++) {
+      const from = page * PAGE;
+      const { data: pageBookings, error: bookingsError } = await supabaseServer
+        .from("schedule_student")
+        .select(
+          `
+          student_id,
+          slot:schedule_slots!inner(date, time, class_id)
+        `,
+        )
+        .in("student_id", studentIds)
+        .gte("slot.date", startDate)
+        .lte("slot.date", todayISO)
+        .range(from, from + PAGE - 1);
 
-    if (bookingsError) {
-      console.error("❌ Error fetching bookings:", bookingsError);
-      return [];
+      if (bookingsError) {
+        console.error("❌ Error fetching bookings:", bookingsError);
+        return [];
+      }
+      if (pageBookings && pageBookings.length > 0) {
+        allBookings.push(...pageBookings);
+      }
+      if (!pageBookings || pageBookings.length < PAGE) break;
     }
 
     // Group bookings by student_id
@@ -515,19 +525,33 @@ export async function getOverdueWorksheets(branchId = "ALL") {
     }
 
     // 3. Fetch worksheets from startDate until today (filter date agar tidak terpotong limit 1000 Supabase)
-    const { data: allWorksheets } = await supabaseServer
-      .from("student_worksheets")
-      .select(
-        `
-        student_id,
-        worksheet_date,
-        materi,
-        title
-      `,
-      )
-      .in("student_id", studentIds)
-      .gte("worksheet_date", startDate)
-      .lte("worksheet_date", todayISO);
+    const allWorksheets: any[] = [];
+    for (let page = 0; ; page++) {
+      const from = page * PAGE;
+      const { data: pageWorksheets, error: wsError } = await supabaseServer
+        .from("student_worksheets")
+        .select(
+          `
+          student_id,
+          worksheet_date,
+          materi,
+          title
+        `,
+        )
+        .in("student_id", studentIds)
+        .gte("worksheet_date", startDate)
+        .lte("worksheet_date", todayISO)
+        .range(from, from + PAGE - 1);
+
+      if (wsError) {
+        console.warn("Notice fetching overdue worksheets:", wsError.message);
+        break;
+      }
+      if (pageWorksheets && pageWorksheets.length > 0) {
+        allWorksheets.push(...pageWorksheets);
+      }
+      if (!pageWorksheets || pageWorksheets.length < PAGE) break;
+    }
 
     // Helper function: Check if worksheet has "Tidak Hadir" status
     const hasAbsentStatus = (ws: any): boolean => {
@@ -680,18 +704,29 @@ export async function getStudentScheduleMap(
     const firstDayOfMonth = `${currentYear}-${currentMonth}-01`;
 
     // Query active bookings for these students in the current month onwards (sebulan penuh)
-    let { data: bookings } = await supabaseServer
-      .from("schedule_student")
-      .select(
-        `
-        student_id,
-        slot:schedule_slots!inner(
-          date, time
+    const PAGE = 1000;
+    let bookings: any[] = [];
+    for (let page = 0; ; page++) {
+      const from = page * PAGE;
+      const { data: pageBookings } = await supabaseServer
+        .from("schedule_student")
+        .select(
+          `
+          student_id,
+          slot:schedule_slots!inner(
+            date, time
+          )
+        `,
         )
-      `,
-      )
-      .in("student_id", studentIds)
-      .gte("slot.date", firstDayOfMonth);
+        .in("student_id", studentIds)
+        .gte("slot.date", firstDayOfMonth)
+        .range(from, from + PAGE - 1);
+
+      if (pageBookings && pageBookings.length > 0) {
+        bookings.push(...pageBookings);
+      }
+      if (!pageBookings || pageBookings.length < PAGE) break;
+    }
 
     // Fallback: jika belum ada slot di bulan berjalan/mendatang (misal awal bulan baru belum di-generate), ambil slot bulan sebelumnya
     const foundStudentIds = new Set((bookings || []).map((b) => b.student_id));
@@ -702,21 +737,26 @@ export async function getStudentScheduleMap(
     if (missingStudentIds.length > 0) {
       const prevMonth = new Date(currentYear, now.getMonth() - 1, 1);
       const firstDayOfPrevMonth = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}-01`;
-      const { data: monthBookings } = await supabaseServer
-        .from("schedule_student")
-        .select(
-          `
-          student_id,
-          slot:schedule_slots!inner(
-            date, time
+      for (let page = 0; ; page++) {
+        const from = page * PAGE;
+        const { data: monthBookings } = await supabaseServer
+          .from("schedule_student")
+          .select(
+            `
+            student_id,
+            slot:schedule_slots!inner(
+              date, time
+            )
+          `,
           )
-        `,
-        )
-        .in("student_id", missingStudentIds)
-        .gte("slot.date", firstDayOfPrevMonth);
+          .in("student_id", missingStudentIds)
+          .gte("slot.date", firstDayOfPrevMonth)
+          .range(from, from + PAGE - 1);
 
-      if (monthBookings && monthBookings.length > 0) {
-        bookings = [...(bookings || []), ...monthBookings];
+        if (monthBookings && monthBookings.length > 0) {
+          bookings.push(...monthBookings);
+        }
+        if (!monthBookings || monthBookings.length < PAGE) break;
       }
     }
 
@@ -812,10 +852,27 @@ export async function getStudents() {
     // Redemptions tetap dibungkus try/catch seperti semula agar tabel yang
     // belum ada tetap ditoleransi tanpa mengubah hasil.
     const scheduleMapPromise = getStudentScheduleMap(studentIds);
-    const worksheetsPromise = supabaseServer
-      .from("student_worksheets")
-      .select("student_id, materi, title")
-      .in("student_id", studentIds);
+    const worksheetsPromise = (async () => {
+      const PAGE = 1000;
+      const allWs: any[] = [];
+      for (let page = 0; ; page++) {
+        const from = page * PAGE;
+        const { data: wsPage, error: wsErr } = await supabaseServer
+          .from("student_worksheets")
+          .select("student_id, materi, title")
+          .in("student_id", studentIds)
+          .range(from, from + PAGE - 1);
+        if (wsErr) {
+          console.warn("Notice fetching worksheets for points:", wsErr.message);
+          break;
+        }
+        if (wsPage && wsPage.length > 0) {
+          allWs.push(...wsPage);
+        }
+        if (!wsPage || wsPage.length < PAGE) break;
+      }
+      return { data: allWs };
+    })();
     const redemptionsPromise = supabaseServer
       .from("student_point_redemptions")
       .select("student_id, points_deducted")
@@ -2128,36 +2185,51 @@ export async function getWorksheetsByBranch() {
     if (!branchId) return [];
 
     const supabaseServer = await createClient();
-    let query = supabaseServer
-      .from("student_worksheets")
-      .select(
-        `
-        *,
-        student:students(id, name, nickname, gender, date_of_birth, status, access_pin, label_id, label:labels(id, main_level, sub_level, hex_color))
-      `,
-      )
-      .order("worksheet_date", { ascending: false })
-      .order("created_at", { ascending: false });
+    const PAGE = 1000;
+    const allWorksheets: any[] = [];
 
-    if (branchId !== "ALL") {
-      query = query.eq("branch_id", branchId);
+    for (let page = 0; ; page++) {
+      const from = page * PAGE;
+      let query = supabaseServer
+        .from("student_worksheets")
+        .select(
+          `
+          *,
+          student:students(id, name, nickname, gender, date_of_birth, status, access_pin, label_id, label:labels(id, main_level, sub_level, hex_color))
+        `,
+        )
+        .order("worksheet_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .range(from, from + PAGE - 1);
+
+      if (branchId !== "ALL") {
+        query = query.eq("branch_id", branchId);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.warn(
+          "Notice fetching worksheets (Pastikan SQL Migration sudah dijalankan):",
+          error.message || error,
+        );
+        break;
+      }
+
+      if (data && data.length > 0) {
+        allWorksheets.push(...data);
+      }
+
+      if (!data || data.length < PAGE) {
+        break;
+      }
     }
 
-    const { data, error } = await query;
-    if (error) {
-      console.warn(
-        "Notice fetching worksheets (Pastikan SQL Migration sudah dijalankan):",
-        error.message || error,
-      );
-      return [];
-    }
-
-    if (data && data.length > 0) {
+    if (allWorksheets.length > 0) {
       const studentIds = Array.from(
-        new Set(data.map((w) => w.student_id).filter(Boolean)),
+        new Set(allWorksheets.map((w) => w.student_id).filter(Boolean)),
       );
       const scheduleMap = await getStudentScheduleMap(studentIds);
-      return data.map((w) => {
+      return allWorksheets.map((w) => {
         if (w.student) {
           return {
             ...w,
@@ -2171,7 +2243,7 @@ export async function getWorksheetsByBranch() {
       });
     }
 
-    return data || [];
+    return allWorksheets;
   } catch (err: any) {
     console.warn("Exception fetching worksheets:", err?.message || err);
     return [];
