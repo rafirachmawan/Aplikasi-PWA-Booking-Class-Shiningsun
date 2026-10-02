@@ -525,25 +525,36 @@ export async function getOverdueWorksheets(branchId = "ALL") {
     }
 
     // 3. Fetch worksheets from startDate until today (filter date agar tidak terpotong limit 1000 Supabase)
+    // Coba sertakan kolom jadwal baru; fallback ke kolom lama jika migrasi belum jalan.
     const allWorksheets: any[] = [];
+    let overdueWsSelect = `
+          student_id,
+          worksheet_date,
+          schedule_slot_id,
+          schedule_time,
+          materi,
+          title
+        `;
     for (let page = 0; ; page++) {
       const from = page * PAGE;
       const { data: pageWorksheets, error: wsError } = await supabaseServer
         .from("student_worksheets")
-        .select(
-          `
-          student_id,
-          worksheet_date,
-          materi,
-          title
-        `,
-        )
+        .select(overdueWsSelect)
         .in("student_id", studentIds)
         .gte("worksheet_date", startDate)
         .lte("worksheet_date", todayISO)
         .range(from, from + PAGE - 1);
 
       if (wsError) {
+        if (isMissingColumnError(wsError) && overdueWsSelect.includes("schedule_")) {
+          overdueWsSelect = `
+          student_id,
+          worksheet_date,
+          materi,
+          title
+        `;
+          continue;
+        }
         console.warn("Notice fetching overdue worksheets:", wsError.message);
         break;
       }
@@ -568,10 +579,12 @@ export async function getOverdueWorksheets(branchId = "ALL") {
       );
     };
 
-    // Group worksheets by student_id AND date (with absent status info)
+    // Group worksheets by student_id AND date (+jam jika ada) dengan info status.
+    // Baris lama tanpa jam (schedule_time NULL) tetap menutupi semua jam pada
+    // tanggal itu agar perilaku overdue lama tidak berubah untuk data lama.
     const worksheetsByStudentAndDate = new Map<
       string,
-      Array<{ date: string; isAbsent: boolean }>
+      Array<{ date: string; time: string; isAbsent: boolean }>
     >();
     allWorksheets?.forEach((ws: any) => {
       const dateStr =
@@ -586,7 +599,11 @@ export async function getOverdueWorksheets(branchId = "ALL") {
       const isAbsent = hasAbsentStatus(ws);
       worksheetsByStudentAndDate
         .get(ws.student_id)!
-        .push({ date: dateStr, isAbsent });
+        .push({
+          date: dateStr,
+          time: normalizeScheduleTime(ws.schedule_time) || "",
+          isAbsent,
+        });
     });
 
     // 4. Find overdue students (marked as OVERDUE if schedule + 1 hour passed AND no worksheet)
@@ -628,18 +645,23 @@ export async function getOverdueWorksheets(branchId = "ALL") {
         // For past dates (before today), all counts as overdue since the day has passed
         // This is safe because we're querying only up to yesterday
 
-        // Check if there's a worksheet on the SAME date
-        const hasWorksheetOnSameDate = studentWorksheetsWithStatus.some(
-          (ws) => ws.date === schedDate,
+        // Check jika ada worksheet pada tanggal & jam yang SAMA.
+        // Baris lama tanpa jam menutupi semua jam tanggal itu (perilaku lama).
+        const schedTimeNorm = normalizeScheduleTime(schedTime) || "";
+        const hasWorksheetOnSameSchedule = studentWorksheetsWithStatus.some(
+          (ws) =>
+            ws.date === schedDate &&
+            (!ws.time || !schedTimeNorm || ws.time === schedTimeNorm),
         );
 
         // If worksheet exists (regardless of status), DON'T mark as overdue
-        if (hasWorksheetOnSameDate) {
+        if (hasWorksheetOnSameSchedule) {
           continue; // SKIP: Already have worksheet, even if it's "Tidak Hadir/Ijin/Sakit/Libur"
         }
 
-        // Create unique key to avoid duplicates
-        const entryKey = `${student.id}_${schedDate}`;
+        // Create unique key to avoid duplicates (per jam agar 2 slot sehari
+        // tidak saling menutupi; data lama tanpa jam tetap 1 entri per tanggal)
+        const entryKey = `${student.id}_${schedDate}_${schedTimeNorm}`;
 
         // Skip if already added
         if (seenOverdueEntries.has(entryKey)) {
@@ -2274,6 +2296,40 @@ export async function getWorksheetsByStudent(studentId: string) {
   }
 }
 
+const DUPLICATE_REPORT_MESSAGE =
+  "LAPORAN_SUDAH_TERISI: Laporan perkembangan siswa ini pada jadwal (tanggal & jam) tersebut sudah terisi. Tidak bisa isi 2x.";
+
+function normalizeScheduleTime(raw: unknown): string | null {
+  if (raw === null || raw === undefined) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  // Terima "08:00", "08:00:00", ISO datetime — ambil HH:MM saja.
+  const m = s.match(/(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  const hh = String(parseInt(m[1], 10)).padStart(2, "0");
+  return `${hh}:${m[2]}`;
+}
+
+function isMissingColumnError(err: any): boolean {
+  const msg = String(err?.message || "");
+  return (
+    err?.code === "PGRST204" ||
+    err?.code === "42703" ||
+    msg.includes("schema cache") ||
+    msg.includes("Could not find the")
+  );
+}
+
+function isDuplicateKeyError(err: any): boolean {
+  const msg = String(err?.message || "");
+  return (
+    err?.code === "23505" ||
+    msg.includes("uq_worksheets_student_date_slot") ||
+    msg.includes("uq_worksheets_student_date_time") ||
+    msg.includes("duplicate key value")
+  );
+}
+
 export async function createWorksheet(formData: FormData) {
   const student_id = formData.get("student_id") as string;
   const title = formData.get("title") as string;
@@ -2290,6 +2346,12 @@ export async function createWorksheet(formData: FormData) {
   const bulan_ke = formData.get("bulan_ke")
     ? parseInt(formData.get("bulan_ke") as string, 10)
     : null;
+  // Konteks jadwal (opsional, nullable agar data lama & flow lama tetap jalan).
+  const rawSlotId = (formData.get("schedule_slot_id") as string) || "";
+  const schedule_slot_id = rawSlotId.trim() ? rawSlotId.trim() : null;
+  const schedule_time = normalizeScheduleTime(
+    formData.get("schedule_time") as string,
+  );
 
   if (!student_id || !title) {
     throw new Error("Siswa dan Judul Laporan Perkembangan wajib diisi.");
@@ -2310,7 +2372,63 @@ export async function createWorksheet(formData: FormData) {
   const branchId = await getBranchId();
   const supabaseServer = await createClient();
 
-  const { error } = await supabaseServer.from("student_worksheets").insert({
+  // Cegah double sebelum insert (check-then-insert).
+  // Toleran jika migrasi kolom jadwal belum dijalankan: lewati cek baru,
+  // fallback ke cek lama per siswa+tanggal agar tidak merusak flow lama.
+  try {
+    if (schedule_slot_id) {
+      const { data: existing, error: checkError } = await supabaseServer
+        .from("student_worksheets")
+        .select("id")
+        .eq("student_id", student_id)
+        .eq("worksheet_date", worksheet_date)
+        .eq("schedule_slot_id", schedule_slot_id)
+        .limit(1);
+      if (checkError) {
+        if (!isMissingColumnError(checkError)) throw checkError;
+      } else if (existing && existing.length > 0) {
+        throw new Error(DUPLICATE_REPORT_MESSAGE);
+      }
+    } else if (schedule_time) {
+      const { data: existing, error: checkError } = await supabaseServer
+        .from("student_worksheets")
+        .select("id")
+        .eq("student_id", student_id)
+        .eq("worksheet_date", worksheet_date)
+        .eq("schedule_time", schedule_time)
+        .limit(1);
+      if (checkError) {
+        if (!isMissingColumnError(checkError)) throw checkError;
+      } else if (existing && existing.length > 0) {
+        throw new Error(DUPLICATE_REPORT_MESSAGE);
+      }
+    } else {
+      // Flow lama tanpa konteks jam: cegah double per siswa+tanggal.
+      const { data: existing, error: checkError } = await supabaseServer
+        .from("student_worksheets")
+        .select("id")
+        .eq("student_id", student_id)
+        .eq("worksheet_date", worksheet_date)
+        .limit(1);
+      if (checkError) throw checkError;
+      if (existing && existing.length > 0) {
+        throw new Error(DUPLICATE_REPORT_MESSAGE);
+      }
+    }
+  } catch (e: any) {
+    if (String(e?.message || "").startsWith("LAPORAN_SUDAH_TERISI")) throw e;
+    // Selain duplikat terdeteksi, error cek diabaikan agar insert tetap dicoba
+    // (unique index DB menjadi pengaman terakhir, termasuk untuk race condition).
+    if (
+      e &&
+      !isMissingColumnError(e) &&
+      !String(e?.message || "").includes("LAPORAN_SUDAH_TERISI")
+    ) {
+      console.warn("Pre-check duplikat laporan dilewati:", e?.message || e);
+    }
+  }
+
+  const basePayload: any = {
     student_id,
     branch_id: branchId === "ALL" ? null : branchId,
     title,
@@ -2324,7 +2442,23 @@ export async function createWorksheet(formData: FormData) {
     rekomendasi_rumah,
     ttd_guru,
     bulan_ke,
-  });
+  };
+  const fullPayload: any = { ...basePayload };
+  if (schedule_slot_id) fullPayload.schedule_slot_id = schedule_slot_id;
+  if (schedule_time) fullPayload.schedule_time = schedule_time;
+
+  let { error } = await supabaseServer
+    .from("student_worksheets")
+    .insert(fullPayload);
+
+  // Fallback: jika kolom jadwal belum ada di DB (migrasi belum jalan),
+  // ulangi insert tanpa kolom baru agar flow lama tetap berhasil.
+  if (error && isMissingColumnError(error)) {
+    const retry = await supabaseServer
+      .from("student_worksheets")
+      .insert(basePayload);
+    error = retry.error;
+  }
 
   if (error) {
     if (
@@ -2336,6 +2470,9 @@ export async function createWorksheet(formData: FormData) {
       throw new Error(
         "Tabel 'student_worksheets' belum dibuat di Supabase. Silakan jalankan SQL di Supabase SQL Editor.",
       );
+    }
+    if (isDuplicateKeyError(error)) {
+      throw new Error(DUPLICATE_REPORT_MESSAGE);
     }
     if (
       error.message.includes("schema cache") ||
@@ -2399,12 +2536,85 @@ export async function updateWorksheet(id: string, formData: FormData) {
     updatePayload.worksheet_date = parseIndonesianDateToISO(worksheet_date);
   }
 
-  const { error } = await supabaseServer
+  // Konteks jadwal hanya diupdate jika form mengirimkannya (edit lama tanpa
+  // konteks tidak mengubah kolom jadwal yang sudah ada).
+  const rawSlotId = formData.get("schedule_slot_id");
+  const rawTime = formData.get("schedule_time");
+  const hasSlotField = rawSlotId !== null;
+  const hasTimeField = rawTime !== null;
+  if (hasSlotField) {
+    const v = String(rawSlotId || "").trim();
+    updatePayload.schedule_slot_id = v ? v : null;
+  }
+  if (hasTimeField) {
+    updatePayload.schedule_time = normalizeScheduleTime(rawTime);
+  }
+
+  // Cegah edit menabrak laporan lain (kecualikan diri sendiri).
+  // Toleran jika kolom jadwal belum ada: fallback ke cek lama.
+  try {
+    if (updatePayload.worksheet_date) {
+      const { data: current, error: curErr } = await supabaseServer
+        .from("student_worksheets")
+        .select("student_id, schedule_slot_id, schedule_time")
+        .eq("id", id)
+        .single();
+      if (!curErr && current) {
+        const effSlot =
+          hasSlotField && updatePayload.schedule_slot_id !== undefined
+            ? updatePayload.schedule_slot_id
+            : (current as any).schedule_slot_id || null;
+        const effTime =
+          hasTimeField && updatePayload.schedule_time !== undefined
+            ? updatePayload.schedule_time
+            : normalizeScheduleTime((current as any).schedule_time);
+        let dupQuery = supabaseServer
+          .from("student_worksheets")
+          .select("id")
+          .eq("student_id", (current as any).student_id)
+          .eq("worksheet_date", updatePayload.worksheet_date)
+          .neq("id", id)
+          .limit(1);
+        let canCheckSlot = true;
+        if (effSlot) {
+          const r = await dupQuery.eq("schedule_slot_id", effSlot);
+          if (isMissingColumnError(r.error)) canCheckSlot = false;
+          else if (!r.error && r.data && r.data.length > 0) {
+            throw new Error(DUPLICATE_REPORT_MESSAGE);
+          }
+        } else if (effTime && canCheckSlot) {
+          const r = await dupQuery.eq("schedule_time", effTime);
+          if (!isMissingColumnError(r.error) && !r.error && r.data && r.data.length > 0) {
+            throw new Error(DUPLICATE_REPORT_MESSAGE);
+          }
+        }
+      }
+    }
+  } catch (e: any) {
+    if (String(e?.message || "").startsWith("LAPORAN_SUDAH_TERISI")) throw e;
+    // Abaikan error cek agar update tetap dicoba (pengaman akhir di DB).
+  }
+
+  let { error } = await supabaseServer
     .from("student_worksheets")
     .update(updatePayload)
     .eq("id", id);
 
+  // Fallback jika kolom jadwal belum ada di DB: ulangi tanpa kolom baru.
+  if (error && isMissingColumnError(error)) {
+    const { schedule_slot_id: _s, schedule_time: _t, ...legacyPayload } =
+      updatePayload;
+    const retry = await supabaseServer
+      .from("student_worksheets")
+      .update(legacyPayload)
+      .eq("id", id);
+    error = retry.error;
+  }
+
   if (error) {
+    if (isDuplicateKeyError(error)) {
+      throw new Error(DUPLICATE_REPORT_MESSAGE);
+    }
     if (
       error.message.includes("schema cache") ||
       error.message.includes("Could not find the")

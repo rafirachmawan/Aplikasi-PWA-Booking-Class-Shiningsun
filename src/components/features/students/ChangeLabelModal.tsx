@@ -27,6 +27,11 @@ interface ChangeLabelModalProps {
   } | null;
   labels: Label[];
   onSuccess: () => void;
+  // Konteks jadwal opsional (untuk kunci duplikat per jam di form laporan)
+  scheduleSlotId?: string;
+  scheduleTime?: string;
+  scheduleDate?: string;
+  scheduleClassName?: string;
 }
 
 export function ChangeLabelModal({
@@ -35,6 +40,10 @@ export function ChangeLabelModal({
   student,
   labels,
   onSuccess,
+  scheduleSlotId,
+  scheduleTime,
+  scheduleDate,
+  scheduleClassName,
 }: ChangeLabelModalProps) {
   const router = useRouter();
   const [selectedLabelId, setSelectedLabelId] = useState<string>("");
@@ -48,6 +57,13 @@ export function ChangeLabelModal({
   const [templatesList, setTemplatesList] = useState<any[]>([]);
   const [worksheetsList, setWorksheetsList] = useState<any[]>([]);
   const [isLoadingWorksheetData, setIsLoadingWorksheetData] = useState(false);
+  const [successToast, setSuccessToast] = useState("");
+
+  useEffect(() => {
+    if (!successToast) return;
+    const t = setTimeout(() => setSuccessToast(""), 3000);
+    return () => clearTimeout(t);
+  }, [successToast]);
 
   useEffect(() => {
     if (student) {
@@ -333,12 +349,25 @@ export function ChangeLabelModal({
           labels={labels}
           initialData={{ student_id: student.id }}
           worksheets={worksheetsList}
+          currentDate={scheduleDate}
+          scheduleSlotId={scheduleSlotId}
+          scheduleTime={scheduleTime}
+          scheduleClassName={scheduleClassName}
           onClose={() => setIsWorksheetModalOpen(false)}
-          onSuccess={() => {
+          onSuccess={(msg) => {
             setIsWorksheetModalOpen(false);
+            if (msg) setSuccessToast(msg);
             onSuccess();
           }}
         />
+      )}
+
+      {/* Toast berhasil (hijau, auto-hilang) */}
+      {successToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <span>✅</span>
+          <span>{successToast}</span>
+        </div>
       )}
     </>,
     document.body,

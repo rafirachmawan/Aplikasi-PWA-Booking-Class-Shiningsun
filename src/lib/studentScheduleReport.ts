@@ -72,8 +72,15 @@ export async function getStudentScheduleWorksheetReport(
 
   type BookingRaw = {
     student_id: string;
+    schedule_slot_id?: string | null;
     slot?: { date?: string | null; time?: string | null; class_id?: string | null } | null;
   };
+
+  function normTime(v: unknown): string {
+    const m = String(v || "").match(/(\d{1,2}):(\d{2})/);
+    if (!m) return "";
+    return `${String(parseInt(m[1], 10)).padStart(2, "0")}:${m[2]}`;
+  }
 
   // Ambil SEMUA baris jadwal per halaman: Supabase membatasi 1000 baris
   // per query, tanpa paginasi data terpotong diam-diam (kasus Zea: 26 jadwal
@@ -89,7 +96,9 @@ export async function getStudentScheduleWorksheetReport(
         const from = page * PAGE;
         const { data: pageData, error: pageError } = await supabaseServer
           .from("schedule_student")
-          .select("student_id, slot:schedule_slots!inner(date, time, class_id)")
+          .select(
+            "student_id, schedule_slot_id, slot:schedule_slots!inner(date, time, class_id)",
+          )
           .in("student_id", ids)
           .gte("slot.date", fromDate)
           .lte("slot.date", todayISO)
@@ -129,6 +138,8 @@ export async function getStudentScheduleWorksheetReport(
   type WorksheetRaw = {
     student_id: string;
     worksheet_date: string;
+    schedule_slot_id?: string | null;
+    schedule_time?: string | null;
     materi?: string | null;
     kegiatan?: string | null;
     hasil_belajar?: string | null;
@@ -138,31 +149,97 @@ export async function getStudentScheduleWorksheetReport(
 
   // Kelompokkan SEMUA isian per siswa+tanggal (tidak ada yang dibuang).
   // Sama seperti jadwal: diambil per halaman agar tidak terpotong 1000 baris.
+  // Kunci tambahan per slot & per jam agar 2 jadwal beda jam di hari yang sama
+  // tidak saling mengklaim isian yang sama. Toleran jika migrasi kolom jadwal
+  // belum dijalankan (fallback ke select lama).
   const worksheetGroups = new Map<string, WorksheetRaw[]>();
+  const worksheetBySlot = new Map<string, WorksheetRaw[]>();
+  const worksheetByDateTime = new Map<string, WorksheetRaw[]>();
   try {
+    let useScheduleCols = true;
     for (let c = 0; c < studentIds.length; c += ID_CHUNK) {
       const ids = studentIds.slice(c, c + ID_CHUNK);
       for (let page = 0; ; page++) {
         const from = page * PAGE;
-        const { data: pageData, error: pageError } = await supabaseServer
-          .from("student_worksheets")
-          .select(
-            "student_id, worksheet_date, materi, kegiatan, hasil_belajar, catatan_guru, rekomendasi_rumah",
-          )
-          .in("student_id", ids)
-          .gte("worksheet_date", fromDate)
-          .lte("worksheet_date", todayISO)
-          .order("student_id", { ascending: true })
-          .range(from, from + PAGE - 1);
-        if (pageError) throw new Error(pageError.message);
+        let pageData: unknown[] | null = null;
+        {
+          const res = await supabaseServer
+            .from("student_worksheets")
+            .select(
+              "student_id, worksheet_date, schedule_slot_id, schedule_time, materi, kegiatan, hasil_belajar, catatan_guru, rekomendasi_rumah",
+            )
+            .in("student_id", ids)
+            .gte("worksheet_date", fromDate)
+            .lte("worksheet_date", todayISO)
+            .order("student_id", { ascending: true })
+            .range(from, from + PAGE - 1);
+          if (
+            res.error &&
+            (res.error.code === "PGRST204" ||
+              res.error.code === "42703" ||
+              String(res.error.message || "").includes("schema cache") ||
+              String(res.error.message || "").includes("Could not find the"))
+          ) {
+            useScheduleCols = false;
+            break;
+          }
+          if (res.error) throw new Error(res.error.message);
+          pageData = res.data;
+        }
         ((pageData || []) as unknown as WorksheetRaw[]).forEach((w) => {
           if (!w.student_id || !w.worksheet_date) return;
-          const key = `${w.student_id}_${String(w.worksheet_date).slice(0, 10)}`;
+          const dateKey = String(w.worksheet_date).slice(0, 10);
+          const key = `${w.student_id}_${dateKey}`;
           const arr = worksheetGroups.get(key);
           if (arr) arr.push(w);
           else worksheetGroups.set(key, [w]);
+          if (w.schedule_slot_id) {
+            const sk = `${w.student_id}_${w.schedule_slot_id}`;
+            const sarr = worksheetBySlot.get(sk);
+            if (sarr) sarr.push(w);
+            else worksheetBySlot.set(sk, [w]);
+          }
+          const wt = normTime(w.schedule_time);
+          if (wt) {
+            const tk = `${w.student_id}_${dateKey}_${wt}`;
+            const tarr = worksheetByDateTime.get(tk);
+            if (tarr) tarr.push(w);
+            else worksheetByDateTime.set(tk, [w]);
+          }
         });
         if (!pageData || pageData.length < PAGE) break;
+      }
+      if (!useScheduleCols) {
+        // Migrasi belum jalan: ambil ulang dengan kolom lama saja.
+        worksheetGroups.clear();
+        worksheetBySlot.clear();
+        worksheetByDateTime.clear();
+        for (let c2 = 0; c2 < studentIds.length; c2 += ID_CHUNK) {
+          const ids2 = studentIds.slice(c2, c2 + ID_CHUNK);
+          for (let page = 0; ; page++) {
+            const from = page * PAGE;
+            const { data: pageData, error: pageError } = await supabaseServer
+              .from("student_worksheets")
+              .select(
+                "student_id, worksheet_date, materi, kegiatan, hasil_belajar, catatan_guru, rekomendasi_rumah",
+              )
+              .in("student_id", ids2)
+              .gte("worksheet_date", fromDate)
+              .lte("worksheet_date", todayISO)
+              .order("student_id", { ascending: true })
+              .range(from, from + PAGE - 1);
+            if (pageError) throw new Error(pageError.message);
+            ((pageData || []) as unknown as WorksheetRaw[]).forEach((w) => {
+              if (!w.student_id || !w.worksheet_date) return;
+              const key = `${w.student_id}_${String(w.worksheet_date).slice(0, 10)}`;
+              const arr = worksheetGroups.get(key);
+              if (arr) arr.push(w);
+              else worksheetGroups.set(key, [w]);
+            });
+            if (!pageData || pageData.length < PAGE) break;
+          }
+        }
+        break;
       }
     }
   } catch (e) {
@@ -172,6 +249,39 @@ export async function getStudentScheduleWorksheetReport(
     );
   }
   const consumedKeys = new Set<string>();
+  const consumedWorksheets = new Set<WorksheetRaw>();
+
+  function takeWorksheetForBooking(
+    studentId: string,
+    schedDate: string,
+    schedTime: string,
+    slotId: string | null,
+  ): WorksheetRaw | undefined {
+    // 1. Slot persis (paling akurat).
+    if (slotId) {
+      const arr = worksheetBySlot.get(`${studentId}_${slotId}`);
+      if (arr) {
+        const w = arr.find((x) => !consumedWorksheets.has(x));
+        if (w) return w;
+      }
+    }
+    // 2. Jam sama pada tanggal sama.
+    const t = normTime(schedTime);
+    if (t) {
+      const arr = worksheetByDateTime.get(`${studentId}_${schedDate}_${t}`);
+      if (arr) {
+        const w = arr.find((x) => !consumedWorksheets.has(x));
+        if (w) return w;
+      }
+    }
+    // 3. Fallback lama: isian pertama yang belum dipakai pada tanggal itu
+    // (mencakup baris lama tanpa jam agar status Terisi tetap benar).
+    const group = worksheetGroups.get(`${studentId}_${schedDate}`);
+    if (group) {
+      return group.find((x) => !consumedWorksheets.has(x));
+    }
+    return undefined;
+  }
 
   function toRowContent(ws?: WorksheetRaw) {
     return {
@@ -192,10 +302,18 @@ export async function getStudentScheduleWorksheetReport(
       ? [s.label.main_level, s.label.sub_level].filter(Boolean).join(" - ")
       : "-";
     const groupKey = `${b.student_id}_${schedDate}`;
-    const group = worksheetGroups.get(groupKey);
-    const ws = group?.[0];
+    // Cocokkan per slot/jam dulu (baru), fallback tanggal (lama).
+    const ws = takeWorksheetForBooking(
+      b.student_id,
+      schedDate,
+      schedTime,
+      (b.schedule_slot_id || "").toString() || null,
+    );
     const filled = !!ws;
-    if (filled) consumedKeys.add(groupKey);
+    if (filled && ws) {
+      consumedKeys.add(groupKey);
+      consumedWorksheets.add(ws);
+    }
 
     return {
       key: `${b.student_id}_${schedDate}_${schedTime}_${className}`,
@@ -223,7 +341,10 @@ export async function getStudentScheduleWorksheetReport(
       ? [s.label.main_level, s.label.sub_level].filter(Boolean).join(" - ")
       : "-";
     group.forEach((ws, idx) => {
-      // Isian pertama tiap tanggal sudah dipakai baris jadwalnya.
+      // Isian yang sudah dipakai baris jadwalnya (per slot/jam) dilewati.
+      if (consumedWorksheets.has(ws)) return;
+      // Kompatibilitas lama: isian pertama tiap tanggal dianggap terpakai
+      // jika tanggalnya sudah dikonsumsi.
       if (idx === 0 && consumedKeys.has(groupKey)) return;
       rows.push({
         key: `${studentId}_${wsDate}_luar-jadwal-${idx}`,

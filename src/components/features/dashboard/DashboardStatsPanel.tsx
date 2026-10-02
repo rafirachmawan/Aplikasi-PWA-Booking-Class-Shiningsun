@@ -187,10 +187,18 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
   // Overdue worksheet modal state
   const [overdueStudent, setOverdueStudent] = useState<any | null>(null);
   const [missedDate, setMissedDate] = useState<string>("");
+  const [missedTime, setMissedTime] = useState<string>("");
   const [className, setClassName] = useState<string>("");
   const [teachers, setTeachers] = useState<any[]>([]);
+  const [successToast, setSuccessToast] = useState("");
   // Riwayat worksheets untuk auto-hitung "bulan ke" (sama seperti halaman worksheets)
   const [overdueWorksheets, setOverdueWorksheets] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!successToast) return;
+    const t = setTimeout(() => setSuccessToast(""), 3000);
+    return () => clearTimeout(t);
+  }, [successToast]);
 
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -241,6 +249,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     student: any,
     missedDate: string,
     className?: string,
+    missedTime?: string,
   ) => {
     // Tampilkan loading panel selama data modal disiapkan
     // (fetch sama persis, hanya ada indikator sebelum modal muncul).
@@ -260,6 +269,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
 
       setOverdueStudent(student);
       setMissedDate(missedDate);
+      setMissedTime(missedTime || student?.missedTime || "");
       setClassName(className || "");
     } finally {
       setIsLoading(false);
@@ -269,6 +279,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
   const handleCloseWorksheetModal = () => {
     setOverdueStudent(null);
     setMissedDate("");
+    setMissedTime("");
     setClassName("");
     setOverdueWorksheets([]);
   };
@@ -648,6 +659,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                           student,
                           student.missedDate || missedDate,
                           student.className,
+                          student.missedTime,
                         );
                       }}
                     >
@@ -1130,13 +1142,24 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
           teachers={teachers}
           worksheets={overdueWorksheets}
           onClose={handleCloseWorksheetModal}
-          onSuccess={() => {
+          onSuccess={(msg) => {
             handleCloseWorksheetModal();
+            if (msg) setSuccessToast(msg);
             // Optionally refresh data here
           }}
           lockedStudentId={overdueStudent.id}
           currentDate={missedDate}
+          scheduleTime={missedTime || overdueStudent?.missedTime}
+          scheduleClassName={className}
         />
+      )}
+
+      {/* Toast berhasil (hijau, auto-hilang) */}
+      {successToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <span>✅</span>
+          <span>{successToast}</span>
+        </div>
       )}
     </>
   );

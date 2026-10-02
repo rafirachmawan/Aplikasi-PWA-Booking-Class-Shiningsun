@@ -41,13 +41,15 @@ export function TodaySchedule({
   const [selectedClass, setSelectedClass] = useState<string>("ALL");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [editingStudent, setEditingStudent] = useState<any>(null);
+  const [editingSlot, setEditingSlot] = useState<any>(null);
   const [labelsList, setLabelsList] = useState<any[]>([]);
 
   const todayStr = getTodayStr();
   const isToday = selectedDate === todayStr;
 
-  const handleStudentClick = async (student: any) => {
+  const handleStudentClick = async (student: any, slot?: any) => {
     setEditingStudent(student);
+    setEditingSlot(slot || null);
     if (labelsList.length === 0) {
       const { getLabels } = await import("@/lib/actions");
       const lbls = await getLabels();
@@ -275,10 +277,13 @@ export function TodaySchedule({
                                       key={b.student_id}
                                       type="button"
                                       onClick={() =>
-                                        handleStudentClick({
-                                          ...b.student,
-                                          id: b.student_id,
-                                        })
+                                        handleStudentClick(
+                                          {
+                                            ...b.student,
+                                            id: b.student_id,
+                                          },
+                                          slot,
+                                        )
                                       }
                                       title="Klik untuk ganti level siswa"
                                       className="inline-flex items-center px-2 py-1 text-[11px] font-bold rounded-md text-slate-900 dark:text-slate-100 truncate max-w-40 shadow-xs border border-slate-300/80 dark:border-slate-600 cursor-pointer hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all group"
@@ -315,9 +320,16 @@ export function TodaySchedule({
 
       <ChangeLabelModal
         isOpen={!!editingStudent}
-        onClose={() => setEditingStudent(null)}
+        onClose={() => {
+          setEditingStudent(null);
+          setEditingSlot(null);
+        }}
         student={editingStudent}
         labels={labelsList}
+        scheduleSlotId={editingSlot?.id}
+        scheduleTime={editingSlot?.time}
+        scheduleDate={editingSlot?.date || selectedDate}
+        scheduleClassName={editingSlot?.class?.name}
         onSuccess={async () => {
           const data = await getSchedulesByDate(selectedDate);
           setCurrentSlots(data);

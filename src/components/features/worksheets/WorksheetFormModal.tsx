@@ -29,8 +29,28 @@ interface WorksheetFormModalProps {
   worksheets?: any[];
   lockedStudentId?: string; // Student ID from dashboard - if present, dropdown is locked
   currentDate?: string; // Optional: pass current date for calculation (default to today)
+  // Konteks jadwal (opsional, untuk cegah double per jam — tidak mengubah flow lama jika kosong)
+  scheduleSlotId?: string;
+  scheduleTime?: string; // "HH:MM" / "HH:MM:SS"
+  scheduleClassName?: string;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (message?: string) => void;
+}
+
+// Normalisasi jam lokal (client) — salinan kecil dari server agar tidak
+// mengimpor file server-action ke komponen client.
+function normalizeClientTime(raw: unknown): string | null {
+  if (raw === null || raw === undefined) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  const m = s.match(/(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  return `${String(parseInt(m[1], 10)).padStart(2, "0")}:${m[2]}`;
+}
+
+function normalizeClientDate(raw: unknown): string {
+  if (raw === null || raw === undefined) return "";
+  return String(raw).slice(0, 10);
 }
 
 const parseBulletList = (text?: string): string[] => {
@@ -130,6 +150,9 @@ export function WorksheetFormModal({
   worksheets = [],
   lockedStudentId, // Student ID from dashboard - if present, dropdown is locked
   currentDate, // Optional: pass current date for calculation (default to today)
+  scheduleSlotId,
+  scheduleTime,
+  scheduleClassName,
   onClose,
   onSuccess,
 }: WorksheetFormModalProps) {
@@ -623,7 +646,13 @@ export function WorksheetFormModal({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [draftRestored, setDraftRestored] = useState(false);
+  // Guard anti double-click/double-submit (tidak mengubah logika simpan lain).
+  const submittedRef = useRef(false);
+
+  // Catatan: duplicateInfo ("sudah terisi") dideklarasikan setelah
+  // worksheetDateInput agar tidak membaca state sebelum deklarasi.
 
   // --- Anti-kehilangan data: deteksi form kotor (tanpa merubah logika utama) ---
   const isDirty = useMemo(() => {
@@ -1159,6 +1188,62 @@ export function WorksheetFormModal({
   const dateInputRef = useRef<HTMLInputElement>(null);
   const calendarPickerRef = useRef<HTMLDivElement>(null);
 
+  // --- Cegah double: deteksi "sudah terisi" per siswa+tanggal+jam/slot ---
+  // Aturan sama persis dengan server (createWorksheet). Data lama tanpa kolom
+  // jadwal tetap terdeteksi via fallback tanggal saja. Mode edit dikecualikan.
+  const duplicateInfo = useMemo(() => {
+    const empty = { isDuplicate: false as const, matched: null as any };
+    if (isEditing) return empty;
+    const effStudent =
+      studentId ||
+      initialData?.student_id ||
+      (students.length === 1 ? students[0]?.id : "");
+    if (!effStudent) return empty;
+    let effDate = "";
+    try {
+      effDate = normalizeClientDate(
+        parseIndonesianDateToISO(worksheetDateInput || getTodayISO()),
+      );
+    } catch {
+      effDate = "";
+    }
+    if (!effDate) return empty;
+    const effSlot =
+      (scheduleSlotId || initialData?.schedule_slot_id || "")
+        .toString()
+        .trim() || null;
+    const effTime =
+      normalizeClientTime(scheduleTime || initialData?.schedule_time) || null;
+    const list = Array.isArray(worksheets) ? worksheets : [];
+    const matched =
+      list.find((w: any) => {
+        const wStudent = w.student_id || w.student?.id;
+        if (wStudent !== effStudent) return false;
+        if (normalizeClientDate(w.worksheet_date || w.created_at) !== effDate)
+          return false;
+        if (effSlot) {
+          return (w.schedule_slot_id || "").toString() === effSlot;
+        }
+        if (effTime) {
+          const wTime = normalizeClientTime(w.schedule_time);
+          if (wTime) return wTime === effTime;
+          // Baris lama tanpa jam dianggap menempati tanggal itu (hindari double).
+          return true;
+        }
+        return true;
+      }) || null;
+    return { isDuplicate: !!matched, matched };
+  }, [
+    isEditing,
+    studentId,
+    initialData,
+    students,
+    worksheetDateInput,
+    worksheets,
+    scheduleSlotId,
+    scheduleTime,
+  ]);
+
   useEffect(() => {
     if (openDropdown === "guru") {
       setTimeout(() => {
@@ -1495,6 +1580,8 @@ export function WorksheetFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Guard anti double-submit (klik 2x / Enter cepat) — selain isSubmitting.
+    if (isSubmitting || submittedRef.current) return;
     const finalTitle = title.trim() || materi.trim() || "Laporan Perkembangan";
     const effectiveStudentId =
       studentId ||
@@ -1503,6 +1590,15 @@ export function WorksheetFormModal({
 
     if (!isEditing && !effectiveStudentId) {
       setErrorMsg("Pilih siswa terlebih dahulu.");
+      formRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    // Blokir sejak awal jika terdeteksi sudah terisi (tanpa menyentuh server).
+    if (!isEditing && duplicateInfo.isDuplicate) {
+      setErrorMsg(
+        "Laporan perkembangan siswa ini pada jadwal (tanggal & jam) tersebut sudah terisi. Tidak bisa isi 2x.",
+      );
       formRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -1547,14 +1643,19 @@ export function WorksheetFormModal({
       .map((item) => `- ${item}`)
       .join("\n");
 
+    submittedRef.current = true;
     setIsSubmitting(true);
     setErrorMsg("");
+    setSuccessMsg("");
 
     try {
       const formData = new FormData();
       formData.append("student_id", effectiveStudentId);
       formData.append("title", finalTitle);
-      formData.append("description", description.trim());
+      formData.append(
+        "description",
+        description.trim(),
+      );
       formData.append(
         "worksheet_date",
         parseIndonesianDateToISO(worksheetDateInput || getTodayISO()),
@@ -1567,6 +1668,25 @@ export function WorksheetFormModal({
       formData.append("rekomendasi_rumah", rekomendasiRumah.trim());
       formData.append("ttd_guru", ttdGuru.trim());
       formData.append("bulan_ke", effectiveBulanKe);
+      // Konteks jadwal untuk kunci duplikat per jam (opsional, aman jika kosong).
+      const effSlotId = (
+        scheduleSlotId ||
+        initialData?.schedule_slot_id ||
+        ""
+      )
+        .toString()
+        .trim();
+      const effTime =
+        normalizeClientTime(scheduleTime || initialData?.schedule_time) || "";
+      if (!isEditing) {
+        if (effSlotId) formData.append("schedule_slot_id", effSlotId);
+        if (effTime) formData.append("schedule_time", effTime);
+      } else {
+        // Mode edit: kirim juga agar server bisa validasi tabrakan dengan
+        // laporan lain (server mengecualikan diri sendiri).
+        if (effSlotId) formData.append("schedule_slot_id", effSlotId);
+        if (effTime) formData.append("schedule_time", effTime);
+      }
 
       if (isEditing) {
         await updateWorksheet(initialData.id, formData);
@@ -1580,20 +1700,34 @@ export function WorksheetFormModal({
       } catch {
         // abaikan
       }
-      onClose();
-      if (onSuccess) {
-        try {
-          onSuccess();
-        } catch (err) {
-          console.error("onSuccess callback error:", err);
+      // Notifikasi berhasil (hijau) + tutup otomatis agar user yakin tersimpan
+      // dan tidak menekan Simpan 2x.
+      const okMsg = isEditing
+        ? "✓ Perubahan laporan berhasil disimpan."
+        : "✓ Laporan perkembangan berhasil disimpan.";
+      setSuccessMsg(okMsg);
+      formRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      const done = () => {
+        onClose();
+        if (onSuccess) {
+          try {
+            onSuccess(okMsg);
+          } catch (err) {
+            console.error("onSuccess callback error:", err);
+          }
         }
-      }
+      };
+      setTimeout(done, 1200);
     } catch (err: any) {
       console.error("Failed to save worksheet:", err);
+      submittedRef.current = false;
       const raw = (err?.message || "").toString();
       // Terjemahkan error teknis menjadi pesan ramah tanpa merubah logika simpan
       let friendly = raw || "Gagal menyimpan laporan perkembangan.";
-      if (/unexpected response|failed to fetch|network|load failed/i.test(raw)) {
+      if (/LAPORAN_SUDAH_TERISI/i.test(raw)) {
+        friendly =
+          "Laporan perkembangan siswa ini pada jadwal (tanggal & jam) tersebut sudah terisi. Tidak bisa isi 2x.";
+      } else if (/unexpected response|failed to fetch|network|load failed/i.test(raw)) {
         friendly =
           "Koneksi/server terputus saat menyimpan. Data Anda tetap aman sebagai draft otomatis — coba tekan Simpan lagi. Jika masih gagal, refresh halaman lalu buka form (draft akan kembali).";
       } else if (/auth session missing|jwt expired|invalid jwt|refresh token|not authenticated|user.*null/i.test(raw)) {
@@ -1606,7 +1740,9 @@ export function WorksheetFormModal({
       setErrorMsg(friendly);
       formRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
-      setIsSubmitting(false);
+      // Saat sukses submittedRef tetap true -> tombol terkunci selama jeda
+      // toast 1.2 detik. Saat gagal submittedRef sudah di-reset -> buka kunci.
+      if (!submittedRef.current) setIsSubmitting(false);
     }
   };
 
@@ -1657,9 +1793,40 @@ export function WorksheetFormModal({
           onSubmit={handleSubmit}
           className="p-3.5 sm:p-6 space-y-4 sm:space-y-5 max-h-[82vh] sm:max-h-[75vh] overflow-y-auto overscroll-contain custom-scrollbar"
         >
+          {successMsg && (
+            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200/60 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/50 flex items-center gap-2">
+              <span>✅</span>
+              <span>{successMsg}</span>
+            </div>
+          )}
           {errorMsg && (
             <div className="p-3 rounded-xl bg-red-50 text-red-700 text-xs font-semibold border border-red-200/60 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50">
               {errorMsg}
+            </div>
+          )}
+          {!isEditing && duplicateInfo.isDuplicate && (
+            <div className="p-3 rounded-xl bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200/70 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-900/50 flex items-center gap-2">
+              <span>⚠️</span>
+              <span>
+                Laporan untuk jadwal (tanggal & jam) ini sudah terisi — tidak
+                bisa isi 2x.
+                {(scheduleTime || initialData?.schedule_time) && (
+                  <>
+                    {" "}
+                    Jam:{" "}
+                    <strong>
+                      {normalizeClientTime(
+                        scheduleTime || initialData?.schedule_time,
+                      )}
+                    </strong>
+                  </>
+                )}
+                {scheduleClassName && (
+                  <>
+                    {" "}• Kelas: <strong>{scheduleClassName}</strong>
+                  </>
+                )}
+              </span>
             </div>
           )}
           {!isEditing && isDirty && (
@@ -1692,6 +1859,14 @@ export function WorksheetFormModal({
                 Info Dasar
               </span>
             </div>
+            {(scheduleTime || scheduleClassName) && !isEditing && (
+              <div className="px-3 py-2 rounded-xl bg-sky-50 text-sky-800 text-[11px] font-bold border border-sky-200/70 dark:bg-sky-950/40 dark:text-sky-200 dark:border-sky-900/50">
+                📅 Jadwal: {workSheetDateDisplay}
+                {normalizeClientTime(scheduleTime) &&
+                  ` • Jam ${normalizeClientTime(scheduleTime)}`}
+                {scheduleClassName && ` • ${scheduleClassName}`}
+              </div>
+            )}
 
             {/* Student */}
             {!isEditing ? (
@@ -3519,6 +3694,12 @@ export function WorksheetFormModal({
               <span>{errorMsg}</span>
             </div>
           )}
+          {successMsg && (
+            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200/60 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/50 flex items-center gap-2">
+              <span>✅</span>
+              <span>{successMsg}</span>
+            </div>
+          )}
           <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
@@ -3530,14 +3711,16 @@ export function WorksheetFormModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 active:scale-[0.99] transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+              disabled={isSubmitting || (!isEditing && duplicateInfo.isDuplicate)}
+              className="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 active:scale-[0.99] transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isSubmitting
-                ? "Memproses..."
-                : isEditing
-                  ? "✓ Simpan Perubahan"
-                  : "✓ Simpan Laporan Perkembangan"}
+              {isSubmitting || successMsg
+                ? successMsg || "Memproses..."
+                : !isEditing && duplicateInfo.isDuplicate
+                  ? "Sudah Terisi ✓"
+                  : isEditing
+                    ? "✓ Simpan Perubahan"
+                    : "✓ Simpan Laporan Perkembangan"}
             </button>
           </div>
         </form>

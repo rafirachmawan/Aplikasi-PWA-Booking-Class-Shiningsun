@@ -35,6 +35,13 @@ export function WorksheetClientWrapper({
   const [selectedStudentId, setSelectedStudentId] = useState("__none__");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorksheet, setEditingWorksheet] = useState<any>(null);
+  const [successToast, setSuccessToast] = useState("");
+
+  useEffect(() => {
+    if (!successToast) return;
+    const t = setTimeout(() => setSuccessToast(""), 3000);
+    return () => clearTimeout(t);
+  }, [successToast]);
 
   // Student lock state - when navigating from dashboard detail page (student_id URL param)
   const [lockedStudentId, setLockedStudentId] = useState<string>("");
@@ -878,6 +885,14 @@ export function WorksheetClientWrapper({
         )}
       </div>
 
+      {/* Toast berhasil (hijau, auto-hilang) */}
+      {successToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <span>✅</span>
+          <span>{successToast}</span>
+        </div>
+      )}
+
       {/* Form Modal */}
       {(isModalOpen || editingWorksheet) && (
         <WorksheetFormModal
@@ -892,9 +907,10 @@ export function WorksheetClientWrapper({
             setIsModalOpen(false);
             setEditingWorksheet(null);
           }}
-          onSuccess={() => {
+          onSuccess={(msg) => {
             setIsModalOpen(false);
             setEditingWorksheet(null);
+            if (msg) setSuccessToast(msg);
             router.refresh();
           }}
         />
