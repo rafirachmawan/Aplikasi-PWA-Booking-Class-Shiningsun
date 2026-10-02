@@ -3,8 +3,8 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { syncUserIdentity } from '@/lib/actions';
 
-export const dynamic = 'force-dynamic';
-
+// Batch2 hemat: hapus force-dynamic redundan — tetap dynamic otomatis
+// via cookies() + searchParams. Logika login sama.
 async function handleLogin(formData: FormData) {
   "use server";
   

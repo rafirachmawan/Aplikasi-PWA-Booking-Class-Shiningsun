@@ -86,7 +86,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (!students || students.length === 0) {
-      return NextResponse.json({ success: true, students: [], count: 0 });
+      // Batch2 hemat (tanpa ubah logika/data): cache per-browser 60 detik.
+      // Wajib `private` — data personal per user+cabang, dilarang shared.
+      return NextResponse.json(
+        { success: true, students: [], count: 0 },
+        { headers: { "Cache-Control": "private, max-age=60" } },
+      );
     }
 
     // Filter dan proses data di JavaScript (client-side)
@@ -180,11 +185,17 @@ export async function GET(request: NextRequest) {
       (a, b) => a.days_until_birthday - b.days_until_birthday,
     );
 
-    return NextResponse.json({
-      success: true,
-      students: studentsWithProximity,
-      count: studentsWithProximity.length,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        students: studentsWithProximity,
+        count: studentsWithProximity.length,
+      },
+      {
+        // Batch2 hemat: query + payload sama persis, hanya tambah cache privat.
+        headers: { "Cache-Control": "private, max-age=60" },
+      },
+    );
   } catch (error: any) {
     console.error("Error fetching birthday data:", error);
     return NextResponse.json(

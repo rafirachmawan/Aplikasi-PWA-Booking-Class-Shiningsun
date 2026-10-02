@@ -9,8 +9,7 @@ import {
 } from "@/lib/actions";
 import { ParentDashboardClient } from "@/components/features/portal/ParentDashboardClient";
 
-export const dynamic = "force-dynamic";
-
+// Batch2 hemat: hapus force-dynamic redundan — tetap dynamic otomatis via cookies().
 export default async function ParentDashboardPage() {
   const student = await getParentSessionStudent();
 

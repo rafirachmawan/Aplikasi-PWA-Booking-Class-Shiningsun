@@ -2,8 +2,7 @@ import { getAssessmentTemplates, getLabels, getCurrentUserRole, getBranchId, get
 import { TemplateClientWrapper } from "./TemplateClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 
-export const dynamic = 'force-dynamic';
-
+// Batch2 hemat: hapus force-dynamic redundan — tetap dynamic otomatis via cookies().
 export default async function TemplatesPage() {
   const [role, branchId] = await Promise.all([
     getCurrentUserRole(),

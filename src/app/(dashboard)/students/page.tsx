@@ -3,8 +3,7 @@ import { getStudents, getLabels, getCurrentUserRole, getBranchId, getActiveBranc
 import { StudentClientWrapper } from "./StudentClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 
-export const dynamic = 'force-dynamic';
-
+// Batch2 hemat: hapus force-dynamic redundan — tetap dynamic otomatis via cookies().
 export default async function StudentsPage() {
   // Gate cepat & kecil (hasil sama): superadmin wajib pilih cabang dulu.
   const [role, branchId] = await Promise.all([

@@ -2,7 +2,9 @@ import { getClasses, getLabels, getTeachers, getAssessmentTemplates, getCurrentU
 import { MasterClientWrapper } from "./MasterClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 
-export const dynamic = 'force-dynamic';
+// Batch2 hemat: hapus force-dynamic redundan — tetap dynamic otomatis via cookies().
+// ISR 60 detik untuk bagian yang bisa static; datapersonal tetap fresh via cookies.
+export const revalidate = 60;
 
 export default async function MasterDataPage() {
   const [role, branchId] = await Promise.all([

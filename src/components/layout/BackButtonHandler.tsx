@@ -38,7 +38,8 @@ export function BackButtonHandler() {
       // If we're not on dashboard and there's a saved page, redirect to it
       if (lastVisited && lastVisited !== "/dashboard" && pathname === "/") {
         router.push(lastVisited);
-        router.refresh();
+        // Batch2 hemat: hapus refresh() redundan — halaman tujuan sudah fetch
+        // sendiri. Tanpa ini 1 navigasi = 2x hit Origin. Logika sama.
         return;
       }
     } catch (e) {}

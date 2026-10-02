@@ -23,8 +23,7 @@ import { CurriculumSection } from "@/components/features/dashboard/CurriculumSec
 import { BirthdayListCollapsible } from "@/components/features/dashboard/BirthdayListCollapsible";
 import { formatFullIndonesianDate } from "@/lib/dateUtils";
 
-export const dynamic = "force-dynamic";
-
+// Batch2 hemat: hapus force-dynamic redundan — tetap dynamic otomatis via cookies().
 export default async function DashboardPage() {
   // Bagian cepat & kecil: identitas + daftar cabang untuk selector.
   // getCurrentUserRole/getBranchId sudah di-cache per-request di actions.ts.

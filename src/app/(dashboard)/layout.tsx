@@ -11,8 +11,9 @@ import {
 } from "@/lib/actions";
 import { createClient } from "@/lib/supabase/server";
 
-export const dynamic = "force-dynamic";
-
+// Batch2 hemat: hapus force-dynamic redundan — halaman tetap dynamic otomatis
+// karena memanggil cookies() via actions.ts. Tanpa directive ini Next bisa
+// meng-cache bagian yang benar-benar static. Logika sama, data sama.
 export default async function DashboardLayout({
   children,
 }: {

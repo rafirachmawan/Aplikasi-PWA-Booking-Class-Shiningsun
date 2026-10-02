@@ -48,15 +48,19 @@ export function BirthdayListCollapsible() {
   ];
 
   useEffect(() => {
+    // Batch2 hemat (tanpa ubah logika/data): batalkan fetch lama saat ganti
+    // bulan cepat agar tidak double-fetch balapan. Hasil akhir sama.
+    const ctrl = new AbortController();
     const fetchBirthdayData = async () => {
       try {
         setLoading(true);
+        setError(null);
         let url = "/api/birthday";
         if (selectedMonth) {
           url = `/api/birthday?month=${selectedMonth}`;
         }
 
-        const response = await fetch(url);
+        const response = await fetch(url, { signal: ctrl.signal });
         const result = await response.json();
 
         if (result.success && result.students) {
@@ -69,14 +73,16 @@ export function BirthdayListCollapsible() {
           setStudents(sortedStudents);
         }
       } catch (err: any) {
+        if (err?.name === "AbortError") return;
         console.error("❌ Error fetching birthday data:", err);
         setError(err.message || "Gagal mengambil data ulang tahun");
       } finally {
-        setLoading(false);
+        if (!ctrl.signal.aborted) setLoading(false);
       }
     };
 
     fetchBirthdayData();
+    return () => ctrl.abort();
   }, [selectedMonth]);
 
   return (
@@ -410,7 +416,10 @@ export function BirthdayListCollapsible() {
                                       <img
                                         src={student.photo_url}
                                         alt={student.name}
+                                        width={36}
+                                        height={36}
                                         loading="lazy"
+                                        decoding="async"
                                         className="w-full h-full rounded-lg object-cover"
                                       />
                                     ) : (
@@ -575,7 +584,10 @@ export function BirthdayListCollapsible() {
                                       <img
                                         src={student.photo_url}
                                         alt={student.name}
+                                        width={36}
+                                        height={36}
                                         loading="lazy"
+                                        decoding="async"
                                         className="w-full h-full rounded-lg object-cover"
                                       />
                                     ) : (

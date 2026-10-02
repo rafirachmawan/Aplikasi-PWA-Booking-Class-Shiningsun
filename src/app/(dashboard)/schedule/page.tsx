@@ -3,8 +3,8 @@ import { getMonthlySchedules, getClasses, getStudents, getCurrentUserRole, getBr
 import { ScheduleClientWrapper } from "./ScheduleClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 
-export const dynamic = 'force-dynamic';
-
+// Batch2 hemat: hapus force-dynamic redundan — tetap dynamic otomatis
+// via cookies() + searchParams. Logika sama.
 export default async function SchedulePage({ searchParams }: { searchParams: Promise<{ month?: string, year?: string }> }) {
   // Gate cepat & kecil (hasil sama): superadmin wajib pilih cabang dulu.
   const [role, branchId] = await Promise.all([

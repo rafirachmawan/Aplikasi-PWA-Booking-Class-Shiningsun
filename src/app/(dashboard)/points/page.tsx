@@ -2,8 +2,7 @@ import { Suspense } from "react";
 import { getStudents, getActiveBranchName, getPointRedemptions, getWorksheetAttendanceHistory } from "@/lib/actions";
 import { PointsClientWrapper } from "./PointsClientWrapper";
 
-export const dynamic = 'force-dynamic';
-
+// Batch2 hemat: hapus force-dynamic redundan — tetap dynamic otomatis via cookies().
 export default async function PointsPage() {
   // 4 query independen di-streaming (hasil & props sama persis).
   return (

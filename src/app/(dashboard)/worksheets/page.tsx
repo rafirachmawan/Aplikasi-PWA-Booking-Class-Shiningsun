@@ -2,8 +2,7 @@ import { Suspense } from "react";
 import { getWorksheetsByBranch, getStudents, getLabels, getTeachers, getAssessmentTemplates, getActiveBranchName } from "@/lib/actions";
 import { WorksheetClientWrapper } from "./WorksheetClientWrapper";
 
-export const dynamic = 'force-dynamic';
-
+// Batch2 hemat: hapus force-dynamic redundan — tetap dynamic otomatis via cookies().
 export default async function WorksheetsPage() {
   // 6 query berat di-streaming (query & props sama persis, hanya tidak blocking).
   return (

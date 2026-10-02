@@ -1,7 +1,9 @@
 import { getCurrentUserRole } from "@/lib/actions";
 import { BirthdayTemplateManager } from "@/components/features/admin/BirthdayTemplateManager";
 
-export const dynamic = "force-dynamic";
+// Batch2 hemat: hapus force-dynamic redundan — tetap dynamic otomatis via cookies().
+// Halaman jarang berubah → ISR 60 detik. Logika role check sama.
+export const revalidate = 60;
 
 export default async function BirthdayTemplatePage() {
   const role = await getCurrentUserRole();

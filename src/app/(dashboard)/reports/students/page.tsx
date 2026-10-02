@@ -4,8 +4,7 @@ import { getStudentScheduleWorksheetReport } from "@/lib/studentScheduleReport";
 import { REPORT_DEFAULT_FROM_DATE } from "@/lib/studentReportTypes";
 import { ReportClient } from "./ReportClient";
 
-export const dynamic = "force-dynamic";
-
+// Batch2 hemat: hapus force-dynamic redundan — tetap dynamic otomatis via cookies().
 export const metadata = {
   title: "Laporan Siswa | ShiningSun",
   description: "Laporan siswa REGISTERED semua cabang sejak 1 September",
