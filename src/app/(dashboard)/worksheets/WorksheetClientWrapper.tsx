@@ -39,7 +39,7 @@ export function WorksheetClientWrapper({
 
   useEffect(() => {
     if (!successToast) return;
-    const t = setTimeout(() => setSuccessToast(""), 3000);
+    const t = setTimeout(() => setSuccessToast(""), 5000);
     return () => clearTimeout(t);
   }, [successToast]);
 
@@ -137,17 +137,26 @@ export function WorksheetClientWrapper({
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
+    const target = deleteTarget;
     setIsDeleting(true);
     try {
-      if (deleteTarget.type === "sheet" && deleteTarget.studentId) {
+      if (target.type === "sheet" && target.studentId) {
         await deleteWorksheetMonth(
-          deleteTarget.studentId,
-          deleteTarget.bulanKe ?? null,
+          target.studentId,
+          target.bulanKe ?? null,
         );
-      } else if (deleteTarget.type === "row" && deleteTarget.id) {
-        await deleteWorksheet(deleteTarget.id);
+      } else if (target.type === "row" && target.id) {
+        await deleteWorksheet(target.id);
       }
       setDeleteTarget(null);
+      if (target.type === "sheet") {
+        const who = target.studentName ? ` ${target.studentName}` : "";
+        const when =
+          target.bulanKe != null ? ` (Bulan ke-${target.bulanKe})` : "";
+        setSuccessToast(`✓ Laporan${who}${when} berhasil dihapus.`);
+      } else {
+        setSuccessToast("✓ Baris evaluasi berhasil dihapus.");
+      }
       router.refresh();
     } catch (err: any) {
       console.error(err);
@@ -567,7 +576,7 @@ export function WorksheetClientWrapper({
               <button
                 type="button"
                 onClick={handleUpdatePin}
-                className="flex-1 py-2.5 text-xs font-bold rounded-xl bg-brand-600 text-white hover:bg-brand-700 active:translate-y-[1px] transition-colors cursor-pointer"
+                className="flex-1 py-2.5 text-xs font-bold rounded-xl bg-brand-600 text-white hover:bg-brand-700 active:translate-y-px transition-colors cursor-pointer"
               >
                 Simpan PIN Baru
               </button>
@@ -598,7 +607,7 @@ export function WorksheetClientWrapper({
               setEditingWorksheet(null);
               setIsModalOpen(true);
             }}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-brand-700 hover:bg-blue-50 active:translate-y-[1px] px-5 py-3 text-sm font-semibold shrink-0 w-full sm:w-auto transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-brand-700 hover:bg-blue-50 active:translate-y-px px-5 py-3 text-sm font-semibold shrink-0 w-full sm:w-auto transition-colors cursor-pointer"
           >
             <Icons.add className="h-5 w-5" aria-hidden="true" />
             Tambah Laporan Perkembangan
@@ -768,7 +777,7 @@ export function WorksheetClientWrapper({
               type="button"
               onClick={handleDownloadPdf}
               disabled={isDownloadingPdf || filteredWorksheets.length === 0}
-              className="w-full py-2.5 sm:py-3 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 active:translate-y-[1px] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 sm:py-3 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 active:translate-y-px transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               {isDownloadingPdf ? (
                 <>
@@ -887,7 +896,7 @@ export function WorksheetClientWrapper({
 
       {/* Toast berhasil (hijau, auto-hilang) */}
       {successToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-200 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
           <span>✅</span>
           <span>{successToast}</span>
         </div>
@@ -972,7 +981,7 @@ export function WorksheetClientWrapper({
                 type="button"
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:translate-y-[1px] transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:translate-y-px transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isDeleting ? (
                   <>

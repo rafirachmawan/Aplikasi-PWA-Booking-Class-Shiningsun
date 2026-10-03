@@ -1095,8 +1095,10 @@ export async function autoBookStudentToClass(
 
   let bookedCount = 0;
   const failedDates: string[] = [];
+  // Normalisasi HH:MM:SS dari DB -> HH:MM agar tidak terbentuk "08:00:00:00" yang invalid untuk tipe time Postgres
+  const normalizedTime = time.substring(0, 5);
   const timeVariants = Array.from(
-    new Set([time, `${time}:00`, time.substring(0, 5)]),
+    new Set([normalizedTime, `${normalizedTime}:00`]),
   );
 
   // 2. Loop setiap tanggal, cari slot, jika tidak ada buat baru
@@ -1126,7 +1128,7 @@ export async function autoBookStudentToClass(
           branch_id: finalBranchId,
           class_id: classId,
           date: dateStr,
-          time: time,
+          time: normalizedTime,
           is_locked: false,
         })
         .select()
@@ -1213,8 +1215,10 @@ export async function bookStudentManual(
   }
   const finalBranchId = branchId === "ALL" ? null : branchId;
 
+  // Normalisasi HH:MM:SS dari DB -> HH:MM agar tidak terbentuk "08:00:00:00" yang invalid untuk tipe time Postgres
+  const normalizedManualTime = time.substring(0, 5);
   const timeVariants = Array.from(
-    new Set([time, `${time}:00`, time.substring(0, 5)]),
+    new Set([normalizedManualTime, `${normalizedManualTime}:00`]),
   );
 
   // Cari slot
@@ -1240,7 +1244,7 @@ export async function bookStudentManual(
         branch_id: finalBranchId,
         class_id: classId,
         date: dateStr,
-        time: time,
+        time: normalizedManualTime,
         is_locked: false,
       })
       .select()
@@ -1331,12 +1335,14 @@ export async function copyScheduleToNextMonth(
   studentSchedules.forEach((slot) => {
     const d = new Date(slot.date);
     const dayOfWeek = d.getDay();
-    const key = `${dayOfWeek}-${slot.time}-${slot.class_id}`;
+    // Normalisasi jam DB (HH:MM:SS) -> HH:MM agar konsisten & tidak invalid saat diteruskan ke autoBook
+    const normalizedSlotTime = String(slot.time).substring(0, 5);
+    const key = `${dayOfWeek}-${normalizedSlotTime}-${slot.class_id}`;
     if (!patterns.has(key)) {
       patterns.add(key);
       uniquePatterns.push({
         dayOfWeek,
-        time: slot.time,
+        time: normalizedSlotTime,
         classId: slot.class_id,
       });
     }
@@ -2330,6 +2336,26 @@ function isDuplicateKeyError(err: any): boolean {
   );
 }
 
+// Aturan tabrakan laporan per jadwal — dipakai create & update agar konsisten
+// dengan cek client di WorksheetFormModal. Baris lama tanpa slot/jam dianggap
+// menempati tanggal itu; slot beda (sesi beda) tetap boleh.
+function isSlotDuplicate(
+  newSlot: string | null,
+  newTime: string | null,
+  rows: any[],
+): boolean {
+  return (rows || []).some((w: any) => {
+    const wSlot = (w?.schedule_slot_id || "").toString();
+    if (newSlot) {
+      if (wSlot) return wSlot === newSlot;
+      return true;
+    }
+    const wTime = normalizeScheduleTime(w?.schedule_time);
+    if (wTime) return wTime === newTime;
+    return true;
+  });
+}
+
 export async function createWorksheet(formData: FormData) {
   const student_id = formData.get("student_id") as string;
   const title = formData.get("title") as string;
@@ -2376,30 +2402,33 @@ export async function createWorksheet(formData: FormData) {
   // Toleran jika migrasi kolom jadwal belum dijalankan: lewati cek baru,
   // fallback ke cek lama per siswa+tanggal agar tidak merusak flow lama.
   try {
-    if (schedule_slot_id) {
-      const { data: existing, error: checkError } = await supabaseServer
+    if (schedule_slot_id || schedule_time) {
+      // 1 query: ambil semua laporan siswa di tanggal itu, cocokkan di JS
+      // agar baris lama tanpa slot/jam tetap terdeteksi (tanpa query ekstra).
+      const { data: dayRows, error: dayErr } = await supabaseServer
         .from("student_worksheets")
-        .select("id")
+        .select("id, schedule_slot_id, schedule_time")
         .eq("student_id", student_id)
         .eq("worksheet_date", worksheet_date)
-        .eq("schedule_slot_id", schedule_slot_id)
-        .limit(1);
-      if (checkError) {
-        if (!isMissingColumnError(checkError)) throw checkError;
-      } else if (existing && existing.length > 0) {
-        throw new Error(DUPLICATE_REPORT_MESSAGE);
-      }
-    } else if (schedule_time) {
-      const { data: existing, error: checkError } = await supabaseServer
-        .from("student_worksheets")
-        .select("id")
-        .eq("student_id", student_id)
-        .eq("worksheet_date", worksheet_date)
-        .eq("schedule_time", schedule_time)
-        .limit(1);
-      if (checkError) {
-        if (!isMissingColumnError(checkError)) throw checkError;
-      } else if (existing && existing.length > 0) {
+        .limit(20);
+      if (dayErr) {
+        if (!isMissingColumnError(dayErr)) throw dayErr;
+        // Kolom jadwal belum ada (migrasi belum jalan): fallback ke aturan
+        // lama 1 laporan per tanggal agar duplikat tetap ditolak.
+        // Hanya jalan pra-migrasi; pasca-migrasi nol query tambahan.
+        const { data: legacy, error: legacyErr } = await supabaseServer
+          .from("student_worksheets")
+          .select("id")
+          .eq("student_id", student_id)
+          .eq("worksheet_date", worksheet_date)
+          .limit(1);
+        if (!legacyErr && legacy && legacy.length > 0) {
+          throw new Error(DUPLICATE_REPORT_MESSAGE);
+        }
+        if (legacyErr) throw legacyErr;
+      } else if (
+        isSlotDuplicate(schedule_slot_id, schedule_time, dayRows || [])
+      ) {
         throw new Error(DUPLICATE_REPORT_MESSAGE);
       }
     } else {
@@ -2554,37 +2583,62 @@ export async function updateWorksheet(id: string, formData: FormData) {
   // Toleran jika kolom jadwal belum ada: fallback ke cek lama.
   try {
     if (updatePayload.worksheet_date) {
+      // Ambil baris sendiri (toleran pra-migrasi: kolom jadwal mungkin belum ada).
+      let ownStudentId: string | null = null;
+      let ownSlot: string | null = null;
+      let ownTime: string | null = null;
       const { data: current, error: curErr } = await supabaseServer
         .from("student_worksheets")
         .select("student_id, schedule_slot_id, schedule_time")
         .eq("id", id)
         .single();
       if (!curErr && current) {
+        ownStudentId = (current as any).student_id;
+        ownSlot = (current as any).schedule_slot_id
+          ? String((current as any).schedule_slot_id)
+          : null;
+        ownTime = normalizeScheduleTime((current as any).schedule_time);
+      } else if (curErr && isMissingColumnError(curErr)) {
+        const legacyOwn = await supabaseServer
+          .from("student_worksheets")
+          .select("student_id")
+          .eq("id", id)
+          .single();
+        if (!legacyOwn.error && legacyOwn.data)
+          ownStudentId = (legacyOwn.data as any).student_id;
+      }
+      if (ownStudentId) {
         const effSlot =
           hasSlotField && updatePayload.schedule_slot_id !== undefined
             ? updatePayload.schedule_slot_id
-            : (current as any).schedule_slot_id || null;
+            : ownSlot;
         const effTime =
           hasTimeField && updatePayload.schedule_time !== undefined
             ? updatePayload.schedule_time
-            : normalizeScheduleTime((current as any).schedule_time);
-        let dupQuery = supabaseServer
-          .from("student_worksheets")
-          .select("id")
-          .eq("student_id", (current as any).student_id)
-          .eq("worksheet_date", updatePayload.worksheet_date)
-          .neq("id", id)
-          .limit(1);
-        let canCheckSlot = true;
-        if (effSlot) {
-          const r = await dupQuery.eq("schedule_slot_id", effSlot);
-          if (isMissingColumnError(r.error)) canCheckSlot = false;
-          else if (!r.error && r.data && r.data.length > 0) {
-            throw new Error(DUPLICATE_REPORT_MESSAGE);
-          }
-        } else if (effTime && canCheckSlot) {
-          const r = await dupQuery.eq("schedule_time", effTime);
-          if (!isMissingColumnError(r.error) && !r.error && r.data && r.data.length > 0) {
+            : ownTime;
+        if (effSlot || effTime) {
+          // 1 query: kandidat tabrakan di tanggal itu (kecualikan diri sendiri).
+          const { data: dayRows, error: dayErr } = await supabaseServer
+            .from("student_worksheets")
+            .select("id, schedule_slot_id, schedule_time")
+            .eq("student_id", ownStudentId)
+            .eq("worksheet_date", updatePayload.worksheet_date)
+            .neq("id", id)
+            .limit(20);
+          if (dayErr) {
+            if (!isMissingColumnError(dayErr)) throw dayErr;
+            // Fallback pra-migrasi: tolak jika tanggal itu ada laporan lain.
+            const f = await supabaseServer
+              .from("student_worksheets")
+              .select("id")
+              .eq("student_id", ownStudentId)
+              .eq("worksheet_date", updatePayload.worksheet_date)
+              .neq("id", id)
+              .limit(1);
+            if (!f.error && f.data && f.data.length > 0) {
+              throw new Error(DUPLICATE_REPORT_MESSAGE);
+            }
+          } else if (isSlotDuplicate(effSlot, effTime, dayRows || [])) {
             throw new Error(DUPLICATE_REPORT_MESSAGE);
           }
         }

@@ -494,9 +494,9 @@ export function SchedulingClientWrapper({
     <>
       {isSubmitting && <LoadingSpinner usePortal={true} />}
 
-      <div className="bg-white dark:bg-zinc-900 shadow-sm border border-slate-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
+      <div className="bg-white dark:bg-zinc-900 shadow-sm border border-slate-200 dark:border-zinc-800 rounded-2xl">
         {/* Tabs */}
-        <div className="border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/50 flex">
+        <div className="border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/50 flex rounded-t-2xl overflow-hidden">
           <button
             type="button"
             onClick={() => setActiveMode("auto")}

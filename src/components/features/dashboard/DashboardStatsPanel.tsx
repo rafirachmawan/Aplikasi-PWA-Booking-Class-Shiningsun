@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { WorksheetFormModal } from "@/components/features/worksheets/WorksheetFormModal";
@@ -191,12 +191,15 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
   const [className, setClassName] = useState<string>("");
   const [teachers, setTeachers] = useState<any[]>([]);
   const [successToast, setSuccessToast] = useState("");
+  // Penghitung penyelesaian overdue lokal (hemat Origin: tanpa refetch/refresh).
+  // Direset setiap daftar diambil ulang dari server agar tidak dobel kurang.
+  const [resolvedOverdueCount, setResolvedOverdueCount] = useState(0);
   // Riwayat worksheets untuk auto-hitung "bulan ke" (sama seperti halaman worksheets)
   const [overdueWorksheets, setOverdueWorksheets] = useState<any[]>([]);
 
   useEffect(() => {
     if (!successToast) return;
-    const t = setTimeout(() => setSuccessToast(""), 3000);
+    const t = setTimeout(() => setSuccessToast(""), 5000);
     return () => clearTimeout(t);
   }, [successToast]);
 
@@ -232,6 +235,8 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
         // Special handling for overdue worksheets - pass branch ID
         const data = await getOverdueWorksheets(branchId);
         setItems(data);
+        // Data fresh dari server sudah mencerminkan yang terisi → reset offset lokal.
+        setResolvedOverdueCount(0);
       } else {
         const data = await getStudentsByStatusWithSchedules(stat.statusFilter);
         setItems(data);
@@ -676,6 +681,24 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     );
   };
 
+  // Angka kartu "Laporan Terlewat" dikurangi penyelesaian lokal (tanpa fetch).
+  // Kartu lain dan data server tidak disentuh.
+  const displayStats = useMemo(
+    () =>
+      stats.map((s) => {
+        if (
+          s.statusFilter === "OVERDUE_WORKSHEETS" &&
+          resolvedOverdueCount > 0
+        ) {
+          const n = parseInt(s.value, 10);
+          if (!isNaN(n))
+            return { ...s, value: String(Math.max(0, n - resolvedOverdueCount)) };
+        }
+        return s;
+      }),
+    [stats, resolvedOverdueCount],
+  );
+
   // Tema header panel per-tab (visual saja — tidak memengaruhi fetch/filter/sort).
   const panelTheme = activeTab
     ? panelThemeByTab[activeTab]
@@ -685,7 +708,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     <>
       {/* Stats Cards - rendered inside the hero banner */}
       <DashboardStatsCards
-        stats={stats}
+        stats={displayStats}
         activeTab={activeTab}
         onCardClick={handleCardClick}
       />
@@ -1143,9 +1166,46 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
           worksheets={overdueWorksheets}
           onClose={handleCloseWorksheetModal}
           onSuccess={(msg) => {
+            // Hemat Origin: update lokal saja (0 query tambahan, tanpa router.refresh).
+            // Tangkap identitas SEBELUM modal ditutup karena handleClose me-reset state.
+            const savedId = overdueStudent?.id;
+            const savedDate = missedDate;
+            const savedTime =
+              missedTime || (overdueStudent as any)?.missedTime || "";
+            const studentName =
+              overdueStudent?.nickname || overdueStudent?.name || "Siswa";
+            if (savedId) {
+              setItems((prev) =>
+                prev.filter((it) => {
+                  if (it.id !== savedId) return true;
+                  // Hanya sentuh entri overdue (punya missedDate); tab lain jangan ikut kehapus.
+                  if (!(it as any).missedDate) return true;
+                  if (
+                    savedDate &&
+                    (it as any).missedDate &&
+                    (it as any).missedDate !== savedDate
+                  )
+                    return true;
+                  const itTime = (it as any).missedTime || "";
+                  if (
+                    savedTime &&
+                    itTime &&
+                    String(itTime).substring(0, 5) !==
+                      String(savedTime).substring(0, 5)
+                  )
+                    return true;
+                  return false;
+                }),
+              );
+              // Kurangi angka kartu secara lokal (tanpa fetch/refresh).
+              setResolvedOverdueCount((c) => c + 1);
+            }
             handleCloseWorksheetModal();
-            if (msg) setSuccessToast(msg);
-            // Optionally refresh data here
+            const dateLabel = savedDate ? formatShortDate(savedDate) : "";
+            setSuccessToast(
+              `✓ Laporan ${studentName}${dateLabel ? ` (${dateLabel})` : ""} sudah tersimpan — daftar terlewat diperbarui.`,
+            );
+            void msg;
           }}
           lockedStudentId={overdueStudent.id}
           currentDate={missedDate}

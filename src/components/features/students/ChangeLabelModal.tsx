@@ -61,7 +61,7 @@ export function ChangeLabelModal({
 
   useEffect(() => {
     if (!successToast) return;
-    const t = setTimeout(() => setSuccessToast(""), 3000);
+    const t = setTimeout(() => setSuccessToast(""), 5000);
     return () => clearTimeout(t);
   }, [successToast]);
 

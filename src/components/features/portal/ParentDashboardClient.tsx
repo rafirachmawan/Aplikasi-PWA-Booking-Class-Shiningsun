@@ -607,7 +607,7 @@ export function ParentDashboardClient({
             type="button"
             onClick={() => setShowLogoutConfirm(true)}
             disabled={isLoggingOut}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-red-600 dark:text-zinc-300 dark:hover:text-red-400 bg-slate-100 dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-red-500/10 active:translate-y-[1px] transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-50"
+            className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-red-600 dark:text-zinc-300 dark:hover:text-red-400 bg-slate-100 dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-red-500/10 active:translate-y-px transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-50"
           >
             <span className="hidden sm:inline">
               {isLoggingOut ? "Keluar..." : "Keluar / Ganti Akses"}
@@ -657,7 +657,7 @@ export function ParentDashboardClient({
                 disabled={isUploadingPhoto}
                 title="Klik untuk mengubah foto profil anak"
                 aria-label="Ubah foto profil anak"
-                className="group relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white p-1 shrink-0 flex items-center justify-center shadow-sm overflow-hidden cursor-pointer hover:opacity-95 active:translate-y-[1px] transition-opacity"
+                className="group relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white p-1 shrink-0 flex items-center justify-center shadow-sm overflow-hidden cursor-pointer hover:opacity-95 active:translate-y-px transition-opacity"
               >
                 {photoUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
@@ -845,7 +845,7 @@ export function ParentDashboardClient({
               type="button"
               onClick={() => setShowPointsModal(true)}
               title="Klik untuk melihat riwayat poin"
-              className="w-full bg-white rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-sm text-slate-900 cursor-pointer hover:bg-amber-50 active:translate-y-[1px] transition-colors group text-left"
+              className="w-full bg-white rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-sm text-slate-900 cursor-pointer hover:bg-amber-50 active:translate-y-px transition-colors group text-left"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-11 h-11 rounded-xl bg-amber-400 text-white flex items-center justify-center shrink-0">
@@ -940,7 +940,7 @@ export function ParentDashboardClient({
                       <button
                         type="button"
                         onClick={() => setPreviewDoc(doc)}
-                        className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] transition-colors cursor-pointer"
+                        className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 active:translate-y-px transition-colors cursor-pointer"
                       >
                         Lihat PDF
                       </button>
@@ -970,7 +970,7 @@ export function ParentDashboardClient({
               setPinSuccessMsg("");
               setShowPinText(false);
             }}
-            className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-sm hover:bg-slate-50 dark:hover:bg-zinc-800/70 active:translate-y-[1px] transition-colors cursor-pointer group"
+            className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-sm hover:bg-slate-50 dark:hover:bg-zinc-800/70 active:translate-y-px transition-colors cursor-pointer group"
           >
             <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
               <Icons.shield className="w-5 h-5" />
@@ -1051,7 +1051,7 @@ export function ParentDashboardClient({
                   type="button"
                   onClick={handleDownloadPdf}
                   disabled={isDownloadingPdf || filteredWorksheets.length === 0}
-                  className="w-full py-2.5 sm:py-3 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 active:translate-y-[1px] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-2.5 sm:py-3 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 active:translate-y-px transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isDownloadingPdf ? (
                     <>
@@ -1193,7 +1193,7 @@ export function ParentDashboardClient({
                 type="button"
                 onClick={() => setShowLogoutConfirm(false)}
                 disabled={isLoggingOut}
-                className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 transition-colors cursor-pointer active:translate-y-[1px] disabled:opacity-50"
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 transition-colors cursor-pointer active:translate-y-px disabled:opacity-50"
               >
                 Tetap di Sini
               </button>
@@ -1201,7 +1201,7 @@ export function ParentDashboardClient({
                 type="button"
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors cursor-pointer active:translate-y-[1px]"
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors cursor-pointer active:translate-y-px"
               >
                 {isLoggingOut ? "Keluar..." : "Ya, Keluar"}
               </button>
@@ -1230,7 +1230,7 @@ export function ParentDashboardClient({
               <button
                 type="button"
                 onClick={handleBackCancel}
-                className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 transition-colors cursor-pointer active:translate-y-[1px]"
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 transition-colors cursor-pointer active:translate-y-px"
               >
                 Tetap di Sini
               </button>
@@ -1238,7 +1238,7 @@ export function ParentDashboardClient({
                 type="button"
                 onClick={handleBackConfirmLogout}
                 disabled={isLoggingOut}
-                className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors cursor-pointer active:translate-y-[1px]"
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors cursor-pointer active:translate-y-px"
               >
                 {isLoggingOut ? "Keluar..." : "Ya, Keluar"}
               </button>
@@ -1325,7 +1325,7 @@ export function ParentDashboardClient({
                   type="button"
                   onClick={() => setCropZoom((z) => Math.max(1, z - 0.2))}
                   aria-label="Perkecil"
-                  className="w-8 h-8 rounded-xl bg-zinc-700 hover:bg-zinc-600 font-bold text-white shrink-0 active:translate-y-[1px] transition-colors cursor-pointer"
+                  className="w-8 h-8 rounded-xl bg-zinc-700 hover:bg-zinc-600 font-bold text-white shrink-0 active:translate-y-px transition-colors cursor-pointer"
                 >
                   -
                 </button>
@@ -1343,7 +1343,7 @@ export function ParentDashboardClient({
                   type="button"
                   onClick={() => setCropZoom((z) => Math.min(3, z + 0.2))}
                   aria-label="Perbesar"
-                  className="w-8 h-8 rounded-xl bg-zinc-700 hover:bg-zinc-600 font-bold text-white shrink-0 active:translate-y-[1px] transition-colors cursor-pointer"
+                  className="w-8 h-8 rounded-xl bg-zinc-700 hover:bg-zinc-600 font-bold text-white shrink-0 active:translate-y-px transition-colors cursor-pointer"
                 >
                   +
                 </button>
@@ -1355,7 +1355,7 @@ export function ParentDashboardClient({
               <button
                 type="button"
                 onClick={() => setShowCropModal(false)}
-                className="flex-1 py-3 rounded-xl text-xs font-bold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors cursor-pointer active:translate-y-[1px]"
+                className="flex-1 py-3 rounded-xl text-xs font-bold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors cursor-pointer active:translate-y-px"
               >
                 Batal
               </button>
@@ -1363,7 +1363,7 @@ export function ParentDashboardClient({
                 type="button"
                 onClick={handleSaveCrop}
                 disabled={isUploadingPhoto}
-                className="flex-1 py-3 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors cursor-pointer active:translate-y-[1px] flex items-center justify-center gap-2"
+                className="flex-1 py-3 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors cursor-pointer active:translate-y-px flex items-center justify-center gap-2"
               >
                 {isUploadingPhoto ? (
                   <>
@@ -1516,7 +1516,7 @@ export function ParentDashboardClient({
                 <button
                   type="submit"
                   disabled={isSubmittingPin}
-                  className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 active:translate-y-[1px] text-white transition-colors disabled:opacity-50 min-h-11 flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 active:translate-y-px text-white transition-colors disabled:opacity-50 min-h-11 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmittingPin ? (
                     <>

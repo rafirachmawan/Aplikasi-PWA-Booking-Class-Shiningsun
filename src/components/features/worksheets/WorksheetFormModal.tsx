@@ -1222,7 +1222,10 @@ export function WorksheetFormModal({
         if (normalizeClientDate(w.worksheet_date || w.created_at) !== effDate)
           return false;
         if (effSlot) {
-          return (w.schedule_slot_id || "").toString() === effSlot;
+          const wSlot = (w.schedule_slot_id || "").toString();
+          if (wSlot) return wSlot === effSlot;
+          // Baris tanpa slot (lama / hanya-jam) dianggap menempati tanggal itu.
+          return true;
         }
         if (effTime) {
           const wTime = normalizeClientTime(w.schedule_time);
@@ -1701,10 +1704,31 @@ export function WorksheetFormModal({
         // abaikan
       }
       // Notifikasi berhasil (hijau) + tutup otomatis agar user yakin tersimpan
-      // dan tidak menekan Simpan 2x.
-      const okMsg = isEditing
+      // dan tidak menekan Simpan 2x. Pesan dibuat eksplisit (nama+tanggal)
+      // agar guru langsung yakin tanpa membuka ulang daftar.
+      let okMsg = isEditing
         ? "✓ Perubahan laporan berhasil disimpan."
         : "✓ Laporan perkembangan berhasil disimpan.";
+      try {
+        const savedStudent =
+          (students || []).find((s: any) => s?.id === effectiveStudentId) ||
+          ((students || []).length === 1 ? students[0] : null);
+        const savedName =
+          savedStudent?.nickname || savedStudent?.name || "";
+        const savedIso = parseIndonesianDateToISO(
+          worksheetDateInput || getTodayISO(),
+        );
+        const savedDateLabel = savedIso ? formatShortDate(savedIso) : "";
+        if (savedName || savedDateLabel) {
+          const who = savedName ? ` ${savedName}` : "";
+          const when = savedDateLabel ? ` (${savedDateLabel})` : "";
+          okMsg = isEditing
+            ? `✓ Perubahan laporan${who}${when} berhasil disimpan.`
+            : `✓ Laporan${who}${when} sudah tersimpan — daftar diperbarui.`;
+        }
+      } catch {
+        // abaikan, pakai pesan generik di atas
+      }
       setSuccessMsg(okMsg);
       formRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       const done = () => {
