@@ -152,7 +152,7 @@ export default function ParentLoginPage() {
             <div className="relative flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/10 p-1 ring-1 ring-white/20">
                 <Image
-                  src="/logo.png"
+                  src="/logo.webp"
                   alt="Logo ShiningSun"
                   width={36}
                   height={36}
@@ -171,7 +171,7 @@ export default function ParentLoginPage() {
               <div className="shrink-0 rounded-full bg-amber-300 p-1 ring-1 ring-amber-200/60">
                 <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white p-1 min-[380px]:h-14 min-[380px]:w-14">
                   <Image
-                    src="/logo.png"
+                    src="/logo.webp"
                     alt="Maskot ShiningSun"
                     width={56}
                     height={56}
@@ -647,7 +647,7 @@ export default function ParentLoginPage() {
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white/10 p-1 ring-1 ring-white/20">
                 <Image
-                  src="/logo.png"
+                  src="/logo.webp"
                   alt="Logo ShiningSun"
                   width={36}
                   height={36}

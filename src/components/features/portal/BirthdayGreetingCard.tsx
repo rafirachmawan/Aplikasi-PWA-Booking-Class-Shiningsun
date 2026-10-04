@@ -318,6 +318,9 @@ export function BirthdayGreetingCard({
                 <img
                   src={student.photo_url}
                   alt={student.name}
+                  width={112}
+                  height={112}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
               </div>

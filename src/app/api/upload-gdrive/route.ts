@@ -120,6 +120,18 @@ async function getAccessTokenFromRefreshToken(
 
 export async function POST(req: NextRequest) {
   try {
+    // Guard dini (tanpa ubah logika): tolak body raksasa SEBELUM baca token
+    // maupun parsing formData — file legal jalurnya identik, yang gagal kini
+    // gagal cepat 413 bukan timeout/OOM di tengah jalan.
+    const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+    const contentLength = Number(req.headers.get("content-length") || 0);
+    if (contentLength > MAX_UPLOAD_BYTES) {
+      return NextResponse.json(
+        { error: "File terlalu besar (maks 5 MB)." },
+        { status: 413 }
+      );
+    }
+
     const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
     const refreshToken = await getStoredRefreshToken();
@@ -142,6 +154,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Tidak ada file yang diunggah" },
         { status: 400 }
+      );
+    }
+
+    // Guard lapis-2 untuk body chunked (tanpa content-length): ukur file hasil
+    // parsing sebelum dibuffer/diunggah ke Google.
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json(
+        { error: "File terlalu besar (maks 5 MB)." },
+        { status: 413 }
       );
     }
 

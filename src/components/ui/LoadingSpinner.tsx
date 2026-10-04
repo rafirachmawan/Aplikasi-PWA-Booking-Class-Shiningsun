@@ -24,7 +24,7 @@ export function LoadingSpinner({ usePortal = false }: LoadingSpinnerProps) {
         {/* Logo di Tengah */}
         <div className="absolute inset-0 flex items-center justify-center">
           <Image
-            src="/logo.png"
+            src="/logo.webp"
             alt="Loading..."
             width={48}
             height={48}

@@ -9,12 +9,18 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  // Hemat byte mentah: hilangkan header X-Powered-By di tiap respons.
+  // Murni header, tanpa ubah logika/data.
+  poweredByHeader: false,
   devIndicators: {
     // Next 16: buildActivity is removed, just pass an empty object or position if needed
     position: "top-left",
   },
   images: {
     formats: ["image/avif", "image/webp"],
+    // Logo praktis tidak pernah berubah: cache hasil optimasi 1 hari agar
+    // optimizer tidak kerja ulang. Byte & tampilan sama.
+    minimumCacheTTL: 86400,
   },
   async headers() {
     // Catatan: /_next/static/* sengaja tidak di-override di sini karena
@@ -23,6 +29,15 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/logo.png",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=86400, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/logo.webp",
         headers: [
           {
             key: "Cache-Control",

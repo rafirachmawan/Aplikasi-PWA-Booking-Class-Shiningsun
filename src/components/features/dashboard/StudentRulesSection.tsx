@@ -21,7 +21,7 @@ interface StudentRulesSectionProps {
   initialDocuments: RulesDocument[];
 }
 
-const MAX_PDF_SIZE_MB = 15;
+const MAX_PDF_SIZE_MB = 5;
 
 function friendlyError(msg: string): string {
   if (msg.includes("Could not find the table")) {
@@ -503,7 +503,7 @@ export function StudentRulesSection({
                   <span className="truncate">
                     {pendingFile
                       ? `📄 ${pendingFile.name}`
-                      : "Klik untuk pilih file PDF (maks 15 MB)"}
+                      : "Klik untuk pilih file PDF (maks 5 MB)"}
                   </span>
                 </button>
               </div>

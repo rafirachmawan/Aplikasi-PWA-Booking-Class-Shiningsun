@@ -586,7 +586,7 @@ export function ParentDashboardClient({
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex items-center justify-center w-10 h-10 bg-white rounded-xl border border-slate-200 p-1 shrink-0">
               <Image
-                src="/logo.png"
+                src="/logo.webp"
                 alt="ShiningSun Logo"
                 width={32}
                 height={32}
@@ -664,11 +664,14 @@ export function ParentDashboardClient({
                   <img
                     src={photoUrl}
                     alt={student.name}
+                    width={80}
+                    height={80}
+                    decoding="async"
                     className="w-full h-full object-cover rounded-xl"
                   />
                 ) : (
                   <Image
-                    src="/logo.png"
+                    src="/logo.webp"
                     alt="ShiningSun Logo"
                     width={64}
                     height={64}

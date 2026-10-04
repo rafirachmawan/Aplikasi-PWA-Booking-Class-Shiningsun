@@ -860,11 +860,14 @@ export function StudentWorksheetTable({
               <img
                 src={student.photo_url}
                 alt={student?.name || "Foto Siswa"}
+                width={96}
+                height={96}
+                decoding="async"
                 className="w-full h-full object-cover rounded-xl"
               />
             ) : (
               <Image
-                src="/logo.png"
+                src="/logo.webp"
                 alt="ShiningSun Logo"
                 width={80}
                 height={80}

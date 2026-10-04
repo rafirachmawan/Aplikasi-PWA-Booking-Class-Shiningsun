@@ -23,7 +23,7 @@ interface CurriculumSectionProps {
   isSuperadmin: boolean;
 }
 
-const MAX_PDF_SIZE_MB = 15;
+const MAX_PDF_SIZE_MB = 5;
 
 // Client browser dengan sesi cookie (pola sama seperti LoginForm) —
 // agar upload Storage terbaca sebagai authenticated, bukan anon.
@@ -508,7 +508,7 @@ export function CurriculumSection({
                   <span className="truncate">
                     {pendingFile
                       ? `📄 ${pendingFile.name}`
-                      : "Klik untuk pilih file PDF (maks 15 MB)"}
+                      : "Klik untuk pilih file PDF (maks 5 MB)"}
                   </span>
                 </button>
               </div>

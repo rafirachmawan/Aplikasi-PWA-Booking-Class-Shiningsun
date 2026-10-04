@@ -317,6 +317,10 @@ export function BirthdayListPanel({
                       <img
                         src={student.photo_url}
                         alt={student.name}
+                        width={40}
+                        height={40}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full rounded-lg object-cover"
                       />
                     ) : (

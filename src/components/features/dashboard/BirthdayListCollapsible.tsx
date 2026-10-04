@@ -321,12 +321,14 @@ export function BirthdayListCollapsible() {
                               <div className="flex items-start gap-3">
                                 <div className="w-9 h-9 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-slate-200 dark:border-zinc-700 text-xs font-bold text-slate-400">
                                   {student.photo_url ? (
-                                    <img
-                                      src={student.photo_url}
-                                      alt={student.name}
-                                      loading="lazy"
-                                      className="w-full h-full rounded-lg object-cover"
-                                    />
+                                      <img
+                                        src={student.photo_url}
+                                        alt={student.name}
+                                        width={36}
+                                        height={36}
+                                        loading="lazy"
+                                        className="w-full h-full rounded-lg object-cover"
+                                      />
                                   ) : (
                                     <span>
                                       {(student.nickname || student.name || "?").charAt(0).toUpperCase()}

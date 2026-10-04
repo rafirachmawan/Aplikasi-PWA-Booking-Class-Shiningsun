@@ -568,6 +568,16 @@ export function WorksheetFormModal({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Guard pra-upload: file raksasa (>15MB) hampir pasti timeout/OOM saat
+      // kompresi — tolak di awal dengan pesan jelas (bukan ubah alur sukses).
+      if (file.size > 15 * 1024 * 1024) {
+        setSelectedFile(null);
+        setFilePreviewUrl(null);
+        setUploadError(
+          "File terlalu besar (maks 15 MB). Kecilkan dulu sebelum memilih.",
+        );
+        return;
+      }
       setSelectedFile(file);
       setFilePreviewUrl(URL.createObjectURL(file));
       setUploadError(null);
@@ -588,6 +598,14 @@ export function WorksheetFormModal({
       const compressedFile = target.type?.startsWith("image/")
         ? await compressImage(target)
         : target;
+
+      // Guard pasca-kompresi: hasil >5MB pasti bikin Origin spike/timeout —
+      // gagalkan cepat dengan pesan jelas (alur sukses tidak berubah).
+      if (compressedFile.size > 5 * 1024 * 1024) {
+        throw new Error(
+          "File masih lebih dari 5 MB setelah kompresi. Kecilkan file lalu coba lagi.",
+        );
+      }
 
       const formData = new FormData();
       formData.append("file", compressedFile);

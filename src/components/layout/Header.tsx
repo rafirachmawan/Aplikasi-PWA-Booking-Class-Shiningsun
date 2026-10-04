@@ -76,7 +76,7 @@ export function Header({ role, branchName }: HeaderProps) {
 
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white border border-slate-200 dark:border-zinc-700 overflow-hidden shrink-0">
               <Image
-                src="/logo.png"
+                src="/logo.webp"
                 alt="User Profile"
                 width={32}
                 height={32}

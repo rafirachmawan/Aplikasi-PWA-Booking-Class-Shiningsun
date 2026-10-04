@@ -448,7 +448,7 @@ export function Sidebar({
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center p-1 bg-white rounded-lg shadow-sm">
               <Image
-                src="/logo.png"
+                src="/logo.webp"
                 alt="ShiningSun Logo"
                 width={32}
                 height={32}
@@ -607,7 +607,7 @@ export function Sidebar({
             <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-800/60">
               <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-slate-200 dark:border-zinc-700 bg-white flex items-center justify-center">
                 <Image
-                  src="/logo.png"
+                  src="/logo.webp"
                   alt="User Profile"
                   width={32}
                   height={32}
