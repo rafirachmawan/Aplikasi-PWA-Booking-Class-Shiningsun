@@ -733,7 +733,20 @@ export function WorksheetFormModal({
         return;
       }
       const d = JSON.parse(raw);
-      if (d.studentId) setStudentId(d.studentId);
+      // Guard: draft siswa lain tidak boleh menimpa pilihan siswa aktif
+      // (jalur dashboard terkunci per siswa). Field draft lain tetap direstore.
+      if (d.studentId) {
+        const expectedId =
+          lockedStudentId || initialData?.student_id || "";
+        if (expectedId) {
+          if (d.studentId === expectedId) setStudentId(d.studentId);
+        } else if (
+          Array.isArray(students) &&
+          students.some((s: any) => s?.id === d.studentId)
+        ) {
+          setStudentId(d.studentId);
+        }
+      }
       if (d.title) setTitle(d.title);
       if (d.description) setDescription(d.description);
       if (d.materi) setMateri(d.materi);
@@ -1212,10 +1225,12 @@ export function WorksheetFormModal({
   const duplicateInfo = useMemo(() => {
     const empty = { isDuplicate: false as const, matched: null as any };
     if (isEditing) return empty;
+    // Identitas sama dengan saat submit agar cek duplikat tidak memeriksa siswa yang salah.
     const effStudent =
-      studentId ||
+      lockedStudentId ||
       initialData?.student_id ||
-      (students.length === 1 ? students[0]?.id : "");
+      (students.length === 1 ? students[0]?.id : "") ||
+      studentId;
     if (!effStudent) return empty;
     let effDate = "";
     try {
@@ -1604,10 +1619,13 @@ export function WorksheetFormModal({
     // Guard anti double-submit (klik 2x / Enter cepat) — selain isSubmitting.
     if (isSubmitting || submittedRef.current) return;
     const finalTitle = title.trim() || materi.trim() || "Laporan Perkembangan";
+    // Prioritas identitas terkunci agar draft/state basi tidak bisa
+    // mengalihkan simpanan ke siswa lain. Hasil sama untuk alur tidak terkunci.
     const effectiveStudentId =
-      studentId ||
+      lockedStudentId ||
       initialData?.student_id ||
-      (students.length === 1 ? students[0].id : "");
+      (students.length === 1 ? students[0].id : "") ||
+      studentId;
 
     if (!isEditing && !effectiveStudentId) {
       setErrorMsg("Pilih siswa terlebih dahulu.");

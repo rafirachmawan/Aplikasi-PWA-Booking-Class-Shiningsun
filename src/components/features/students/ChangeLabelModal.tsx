@@ -336,6 +336,7 @@ export function ChangeLabelModal({
       {/* Embedded Worksheet Form Modal for filling progress report directly */}
       {isWorksheetModalOpen && (
         <WorksheetFormModal
+          key={student.id + (scheduleSlotId || "") + (scheduleDate || "")}
           students={[
             {
               id: student.id,
@@ -348,6 +349,7 @@ export function ChangeLabelModal({
           templates={templatesList}
           labels={labels}
           initialData={{ student_id: student.id }}
+          lockedStudentId={student.id}
           worksheets={worksheetsList}
           currentDate={scheduleDate}
           scheduleSlotId={scheduleSlotId}

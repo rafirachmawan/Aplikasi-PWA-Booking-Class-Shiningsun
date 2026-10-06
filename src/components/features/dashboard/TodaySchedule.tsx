@@ -319,6 +319,7 @@ export function TodaySchedule({
       </div>
 
       <ChangeLabelModal
+        key={editingStudent?.id + (editingSlot?.id || "")}
         isOpen={!!editingStudent}
         onClose={() => {
           setEditingStudent(null);
