@@ -21,11 +21,11 @@ export const config = {
      * Match semua kecuali:
      * - api (API routes — auth API tidak perlu session refresh per-request)
      * - _next/static, _next/image, _next/data (static + image optimizer)
-     * - sw.js, manifest, icon.png, logo.png, favicon, sitemap, robots
+     * - sw.js, manifest, icon.png, logo.png, logo.webp, favicon, sitemap, robots
      * - file berekstensi gambar (.svg/.png/.jpg/.webp/.ico/.gif)
      * Auth coverage untuk /dashboard, /schedule, /scheduling, /login,
      * /portal-ortu, /students, /teachers, /worksheets tetap penuh.
      */
-    '/((?!api|_next/static|_next/image|_next/data|sw\\.js|manifest\\.webmanifest|icon\\.png|logo\\.png|favicon\\.ico|sitemap\\.xml|robots\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!api|_next/static|_next/image|_next/data|sw\\.js|manifest\\.webmanifest|icon\\.png|logo\\.png|logo\\.webp|favicon\\.ico|sitemap\\.xml|robots\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 }

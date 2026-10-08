@@ -137,6 +137,7 @@ export function WorksheetClientWrapper({
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
+    if (isDeleting) return;
     const target = deleteTarget;
     setIsDeleting(true);
     try {
@@ -386,6 +387,7 @@ export function WorksheetClientWrapper({
 
   const handleUpdatePin = async () => {
     if (!pinModalStudent || !newPin) return;
+    if (isPinUpdating) return;
     setPinMsg({ error: "", success: "" });
     setIsPinUpdating(true);
     try {

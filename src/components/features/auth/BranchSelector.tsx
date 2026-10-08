@@ -48,6 +48,9 @@ export function BranchSelector({
   // Logika pemilihan cabang tetap sama seperti sebelumnya —
   // hanya UI dropdown yang diganti.
   const selectBranch = async (newBranchId: string) => {
+    // Hemat Origin (tanpa ubah logika/data): klik cabang yang sama atau klik
+    // ganda saat masih updating tidak memicu refresh ulang. Hasil akhir sama.
+    if (isUpdating || newBranchId === selectedId) return;
     setIsOpen(false);
     setSelectedId(newBranchId);
     // Tampilkan loading selama cookie diset + data dimuat ulang

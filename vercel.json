@@ -68,15 +68,6 @@
           "value": "public, s-maxage=86400, stale-while-revalidate=86400"
         }
       ]
-    },
-    {
-      "source": "/api/birthday-template",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, s-maxage=300, stale-while-revalidate=600"
-        }
-      ]
     }
   ]
 }

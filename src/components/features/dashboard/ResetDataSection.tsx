@@ -47,6 +47,7 @@ export function ResetDataSection({
   };
 
   const handlePasswordSubmit = async () => {
+    if (isResetting) return;
     if (resetPassword !== "123") {
       setResetError("Password salah! Silakan coba lagi.");
       return;

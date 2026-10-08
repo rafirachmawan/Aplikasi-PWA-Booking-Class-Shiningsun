@@ -266,6 +266,7 @@ export function LabelManager({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
     setSubmitError("");
     try {
@@ -295,6 +296,7 @@ export function LabelManager({
 
   const handleExecuteDelete = async () => {
     if (!labelToDelete) return;
+    if (isDeleting) return;
     setIsDeleting(true);
     setDeleteError("");
     try {

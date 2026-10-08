@@ -192,6 +192,7 @@ export function AssessmentTemplateManager({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
     setSubmitError("");
@@ -255,6 +256,7 @@ export function AssessmentTemplateManager({
 
   const handleExecuteDelete = async () => {
     if (!templateToDelete) return;
+    if (isDeleting) return;
     setIsDeleting(true);
     setDeleteError("");
     try {

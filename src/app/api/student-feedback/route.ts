@@ -113,9 +113,11 @@ export async function GET(request: Request) {
     );
 
     // Get feedbacks for this student
+    // Hemat Origin (tanpa ubah logika/data): select kolom yang dipakai UI saja
+    // (id,message,submitted_at,is_read,parent_user_id). Bentuk respons sama.
     const { data: feedbacks, error } = await supabase
       .from("student_feedback")
-      .select("*")
+      .select("id,message,submitted_at,is_read,parent_user_id")
       .eq("student_id", studentId)
       .order("submitted_at", { ascending: false });
 
@@ -131,7 +133,7 @@ export async function GET(request: Request) {
     }
 
     // Since we're using service role, fetch parent names from profiles table manually
-    let formattedFeedbacks = feedbacks || [];
+    let formattedFeedbacks: any[] = feedbacks || [];
 
     if (formattedFeedbacks.length > 0) {
       // Fetch all unique parent IDs
@@ -151,7 +153,7 @@ export async function GET(request: Request) {
             parentProfiles.map((p) => [p.id, p]),
           );
 
-          formattedFeedbacks = formattedFeedbacks.map((f) => {
+          formattedFeedbacks = formattedFeedbacks.map((f: any) => {
             const parent = parentMap.get(f.parent_user_id);
 
             return {
@@ -159,6 +161,7 @@ export async function GET(request: Request) {
               message: f.message,
               submitted_at: f.submitted_at,
               is_read: f.is_read,
+              parent_user_id: f.parent_user_id,
               parent_name:
                 (parent as any)?.full_name ||
                 (parent as any)?.email?.split("@")[0] ||
@@ -187,11 +190,18 @@ export async function GET(request: Request) {
         .in("id", unreadFeedbackIds);
     }
 
-    return NextResponse.json({
-      success: true,
-      feedbacks: formattedFeedbacks,
-      count: formattedFeedbacks.length,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        feedbacks: formattedFeedbacks,
+        count: formattedFeedbacks.length,
+      },
+      {
+        // Tegaskan tidak boleh di-cache edge: GET ini write-on-GET
+        // (mark is_read). Private + no-store agar perilaku sama persis.
+        headers: { "Cache-Control": "private, no-store" },
+      },
+    );
   } catch (error: any) {
     console.error("Error in student-feedback API:", error);
     return NextResponse.json(

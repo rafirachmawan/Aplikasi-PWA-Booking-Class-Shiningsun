@@ -28,6 +28,7 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
     setSubmitError("");
@@ -67,6 +68,7 @@ export function TeacherManager({ teachers }: { teachers: any[] }) {
 
   const handleExecuteDelete = async () => {
     if (!teacherToDelete) return;
+    if (isDeleting) return;
     setIsDeleting(true);
     setDeleteError("");
     try {

@@ -156,6 +156,7 @@ export function SchedulingClientWrapper({
 
   const handleDeleteBooking = async () => {
     if (!deleteConfirm.slotId || !deleteConfirm.studentId) return;
+    if (isDeleting) return;
     setIsDeleting(true);
     try {
       await removeStudentBooking(deleteConfirm.slotId, deleteConfirm.studentId);
@@ -183,6 +184,7 @@ export function SchedulingClientWrapper({
   const handleEditBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editModal.slotId || !studentId) return;
+    if (isEditing) return;
     setIsEditing(true);
     try {
       await moveStudentBooking(
@@ -212,6 +214,7 @@ export function SchedulingClientWrapper({
   // Bulk Actions Execution
   const executeBulkDelete = async () => {
     if (!studentId || bulkDeleteConfirm.studentSchedules.length === 0) return;
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
     setBulkDeleteConfirm({ isOpen: false, studentSchedules: [] });
@@ -229,6 +232,7 @@ export function SchedulingClientWrapper({
 
   const executeCopyToNextMonth = async () => {
     if (!studentId) return;
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
     setCopyConfirm(false);
@@ -313,6 +317,8 @@ export function SchedulingClientWrapper({
   }, [currentMonth, currentYear]);
 
   const handleMonthChange = (offset: number) => {
+    // Hemat Origin: cegah push ganda saat klik panah bulan cepat.
+    if (isSubmitting) return;
     setIsSubmitting(true);
     let newMonth = currentMonth + offset;
     let newYear = currentYear;
@@ -347,6 +353,7 @@ export function SchedulingClientWrapper({
   const handleAutoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentId) return;
+    if (isSubmitting) return;
 
     // Validasi
     const isValid = autoSchedules.every((s) => s.classId !== "");
@@ -443,6 +450,7 @@ export function SchedulingClientWrapper({
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentId || !manualClassId || !manualDate || !manualTime) return;
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
     try {

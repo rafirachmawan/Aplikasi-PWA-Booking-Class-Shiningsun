@@ -530,6 +530,8 @@ export function ParentDashboardClient({
   };
 
   const handleLogout = async () => {
+    // Hemat Origin: cegah logout ganda (push+refresh ganda). Alur sukses sama.
+    if (isLoggingOut) return;
     setIsLoggingOut(true);
     try {
       await clearParentSession();

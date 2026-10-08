@@ -239,6 +239,7 @@ export function StudentClientWrapper({
   };
 
   const handleExecuteAction = async () => {
+    if (isProcessing) return;
     setIsProcessing(true);
     setModalError("");
     try {

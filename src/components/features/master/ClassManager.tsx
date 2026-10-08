@@ -35,6 +35,7 @@ export function ClassManager({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
     setSubmitError("");
     try {
@@ -63,6 +64,7 @@ export function ClassManager({
 
   const handleExecuteDelete = async () => {
     if (!classToDelete) return;
+    if (isDeleting) return;
     setIsDeleting(true);
     setDeleteError("");
     try {

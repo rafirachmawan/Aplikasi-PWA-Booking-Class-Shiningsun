@@ -217,9 +217,11 @@ export async function GET(req: Request) {
     }
 
     // 3. Fetch all active device push subscriptions
+    // Hemat Origin/CPU (tanpa ubah logika/data): push hanya pakai
+    // endpoint,p256dh,auth,branch_id (lihat lib/push.ts + payload cabang).
     const { data: subscriptions, error: subErr } = await supabase
       .from("push_subscriptions")
-      .select("*");
+      .select("endpoint,p256dh,auth,branch_id");
 
     if (subErr || !subscriptions || subscriptions.length === 0) {
       return NextResponse.json({

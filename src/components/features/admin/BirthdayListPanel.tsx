@@ -55,7 +55,9 @@ export function BirthdayListPanel({
   ];
 
   // Fetch data dari API
-  const fetchBirthdayData = async () => {
+  // Hemat Origin (tanpa ubah logika/data): batalkan fetch basi saat ganti
+  // bulan/tanggal cepat agar tidak balapan. Urutan loop, dedup, sort sama.
+  const fetchBirthdayData = async (signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
 
@@ -69,14 +71,19 @@ export function BirthdayListPanel({
         const allStudents: Student[] = [];
 
         for (const day of selectedDays) {
+          if (signal?.aborted) return;
           params.set("day", day.toString());
-          const response = await fetch(`/api/birthday?${params.toString()}`);
+          const response = await fetch(`/api/birthday?${params.toString()}`, {
+            signal,
+          });
           const result = await response.json();
 
           if (result.success && result.students) {
             allStudents.push(...result.students);
           }
         }
+
+        if (signal?.aborted) return;
 
         // Remove duplicates by ID
         const uniqueStudents = Array.from(
@@ -93,8 +100,12 @@ export function BirthdayListPanel({
         setStudents(uniqueStudents);
       } else {
         // Tampilkan semua tanggal di bulan yang dipilih
-        const response = await fetch(`/api/birthday?${params.toString()}`);
+        const response = await fetch(`/api/birthday?${params.toString()}`, {
+          signal,
+        });
         const result = await response.json();
+
+        if (signal?.aborted) return;
 
         if (result.success && result.students) {
           let filtered = result.students;
@@ -114,15 +125,18 @@ export function BirthdayListPanel({
         }
       }
     } catch (err: any) {
+      if (err?.name === "AbortError" || signal?.aborted) return;
       setError(err.message || "Terjadi kesalahan saat mengambil data");
       setStudents([]);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBirthdayData();
+    const ctrl = new AbortController();
+    fetchBirthdayData(ctrl.signal);
+    return () => ctrl.abort();
   }, [selectedMonth, selectedDays, sortByProximity]);
 
   // Toggle filter tanggal

@@ -210,9 +210,11 @@ export const getActiveBranchName = cache(async (): Promise<string | null> => {
 
 export async function getBranches() {
   const supabaseServer = await createClient();
+  // Hemat Origin (tanpa ubah logika/data): UI hanya pakai id+name
+  // (dashboard, BranchSelector, portal-ortu). Filter + order sama.
   const { data, error } = await supabaseServer
     .from("branches")
-    .select("*")
+    .select("id,name")
     .eq("is_active", true)
     .order("name");
 
@@ -356,9 +358,12 @@ export async function getClasses() {
 
 export async function getLabels() {
   const supabaseServer = await createClient();
+  // Hemat Origin (tanpa ubah logika/data): UI hanya pakai
+  // id,main_level,sub_level,hex_color (+branch_id/is_system_default defensif).
+  // created_at tidak pernah dibaca. Order sama.
   const { data, error } = await supabaseServer
     .from("labels")
-    .select("*")
+    .select("id,branch_id,main_level,sub_level,hex_color,is_system_default")
     .order("main_level")
     .order("sub_level");
 
