@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { WorksheetFormModal } from "@/components/features/worksheets/WorksheetFormModal";
@@ -42,6 +42,17 @@ export function WorksheetClientWrapper({
     const t = setTimeout(() => setSuccessToast(""), 5000);
     return () => clearTimeout(t);
   }, [successToast]);
+
+  // Refresh ber-loading: isRefreshing true sampai data baru dari server
+  // benar-benar tiba dan daftar ter-render ulang. Dipakai setelah tambah /
+  // edit / hapus berhasil agar user yakin (tidak mengira gagal saat daftar
+  // masih menampilkan data lama selama jeda refresh).
+  const [isRefreshing, startRefreshTransition] = useTransition();
+  const refreshListAfterSuccess = () => {
+    startRefreshTransition(() => {
+      router.refresh();
+    });
+  };
 
   // Student lock state - when navigating from dashboard detail page (student_id URL param)
   const [lockedStudentId, setLockedStudentId] = useState<string>("");
@@ -158,7 +169,7 @@ export function WorksheetClientWrapper({
       } else {
         setSuccessToast("✓ Baris evaluasi berhasil dihapus.");
       }
-      router.refresh();
+      refreshListAfterSuccess();
     } catch (err: any) {
       console.error(err);
       alert(err.message || "Gagal menghapus.");
@@ -904,6 +915,21 @@ export function WorksheetClientWrapper({
         </div>
       )}
 
+      {/* Overlay refresh setelah tambah/edit/hapus berhasil: meyakinkan bahwa
+          data sudah tersimpan dan sedang dimuat ulang. Hilang otomatis tepat
+          saat daftar sudah menampilkan data terbaru. */}
+      {isRefreshing && (
+        <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-white/70 dark:bg-zinc-950/70 backdrop-blur-sm">
+          <div className="flex items-center justify-center w-16 h-16 rounded-full border-4 border-slate-200 dark:border-zinc-700 border-t-brand-600 dark:border-t-brand-500 animate-spin" />
+          <p className="mt-4 text-sm font-bold text-slate-800 dark:text-white animate-pulse">
+            ✓ Tersimpan!
+          </p>
+          <p className="mt-1 text-xs font-medium text-slate-500 dark:text-zinc-400 animate-pulse">
+            Memuat data terbaru…
+          </p>
+        </div>
+      )}
+
       {/* Form Modal */}
       {(isModalOpen || editingWorksheet) && (
         <WorksheetFormModal
@@ -922,7 +948,7 @@ export function WorksheetClientWrapper({
             setIsModalOpen(false);
             setEditingWorksheet(null);
             if (msg) setSuccessToast(msg);
-            router.refresh();
+            refreshListAfterSuccess();
           }}
         />
       )}

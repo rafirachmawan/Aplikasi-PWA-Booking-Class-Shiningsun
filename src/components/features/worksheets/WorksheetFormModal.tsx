@@ -33,6 +33,9 @@ interface WorksheetFormModalProps {
   scheduleSlotId?: string;
   scheduleTime?: string; // "HH:MM" / "HH:MM:SS"
   scheduleClassName?: string;
+  // Mode baca dari dashboard: tampilkan laporan yang sudah ada apa adanya,
+  // tidak bisa diubah/disimpan (ubah tetap dari halaman Laporan Perkembangan).
+  readOnly?: boolean;
   onClose: () => void;
   onSuccess: (message?: string) => void;
 }
@@ -153,10 +156,13 @@ export function WorksheetFormModal({
   scheduleSlotId,
   scheduleTime,
   scheduleClassName,
+  readOnly = false,
   onClose,
   onSuccess,
 }: WorksheetFormModalProps) {
   const isEditing = !!initialData?.id;
+  // Mode baca hanya valid bila ada baris laporan yang dimuat (ada id).
+  const isReadOnly = readOnly && isEditing;
 
   // Ambil template terbaru sesuai cabang aktif setiap kali modal dibuka,
   // agar dropdown tidak memakai data lama dari cabang lain.
@@ -201,6 +207,9 @@ export function WorksheetFormModal({
   );
   const [gdriveLink, setGdriveLink] = useState(initialData?.gdrive_link || "");
   const [materi, setMateri] = useState(initialData?.materi || "");
+  const [manualScheduleTime, setManualScheduleTime] = useState(
+    initialData?.schedule_time || "",
+  );
 
   // Attendance Status State ('HADIR' | 'IJIN' | 'SAKIT' | 'LIBUR' | 'LIBUR_HARI_BESAR')
   type AttendanceStatus =
@@ -221,7 +230,21 @@ export function WorksheetFormModal({
   );
 
   // Selected absence reason (from Template Penilaian dropdown)
-  const [absenceReason, setAbsenceReason] = useState("");
+  // Saat memuat baris yang sudah ada (mode edit/baca), ambil dari baris
+  // pertama kegiatan agar dropdown alasan tampil benar.
+  const [absenceReason, setAbsenceReason] = useState(() => {
+    const t0 = initialData?.title || "";
+    const m0 = initialData?.materi || "";
+    const isAbs =
+      t0.includes("Ijin") ||
+      m0.includes("Ijin") ||
+      t0.includes("Sakit") ||
+      m0.includes("Sakit");
+    if (!isAbs) return "";
+    const lines = parseBulletList(initialData?.kegiatan);
+    const first = (lines[0] || "").trim();
+    return first && first !== "-" ? first : "";
+  });
 
   const isAbsent = attendanceStatus !== "HADIR";
 
@@ -277,9 +300,19 @@ export function WorksheetFormModal({
   const [selectedStudentLabel, setSelectedStudentLabel] = useState<any>(null);
   const [currentMateriLevel, setCurrentMateriLevel] = useState<string>("");
 
-  // State for Bulan Ke - Dropdown + Manual (empty initially, auto-filled in useEffect after useMemo)
-  const [bulanKe, setBulanKe] = useState<string>("");
+  // State for Bulan Ke - Dropdown + Manual (mode edit langsung terisi dari data tersebut)
+  const [bulanKe, setBulanKe] = useState<string>(() =>
+    initialData?.bulan_ke != null ? String(initialData.bulan_ke) : "",
+  );
   const [manualBulanKe, setManualBulanKe] = useState<string>("");
+
+  // Mode Edit: otomatis tampilkan Bulan ke- berdasarkan data tersebut (tidak mengubah logika tambah baru)
+  useEffect(() => {
+    if (isEditing && initialData?.bulan_ke != null) {
+      setBulanKe(String(initialData.bulan_ke));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing, initialData?.id]);
 
   // Sync manual and dropdown if one is set
   useEffect(() => {
@@ -672,7 +705,9 @@ export function WorksheetFormModal({
   // Catatan: duplicateInfo ("sudah terisi") dideklarasikan setelah
   // worksheetDateInput agar tidak membaca state sebelum deklarasi.
 
-  // --- Anti-kehilangan data: deteksi form kotor (tanpa merubah logika utama) ---
+  // --- Anti-kehilangan data: deteksi form kotor (hanya ketikan user) ---
+  // studentId sengaja TIDAK dihitung agar form terkunci yang baru dibuka
+  // tidak dianggap kotor dan tidak memicu draft kosong.
   const isDirty = useMemo(() => {
     const hasText =
       (title || "").trim() !== "" ||
@@ -687,7 +722,7 @@ export function WorksheetFormModal({
     const hasItems =
       (kegiatanItems || []).some((x) => (x || "").trim() !== "") ||
       (hasilBelajarItems || []).some((x) => (x || "").trim() !== "");
-    return hasText || hasItems || (studentId || "") !== "";
+    return hasText || hasItems;
   }, [
     title,
     materi,
@@ -700,21 +735,65 @@ export function WorksheetFormModal({
     bulanKe,
     kegiatanItems,
     hasilBelajarItems,
-    studentId,
   ]);
 
-  const getDraftKey = () => {
-    // Hanya untuk entri baru agar tidak menimpa data edit yang sudah ada
-    const scope = initialData?.id ? `edit-${initialData.id}` : `new-${lockedStudentId || "all"}`;
-    return `ws-draft-v1:${scope}`;
+  // Draft diperketat: per siswa + per jadwal (slot/jam + tanggal).
+  // Besok ada jadwal lagi di siswa yang sama -> key beda -> tidak ngikut draft kemarin.
+  // Jalur umum tanpa lockedStudentId -> draft DIMATIKAN (return null).
+  const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
+  const getDraftContext = () => {
+    const slotPart = (
+      (scheduleSlotId || initialData?.schedule_slot_id || "").toString().trim() ||
+      normalizeClientTime(scheduleTime || initialData?.schedule_time) ||
+      "nonslot"
+    )
+      .replace(/[^a-zA-Z0-9:-]/g, "")
+      .slice(0, 40) || "nonslot";
+    let datePart = "";
+    try {
+      datePart = normalizeClientDate(
+        parseIndonesianDateToISO(
+          currentDate || initialData?.worksheet_date || getTodayISO(),
+        ) || currentDate ||
+          initialData?.worksheet_date ||
+          getTodayISO(),
+      );
+    } catch {
+      datePart = normalizeClientDate(
+        (currentDate || initialData?.worksheet_date || getTodayISO()) as string,
+      );
+    }
+    if (!datePart) datePart = normalizeClientDate(getTodayISO());
+    return { slotPart, datePart };
+  };
+
+  const getDraftKey = (): string | null => {
+    // Mode edit: tidak pakai draft (efek restore/autosave sudah skip isEditing),
+    // kembalikan key edit agar penghapusan saat sukses tetap aman.
+    if (initialData?.id) return `ws-draft-v1:edit-${initialData.id}`;
+    // Jalur umum (tambah baru tanpa kunci siswa): draft dimatikan.
+    if (!lockedStudentId) return null;
+    const { slotPart, datePart } = getDraftContext();
+    return `ws-draft-v1:new-${lockedStudentId}:${slotPart}:${datePart}`;
   };
 
   const handleSafeClose = () => {
     if (isSubmitting) return;
+    // Mode baca: tidak ada yang bisa berubah, tutup langsung tanpa konfirmasi.
+    if (isReadOnly) {
+      onClose();
+      return;
+    }
+    if (!isDirty) {
+      onClose();
+      return;
+    }
+    const dk = getDraftKey();
     if (
-      isDirty &&
       !window.confirm(
-        "Form belum disimpan. Tutup dan simpan sebagai draft otomatis di HP ini?",
+        dk
+          ? "Form belum disimpan. Tutup dan simpan sebagai draft khusus siswa + jadwal ini di HP (otomatis hilang 7 hari)?"
+          : "Form belum disimpan. Tutup tanpa menyimpan?",
       )
     ) {
       return;
@@ -727,25 +806,63 @@ export function WorksheetFormModal({
   useEffect(() => {
     if (isEditing || draftRestored) return;
     try {
-      const raw = localStorage.getItem(getDraftKey());
+      const dk = getDraftKey();
+      // Jalur umum: draft dimatikan + bersihkan sisa draft umum lama bila ada.
+      if (!dk) {
+        try {
+          localStorage.removeItem("ws-draft-v1:new-all");
+        } catch {
+          // abaikan
+        }
+        setDraftRestored(true);
+        return;
+      }
+      // Bersihkan key legacy format lama (per-siswa tanpa jadwal) agar tidak
+      // membingungkan setelah rilis perketat ini.
+      try {
+        const legacy = `ws-draft-v1:new-${lockedStudentId}`;
+        if (legacy !== dk) localStorage.removeItem(legacy);
+        localStorage.removeItem("ws-draft-v1:new-all");
+      } catch {
+        // abaikan
+      }
+      const raw = localStorage.getItem(dk);
       if (!raw) {
         setDraftRestored(true);
         return;
       }
       const d = JSON.parse(raw);
-      // Guard: draft siswa lain tidak boleh menimpa pilihan siswa aktif
-      // (jalur dashboard terkunci per siswa). Field draft lain tetap direstore.
-      if (d.studentId) {
-        const expectedId =
-          lockedStudentId || initialData?.student_id || "";
-        if (expectedId) {
-          if (d.studentId === expectedId) setStudentId(d.studentId);
-        } else if (
-          Array.isArray(students) &&
-          students.some((s: any) => s?.id === d.studentId)
-        ) {
-          setStudentId(d.studentId);
+      // Expiry 7 hari: draft basi diabaikan + dihapus.
+      try {
+        if (d.savedAt) {
+          const age = Date.now() - new Date(d.savedAt).getTime();
+          if (!Number.isNaN(age) && age > DRAFT_TTL_MS) {
+            try {
+              localStorage.removeItem(dk);
+            } catch {
+              // abaikan
+            }
+            setDraftRestored(true);
+            return;
+          }
         }
+      } catch {
+        // abaikan, lanjut validasi identitas
+      }
+      // Guard identitas penuh: draft hanya untuk siswa + jadwal ini.
+      // Beda siswa / slot / tanggal -> buang, jangan restore field apa pun.
+      const { slotPart, datePart } = getDraftContext();
+      if (d.studentId && d.studentId !== lockedStudentId) {
+        setDraftRestored(true);
+        return;
+      }
+      if (d.slotId && d.slotId !== slotPart) {
+        setDraftRestored(true);
+        return;
+      }
+      if (d.scheduleDate && d.scheduleDate !== datePart) {
+        setDraftRestored(true);
+        return;
       }
       if (d.title) setTitle(d.title);
       if (d.description) setDescription(d.description);
@@ -760,6 +877,19 @@ export function WorksheetFormModal({
       if (d.bulanKe) setBulanKe(d.bulanKe);
       if (d.manualBulanKe) setManualBulanKe(d.manualBulanKe);
       if (d.gdriveLink) setGdriveLink(d.gdriveLink);
+      // Status kehadiran ikut draft agar buka draft Ijin/Sakit tidak reset ke Hadir.
+      if (
+        d.attendanceStatus === "HADIR" ||
+        d.attendanceStatus === "IJIN" ||
+        d.attendanceStatus === "SAKIT" ||
+        d.attendanceStatus === "LIBUR" ||
+        d.attendanceStatus === "LIBUR_HARI_BESAR"
+      ) {
+        setAttendanceStatus(d.attendanceStatus);
+      }
+      if (typeof d.absenceReason === "string" && d.absenceReason.trim()) {
+        setAbsenceReason(d.absenceReason);
+      }
     } catch {
       // abaikan draft rusak
     } finally {
@@ -768,20 +898,25 @@ export function WorksheetFormModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Autosave draft tiap 2 detik jika kotor (hanya entri baru, lokal saja)
+  // Autosave draft tiap 2 detik jika kotor (hanya entri baru terkunci, lokal saja)
   // Tanggal disimpan di efek terpisah setelah worksheetDateInput dideklarasikan
   useEffect(() => {
     if (isEditing || !draftRestored) return;
     if (!isDirty) return;
+    const dk = getDraftKey();
+    if (!dk) return; // jalur umum: draft dimatikan
+    const { slotPart, datePart } = getDraftContext();
     const t = setTimeout(() => {
       try {
-        const prevRaw = localStorage.getItem(getDraftKey());
+        const prevRaw = localStorage.getItem(dk);
         const prev = prevRaw ? JSON.parse(prevRaw) : {};
         localStorage.setItem(
-          getDraftKey(),
+          dk,
           JSON.stringify({
             ...prev,
-            studentId,
+            studentId: lockedStudentId || studentId,
+            slotId: slotPart,
+            scheduleDate: datePart,
             title,
             description,
             materi,
@@ -793,6 +928,8 @@ export function WorksheetFormModal({
             bulanKe,
             manualBulanKe,
             gdriveLink,
+            attendanceStatus,
+            absenceReason,
             savedAt: new Date().toISOString(),
           }),
         );
@@ -815,6 +952,8 @@ export function WorksheetFormModal({
     bulanKe,
     manualBulanKe,
     gdriveLink,
+    attendanceStatus,
+    absenceReason,
     isDirty,
     draftRestored,
   ]);
@@ -1180,12 +1319,27 @@ export function WorksheetFormModal({
   );
 
   // Sinkron tanggal dengan draft (terpisah agar tidak dipakai sebelum deklarasi)
+  // Hanya untuk draft jadwal yang sama (sudah divalidasi di efek restore utama).
   useEffect(() => {
     if (isEditing || !draftRestored) return;
     try {
-      const raw = localStorage.getItem(getDraftKey());
+      const dk = getDraftKey();
+      if (!dk) return;
+      const raw = localStorage.getItem(dk);
       if (!raw) return;
       const d = JSON.parse(raw);
+      const { slotPart, datePart } = getDraftContext();
+      if (d.studentId && d.studentId !== lockedStudentId) return;
+      if (d.slotId && d.slotId !== slotPart) return;
+      if (d.scheduleDate && d.scheduleDate !== datePart) return;
+      try {
+        if (d.savedAt) {
+          const age = Date.now() - new Date(d.savedAt).getTime();
+          if (!Number.isNaN(age) && age > DRAFT_TTL_MS) return;
+        }
+      } catch {
+        // abaikan, lanjut restore tanggal
+      }
       if (d.worksheetDateInput) {
         setWorksheetDateInput(d.worksheetDateInput);
         setWorksheetDate(d.worksheetDateInput);
@@ -1198,12 +1352,14 @@ export function WorksheetFormModal({
 
   useEffect(() => {
     if (isEditing || !draftRestored || !isDirty) return;
+    const dk = getDraftKey();
+    if (!dk) return;
     const t = setTimeout(() => {
       try {
-        const prevRaw = localStorage.getItem(getDraftKey());
+        const prevRaw = localStorage.getItem(dk);
         const prev = prevRaw ? JSON.parse(prevRaw) : {};
         localStorage.setItem(
-          getDraftKey(),
+          dk,
           JSON.stringify({ ...prev, worksheetDateInput }),
         );
       } catch {
@@ -1246,7 +1402,9 @@ export function WorksheetFormModal({
         .toString()
         .trim() || null;
     const effTime =
-      normalizeClientTime(scheduleTime || initialData?.schedule_time) || null;
+      normalizeClientTime(
+        scheduleTime || manualScheduleTime || initialData?.schedule_time,
+      ) || null;
     const list = Array.isArray(worksheets) ? worksheets : [];
     const matched =
       list.find((w: any) => {
@@ -1254,19 +1412,27 @@ export function WorksheetFormModal({
         if (wStudent !== effStudent) return false;
         if (normalizeClientDate(w.worksheet_date || w.created_at) !== effDate)
           return false;
-        if (effSlot) {
-          const wSlot = (w.schedule_slot_id || "").toString();
-          if (wSlot) return wSlot === effSlot;
-          // Baris tanpa slot (lama / hanya-jam) dianggap menempati tanggal itu.
+        const wSlot = (w.schedule_slot_id || "").toString().trim();
+        const wTime = normalizeClientTime(w.schedule_time);
+
+        // 1. Jika keduanya memiliki slot_id: tabrakan hanya jika slot-nya sama
+        if (effSlot && wSlot) {
+          return wSlot === effSlot;
+        }
+
+        // 2. Jika keduanya memiliki jam sesi: tabrakan hanya jika jam-nya sama
+        if (effTime && wTime) {
+          return wTime === effTime;
+        }
+
+        // 3. Jika keduanya sama-sama tidak memiliki slot & tidak memiliki jam
+        // (laporan umum tanggal yang sama tanpa konteks jam)
+        if (!effSlot && !effTime && !wSlot && !wTime) {
           return true;
         }
-        if (effTime) {
-          const wTime = normalizeClientTime(w.schedule_time);
-          if (wTime) return wTime === effTime;
-          // Baris lama tanpa jam dianggap menempati tanggal itu (hindari double).
-          return true;
-        }
-        return true;
+
+        // Sesi dengan jam berbeda tidak dianggap duplikat (siswa boleh les 2 sesi sehari)
+        return false;
       }) || null;
     return { isDuplicate: !!matched, matched };
   }, [
@@ -1278,6 +1444,7 @@ export function WorksheetFormModal({
     worksheets,
     scheduleSlotId,
     scheduleTime,
+    manualScheduleTime,
   ]);
 
   useEffect(() => {
@@ -1633,6 +1800,12 @@ export function WorksheetFormModal({
       return;
     }
 
+    if (!worksheetDateInput || !worksheetDateInput.trim()) {
+      setErrorMsg("Pilih tanggal laporan terlebih dahulu.");
+      formRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     // Blokir sejak awal jika terdeteksi sudah terisi (tanpa menyentuh server).
     if (!isEditing && duplicateInfo.isDuplicate) {
       setErrorMsg(
@@ -1716,7 +1889,9 @@ export function WorksheetFormModal({
         .toString()
         .trim();
       const effTime =
-        normalizeClientTime(scheduleTime || initialData?.schedule_time) || "";
+        normalizeClientTime(
+          scheduleTime || manualScheduleTime || initialData?.schedule_time,
+        ) || "";
       if (!isEditing) {
         if (effSlotId) formData.append("schedule_slot_id", effSlotId);
         if (effTime) formData.append("schedule_time", effTime);
@@ -1733,9 +1908,10 @@ export function WorksheetFormModal({
         await createWorksheet(formData);
       }
 
-      // Sukses: hapus draft lokal (tidak menyentuh data server selain insert/update di atas)
+      // Sukses: hapus draft lokal jadwal ini (tidak menyentuh data server selain insert/update di atas)
       try {
-        localStorage.removeItem(getDraftKey());
+        const dk = getDraftKey();
+        if (dk) localStorage.removeItem(dk);
       } catch {
         // abaikan
       }
@@ -1788,14 +1964,17 @@ export function WorksheetFormModal({
         friendly =
           "Laporan perkembangan siswa ini pada jadwal (tanggal & jam) tersebut sudah terisi. Tidak bisa isi 2x.";
       } else if (/unexpected response|failed to fetch|network|load failed/i.test(raw)) {
-        friendly =
-          "Koneksi/server terputus saat menyimpan. Data Anda tetap aman sebagai draft otomatis — coba tekan Simpan lagi. Jika masih gagal, refresh halaman lalu buka form (draft akan kembali).";
+        friendly = getDraftKey()
+          ? "Koneksi/server terputus saat menyimpan. Data Anda tetap aman sebagai draft khusus jadwal ini — coba tekan Simpan lagi. Jika masih gagal, refresh halaman lalu buka form jadwal yang sama (draft akan kembali)."
+          : "Koneksi/server terputus saat menyimpan. Coba tekan Simpan lagi.";
       } else if (/auth session missing|jwt expired|invalid jwt|refresh token|not authenticated|user.*null/i.test(raw)) {
-        friendly =
-          "Sesi login kedaluwarsa. Refresh halaman / login ulang, lalu buka form lagi — draft Anda tersimpan otomatis di HP ini.";
+        friendly = getDraftKey()
+          ? "Sesi login kedaluwarsa. Refresh halaman / login ulang, lalu buka form jadwal yang sama — draft Anda tersimpan otomatis di HP ini."
+          : "Sesi login kedaluwarsa. Refresh halaman / login ulang, lalu coba simpan lagi.";
       } else if (/row-level security|policy|permission denied|42501/i.test(raw)) {
-        friendly =
-          "Izin database menolak penyimpanan. Hubungi admin (jangan logout dulu) — draft Anda tersimpan otomatis.";
+        friendly = getDraftKey()
+          ? "Izin database menolak penyimpanan. Hubungi admin (jangan logout dulu) — draft jadwal ini tersimpan otomatis."
+          : "Izin database menolak penyimpanan. Hubungi admin.";
       }
       setErrorMsg(friendly);
       formRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -1827,9 +2006,11 @@ export function WorksheetFormModal({
             </div>
             <div>
               <h3 className="text-sm sm:text-lg font-extrabold text-white tracking-tight leading-tight">
-                {isEditing
-                  ? "Edit Laporan Perkembangan"
-                  : "Tambah Laporan Perkembangan"}
+                {isReadOnly
+                  ? "Lihat Laporan Perkembangan"
+                  : isEditing
+                    ? "Edit Laporan Perkembangan"
+                    : "Tambah Laporan Perkembangan"}
               </h3>
               <p className="text-[11px] sm:text-xs text-sky-100/90 font-medium mt-0.5">
                 Catat materi, kegiatan, hasil belajar, dan catatan guru
@@ -1889,14 +2070,15 @@ export function WorksheetFormModal({
               </span>
             </div>
           )}
-          {!isEditing && isDirty && (
+          {!isEditing && isDirty && !!lockedStudentId && (
             <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-[11px] font-semibold border border-emerald-200/60 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/50">
-              <span>💾 Draft otomatis tersimpan di HP ini</span>
+              <span>💾 Draft khusus jadwal ini tersimpan di HP (7 hari)</span>
               <button
                 type="button"
                 onClick={() => {
                   try {
-                    localStorage.removeItem(getDraftKey());
+                    const dk = getDraftKey();
+                    if (dk) localStorage.removeItem(dk);
                   } catch {
                     // abaikan
                   }
@@ -1909,6 +2091,30 @@ export function WorksheetFormModal({
             </div>
           )}
 
+          {isReadOnly && (
+            <div className="p-3 rounded-xl bg-sky-50 text-sky-800 text-xs font-bold border border-sky-200/70 dark:bg-sky-950/40 dark:text-sky-200 dark:border-sky-900/50 flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <span>🔒</span>
+                <span>
+                  Sudah terisi — mengikuti Laporan Perkembangan. Ubah tetap
+                  dari sana.
+                </span>
+              </span>
+              <a
+                href={`/worksheets?student_id=${lockedStudentId || initialData?.student_id || ""}`}
+                className="underline underline-offset-2 hover:opacity-80 shrink-0"
+              >
+                Buka Laporan
+              </a>
+            </div>
+          )}
+
+          {/* Mode baca: fieldset disabled mengunci semua input tanpa mengubah layout.
+              Footer Simpan di luar fieldset agar tombol Batal tetap aktif. */}
+          <fieldset
+            disabled={isReadOnly}
+            className="border-0 m-0 p-0 min-w-0 space-y-4 sm:space-y-5"
+          >
           {/* ── SECTION 1: Info Dasar ── */}
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 p-3.5 sm:p-4 space-y-3.5 sm:space-y-4">
             <div className="flex items-center gap-2">
@@ -2217,6 +2423,24 @@ export function WorksheetFormModal({
                 )}
               </div>
             </div>
+
+            {/* Jam Sesi (Opsional untuk kasus 1 siswa 2 sesi jam beda di tanggal sama) */}
+            {!scheduleTime && !isEditing && (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  Jam Sesi Kelas{" "}
+                  <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
+                    (Opsional, misal jika siswa les 2 sesi di tanggal ini)
+                  </span>
+                </label>
+                <input
+                  type="time"
+                  value={manualScheduleTime}
+                  onChange={(e) => setManualScheduleTime(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs"
+                />
+              </div>
+            )}
 
             {/* Teacher Name */}
             <div>
@@ -3747,6 +3971,8 @@ export function WorksheetFormModal({
             </div>
           </div>
 
+          </fieldset>
+
           {/* Submit Actions */}
           {errorMsg && (
             <div className="p-3 rounded-xl bg-red-50 text-red-700 text-xs font-semibold border border-red-200/60 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50 flex items-center gap-2">
@@ -3769,6 +3995,7 @@ export function WorksheetFormModal({
             >
               Batal
             </button>
+            {!isReadOnly && (
             <button
               type="submit"
               disabled={isSubmitting || (!isEditing && duplicateInfo.isDuplicate)}
@@ -3782,6 +4009,7 @@ export function WorksheetFormModal({
                     ? "✓ Simpan Perubahan"
                     : "✓ Simpan Laporan Perkembangan"}
             </button>
+            )}
           </div>
         </form>
       </div>

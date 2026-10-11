@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { setSuperadminBranch } from "@/lib/actions";
+import { setSuperadminBranch, clearSuperadminBranch } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Branch {
@@ -59,7 +59,6 @@ export function BranchSelector({
     try {
       if (newBranchId === "") {
         // Reset ke netral: hapus cookie
-        const { clearSuperadminBranch } = await import("@/lib/actions");
         await clearSuperadminBranch();
         // Muat ulang data server dengan cookie baru (tujuan sama: dashboard
         // dengan cabang terpilih, tanpa full reload seluruh aplikasi).

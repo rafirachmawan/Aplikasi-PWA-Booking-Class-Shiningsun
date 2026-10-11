@@ -479,7 +479,7 @@ export async function getOverdueWorksheets(branchId = "ALL") {
         .select(
           `
           student_id,
-          slot:schedule_slots!inner(date, time, class_id)
+          slot:schedule_slots!inner(id, date, time, class_id)
         `,
         )
         .in("student_id", studentIds)
@@ -613,7 +613,12 @@ export async function getOverdueWorksheets(branchId = "ALL") {
 
     // 4. Find overdue students (marked as OVERDUE if schedule + 1 hour passed AND no worksheet)
     const overdueList: Array<
-      any & { missedDate: string; missedTime: string; className: string | null }
+      any & {
+        missedDate: string;
+        missedTime: string;
+        className: string | null;
+        missedSlotId: string | null;
+      }
     > = [];
     const seenOverdueEntries = new Set<string>();
 
@@ -664,9 +669,16 @@ export async function getOverdueWorksheets(branchId = "ALL") {
           continue; // SKIP: Already have worksheet, even if it's "Tidak Hadir/Ijin/Sakit/Libur"
         }
 
-        // Create unique key to avoid duplicates (per jam agar 2 slot sehari
-        // tidak saling menutupi; data lama tanpa jam tetap 1 entri per tanggal)
-        const entryKey = `${student.id}_${schedDate}_${schedTimeNorm}`;
+        // Create unique key to avoid duplicates (per slot/jam agar 2 jadwal
+        // sehari tidak saling menutupi; data lama tanpa jam tetap 1 entri per tanggal)
+        // missedSlotId ikut di kunci agar 2 slot beda di jam yang sama tetap
+        // muncul sebagai 2 entri terpisah (mengikuti jadwal siswa).
+        const slotObjForKey = Array.isArray(booking.slot)
+          ? booking.slot[0]
+          : booking.slot;
+        const schedSlotIdForKey =
+          slotObjForKey?.id != null ? String(slotObjForKey.id) : "";
+        const entryKey = `${student.id}_${schedDate}_${schedTimeNorm}_${schedSlotIdForKey}`;
 
         // Skip if already added
         if (seenOverdueEntries.has(entryKey)) {
@@ -683,6 +695,10 @@ export async function getOverdueWorksheets(branchId = "ALL") {
           missedDate: schedDate,
           missedTime: schedTime,
           className,
+          // Konteks slot jadwal (nullable agar data lama & flow lama tetap jalan).
+          // Dibawa sampai form agar simpan mengikuti jadwal (jam 9 vs jam 4 sore
+          // = slot berbeda) dan cegah double per slot.
+          missedSlotId: schedSlotIdForKey ? schedSlotIdForKey : null,
         });
       }
     }
@@ -2342,22 +2358,35 @@ function isDuplicateKeyError(err: any): boolean {
 }
 
 // Aturan tabrakan laporan per jadwal — dipakai create & update agar konsisten
-// dengan cek client di WorksheetFormModal. Baris lama tanpa slot/jam dianggap
-// menempati tanggal itu; slot beda (sesi beda) tetap boleh.
+// dengan cek client di WorksheetFormModal. Mengizinkan 1 siswa memiliki 2 sesi
+// pada tanggal yang sama jika jam/slot-nya berbeda.
 function isSlotDuplicate(
   newSlot: string | null,
   newTime: string | null,
   rows: any[],
 ): boolean {
   return (rows || []).some((w: any) => {
-    const wSlot = (w?.schedule_slot_id || "").toString();
-    if (newSlot) {
-      if (wSlot) return wSlot === newSlot;
+    const wSlot = (w?.schedule_slot_id || "").toString().trim();
+    const wTime = normalizeScheduleTime(w?.schedule_time);
+
+    // 1. Jika keduanya memiliki slot_id: tabrakan hanya jika slot-nya sama
+    if (newSlot && wSlot) {
+      return wSlot === newSlot;
+    }
+
+    // 2. Jika keduanya memiliki jam sesi: tabrakan hanya jika jam-nya sama
+    if (newTime && wTime) {
+      return wTime === newTime;
+    }
+
+    // 3. Jika keduanya sama-sama tidak memiliki slot & tidak memiliki jam
+    // (laporan umum tanggal yang sama tanpa konteks jam)
+    if (!newSlot && !newTime && !wSlot && !wTime) {
       return true;
     }
-    const wTime = normalizeScheduleTime(w?.schedule_time);
-    if (wTime) return wTime === newTime;
-    return true;
+
+    // Sesi dengan jam berbeda tidak dianggap duplikat (siswa boleh les 2 sesi sehari)
+    return false;
   });
 }
 
@@ -2437,16 +2466,23 @@ export async function createWorksheet(formData: FormData) {
         throw new Error(DUPLICATE_REPORT_MESSAGE);
       }
     } else {
-      // Flow lama tanpa konteks jam: cegah double per siswa+tanggal.
+      // Flow tanpa konteks jam: cegah double jika sudah ada laporan tanpa jam di tanggal itu
       const { data: existing, error: checkError } = await supabaseServer
         .from("student_worksheets")
-        .select("id")
+        .select("id, schedule_slot_id, schedule_time")
         .eq("student_id", student_id)
         .eq("worksheet_date", worksheet_date)
-        .limit(1);
-      if (checkError) throw checkError;
-      if (existing && existing.length > 0) {
-        throw new Error(DUPLICATE_REPORT_MESSAGE);
+        .limit(20);
+      if (checkError) {
+        if (!isMissingColumnError(checkError)) throw checkError;
+      } else if (existing && existing.length > 0) {
+        const hasUntimed = existing.some(
+          (w: any) =>
+            !(w?.schedule_slot_id) && !normalizeScheduleTime(w?.schedule_time),
+        );
+        if (hasUntimed) {
+          throw new Error(DUPLICATE_REPORT_MESSAGE);
+        }
       }
     }
   } catch (e: any) {
@@ -2645,6 +2681,24 @@ export async function updateWorksheet(id: string, formData: FormData) {
             }
           } else if (isSlotDuplicate(effSlot, effTime, dayRows || [])) {
             throw new Error(DUPLICATE_REPORT_MESSAGE);
+          }
+        } else {
+          // Edit tanpa slot/jam: cegah jika tanggal tujuan sudah ditempati laporan lain yang juga tanpa slot & jam
+          const { data: dayRows, error: dayErr } = await supabaseServer
+            .from("student_worksheets")
+            .select("id, schedule_slot_id, schedule_time")
+            .eq("student_id", ownStudentId)
+            .eq("worksheet_date", updatePayload.worksheet_date)
+            .neq("id", id)
+            .limit(20);
+          if (!dayErr && dayRows && dayRows.length > 0) {
+            const hasUntimed = dayRows.some(
+              (w: any) =>
+                !(w?.schedule_slot_id) && !normalizeScheduleTime(w?.schedule_time),
+            );
+            if (hasUntimed) {
+              throw new Error(DUPLICATE_REPORT_MESSAGE);
+            }
           }
         }
       }

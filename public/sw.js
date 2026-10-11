@@ -5,10 +5,26 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
+  // Jika berjalan di localhost / 127.0.0.1: bersihkan cache dan unregister agar HMR / dev server bersih
+  if (
+    self.location.hostname === "localhost" ||
+    self.location.hostname === "127.0.0.1" ||
+    self.location.hostname.endsWith(".local")
+  ) {
+    event.waitUntil(
+      (async () => {
+        const names = await caches.keys();
+        await Promise.all(names.map((n) => caches.delete(n)));
+        await self.registration.unregister();
+      })(),
+    );
+    return;
+  }
+
   event.waitUntil(
     (async () => {
       await self.clients.claim();
-      // Bersihkan cache versi lama agar tidak menumpuk di HP user.
+      // Bersihkan cache versi lama (v1 dll) agar tidak menumpuk di HP user.
       const keep = [STATIC_CACHE, ASSET_CACHE];
       const names = await caches.keys();
       await Promise.all(
@@ -24,8 +40,8 @@ self.addEventListener("activate", (event) => {
 // aplikasi/data). Dokumen HTML, RSC, dan API SENGAJA tidak di-cache di sini
 // (fetch handler di bawah mengabaikannya) sehingga data selalu fresh dari
 // jaringan — perilaku aplikasi identik, yang hemat hanya file fingerprinted.
-const STATIC_CACHE = "shiningsun-static-v1"; // /_next/static/* (content-hash, immutable)
-const ASSET_CACHE = "shiningsun-asset-v1"; // logo/manifest/icon (SWR, TTL 1 hari)
+const STATIC_CACHE = "shiningsun-static-v2"; // /_next/static/* (content-hash, immutable)
+const ASSET_CACHE = "shiningsun-asset-v2"; // logo/manifest/icon (SWR, TTL 1 hari)
 const ASSET_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const SWR_PATHS = new Set([
   "/logo.webp",
@@ -46,10 +62,14 @@ async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   const hit = await cache.match(request);
   if (hit) return hit;
-  const res = await fetch(request);
-  // Cache hanya respons sukses agar error tidak membeku di HP user.
-  if (res && res.ok) cache.put(request, res.clone()).catch(() => {});
-  return res;
+  try {
+    const res = await fetch(request);
+    // Cache hanya respons sukses agar error tidak membeku di HP user.
+    if (res && res.ok) cache.put(request, res.clone()).catch(() => {});
+    return res;
+  } catch (err) {
+    throw err;
+  }
 }
 
 async function staleWhileRevalidate(request, cacheName, maxAgeMs) {
@@ -72,6 +92,15 @@ async function staleWhileRevalidate(request, cacheName, maxAgeMs) {
 }
 
 self.addEventListener("fetch", (event) => {
+  // Jangan pernah intercept atau cache di localhost / 127.0.0.1 agar HMR / Turbopack tidak rusak
+  if (
+    self.location.hostname === "localhost" ||
+    self.location.hostname === "127.0.0.1" ||
+    self.location.hostname.endsWith(".local")
+  ) {
+    return;
+  }
+
   const { request } = event;
   if (request.method !== "GET") return;
   let url;

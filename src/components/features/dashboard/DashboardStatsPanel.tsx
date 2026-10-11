@@ -25,6 +25,47 @@ type StatItem = {
   statusFilter?: TabType;
 };
 
+function normalizeOverdueTime(raw: unknown): string | null {
+  if (raw === null || raw === undefined) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  const m = s.match(/(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  return `${String(parseInt(m[1], 10)).padStart(2, "0")}:${m[2]}`;
+}
+
+// Cari laporan yang cocok untuk siswa+tanggal+slot/jam — aturan sama persis
+// dengan duplicateInfo di WorksheetFormModal (sudah terisi = yang ditampilkan).
+function findOverdueWorksheet(
+  list: any[],
+  studentId: string,
+  dateStr: string,
+  slotId?: string,
+  timeStr?: string,
+): any | null {
+  const arr = Array.isArray(list) ? list : [];
+  if (!studentId || !dateStr) return null;
+  const effDate = String(dateStr).slice(0, 10);
+  const effSlot = (slotId || "").toString().trim() || null;
+  const effTime = normalizeOverdueTime(timeStr);
+  return (
+    arr.find((w: any) => {
+      const wStudent = w.student_id || w.student?.id;
+      if (wStudent !== studentId) return false;
+      if (
+        String(w.worksheet_date || w.created_at || "").slice(0, 10) !== effDate
+      )
+        return false;
+      const wSlot = (w.schedule_slot_id || "").toString().trim();
+      const wTime = normalizeOverdueTime(w.schedule_time);
+      if (effSlot && wSlot) return wSlot === effSlot;
+      if (effTime && wTime) return wTime === effTime;
+      if (!effSlot && !effTime && !wSlot && !wTime) return true;
+      return false;
+    }) || null
+  );
+}
+
 const iconMap: Record<string, any> = {
   users: Icons.users,
   sun: Icons.sun,
@@ -188,6 +229,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
   const [overdueStudent, setOverdueStudent] = useState<any | null>(null);
   const [missedDate, setMissedDate] = useState<string>("");
   const [missedTime, setMissedTime] = useState<string>("");
+  const [missedSlotId, setMissedSlotId] = useState<string>("");
   const [className, setClassName] = useState<string>("");
   const [teachers, setTeachers] = useState<any[]>([]);
   const [successToast, setSuccessToast] = useState("");
@@ -196,6 +238,9 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
   const [resolvedOverdueCount, setResolvedOverdueCount] = useState(0);
   // Riwayat worksheets untuk auto-hitung "bulan ke" (sama seperti halaman worksheets)
   const [overdueWorksheets, setOverdueWorksheets] = useState<any[]>([]);
+  // Baris laporan yang sudah ada untuk jadwal terlewat ini (bila ada -> mode baca).
+  const [overdueExistingWorksheet, setOverdueExistingWorksheet] =
+    useState<any | null>(null);
 
   useEffect(() => {
     if (!successToast) return;
@@ -250,11 +295,13 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
   };
 
   // Handler for "Isi Lembar Perkembangan Sekarang" button
+  // (mengikuti jadwal: bawa slot id agar simpan per slot, misal jam 9 vs jam 4 sore)
   const handleOpenWorksheetForm = async (
     student: any,
     missedDate: string,
     className?: string,
     missedTime?: string,
+    missedSlotId?: string,
   ) => {
     // Tampilkan loading panel selama data modal disiapkan
     // (fetch sama persis, hanya ada indikator sebelum modal muncul).
@@ -272,9 +319,24 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
       setTeachers(teacherList);
       setOverdueWorksheets(studentWorksheets || []);
 
+      const effMissedTime = missedTime || (student as any)?.missedTime || "";
+      const effMissedSlot = missedSlotId || (student as any)?.missedSlotId || "";
+      // Kalau jadwal terlewat ini ternyata sudah terisi (mis. diubah dari
+      // halaman Laporan), muat barisnya agar mengikuti hasil — mode baca.
+      setOverdueExistingWorksheet(
+        findOverdueWorksheet(
+          studentWorksheets || [],
+          student?.id,
+          missedDate,
+          effMissedSlot,
+          effMissedTime,
+        ),
+      );
+
       setOverdueStudent(student);
       setMissedDate(missedDate);
-      setMissedTime(missedTime || student?.missedTime || "");
+      setMissedTime(effMissedTime);
+      setMissedSlotId(effMissedSlot);
       setClassName(className || "");
     } finally {
       setIsLoading(false);
@@ -285,8 +347,10 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     setOverdueStudent(null);
     setMissedDate("");
     setMissedTime("");
+    setMissedSlotId("");
     setClassName("");
     setOverdueWorksheets([]);
+    setOverdueExistingWorksheet(null);
   };
 
   useEffect(() => {
@@ -393,7 +457,13 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
 
   const renderStudentItem = (student: any, idx: number) => {
     const hex = student.label?.hex_color || "#94a3b8";
-    const isExpanded = expandedItemId === student.id;
+    // Kunci entri per slot/jadwal agar 2 jadwal sehari (jam 9 vs jam 4 sore)
+    // bisa dibuka/diisi terpisah tanpa saling menutupi.
+    const entryKey =
+      activeTab === "OVERDUE_WORKSHEETS"
+        ? `${student.id}_${student.missedDate}_${student.missedTime || ""}_${student.missedSlotId || ""}`
+        : student.id;
+    const isExpanded = expandedItemId === entryKey;
     const scheduleCount = student.schedules?.length || 0;
     const isEven = idx % 2 === 0;
     const isUpcoming = isStudentUpcoming(student);
@@ -403,16 +473,10 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
     const hasTodaySchedule = todaySchedules.length > 0;
 
     return (
-      <div
-        key={
-          activeTab === "OVERDUE_WORKSHEETS"
-            ? `${student.id}_${student.missedDate}`
-            : student.id
-        }
-      >
+      <div key={entryKey}>
         <button
           type="button"
-          onClick={() => setExpandedItemId(isExpanded ? null : student.id)}
+          onClick={() => setExpandedItemId(isExpanded ? null : entryKey)}
           className={`w-full flex items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 transition-colors cursor-pointer text-left ${
             isExpanded
               ? "bg-brand-50 dark:bg-brand-500/10"
@@ -665,6 +729,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                           student.missedDate || missedDate,
                           student.className,
                           student.missedTime,
+                          student.missedSlotId,
                         );
                       }}
                     >
@@ -1161,8 +1226,16 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
       {/* Overdue Worksheet Form Modal */}
       {overdueStudent && (
         <WorksheetFormModal
+          key={
+            overdueStudent.id +
+            (missedDate || "") +
+            (missedSlotId || "") +
+            (overdueExistingWorksheet?.id || "")
+          }
           students={[overdueStudent]}
           teachers={teachers}
+          initialData={overdueExistingWorksheet || undefined}
+          readOnly={!!overdueExistingWorksheet}
           worksheets={overdueWorksheets}
           onClose={handleCloseWorksheetModal}
           onSuccess={(msg) => {
@@ -1172,6 +1245,10 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
             const savedDate = missedDate;
             const savedTime =
               missedTime || (overdueStudent as any)?.missedTime || "";
+            // Ikut jadwal: hanya hapus entri slot yang baru disimpan agar slot
+            // lain di hari yang sama (misal jam 9 vs jam 4 sore) tidak ikut hilang.
+            const savedSlot =
+              missedSlotId || (overdueStudent as any)?.missedSlotId || "";
             const studentName =
               overdueStudent?.nickname || overdueStudent?.name || "Siswa";
             if (savedId) {
@@ -1194,6 +1271,12 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
                       String(savedTime).substring(0, 5)
                   )
                     return true;
+                  // Beda slot = jadwal beda: jangan hapus entri slot lain.
+                  // Hanya bandingkan slot bila keduanya terisi (data lama tanpa
+                  // slot tetap ikut terhapus oleh kecocokan tanggal+jam di atas).
+                  const itSlot = (it as any).missedSlotId || "";
+                  if (savedSlot && itSlot && itSlot !== savedSlot)
+                    return true;
                   return false;
                 }),
               );
@@ -1209,6 +1292,7 @@ export function DashboardStatsPanel({ stats }: { stats: StatItem[] }) {
           }}
           lockedStudentId={overdueStudent.id}
           currentDate={missedDate}
+          scheduleSlotId={missedSlotId || overdueStudent?.missedSlotId}
           scheduleTime={missedTime || overdueStudent?.missedTime}
           scheduleClassName={className}
         />

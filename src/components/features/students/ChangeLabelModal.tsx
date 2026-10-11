@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { updateStudentLabel } from "@/lib/actions";
+
 import { WorksheetFormModal } from "@/components/features/worksheets/WorksheetFormModal";
 
 interface Label {
@@ -13,6 +13,52 @@ interface Label {
   main_level: string;
   sub_level: string;
   hex_color: string;
+}
+
+function normalizeMatchTime(raw: unknown): string | null {
+  if (raw === null || raw === undefined) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  const m = s.match(/(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  return `${String(parseInt(m[1], 10)).padStart(2, "0")}:${m[2]}`;
+}
+
+// Cari laporan yang cocok untuk siswa+tanggal+slot/jam — aturan sama persis
+// dengan duplicateInfo di WorksheetFormModal agar konsisten (sudah terisi =
+// yang ditampilkan, bukan form kosong).
+function findScheduleWorksheet(
+  list: any[],
+  studentId: string,
+  dateStr: string,
+  slotId?: string,
+  timeStr?: string,
+): any | null {
+  const arr = Array.isArray(list) ? list : [];
+  if (!studentId || !dateStr) return null;
+  const effDate = String(dateStr).slice(0, 10);
+  const effSlot = (slotId || "").toString().trim() || null;
+  const effTime = normalizeMatchTime(timeStr);
+  return (
+    arr.find((w: any) => {
+      const wStudent = w.student_id || w.student?.id;
+      if (wStudent !== studentId) return false;
+      if (
+        String(w.worksheet_date || w.created_at || "").slice(0, 10) !== effDate
+      )
+        return false;
+      const wSlot = (w.schedule_slot_id || "").toString().trim();
+      const wTime = normalizeMatchTime(w.schedule_time);
+      // Keduanya punya slot: cocok hanya jika slot sama
+      if (effSlot && wSlot) return wSlot === effSlot;
+      // Keduanya punya jam: cocok hanya jika jam sama
+      if (effTime && wTime) return wTime === effTime;
+      // Dua-duanya tanpa slot & jam: cocok tanggal saja
+      if (!effSlot && !effTime && !wSlot && !wTime) return true;
+      // Jam/sesi berbeda bukan laporan yang sama
+      return false;
+    }) || null
+  );
 }
 
 interface ChangeLabelModalProps {
@@ -56,6 +102,8 @@ export function ChangeLabelModal({
   const [teachersList, setTeachersList] = useState<any[]>([]);
   const [templatesList, setTemplatesList] = useState<any[]>([]);
   const [worksheetsList, setWorksheetsList] = useState<any[]>([]);
+  // Baris laporan yang sudah ada untuk jadwal ini (bila ada -> mode baca).
+  const [existingWorksheet, setExistingWorksheet] = useState<any | null>(null);
   const [isLoadingWorksheetData, setIsLoadingWorksheetData] = useState(false);
   const [successToast, setSuccessToast] = useState("");
 
@@ -94,6 +142,9 @@ export function ChangeLabelModal({
     setIsSubmitting(true);
     setModalError("");
     try {
+      // Dynamic import agar tidak menarik proxy server-actions ke chunk
+      // client (pola sama seperti handleOpenWorksheet di bawah)
+      const { updateStudentLabel } = await import("@/lib/actions");
       await updateStudentLabel(student.id, selectedLabelId || null);
       onSuccess();
       onClose();
@@ -125,8 +176,20 @@ export function ChangeLabelModal({
       setTeachersList(tchs);
       setTemplatesList(tpls);
       setWorksheetsList(ws);
+      // Kalau jadwal ini sudah terisi (mis. diubah jadi Ijin dari halaman
+      // Laporan), muat barisnya agar dashboard mengikuti hasil — mode baca.
+      setExistingWorksheet(
+        findScheduleWorksheet(
+          ws || [],
+          student.id,
+          scheduleDate || "",
+          scheduleSlotId,
+          scheduleTime,
+        ),
+      );
     } catch (err) {
       console.error("Gagal mengambil data pendukung laporan:", err);
+      setExistingWorksheet(null);
     } finally {
       setIsLoadingWorksheetData(false);
       setIsWorksheetModalOpen(true);
@@ -336,7 +399,12 @@ export function ChangeLabelModal({
       {/* Embedded Worksheet Form Modal for filling progress report directly */}
       {isWorksheetModalOpen && (
         <WorksheetFormModal
-          key={student.id + (scheduleSlotId || "") + (scheduleDate || "")}
+          key={
+            student.id +
+            (scheduleSlotId || "") +
+            (scheduleDate || "") +
+            (existingWorksheet?.id || "")
+          }
           students={[
             {
               id: student.id,
@@ -348,14 +416,18 @@ export function ChangeLabelModal({
           teachers={teachersList}
           templates={templatesList}
           labels={labels}
-          initialData={{ student_id: student.id }}
+          initialData={existingWorksheet || { student_id: student.id }}
           lockedStudentId={student.id}
           worksheets={worksheetsList}
           currentDate={scheduleDate}
           scheduleSlotId={scheduleSlotId}
           scheduleTime={scheduleTime}
           scheduleClassName={scheduleClassName}
-          onClose={() => setIsWorksheetModalOpen(false)}
+          readOnly={!!existingWorksheet}
+          onClose={() => {
+            setIsWorksheetModalOpen(false);
+            setExistingWorksheet(null);
+          }}
           onSuccess={(msg) => {
             setIsWorksheetModalOpen(false);
             if (msg) setSuccessToast(msg);

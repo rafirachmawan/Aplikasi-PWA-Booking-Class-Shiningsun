@@ -19,6 +19,14 @@ async function getSWRegistration(): Promise<ServiceWorkerRegistration | null> {
     return null;
   }
 
+  // Hindari registrasi Service Worker di localhost saat development agar tidak merusak Fast Refresh / Turbopack
+  if (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+  ) {
+    return null;
+  }
+
   try {
     let reg = await navigator.serviceWorker.getRegistration();
 
