@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
-import { getTodayISO, parseIndonesianDateToISO } from "./dateUtils";
+import { getTodayISO, parseIndonesianDateToISO, isAbsentWorksheet } from "./dateUtils";
 
 export async function syncUserIdentity() {
   try {
@@ -900,10 +900,15 @@ export async function getStudents() {
       const allWs: any[] = [];
       for (let page = 0; ; page++) {
         const from = page * PAGE;
+        // ORDER deterministik (student_id + id unik) WAJIB saat pakai .range():
+        // tanpa ORDER, urutan antar-halaman tidak stabil → baris bisa double
+        // di satu halaman dan hilang di halaman lain (poin siswa jadi kurang).
         const { data: wsPage, error: wsErr } = await supabaseServer
           .from("student_worksheets")
-          .select("student_id, materi, title")
+          .select("student_id, materi, title, kegiatan, hasil_belajar")
           .in("student_id", studentIds)
+          .order("student_id", { ascending: true })
+          .order("id", { ascending: true })
           .range(from, from + PAGE - 1);
         if (wsErr) {
           console.warn("Notice fetching worksheets for points:", wsErr.message);
@@ -916,10 +921,26 @@ export async function getStudents() {
       }
       return { data: allWs };
     })();
-    const redemptionsPromise = supabaseServer
-      .from("student_point_redemptions")
-      .select("student_id, points_deducted")
-      .in("student_id", studentIds);
+    // Paginasi + ORDER deterministik (sama seperti worksheets di atas):
+    // tanpa ini, cabang dengan >1000 redemption akan terpotong diam-diam.
+    const redemptionsPromise = (async () => {
+      const PAGE = 1000;
+      const allRed: any[] = [];
+      for (let page = 0; ; page++) {
+        const from = page * PAGE;
+        const { data: redPage, error: redErr } = await supabaseServer
+          .from("student_point_redemptions")
+          .select("student_id, points_deducted")
+          .in("student_id", studentIds)
+          .order("student_id", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (redErr) break;
+        if (redPage && redPage.length > 0) allRed.push(...redPage);
+        if (!redPage || redPage.length < PAGE) break;
+      }
+      return { data: allRed };
+    })();
 
     const [scheduleMap, { data: worksheetsData }] = await Promise.all([
       scheduleMapPromise,
@@ -929,16 +950,7 @@ export async function getStudents() {
     // Fetch worksheets to calculate gross attendance points for each student
     const grossPointsMap: Record<string, number> = {};
     (worksheetsData || []).forEach((w) => {
-      const m = (w.materi || "").toLowerCase();
-      const t = (w.title || "").toLowerCase();
-      const isAbsent =
-        m.includes("tidak hadir") ||
-        m.includes("libur") ||
-        t.includes("tidak hadir") ||
-        t.includes("libur") ||
-        t.includes("ijin") ||
-        t.includes("sakit");
-      if (!isAbsent) {
+      if (!isAbsentWorksheet(w)) {
         grossPointsMap[w.student_id] = (grossPointsMap[w.student_id] || 0) + 1;
       }
     });
@@ -2249,6 +2261,9 @@ export async function getWorksheetsByBranch() {
         )
         .order("worksheet_date", { ascending: false })
         .order("created_at", { ascending: false })
+        // Tiebreaker unik agar paginasi .range() stabil (tidak lompat/double
+        // saat banyak baris punya tanggal & created_at yang sama).
+        .order("id", { ascending: false })
         .range(from, from + PAGE - 1);
 
       if (branchId !== "ALL") {
@@ -2555,6 +2570,7 @@ export async function createWorksheet(formData: FormData) {
     throw new Error(error.message);
   }
 
+  revalidatePath("/points");
   return true;
 }
 
@@ -2739,6 +2755,7 @@ export async function updateWorksheet(id: string, formData: FormData) {
     throw new Error(error.message);
   }
 
+  revalidatePath("/points");
   return true;
 }
 
@@ -2754,6 +2771,7 @@ export async function deleteWorksheet(id: string) {
     throw new Error("Gagal menghapus laporan perkembangan: " + error.message);
   }
 
+  revalidatePath("/points");
   return true;
 }
 
@@ -2780,6 +2798,7 @@ export async function deleteWorksheetMonth(
     throw new Error("Gagal menghapus laporan perkembangan: " + error.message);
   }
 
+  revalidatePath("/points");
   return true;
 }
 
@@ -3230,7 +3249,7 @@ export async function getParentSessionStudent() {
   const scheduleMapPromise = getStudentScheduleMap([student.id]);
   const worksheetsPromise = supabaseServer
     .from("student_worksheets")
-    .select("materi, title")
+    .select("materi, title, kegiatan, hasil_belajar")
     .eq("student_id", student.id);
   const redemptionsPromise = supabaseServer
     .from("student_point_redemptions")
@@ -3245,16 +3264,7 @@ export async function getParentSessionStudent() {
   // Fetch worksheets to calculate gross attendance points
   let gross = 0;
   (worksheetsData || []).forEach((w) => {
-    const m = (w.materi || "").toLowerCase();
-    const t = (w.title || "").toLowerCase();
-    const isAbsent =
-      m.includes("tidak hadir") ||
-      m.includes("libur") ||
-      t.includes("tidak hadir") ||
-      t.includes("libur") ||
-      t.includes("ijin") ||
-      t.includes("sakit");
-    if (!isAbsent) {
+    if (!isAbsentWorksheet(w)) {
       gross++;
     }
   });
@@ -3850,6 +3860,32 @@ export async function redeemStudentPoints({
     throw new Error("Jumlah poin yang ditukar harus lebih dari 0.");
   }
 
+  // Guard saldo: tukar tidak boleh melebihi sisa poin (gross - redeemed).
+  const [{ data: wsData }, { data: redData }] = await Promise.all([
+    supabaseServer
+      .from("student_worksheets")
+      .select("materi, title, kegiatan, hasil_belajar")
+      .eq("student_id", studentId),
+    supabaseServer
+      .from("student_point_redemptions")
+      .select("points_deducted")
+      .eq("student_id", studentId),
+  ]);
+  let gross = 0;
+  (wsData || []).forEach((w: any) => {
+    if (!isAbsentWorksheet(w)) gross++;
+  });
+  let redeemed = 0;
+  (redData || []).forEach((r: any) => {
+    redeemed += r.points_deducted || 0;
+  });
+  const net = Math.max(0, gross - redeemed);
+  if (pointsDeducted > net) {
+    throw new Error(
+      `Poin tidak cukup! Siswa hanya memiliki ${net} poin tersisa.`,
+    );
+  }
+
   const { data: redemption, error } = await supabaseServer
     .from("student_point_redemptions")
     .insert({
@@ -3973,6 +4009,8 @@ export async function getWorksheetAttendanceHistory() {
         student_id,
         title,
         materi,
+        kegiatan,
+        hasil_belajar,
         created_at,
         bulan_ke,
         catatan_guru,
@@ -3994,18 +4032,9 @@ export async function getWorksheetAttendanceHistory() {
     }
 
     return filtered.map((item: any) => {
-      const m = (item.materi || "").toLowerCase();
-      const t = (item.title || "").toLowerCase();
-      const isAbsent =
-        m.includes("tidak hadir") ||
-        m.includes("libur") ||
-        t.includes("tidak hadir") ||
-        t.includes("libur") ||
-        t.includes("ijin") ||
-        t.includes("sakit");
       return {
         ...item,
-        is_absent: isAbsent,
+        is_absent: isAbsentWorksheet(item),
       };
     });
   } catch (e) {

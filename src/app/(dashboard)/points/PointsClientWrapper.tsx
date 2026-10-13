@@ -299,17 +299,17 @@ export function PointsClientWrapper({
         rewardNote: rewardNote.trim() || "Penukaran Hadiah (ACC Admin)",
       });
 
-      // Update local state smoothly
+      // Update local state smoothly (rumus sama dengan server: net = max(0, gross - redeemed))
       setStudents((prev) =>
         prev.map((s) => {
           if (s.id === selectedStudentForRedeem.id) {
+            const baseGross =
+              s.gross_points ?? (s.points || 0) + (s.redeemed_points || 0);
             const newRedeemed = (s.redeemed_points || 0) + pointsNum;
-            const newNet = Math.max(
-              0,
-              (s.gross_points || s.points || 0) - newRedeemed,
-            );
+            const newNet = Math.max(0, baseGross - newRedeemed);
             return {
               ...s,
+              gross_points: baseGross,
               redeemed_points: newRedeemed,
               points: newNet,
             };
@@ -416,14 +416,17 @@ export function PointsClientWrapper({
         note: addNote.trim() || "Bonus Poin Manual / Lomba",
       });
 
-      // Update local state smoothly
+      // Update local state smoothly (rumus sama dengan server: net = max(0, gross - redeemed))
       setStudents((prev) =>
         prev.map((s) => {
           if (s.id === selectedStudentForAdd.id) {
+            const baseGross =
+              s.gross_points ?? (s.points || 0) + (s.redeemed_points || 0);
             const newRedeemed = (s.redeemed_points || 0) - pointsNum;
-            const newNet = (s.gross_points || 0) - newRedeemed;
+            const newNet = Math.max(0, baseGross - newRedeemed);
             return {
               ...s,
+              gross_points: baseGross,
               redeemed_points: newRedeemed,
               points: newNet,
             };
@@ -1621,10 +1624,11 @@ export function PointsClientWrapper({
           );
 
           // Pisahkan data: attendance, bonus_manual, redeem
+          // Absen (ijin/izin/sakit/libur) = 0 poin, hadir = +1.
           const attendanceOnly = studentAttendance.map((item) => ({
             ...item,
             category: "attendance",
-            displayPoints: item.points_deducted || 1,
+            displayPoints: item.is_absent ? 0 : 1,
             description:
               item.title || (item.is_absent ? "Tidak Hadir" : "Hadir"),
           }));
@@ -1717,8 +1721,8 @@ export function PointsClientWrapper({
                                   })}
                                 </p>
                               </div>
-                              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap ml-2 tabular-nums">
-                                +{Math.abs(historyItem.displayPoints)}
+                              <span className={`text-sm font-bold whitespace-nowrap ml-2 tabular-nums ${historyItem.displayPoints > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500"}`}>
+                                {historyItem.displayPoints > 0 ? `+${historyItem.displayPoints}` : "0"}
                               </span>
                             </div>
                           </div>

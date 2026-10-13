@@ -176,22 +176,34 @@ export function parseIndonesianDateToISO(inputStr?: string | null): string {
 }
 
 /**
+ * Single source of truth untuk status absen worksheet.
+ * - HADIR = bukan absen (+1 poin).
+ * - IJIN / IZIN / SAKIT / LIBUR / TIDAK HADIR = absen (0 poin).
+ * Dicek simetris di materi + title + kegiatan + hasil_belajar agar
+ * edit manual guru tetap konsisten (tidak tergantung kolom saja).
+ */
+export function isAbsentWorksheet(w: any): boolean {
+  if (!w) return false;
+  const m = (w.materi || "").toLowerCase();
+  const t = (w.title || "").toLowerCase();
+  const k = (w.kegiatan || "").toLowerCase();
+  const h = (w.hasil_belajar || "").toLowerCase();
+  const combined = `${m}\n${t}\n${k}\n${h}`;
+  return (
+    combined.includes("tidak hadir") ||
+    combined.includes("libur") ||
+    combined.includes("ijin") ||
+    combined.includes("izin") ||
+    combined.includes("sakit")
+  );
+}
+
+/**
  * Calculates attendance points for a student based on their worksheet reports.
  * - +1 Point for every HADIR (attended) class session.
- * - 0 Points for IJIN, SAKIT, LIBUR (points do not change / not deducted).
+ * - 0 Points for IJIN/IZIN, SAKIT, LIBUR (points do not change / not deducted).
  */
 export function calculateStudentPoints(worksheets: any[]): number {
   if (!worksheets || !Array.isArray(worksheets) || worksheets.length === 0) return 0;
-  return worksheets.filter((w) => {
-    const m = (w.materi || "").toLowerCase();
-    const t = (w.title || "").toLowerCase();
-    const isAbsent =
-      m.includes("tidak hadir") ||
-      m.includes("libur") ||
-      t.includes("tidak hadir") ||
-      t.includes("libur") ||
-      t.includes("ijin") ||
-      t.includes("sakit");
-    return !isAbsent;
-  }).length;
+  return worksheets.filter((w) => !isAbsentWorksheet(w)).length;
 }
