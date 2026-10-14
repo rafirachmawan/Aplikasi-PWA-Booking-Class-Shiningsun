@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
-import { getTodayISO, parseIndonesianDateToISO, isAbsentWorksheet } from "./dateUtils";
+import { getTodayISO, parseIndonesianDateToISO, isAbsentWorksheet, formatFullIndonesianDate } from "./dateUtils";
 
 export async function syncUserIdentity() {
   try {
@@ -341,7 +341,10 @@ export async function getClasses() {
   const branchId = await getBranchId();
   if (!branchId) return [];
 
-  let query = supabaseServer.from("classes").select("*, branch:branches(name)");
+  let query = supabaseServer
+    .from("classes")
+    .select("*, branch:branches(name)")
+    .order("name", { ascending: true });
 
   if (branchId !== "ALL") {
     query = query.eq("branch_id", branchId);
@@ -1140,7 +1143,7 @@ export async function autoBookStudentToClass(
     let { data: slots, error: fetchError } = await supabaseServer
       .from("schedule_slots")
       .select(
-        "id, class_id, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id, student:students(status))",
+        "id, class_id, is_locked, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id, student:students(status))",
       )
       .eq("date", dateStr)
       .eq("class_id", classId)
@@ -1151,6 +1154,7 @@ export async function autoBookStudentToClass(
 
     let slotId = slots && slots.length > 0 ? slots[0].id : null;
     let isFull = false;
+    let isLocked = false;
     let alreadyBooked = false;
 
     if (!slotId) {
@@ -1191,12 +1195,16 @@ export async function autoBookStudentToClass(
       if (activeBookings.length >= maxQ) {
         isFull = true;
       }
+      // Sesi terkunci tidak menerima booking baru (konsisten dengan booking satuan).
+      if ((slot as any).is_locked) {
+        isLocked = true;
+      }
       if (activeBookings.some((b: any) => b.student_id === studentId)) {
         alreadyBooked = true;
       }
     }
 
-    if (!isFull && !alreadyBooked) {
+    if (!isFull && !isLocked && !alreadyBooked) {
       // Booking
       const { error: bookErr } = await supabaseServer
         .from("schedule_student")
@@ -1258,7 +1266,7 @@ export async function bookStudentManual(
   let { data: slots, error: fetchError } = await supabaseServer
     .from("schedule_slots")
     .select(
-      "id, class_id, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id, student:students(status))",
+      "id, class_id, is_locked, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id, student:students(status))",
     )
     .eq("date", dateStr)
     .eq("class_id", classId)
@@ -1289,6 +1297,13 @@ export async function bookStudentManual(
   } else {
     // Cek kuota (abaikan siswa nonaktif agar sesuai tampilan UI)
     const slot = slots![0];
+
+    // Sesi terkunci tidak menerima booking baru (konsisten dengan booking satuan).
+    if ((slot as any).is_locked) {
+      throw new Error(
+        "Jadwal ini sudah dikunci (Locked). Tidak bisa menambah siswa.",
+      );
+    }
     let maxQ = 4;
     if (slot.max_quota) {
       if (Array.isArray(slot.max_quota) && slot.max_quota.length > 0) {
@@ -1417,6 +1432,68 @@ export async function copyScheduleToNextMonth(
   return { totalBooked, failedDates };
 }
 
+// Batch2 (read-only): daftar ID siswa yang SUDAH punya minimal 1 booking di
+// bulan depan. Dipakai panel "kesiapan bulan depan" agar siswa yang terlewat
+// copy ketahuan sebelum bulannya berjalan. Tanpa penyimpanan tambahan —
+// dihitung live tiap render halaman.
+export async function getStudentsWithNextMonthSchedule(
+  year: number,
+  month: number,
+): Promise<string[]> {
+  try {
+    const branchId = await getBranchId();
+    if (!branchId) return [];
+
+    let nextYear = year;
+    let nextMonth = month + 1;
+    if (nextMonth > 12) {
+      nextMonth = 1;
+      nextYear++;
+    }
+    const mm = String(nextMonth).padStart(2, "0");
+    const startDate = `${nextYear}-${mm}-01`;
+    const lastDay = new Date(nextYear, nextMonth, 0).getDate();
+    const endDate = `${nextYear}-${mm}-${String(lastDay).padStart(2, "0")}`;
+
+    const supabaseServer = await createClient();
+    // Set (bukan count) agar paginasi tetap benar meski urutan antar-halaman
+    // tidak stabil: yang penting hanya "ada / tidak ada".
+    const scheduled = new Set<string>();
+    const PAGE = 1000;
+    for (let page = 0; ; page++) {
+      const from = page * PAGE;
+      let q = supabaseServer
+        .from("schedule_student")
+        .select("student_id, slot:schedule_slots!inner(date, branch_id)")
+        .gte("slot.date", startDate)
+        .lte("slot.date", endDate)
+        .range(from, from + PAGE - 1);
+      if (branchId !== "ALL") {
+        q = q.eq("slot.branch_id", branchId);
+      }
+      const { data, error } = await q;
+      if (error) {
+        console.warn(
+          "Notice fetching next-month schedules:",
+          error.message || error,
+        );
+        break;
+      }
+      if (data && data.length > 0) {
+        for (const row of data) {
+          const sid = (row as any).student_id;
+          if (sid) scheduled.add(String(sid));
+        }
+      }
+      if (!data || data.length < PAGE) break;
+    }
+    return Array.from(scheduled);
+  } catch (err) {
+    console.warn("Exception fetching next-month schedules:", err);
+    return [];
+  }
+}
+
 export async function moveStudentBooking(
   studentId: string,
   oldSlotId: string,
@@ -1424,11 +1501,48 @@ export async function moveStudentBooking(
   newDateStr: string,
   newTime: string,
 ) {
-  await removeStudentBooking(oldSlotId, studentId);
+  const supabaseServer = await createClient();
+  // Normalisasi jam seperti bookStudentManual agar lookup slot tujuan cocok.
+  const normalizedNewTime = newTime.substring(0, 5);
+  const timeVariants = Array.from(
+    new Set([normalizedNewTime, `${normalizedNewTime}:00`]),
+  );
+  const resolveTargetSlotId = async (): Promise<string | null> => {
+    const { data: targetSlots } = await supabaseServer
+      .from("schedule_slots")
+      .select("id")
+      .eq("date", newDateStr)
+      .eq("class_id", newClassId)
+      .in("time", timeVariants);
+    return targetSlots && targetSlots.length > 0 ? targetSlots[0].id : null;
+  };
+
+  // Pindah ke slot yang sama = tidak ada yang berubah.
+  const targetSlotId = await resolveTargetSlotId();
+  if (targetSlotId && targetSlotId === oldSlotId) {
+    return true;
+  }
+
+  // Booking BARU dulu: jika gagal (penuh/sudah terdaftar), booking lama tetap utuh.
   try {
     await bookStudentManual(studentId, newClassId, newDateStr, newTime);
   } catch (err: any) {
-    // If it fails to book the new one, we should ideally rollback, but simple approach is to throw error
+    throw new Error(err.message);
+  }
+
+  // Booking baru sukses → hapus yang lama. Jika hapus gagal, batalkan booking
+  // baru agar tidak terjadi booking ganda (state kembali seperti semula).
+  try {
+    await removeStudentBooking(oldSlotId, studentId);
+  } catch (err: any) {
+    const newSlotId = await resolveTargetSlotId();
+    if (newSlotId) {
+      await supabaseServer
+        .from("schedule_student")
+        .delete()
+        .eq("schedule_slot_id", newSlotId)
+        .eq("student_id", studentId);
+    }
     throw new Error(err.message);
   }
   return true;
@@ -1440,14 +1554,25 @@ export async function getMonthlySchedules(year: number, month: number) {
 
   const supabaseServer = await createClient();
 
-  // Hitung tanggal awal dan akhir bulan
-  const startDate = new Date(year, month - 1, 1).toISOString().split("T")[0];
-  const endDate = new Date(year, month, 0).toISOString().split("T")[0]; // Hari terakhir bulan tersebut
+  // Hitung tanggal awal dan akhir bulan sebagai string manual (tanpa
+  // Date/toISOString) agar kebal zona waktu server. Pola sama seperti
+  // fungsi lain di file ini.
+  const monthStr = String(month).padStart(2, "0");
+  const startDate = `${year}-${monthStr}-01`;
+  const lastDay = new Date(year, month, 0).getDate();
+  const endDate = `${year}-${monthStr}-${String(lastDay).padStart(2, "0")}`; // Hari terakhir bulan tersebut
 
-  let query = supabaseServer
-    .from("schedule_slots")
-    .select(
-      `
+  // Paginasi eksplisit: tanpa .range(), Supabase diam-diam memotong di 1000
+  // baris sehingga tanggal akhir bulan bisa hilang dari tampilan.
+  // Query dibangun ulang tiap halaman (pola sama seperti fungsi lain di file ini).
+  const PAGE = 1000;
+  const allData: any[] = [];
+  for (let page = 0; ; page++) {
+    const from = page * PAGE;
+    let pageQuery = supabaseServer
+      .from("schedule_slots")
+      .select(
+        `
       *,
       class:classes(name, max_quota),
       bookings:schedule_student(
@@ -1455,25 +1580,34 @@ export async function getMonthlySchedules(year: number, month: number) {
         student:students(id, name, nickname, status, label_id, label:labels(id, main_level, sub_level, hex_color))
       )
     `,
-    )
-    .gte("date", startDate)
-    .lte("date", endDate)
-    .order("date", { ascending: true })
-    .order("time", { ascending: true });
+      )
+      .gte("date", startDate)
+      .lte("date", endDate)
+      .order("date", { ascending: true })
+      .order("time", { ascending: true })
+      // Tiebreaker unik agar paginasi .range() stabil (tanpa ini baris bisa
+      // double di satu halaman dan hilang di halaman lain).
+      .order("id", { ascending: true })
+      .range(from, from + PAGE - 1);
 
-  if (branchId !== "ALL") {
-    query = query.eq("branch_id", branchId);
-  }
+    if (branchId !== "ALL") {
+      pageQuery = pageQuery.eq("branch_id", branchId);
+    }
 
-  const { data, error } = await query;
+    const { data: pageData, error: pageError } = await pageQuery;
 
-  if (error) {
-    console.error("Error fetching schedules:", error);
-    return [];
+    if (pageError) {
+      console.error("Error fetching schedules:", pageError);
+      return [];
+    }
+    if (pageData && pageData.length > 0) {
+      allData.push(...pageData);
+    }
+    if (!pageData || pageData.length < PAGE) break;
   }
 
   // Siswa nonaktif tidak dihitung: jadwalnya hilang dari dashboard & kuota jadwal kelas
-  return (data || []).map((slot: any) => ({
+  return (allData || []).map((slot: any) => ({
     ...slot,
     bookings: (slot.bookings || []).filter(
       (b: any) => b?.student?.status !== "INACTIVE",
@@ -1490,21 +1624,24 @@ export async function createScheduleSlot(formData: FormData) {
   const datesToInsert = [dateStr];
 
   if (isRecurring) {
-    // Cari sisa hari yang sama di bulan yang sama
-    const baseDate = new Date(dateStr);
-    const month = baseDate.getMonth();
-    const year = baseDate.getFullYear();
-    const dayOfWeek = baseDate.getDay(); // 0 (Sun) - 6 (Sat)
+    // Sisa tanggal berhari sama di bulan yang sama, dihitung murni dari
+    // string YYYY-MM-DD (tanpa Date/toISOString) agar kebal zona waktu server.
+    const dateParts = dateStr.split("-").map(Number);
+    const baseYear = dateParts[0];
+    const baseMonth = dateParts[1];
+    const baseDay = dateParts[2];
+    const daysInMonth = new Date(baseYear, baseMonth, 0).getDate();
 
     // Mulai dari 1 minggu ke depan
     for (let i = 1; i <= 4; i++) {
-      const nextDate = new Date(year, month, baseDate.getDate() + i * 7);
+      const d = baseDay + i * 7;
       // Jika masih di bulan yang sama, masukkan ke array
-      if (nextDate.getMonth() === month) {
-        datesToInsert.push(nextDate.toISOString().split("T")[0]);
-      } else {
+      if (!Number.isFinite(d) || d > daysInMonth) {
         break;
       }
+      datesToInsert.push(
+        `${baseYear}-${String(baseMonth).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
+      );
     }
   }
 
@@ -1869,6 +2006,62 @@ export async function deleteClass(id: string) {
 
   if (error) throw new Error("Gagal menghapus kelas. " + error.message);
   return true;
+}
+
+// Batch2 (read-only): dampak hapus kelas untuk konfirmasi — jumlah sesi,
+// booking, dan siswa unik yang ikut terhapus. Cakupan SAMA PERSIS seperti
+// deleteClass (tanpa filter cabang) agar angka sesuai kenyataan.
+// Mengembalikan null jika gagal dihitung (UI wajib menampilkannya, bukan angka 0).
+export async function getClassDeletionImpact(
+  classId: string,
+): Promise<{ slots: number; bookings: number; students: number } | null> {
+  try {
+    const supabaseServer = await createClient();
+
+    const { count: slotCount, error: slotErr } = await supabaseServer
+      .from("schedule_slots")
+      .select("*", { count: "exact", head: true })
+      .eq("class_id", classId);
+    if (slotErr) throw slotErr;
+
+    const { count: bookingCount, error: bookErr } = await supabaseServer
+      .from("schedule_student")
+      .select("student_id, slot:schedule_slots!inner(class_id)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("slot.class_id", classId);
+    if (bookErr) throw bookErr;
+
+    // Siswa unik terdampak (paginasi, hanya kolom student_id).
+    const studentSet = new Set<string>();
+    const PAGE = 1000;
+    for (let page = 0; ; page++) {
+      const from = page * PAGE;
+      const { data, error } = await supabaseServer
+        .from("schedule_student")
+        .select("student_id, slot:schedule_slots!inner(class_id)")
+        .eq("slot.class_id", classId)
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (data && data.length > 0) {
+        for (const row of data) {
+          const sid = (row as any).student_id;
+          if (sid) studentSet.add(String(sid));
+        }
+      }
+      if (!data || data.length < PAGE) break;
+    }
+
+    return {
+      slots: slotCount || 0,
+      bookings: bookingCount || 0,
+      students: studentSet.size,
+    };
+  } catch (err) {
+    console.warn("Exception fetching class deletion impact:", err);
+    return null;
+  }
 }
 
 export async function deleteLabel(id: string) {
@@ -2405,6 +2598,65 @@ function isSlotDuplicate(
   });
 }
 
+// Batch2 (read-only): jam-jam sesi (HH:MM) seorang siswa pada tanggal tertentu.
+// Dipakai validasi form worksheet agar jam manual yang mustahil (mis. 02:00)
+// ditolak sejak awal. Mengembalikan [] jika tak ada sesi — laporan sesi
+// tambahan tetap boleh disimpan (perilaku lama).
+export async function getStudentSessionTimes(
+  studentId: string,
+  dateStr: string,
+): Promise<string[]> {
+  try {
+    if (!studentId || !dateStr) return [];
+    const iso = String(dateStr).slice(0, 10);
+    if (!iso) return [];
+    const supabaseServer = await createClient();
+    const { data, error } = await supabaseServer
+      .from("schedule_student")
+      .select("slot:schedule_slots!inner(time)")
+      .eq("student_id", studentId)
+      .eq("slot.date", iso);
+    if (error || !data) return [];
+    const times = new Set<string>();
+    for (const row of data) {
+      const slotObj = (row as any)?.slot;
+      const rawTime = Array.isArray(slotObj) ? slotObj[0]?.time : slotObj?.time;
+      const norm = normalizeScheduleTime(rawTime);
+      if (norm) times.add(norm);
+    }
+    return Array.from(times).sort();
+  } catch {
+    return [];
+  }
+}
+
+// Batch2: tanggal laporan yang tertaut slot WAJIB sama dengan tanggal slot.
+// Mencegah laporan "mengambang" (overdue palsu di tanggal asli + salah
+// menutup slot lain). Dipakai create & update. Slot tak ditemukan (terhapus)
+// = lolos seperti perilaku lama.
+async function assertWorksheetDateMatchesSlot(
+  supabaseServer: any,
+  slotId: string | null,
+  isoDate: string | null,
+): Promise<void> {
+  if (!slotId || !isoDate) return;
+  const { data: slot, error } = await supabaseServer
+    .from("schedule_slots")
+    .select("date")
+    .eq("id", slotId)
+    .maybeSingle();
+  if (error || !slot) return;
+  const slotDate =
+    typeof (slot as any).date === "string"
+      ? (slot as any).date.split("T")[0]
+      : null;
+  if (slotDate && slotDate !== isoDate) {
+    throw new Error(
+      `Tanggal laporan (${formatFullIndonesianDate(isoDate, { includeDayName: false })}) tidak sama dengan tanggal jadwal (${formatFullIndonesianDate(slotDate, { includeDayName: false })}). Jika salah jadwal, hapus laporan ini dan isi ulang dari jadwal yang benar.`,
+    );
+  }
+}
+
 export async function createWorksheet(formData: FormData) {
   const student_id = formData.get("student_id") as string;
   const title = formData.get("title") as string;
@@ -2446,6 +2698,13 @@ export async function createWorksheet(formData: FormData) {
 
   const branchId = await getBranchId();
   const supabaseServer = await createClient();
+
+  // Batch2: tanggal laporan tertaut slot wajib sama dengan tanggal slot.
+  await assertWorksheetDateMatchesSlot(
+    supabaseServer,
+    schedule_slot_id,
+    worksheet_date,
+  );
 
   // Cegah double sebelum insert (check-then-insert).
   // Toleran jika migrasi kolom jadwal belum dijalankan: lewati cek baru,
@@ -2722,6 +2981,30 @@ export async function updateWorksheet(id: string, formData: FormData) {
   } catch (e: any) {
     if (String(e?.message || "").startsWith("LAPORAN_SUDAH_TERISI")) throw e;
     // Abaikan error cek agar update tetap dicoba (pengaman akhir di DB).
+  }
+
+  // Batch2: tanggal laporan tertaut slot wajib sama dengan tanggal slot.
+  // Baris lama tanpa slot tetap boleh ganti tanggal seperti perilaku lama.
+  if (updatePayload.worksheet_date) {
+    let effSlotForDateCheck: string | null = null;
+    if (hasSlotField) {
+      effSlotForDateCheck = updatePayload.schedule_slot_id
+        ? String(updatePayload.schedule_slot_id)
+        : null;
+    } else {
+      const { data: ownRow } = await supabaseServer
+        .from("student_worksheets")
+        .select("schedule_slot_id")
+        .eq("id", id)
+        .maybeSingle();
+      const ownSlot = (ownRow as any)?.schedule_slot_id;
+      effSlotForDateCheck = ownSlot ? String(ownSlot) : null;
+    }
+    await assertWorksheetDateMatchesSlot(
+      supabaseServer,
+      effSlotForDateCheck,
+      updatePayload.worksheet_date,
+    );
   }
 
   let { error } = await supabaseServer

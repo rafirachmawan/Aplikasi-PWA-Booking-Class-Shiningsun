@@ -19,10 +19,12 @@ const FIXED_TIMES = [
   { time: "09:00", range: "09:00 - 10:00" },
   { time: "10:00", range: "10:00 - 11:00" },
   { time: "11:00", range: "11:00 - 12:00" },
+  { time: "12:00", range: "12:00 - 13:00" },
   { time: "13:00", range: "13:00 - 14:00" },
   { time: "14:00", range: "14:00 - 15:00" },
   { time: "15:00", range: "15:00 - 16:00" },
   { time: "16:00", range: "16:00 - 17:00" },
+  { time: "17:00", range: "17:00 - 18:00" },
 ];
 
 const DAY_LABELS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];

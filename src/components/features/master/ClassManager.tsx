@@ -28,6 +28,14 @@ export function ClassManager({
   } | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  // Batch2: dampak hapus kelas (read-only, untuk konfirmasi).
+  const [deleteImpact, setDeleteImpact] = useState<{
+    slots: number;
+    bookings: number;
+    students: number;
+  } | null>(null);
+  const [impactFailed, setImpactFailed] = useState(false);
+  const [isLoadingImpact, setIsLoadingImpact] = useState(false);
 
   const filteredClasses = classes;
 
@@ -56,10 +64,27 @@ export function ClassManager({
     }
   };
 
-  const confirmDelete = (id: string, name: string) => {
+  const confirmDelete = async (id: string, name: string) => {
     setClassToDelete({ id, name });
     setDeleteError("");
+    setDeleteImpact(null);
+    setImpactFailed(false);
     setDeleteModal(true);
+    // Hitung dampak (read-only) sebelum user menekan Ya, Hapus.
+    setIsLoadingImpact(true);
+    try {
+      const { getClassDeletionImpact } = await import("@/lib/actions");
+      const impact = await getClassDeletionImpact(id);
+      if (!impact) {
+        setImpactFailed(true);
+      } else {
+        setDeleteImpact(impact);
+      }
+    } catch {
+      setImpactFailed(true);
+    } finally {
+      setIsLoadingImpact(false);
+    }
   };
 
   const handleExecuteDelete = async () => {
@@ -105,8 +130,29 @@ export function ClassManager({
               <strong className="text-slate-700 dark:text-zinc-200">
                 "{classToDelete.name}"
               </strong>
-              ? Data yang sudah digunakan di jadwal tidak dapat dihapus.
+              ? Tindakan ini tidak bisa dibatalkan.
             </p>
+
+            {isLoadingImpact ? (
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-3 text-center font-medium">
+                Menghitung dampak penghapusan...
+              </p>
+            ) : impactFailed ? (
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-3 text-center font-medium bg-amber-50 dark:bg-amber-500/10 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800/50">
+                Tidak dapat menghitung dampak. Lanjutkan hanya jika Anda yakin.
+              </p>
+            ) : deleteImpact ? (
+              <div className="mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-800/50 text-xs text-left">
+                <p className="font-bold text-red-700 dark:text-red-300 mb-1.5">
+                  Yang ikut terhapus bersamanya:
+                </p>
+                <ul className="space-y-1 font-medium text-red-600 dark:text-red-400 tabular-nums">
+                  <li>• {deleteImpact.slots} sesi jadwal (semua bulan)</li>
+                  <li>• {deleteImpact.bookings} booking siswa</li>
+                  <li>• {deleteImpact.students} siswa terdampak</li>
+                </ul>
+              </div>
+            ) : null}
 
             {deleteError && (
               <p className="text-xs text-red-600 dark:text-red-400 mt-3 text-center font-medium bg-red-50 dark:bg-red-500/10 p-2.5 rounded-xl border border-red-200 dark:border-red-800/50">
@@ -125,7 +171,7 @@ export function ClassManager({
               </button>
               <button
                 type="button"
-                disabled={isDeleting}
+                disabled={isDeleting || isLoadingImpact}
                 onClick={handleExecuteDelete}
                 className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 active:translate-y-[1px] transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
               >

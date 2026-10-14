@@ -1646,6 +1646,12 @@ export function WorksheetFormModal({
     return worksheetDateInput;
   }, [worksheetDateInput]);
 
+  // Batch2: tanggal laporan SELALU dikunci (tidak bisa diganti) di semua alur:
+  // - dari slot/jadwal & overdue: mengikuti tanggal jadwal (sudah benar sejak dibuka),
+  // - umum: mengikuti tanggal default (hari ini).
+  // Isi susulan tanggal lampau tetap bisa lewat tombol "Isi" pada jadwal/overdue-nya.
+  const isDateLocked = true;
+
   // Open calendar picker synced to the currently selected date
   const openCalendarPicker = () => {
     const parsed = parseIndonesianDateToISO(worksheetDateInput);
@@ -1813,6 +1819,44 @@ export function WorksheetFormModal({
       );
       formRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
+    }
+
+    // Batch2: tolak jam manual yang mustahil (mis. 02:00) sejak awal.
+    // Hanya untuk entri baru tanpa konteks slot yang mengisi kolom opsional.
+    // Jika siswa tak punya sesi tanggal itu (sesi tambahan), tetap diizinkan
+    // seperti perilaku lama. Gagal cek (offline?) juga diizinkan.
+    if (!isEditing && !scheduleTime) {
+      const manualTimeNorm = normalizeClientTime(manualScheduleTime);
+      if (manualTimeNorm) {
+        try {
+          const { getStudentSessionTimes } = await import("@/lib/actions");
+          const effISO = parseIndonesianDateToISO(
+            worksheetDateInput || getTodayISO(),
+          );
+          const sessionTimes =
+            effectiveStudentId && effISO
+              ? await getStudentSessionTimes(effectiveStudentId, effISO)
+              : [];
+          if (
+            sessionTimes.length > 0 &&
+            !sessionTimes.includes(manualTimeNorm)
+          ) {
+            const timeStudent =
+              (students || []).find(
+                (s: any) => s?.id === effectiveStudentId,
+              ) || null;
+            const timeName =
+              timeStudent?.nickname || timeStudent?.name || "siswa ini";
+            setErrorMsg(
+              `Jam ${manualTimeNorm} tidak cocok dengan sesi ${timeName} pada tanggal tersebut (${sessionTimes.join(", ")}). Kosongkan kolom Jam Sesi jika hari ini hanya 1 sesi, atau pilih jam yang benar (format 24 jam, mis. 14:00 untuk jam 2 siang).`,
+            );
+            formRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+          }
+        } catch {
+          // abaikan, lanjut simpan seperti perilaku lama
+        }
+      }
     }
 
     // Determine effectiveBulanKe based on user input or auto-calculation
@@ -2324,14 +2368,26 @@ export function WorksheetFormModal({
                 <button
                   type="button"
                   onClick={openCalendarPicker}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700/80 cursor-pointer text-left"
-                  title="Pilih dari kalender"
+                  disabled={isDateLocked}
+                  className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs text-left ${
+                    isDateLocked
+                      ? "opacity-60 cursor-not-allowed"
+                      : "hover:bg-slate-50 dark:hover:bg-slate-700/80 cursor-pointer"
+                  }`}
+                  title="Tanggal dikunci"
                 >
                   <span className="font-semibold truncate">
                     {workSheetDateDisplay || "Pilih tanggal"}
                   </span>
                   <Icons.calendar className="w-4 h-4 text-slate-400 shrink-0" />
                 </button>
+                {isDateLocked && (
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400 dark:text-slate-500">
+                    {scheduleSlotId || initialData?.schedule_slot_id
+                      ? "Tanggal mengikuti jadwal — salah jadwal? Hapus laporan ini dan isi ulang dari jadwal yang benar."
+                      : "Tanggal dikunci. Untuk mengisi tanggal lain, buka lewat jadwal/overdue tanggal tersebut."}
+                  </p>
+                )}
 
                 {/* Custom calendar date picker (mobile-friendly) */}
                 {isCalendarPickerOpen && (
@@ -2430,7 +2486,7 @@ export function WorksheetFormModal({
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
                   Jam Sesi Kelas{" "}
                   <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
-                    (Opsional, misal jika siswa les 2 sesi di tanggal ini)
+                    (Opsional — kosongkan jika hari ini hanya 1 sesi)
                   </span>
                 </label>
                 <input
@@ -2439,6 +2495,10 @@ export function WorksheetFormModal({
                   onChange={(e) => setManualScheduleTime(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-xs"
                 />
+                <p className="text-[11px] leading-relaxed text-slate-400 dark:text-slate-500">
+                  Format 24 jam (mis. 14:00 untuk jam 2 siang). Salah isi membuat
+                  laporan dianggap belum menutup jadwal.
+                </p>
               </div>
             )}
 

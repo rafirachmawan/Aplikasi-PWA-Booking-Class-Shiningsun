@@ -20,6 +20,7 @@ interface SchedulingClientWrapperProps {
   students: any[];
   classes: any[];
   schedules: any[];
+  nextMonthScheduledIds: string[];
   currentMonth: number;
   currentYear: number;
 }
@@ -31,6 +32,7 @@ export function SchedulingClientWrapper({
   students,
   classes,
   schedules,
+  nextMonthScheduledIds,
   currentMonth,
   currentYear,
 }: SchedulingClientWrapperProps) {
@@ -211,6 +213,17 @@ export function SchedulingClientWrapper({
   }>({ isOpen: false, studentSchedules: [] });
   const [copyConfirm, setCopyConfirm] = useState(false);
 
+  // Batch2: hasil penyalinan terakhir yang menetap (tidak hilang saat modal
+  // notifikasi ditutup). Hanya tampilan — tidak mengubah alur di bawah.
+  const [lastCopyResult, setLastCopyResult] = useState<{
+    studentName: string;
+    booked: number;
+    failed: string[];
+  } | null>(null);
+  // Batch2: copy per-baris panel kesiapan (lock sendiri agar tidak berebut slot).
+  const [copyingGapId, setCopyingGapId] = useState<string | null>(null);
+  const [isGapOpen, setIsGapOpen] = useState(true);
+
   // Bulk Actions Execution
   const executeBulkDelete = async () => {
     if (!studentId || bulkDeleteConfirm.studentSchedules.length === 0) return;
@@ -242,6 +255,14 @@ export function SchedulingClientWrapper({
         currentYear,
         currentMonth,
       );
+      // Batch2: catat hasil agar menetap di halaman (tidak hilang saat modal ditutup).
+      const copiedName =
+        students.find((s) => s.id === studentId)?.name || "Siswa";
+      setLastCopyResult({
+        studentName: copiedName,
+        booked: res.totalBooked,
+        failed: res.failedDates || [],
+      });
       if (res.totalBooked === 0) {
         showAlert(
           "error",
@@ -266,6 +287,49 @@ export function SchedulingClientWrapper({
       showAlert("error", error.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Batch2: salin per-baris dari panel kesiapan bulan depan. Alur hasil
+  // (modal + kotak menetap) sama persis seperti executeCopyToNextMonth.
+  const handleGapCopy = async (gapStudentId: string, gapStudentName: string) => {
+    if (copyingGapId) return;
+    setCopyingGapId(gapStudentId);
+    try {
+      const res = await copyScheduleToNextMonth(
+        gapStudentId,
+        currentYear,
+        currentMonth,
+      );
+      setLastCopyResult({
+        studentName: gapStudentName,
+        booked: res.totalBooked,
+        failed: res.failedDates || [],
+      });
+      if (res.totalBooked === 0) {
+        showAlert(
+          "error",
+          "Gagal! Semua sesi untuk bulan depan sudah penuh atau siswa sudah terdaftar.",
+        );
+      } else if (res.failedDates.length > 0) {
+        const datesFormatted = res.failedDates
+          .map((d: string) => formatShortDate(d))
+          .join(", ");
+        showAlert(
+          "warning",
+          `Berhasil menyalin ${res.totalBooked} sesi. Namun ada jadwal yang gagal karena penuh pada: ${datesFormatted}.`,
+        );
+      } else {
+        showAlert(
+          "success",
+          `Berhasil menyalin jadwal. Total ${res.totalBooked} sesi didaftarkan untuk bulan depan.`,
+        );
+      }
+      router.refresh();
+    } catch (error: any) {
+      showAlert("error", error.message);
+    } finally {
+      setCopyingGapId(null);
     }
   };
 
@@ -378,6 +442,15 @@ export function SchedulingClientWrapper({
           allFailedDates.push(...res.failedDates);
         }
       }
+
+      // Batch2: catat hasil agar menetap di halaman (tidak hilang saat modal ditutup).
+      const autoName =
+        students.find((s) => s.id === studentId)?.name || "Siswa";
+      setLastCopyResult({
+        studentName: autoName,
+        booked: totalBooked,
+        failed: allFailedDates,
+      });
 
       if (totalBooked === 0) {
         showAlert(
@@ -498,6 +571,16 @@ export function SchedulingClientWrapper({
     });
   }, [students, studentSearchQuery, recentStudentIds]);
 
+  // Batch2: kesiapan bulan depan — siswa aktif tanpa 1 pun booking bulan depan.
+  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+  const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+  const gapStudents = useMemo(() => {
+    const scheduled = new Set(nextMonthScheduledIds || []);
+    return students
+      .filter((s) => s.status !== "INACTIVE" && !scheduled.has(s.id))
+      .sort((a, b) => a.name.localeCompare(b.name, "id"));
+  }, [students, nextMonthScheduledIds]);
+
   return (
     <>
       {isSubmitting && <LoadingSpinner usePortal={true} />}
@@ -562,6 +645,149 @@ export function SchedulingClientWrapper({
               </div>
             );
           })()}
+
+          {/* Batch2: Kesiapan bulan depan — siswa aktif tanpa 1 pun sesi bulan depan */}
+          <div className="mb-8 p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800">
+            <button
+              type="button"
+              onClick={() => setIsGapOpen(!isGapOpen)}
+              aria-expanded={isGapOpen}
+              className="w-full flex items-center justify-between gap-2 cursor-pointer"
+            >
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                Kesiapan {monthNames[nextMonth - 1]} {nextYear}
+              </span>
+              <span className="flex items-center gap-2 shrink-0">
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${
+                    gapStudents.length === 0
+                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50"
+                      : "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50"
+                  }`}
+                >
+                  {gapStudents.length === 0
+                    ? "Semua terjadwal"
+                    : `${gapStudents.length} belum terjadwal`}
+                </span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`text-slate-400 transition-transform duration-200 ${isGapOpen ? "rotate-180" : ""}`}
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </span>
+            </button>
+
+            {isGapOpen &&
+              (gapStudents.length === 0 ? (
+                <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400 italic">
+                  Semua siswa aktif sudah memiliki jadwal di{" "}
+                  {monthNames[nextMonth - 1]}.
+                </p>
+              ) : (
+                <>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-zinc-400">
+                    Siswa berikut belum punya satu pun sesi di{" "}
+                    {monthNames[nextMonth - 1]}. Salin dari{" "}
+                    {monthNames[currentMonth - 1]} agar tidak ada yang terlewat.
+                  </p>
+                  <div className="mt-3 space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {gapStudents.map((s) => (
+                      <div
+                        key={s.id}
+                        className="flex items-center justify-between gap-2 p-2.5 rounded-xl text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700"
+                      >
+                        <div className="truncate min-w-0">
+                          <span className="font-semibold text-slate-800 dark:text-zinc-200">
+                            {s.name}
+                            {s.nickname ? (
+                              <span className="text-slate-400 dark:text-zinc-500 font-normal ml-1">
+                                ({s.nickname})
+                              </span>
+                            ) : null}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-lg ${
+                              s.status === "REGISTERED"
+                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                                : "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+                            }`}
+                          >
+                            {s.status === "REGISTERED" ? "Reguler" : "CG"}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={copyingGapId !== null}
+                            onClick={() => handleGapCopy(s.id, s.name)}
+                            className="px-3 py-2 text-xs font-bold bg-brand-600 text-white rounded-xl hover:bg-brand-700 active:translate-y-[1px] transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            {copyingGapId === s.id ? "Menyalin..." : "Salin"}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ))}
+          </div>
+
+          {/* Batch2: Hasil penyalinan terakhir (menetap sampai ditutup/ganti bulan) */}
+          {lastCopyResult && (
+            <div
+              className={`mb-8 p-4 rounded-2xl border ${
+                lastCopyResult.failed.length > 0
+                  ? "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-800/50"
+                  : "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-800/50"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p
+                    className={`text-sm font-bold ${
+                      lastCopyResult.failed.length > 0
+                        ? "text-amber-800 dark:text-amber-300"
+                        : "text-emerald-800 dark:text-emerald-300"
+                    }`}
+                  >
+                    Hasil penyalinan: {lastCopyResult.studentName}
+                  </p>
+                  <p className="text-xs mt-1 leading-relaxed text-slate-600 dark:text-zinc-300">
+                    {lastCopyResult.booked} sesi disalin.
+                    {lastCopyResult.failed.length > 0 ? (
+                      <>
+                        {" "}
+                        Gagal (penuh/sudah terdaftar) pada:{" "}
+                        {lastCopyResult.failed
+                          .map((d) => formatShortDate(d))
+                          .join(", ")}
+                        . Salin ulang setelah ada kursi kosong.
+                      </>
+                    ) : (
+                      " Semua sesi berhasil."
+                    )}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLastCopyResult(null)}
+                  aria-label="Tutup hasil penyalinan"
+                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-lg transition-colors cursor-pointer shrink-0"
+                >
+                  <Icons.close className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Global Student Selector */}
           <div className="mb-8 p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800">

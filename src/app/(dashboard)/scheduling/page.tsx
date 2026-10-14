@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { getStudents, getClasses, getMonthlySchedules, getCurrentUserRole, getBranchId, getActiveBranchName } from "@/lib/actions";
+import { getStudents, getClasses, getMonthlySchedules, getStudentsWithNextMonthSchedule, getCurrentUserRole, getBranchId, getActiveBranchName } from "@/lib/actions";
 import { SchedulingClientWrapper } from "./SchedulingClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 
@@ -55,10 +55,11 @@ async function SchedulingData({
   currentMonth: number;
   currentYear: number;
 }) {
-  const [students, classes, schedules] = await Promise.all([
+  const [students, classes, schedules, nextMonthScheduledIds] = await Promise.all([
     getStudents(),
     getClasses(),
     getMonthlySchedules(currentYear, currentMonth),
+    getStudentsWithNextMonthSchedule(currentYear, currentMonth),
   ]);
 
   return (
@@ -66,6 +67,7 @@ async function SchedulingData({
       students={students}
       classes={classes}
       schedules={schedules}
+      nextMonthScheduledIds={nextMonthScheduledIds}
       currentMonth={currentMonth}
       currentYear={currentYear}
     />

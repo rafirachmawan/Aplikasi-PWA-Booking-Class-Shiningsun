@@ -15,10 +15,12 @@ const FIXED_TIMES = [
   { time: "09:00", range: "09 - 10" },
   { time: "10:00", range: "10 - 11" },
   { time: "11:00", range: "11 - 12" },
+  { time: "12:00", range: "12 - 13" },
   { time: "13:00", range: "13 - 14" },
   { time: "14:00", range: "14 - 15" },
   { time: "15:00", range: "15 - 16" },
   { time: "16:00", range: "16 - 17" },
+  { time: "17:00", range: "17 - 18" },
 ];
 
 function getTodayStr() {
