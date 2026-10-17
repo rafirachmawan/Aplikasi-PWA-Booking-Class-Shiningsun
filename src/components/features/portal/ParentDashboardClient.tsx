@@ -1136,10 +1136,17 @@ export function ParentDashboardClient({
                       return dateB.localeCompare(dateA);
                     },
                   );
+                  // Hemat payload: foto profil SUDAH tampil di header kartu identitas
+                  // (baris ~666). Kalau diteruskan ke setiap tabel per bulan, string
+                  // base64-nya ikut ter-serialize ulang pada setiap grup — sampai
+                  // 10x untuk siswa yang punya banyak bulan laporan, sehingga HTML portal
+                  // membengkak jadi >1 MB dan berisiko timeout di browser dalam HP.
+                  // Nullable: tabel laporan memakai fallback logo seperti siswa tanpa foto.
+                  // Tampilan & data tidak berubah; hanya payload yang tidak diduplikasi.
                   return sortedGroups.map(([bk, wsGroup]) => (
                     <StudentWorksheetTable
                       key={`parent_${student.id}_${bk}`}
-                      student={{ ...student, photo_url: photoUrl }}
+                      student={{ ...student, photo_url: null }}
                       worksheets={wsGroup}
                       bulanKe={bk === "none" ? null : parseInt(bk, 10)}
                       isParentView={true}

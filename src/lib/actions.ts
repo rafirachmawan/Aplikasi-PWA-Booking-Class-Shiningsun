@@ -3110,6 +3110,36 @@ export async function updateStudentAccessPin(
   return true;
 }
 
+// ── Log diagnostik Portal Orang Tua ────────────────────────────────────────
+// Sementara dipakai untuk menelusuri laporan client "halaman gagal dimuat".
+// Formatnya satu baris per kejadian dengan awalan [PORTAL] supaya mudah
+// difilter di Vercel Logs (filter: "[PORTAL]").
+//
+// PENTING: hanya console.log. Tidak mengubah alur login, query, maupun data
+// di database. Boleh dihapus lagi setelah kasus selesai.
+//
+// Cara baca:
+//   [PORTAL] LOGIN ... | MASUK        → request login sampai ke server
+//   [PORTAL] LOGIN ... | COCOK        → siswa ketemu, session dibuat
+//   [PORTAL] LOGIN ... | GAGAL:<alasan> → request sampai, tapi tidak lolos
+//   [PORTAL] DASH  ... | MASUK        → request dashboard sampai ke server
+//   [PORTAL] DASH  ... | TANPA-SESSION → cookie tidak ada / tidak berlaku
+// Kalau tidak ada baris [PORTAL] sama sekali pada jam yang diklaim client,
+// berarti request-nya gagal sebelum sampai server (jaringan atau browser HP).
+// ──────────────────────────────────────────────────────────────────────────
+function logPortal(
+  stage: "LOGIN" | "LOGIN-PILIH" | "DASH",
+  detail: Record<string, unknown>,
+) {
+  try {
+    console.log(
+      `[PORTAL] ${stage} ${new Date().toISOString()} | ${JSON.stringify(detail)}`,
+    );
+  } catch (e) {
+    // logger tidak boleh pernah mengganggu alur portal
+  }
+}
+
 export async function verifyParentAccess(
   studentNameOrSearch: string,
   pin: string,
@@ -3136,6 +3166,15 @@ export async function verifyParentAccess(
 
   const supabaseServer = await createClient();
 
+  // Bukti request login sampai ke server (penting saat client lapor
+  // "halaman gagal dimuat" — kalau baris ini tidak ada, masalahnya
+  // ada di jaringan/browser HP, bukan di aplikasi).
+  logPortal("LOGIN", {
+    tahap: "MASUK",
+    nama: cleanSearch,
+    cabang: branchId || "SEMUA",
+  });
+
   let students: any[] | null = null;
   let error: any = null;
 
@@ -3159,6 +3198,11 @@ export async function verifyParentAccess(
   }
 
   if (error || !students || students.length === 0) {
+    logPortal("LOGIN", {
+      tahap: "GAGAL",
+      nama: cleanSearch,
+      alasan: "data-siswa-tidak-dibaca",
+    });
     return {
       success: false,
       error:
@@ -3265,6 +3309,15 @@ export async function verifyParentAccess(
     error:
       "PIN Akses salah. Silakan masukkan PIN yang benar atau hubungi admin sekolah.",
   };
+  // dipakai untukNeedsiagnostik PIN salah
+  const pinGagal = () => {
+    logPortal("LOGIN", {
+      tahap: "GAGAL",
+      nama: cleanSearch,
+      alasan: "pin-salah",
+    });
+    return pinError;
+  };
 
   // Level 1: pool nickname exact (abaikan PIN dulu)
   const nicknamePool = orderedStudents.filter((s) => {
@@ -3273,7 +3326,7 @@ export async function verifyParentAccess(
   });
   if (nicknamePool.length > 0) {
     const pinOk = nicknamePool.filter(pinMatches);
-    if (pinOk.length === 0) return pinError;
+    if (pinOk.length === 0) return pinGagal();
     const r = resolveCandidates(pinOk, "nickname");
     if ((r as any)?.single) {
       const { access_pin, ...safe } = (r as any).single;
@@ -3282,6 +3335,12 @@ export async function verifyParentAccess(
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
         sameSite: "lax",
+      });
+      logPortal("LOGIN", {
+        tahap: "COCOK",
+        nama: (r as any).single.name,
+        studentId: (r as any).single.id,
+        level: "nickname",
       });
       return { success: true, student: safe };
     }
@@ -3295,7 +3354,7 @@ export async function verifyParentAccess(
   });
   if (fullnamePool.length > 0) {
     const pinOk = fullnamePool.filter(pinMatches);
-    if (pinOk.length === 0) return pinError;
+    if (pinOk.length === 0) return pinGagal();
     const r = resolveCandidates(pinOk, "fullname");
     if ((r as any)?.single) {
       const { access_pin, ...safe } = (r as any).single;
@@ -3304,6 +3363,12 @@ export async function verifyParentAccess(
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
         sameSite: "lax",
+      });
+      logPortal("LOGIN", {
+        tahap: "COCOK",
+        nama: (r as any).single.name,
+        studentId: (r as any).single.id,
+        level: "fullname",
       });
       return { success: true, student: safe };
     }
@@ -3320,7 +3385,7 @@ export async function verifyParentAccess(
   });
   if (wordPool.length > 0) {
     const pinOk = wordPool.filter(pinMatches);
-    if (pinOk.length === 0) return pinError;
+    if (pinOk.length === 0) return pinGagal();
     const r = resolveCandidates(pinOk, "word_or_id");
     if ((r as any)?.single) {
       const matchedStudent: any = (r as any).single;
@@ -3337,6 +3402,12 @@ export async function verifyParentAccess(
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
         sameSite: "lax",
+      });
+      logPortal("LOGIN", {
+        tahap: "COCOK",
+        nama: matchedStudent.name,
+        studentId: matchedStudent.id,
+        level: "word_or_id",
       });
       return { success: true, student: safe };
     }
@@ -3359,12 +3430,22 @@ export async function verifyParentAccess(
     });
 
     if (nameFoundButPinWrong) {
+      logPortal("LOGIN", {
+        tahap: "GAGAL",
+        nama: cleanSearch,
+        alasan: "pin-salah",
+      });
       return {
         success: false,
         error:
           "PIN Akses salah. Silakan masukkan PIN yang benar atau hubungi admin sekolah.",
       };
     } else {
+      logPortal("LOGIN", {
+        tahap: "GAGAL",
+        nama: cleanSearch,
+        alasan: "nama-tidak-ditemukan",
+      });
       return {
         success: false,
         error:
@@ -3475,13 +3556,21 @@ export async function confirmParentStudentSelection(
   });
 
   const { access_pin, ...safeStudent } = s as any;
+  logPortal("LOGIN-PILIH", {
+    tahap: "COCOK",
+    nama: safeStudent.name,
+    studentId: safeStudent.id,
+  });
   return { success: true, student: safeStudent };
 }
 
 export async function getParentSessionStudent() {
   const cookieStore = await cookies();
   const studentId = cookieStore.get("parent_student_id")?.value;
-  if (!studentId) return null;
+  if (!studentId) {
+    logPortal("DASH", { tahap: "TANPA-SESSION" });
+    return null;
+  }
 
   const supabaseServer = await createClient();
   let student: any = null;
@@ -3520,9 +3609,13 @@ export async function getParentSessionStudent() {
     error = fallbackRes.error;
   }
 
-  if (error || !student) return null;
+  if (error || !student) {
+    logPortal("DASH", { tahap: "TANPA-SESSION", studentId, alasan: "siswa-tidak-ditemukan" });
+    return null;
+  }
 
   if (student.status === "INACTIVE") {
+    logPortal("DASH", { tahap: "TANPA-SESSION", studentId, alasan: "siswa-nonaktif" });
     cookieStore.delete("parent_student_id");
     return null;
   }
@@ -3563,6 +3656,13 @@ export async function getParentSessionStudent() {
   } catch (e) {}
 
   const net = Math.max(0, gross - redeemed);
+
+  logPortal("DASH", {
+    tahap: "OK",
+    nama: student.name,
+    studentId: student.id,
+    laporan: (worksheetsData || []).length,
+  });
 
   return {
     ...student,
