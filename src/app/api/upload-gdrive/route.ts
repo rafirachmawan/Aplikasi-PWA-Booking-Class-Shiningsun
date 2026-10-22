@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 
+export const maxDuration = 60;
+
 let memoryGDriveRefreshToken: string | null = null;
 
 export function setMemoryGDriveRefreshToken(token: string | null) {
@@ -65,16 +67,29 @@ async function getAccessTokenFromRefreshToken(
   clientSecret: string,
   refreshToken: string
 ): Promise<string> {
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
+  const tokenCtrl = new AbortController();
+  const tokenTimer = setTimeout(() => tokenCtrl.abort(), 10000);
+  let res: Response;
+  try {
+    res = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+      signal: tokenCtrl.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error("Koneksi otorisasi ke Google timeout (10 dtk). Silakan coba lagi.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(tokenTimer);
+  }
 
   const data = await res.json();
   if (!res.ok) {
@@ -178,7 +193,7 @@ export async function POST(req: NextRequest) {
       refreshToken
     );
 
-    // 2. Upload file ke Google Drive (multipart)
+    // 2. Upload file ke Google Drive (multipart) dengan timeout 25 dtk
     const metadata: Record<string, unknown> = { name: fileName };
     if (folderId) {
       metadata.parents = [folderId];
@@ -200,17 +215,25 @@ export async function POST(req: NextRequest) {
       Buffer.from(closeDelimiter),
     ]);
 
-    const uploadRes = await fetch(
-      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": `multipart/related; boundary=${boundary}`,
-        },
-        body,
-      }
-    );
+    const gDriveCtrl = new AbortController();
+    const gDriveTimer = setTimeout(() => gDriveCtrl.abort(), 25000);
+    let uploadRes: Response;
+    try {
+      uploadRes = await fetch(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": `multipart/related; boundary=${boundary}`,
+          },
+          body,
+          signal: gDriveCtrl.signal,
+        }
+      );
+    } finally {
+      clearTimeout(gDriveTimer);
+    }
 
     const fileData = await uploadRes.json();
     if (!uploadRes.ok) {
@@ -220,20 +243,27 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Set izin file ke publik (anyone reader) agar orang tua bisa melihat
-    await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileData.id}/permissions`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          role: "reader",
-          type: "anyone",
-        }),
-      }
-    );
+    const permCtrl = new AbortController();
+    const permTimer = setTimeout(() => permCtrl.abort(), 10000);
+    try {
+      await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileData.id}/permissions`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            role: "reader",
+            type: "anyone",
+          }),
+          signal: permCtrl.signal,
+        }
+      );
+    } finally {
+      clearTimeout(permTimer);
+    }
 
     const webViewLink = `https://drive.google.com/file/d/${fileData.id}/view`;
     const directLink = `https://drive.google.com/uc?export=download&id=${fileData.id}`;
@@ -247,8 +277,13 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     console.error("GDrive OAuth2 Upload error:", err);
+    const isTimeout = err?.name === "AbortError";
     return NextResponse.json(
-      { error: err.message || "Gagal mengunggah file ke Google Drive" },
+      {
+        error: isTimeout
+          ? "Upload ke Google Drive timeout (server Google lambat merespons). Coba lagi."
+          : err.message || "Gagal mengunggah file ke Google Drive",
+      },
       { status: 500 }
     );
   }

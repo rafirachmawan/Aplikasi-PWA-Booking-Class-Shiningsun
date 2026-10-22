@@ -624,22 +624,29 @@ export function WorksheetFormModal({
     setIsUploadingGDrive(true);
     setUploadError(null);
 
-    // Upload terpisah dari Simpan: gagal upload tidak boleh blokir Simpan.
-    // Tambah timeout 25s + 1x retry agar HP sinyal lemot tetap bisa coba lagi.
-    const uploadOnce = async (signal: AbortSignal) => {
-      // Kompresi gambar client-side (kamera HP 15MB -> ~300KB) agar cepat & tidak error 413
-      const compressedFile = target.type?.startsWith("image/")
+    // Kompresi sekali di awal — tidak diulang per retry (hemat 2-5 dtk per attempt).
+    let compressedFile: File;
+    try {
+      compressedFile = target.type?.startsWith("image/")
         ? await compressImage(target)
         : target;
+    } catch {
+      compressedFile = target;
+    }
 
-      // Guard pasca-kompresi: hasil >5MB pasti bikin Origin spike/timeout —
-      // gagalkan cepat dengan pesan jelas (alur sukses tidak berubah).
-      if (compressedFile.size > 5 * 1024 * 1024) {
-        throw new Error(
-          "File masih lebih dari 5 MB setelah kompresi. Kecilkan file lalu coba lagi.",
-        );
-      }
+    // Guard pasca-kompresi: hasil >5MB pasti bikin Origin spike/timeout —
+    // gagalkan cepat dengan pesan jelas (alur sukses tidak berubah).
+    if (compressedFile.size > 5 * 1024 * 1024) {
+      setUploadError(
+        "File masih lebih dari 5 MB setelah kompresi. Kecilkan file lalu coba lagi.",
+      );
+      setIsUploadingGDrive(false);
+      return;
+    }
 
+    // Upload terpisah dari Simpan: gagal upload tidak boleh blokir Simpan.
+    // Timeout progresif 30→40→50 dtk + 3x retry + jeda antar-attempt.
+    const uploadOnce = async (signal: AbortSignal) => {
       const formData = new FormData();
       formData.append("file", compressedFile);
 
@@ -658,9 +665,14 @@ export function WorksheetFormModal({
 
     try {
       let lastErr: any = null;
-      for (let attempt = 1; attempt <= 2; attempt++) {
+      const TIMEOUTS = [30000, 40000, 50000];
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        // Jeda antar retry (attempt 2: 1 dtk, attempt 3: 2 dtk)
+        if (attempt > 1) {
+          await new Promise((r) => setTimeout(r, (attempt - 1) * 1000));
+        }
         const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 25000);
+        const timer = setTimeout(() => ctrl.abort(), TIMEOUTS[attempt - 1]);
         try {
           const data = await uploadOnce(ctrl.signal);
           clearTimeout(timer);
@@ -674,12 +686,18 @@ export function WorksheetFormModal({
           lastErr = e;
           if (e?.name === "AbortError") {
             setUploadError(
-              attempt === 1
-                ? "Upload timeout (25 dtk), mencoba lagi..."
-                : "Upload timeout. Foto belum terkirim — laporan tetap bisa Disimpan dulu, foto bisa diunggah ulang.",
+              attempt < 3
+                ? `Upload timeout, mencoba ulang (${attempt}/3)...`
+                : "Upload timeout. Laporan tetap bisa Disimpan dulu tanpa foto.",
+            );
+          } else if (e?.message === "Failed to fetch" || e?.name === "TypeError") {
+            setUploadError(
+              attempt < 3
+                ? `Koneksi terputus, mencoba ulang (${attempt}/3)...`
+                : "Koneksi gagal. Laporan tetap bisa Disimpan dulu tanpa foto.",
             );
           }
-          if (attempt === 2) throw e;
+          if (attempt === 3) throw e;
         }
       }
       if (lastErr) throw lastErr;
@@ -688,7 +706,9 @@ export function WorksheetFormModal({
       setUploadError(
         err?.name === "AbortError"
           ? "Upload timeout. Laporan tetap bisa Disimpan dulu tanpa foto."
-          : err.message || "Gagal mengunggah file",
+          : err?.message === "Failed to fetch" || err?.name === "TypeError"
+            ? "Koneksi gagal. Laporan tetap bisa Disimpan dulu tanpa foto."
+            : err.message || "Gagal mengunggah file",
       );
     } finally {
       setIsUploadingGDrive(false);
@@ -3642,6 +3662,7 @@ export function WorksheetFormModal({
                     accept="image/*"
                     id="gdrive-file-input-gallery"
                     className="hidden"
+                    onClick={(e) => { (e.target as HTMLInputElement).value = ""; }}
                     onChange={(e) => {
                       handleFileChange(e);
                       if (e.target.files?.[0]) {
@@ -3657,6 +3678,7 @@ export function WorksheetFormModal({
                     capture="environment"
                     id="gdrive-file-input-camera"
                     className="hidden"
+                    onClick={(e) => { (e.target as HTMLInputElement).value = ""; }}
                     onChange={(e) => {
                       handleFileChange(e);
                       if (e.target.files?.[0]) {
@@ -3730,6 +3752,17 @@ export function WorksheetFormModal({
                     Foto gagal tidak menghalangi Simpan — laporan tetap bisa
                     disimpan dulu, foto bisa diunggah ulang / paste link manual.
                   </div>
+                  {/* Tombol Coba Lagi — hanya muncul jika tidak sedang upload & masih ada file */}
+                  {!isUploadingGDrive && selectedFile && (
+                    <button
+                      type="button"
+                      onClick={() => handleUploadToGDrive()}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-bold text-[11px] transition-colors shadow-xs"
+                    >
+                      <span>🔄</span>
+                      <span>Coba Upload Lagi</span>
+                    </button>
+                  )}
                   {(uploadError.includes("/api/auth/gdrive") ||
                     uploadError.includes("Google Drive belum terhubung") ||
                     uploadError.includes("kadaluarsa")) && (

@@ -400,7 +400,7 @@ export async function getOverdueWorksheets(branchId = "ALL") {
         .from("students")
         .select(
           `
-        id, name, nickname, gender, status, label_id, registered_at,
+        id, name, nickname, gender, status, label_id, registered_at, registration_date, created_at,
         label:labels(id, main_level, sub_level, hex_color)
       `,
         )
@@ -427,7 +427,7 @@ export async function getOverdueWorksheets(branchId = "ALL") {
           .from("students")
           .select(
             `
-        id, name, nickname, gender, status, label_id,
+        id, name, nickname, gender, status, label_id, registration_date, created_at,
         label:labels(id, main_level, sub_level, hex_color)
       `,
           )
@@ -450,14 +450,29 @@ export async function getOverdueWorksheets(branchId = "ALL") {
     if (studentList.length === 0) return [];
 
     // Tanggal efektif per siswa: booking sebelum tanggal ini adalah era CG → abaikan.
-    // Hanya pakai registered_at. NULL / kolom belum ada = perilaku lama (mulai dari startDate).
+    // Untuk siswa yang dikonversi dari CG: sesi pada / sebelum registered_at adalah era CG (abaikan sDate <= regAt).
+    // Untuk siswa yang langsung REGULER: abaikan hanya sebelum tanggal mulai (sDate < effectiveStart).
     const effectiveStartByStudent = new Map<string, string>();
+    const wasCgByStudent = new Map<string, boolean>();
     if (hasRegisteredAtColumn) {
       for (const s of studentList) {
         const regAt =
           typeof s.registered_at === "string"
             ? s.registered_at.split("T")[0]
             : null;
+        const createdDate =
+          typeof s.created_at === "string"
+            ? s.created_at.split("T")[0]
+            : "";
+        const regDate =
+          typeof s.registration_date === "string"
+            ? s.registration_date.split("T")[0]
+            : "";
+
+        const wasCg =
+          !!regAt && (createdDate < regAt || (regDate !== "" && regDate < regAt));
+
+        wasCgByStudent.set(s.id, wasCg);
         effectiveStartByStudent.set(
           s.id,
           regAt && regAt > startDate ? regAt : startDate,
@@ -466,6 +481,7 @@ export async function getOverdueWorksheets(branchId = "ALL") {
     } else {
       for (const s of studentList) {
         effectiveStartByStudent.set(s.id, startDate);
+        wasCgByStudent.set(s.id, false);
       }
     }
 
@@ -647,12 +663,20 @@ export async function getOverdueWorksheets(branchId = "ALL") {
           continue;
         }
 
-        // Periode CG tidak masuk overdue: abaikan booking sebelum tanggal jadi REGISTERED.
-        // Logika lain di bawah tidak berubah.
+        // Periode CG tidak masuk overdue:
+        // 1. Siswa yang konversi dari CG: abaikan sesi pada / sebelum tanggal promosi (sDate <= effectiveStart)
+        // 2. Siswa yang langsung REGULER: abaikan hanya sebelum tanggal mulai (sDate < effectiveStart)
+        const wasCg = wasCgByStudent.get(student.id) || false;
         const effectiveStart =
           effectiveStartByStudent.get(student.id) || startDate;
-        if (schedDate < effectiveStart) {
-          continue;
+        if (wasCg) {
+          if (schedDate <= effectiveStart) {
+            continue;
+          }
+        } else {
+          if (schedDate < effectiveStart) {
+            continue;
+          }
         }
 
         // For past dates (before today), all counts as overdue since the day has passed
