@@ -2,17 +2,20 @@ import { Suspense } from "react";
 import { getWorksheetsByBranch, getStudents, getLabels, getTeachers, getAssessmentTemplates, getActiveBranchName } from "@/lib/actions";
 import { WorksheetClientWrapper } from "./WorksheetClientWrapper";
 
-// Batch2 hemat: hapus force-dynamic redundan — tetap dynamic otomatis via cookies().
-export default async function WorksheetsPage() {
-  // 6 query berat di-streaming (query & props sama persis, hanya tidak blocking).
+export default async function WorksheetsPage(props: {
+  searchParams?: Promise<{ student_id?: string }>;
+}) {
+  const searchParams = props.searchParams ? await props.searchParams : undefined;
+  const studentId = typeof searchParams?.student_id === "string" ? searchParams.student_id : undefined;
+
   return (
     <Suspense fallback={<WorksheetsPageSkeleton />}>
-      <WorksheetsData />
+      <WorksheetsData studentId={studentId} />
     </Suspense>
   );
 }
 
-async function WorksheetsData() {
+async function WorksheetsData({ studentId }: { studentId?: string }) {
   const [
     worksheets,
     students,
@@ -21,7 +24,7 @@ async function WorksheetsData() {
     teachers,
     templates,
   ] = await Promise.all([
-    getWorksheetsByBranch(),
+    getWorksheetsByBranch(studentId),
     getStudents(),
     getLabels(),
     getActiveBranchName(),

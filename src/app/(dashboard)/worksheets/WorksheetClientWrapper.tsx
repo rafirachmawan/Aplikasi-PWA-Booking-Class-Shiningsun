@@ -9,10 +9,10 @@ import {
   deleteWorksheet,
   deleteWorksheetMonth,
   updateStudentAccessPin,
+  getWorksheetsByBranch,
 } from "@/lib/actions";
 import { formatNumericDate, formatShortDate } from "@/lib/dateUtils";
 import { getGDrivePreviewLink, getGDriveDirectLink } from "@/lib/gdriveUtils";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface WorksheetClientWrapperProps {
   initialWorksheets: any[];
@@ -33,6 +33,8 @@ export function WorksheetClientWrapper({
 }: WorksheetClientWrapperProps) {
   const router = useRouter();
   const [selectedStudentId, setSelectedStudentId] = useState("__none__");
+  const [loadedWorksheets, setLoadedWorksheets] = useState<any[]>(initialWorksheets);
+  const [isLoadingStudentWorksheets, setIsLoadingStudentWorksheets] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorksheet, setEditingWorksheet] = useState<any>(null);
   const [successToast, setSuccessToast] = useState("");
@@ -207,9 +209,50 @@ export function WorksheetClientWrapper({
     setNewPin(randomPin);
   };
 
+  // Sync loadedWorksheets whenever initialWorksheets from server refresh updates
+  useEffect(() => {
+    setLoadedWorksheets((prev) => {
+      const map = new Map(prev.map((w) => [w.id, w]));
+      initialWorksheets.forEach((w) => map.set(w.id, w));
+      return Array.from(map.values());
+    });
+  }, [initialWorksheets]);
+
+  // Fetch full student worksheets on demand when a student is selected
+  useEffect(() => {
+    if (!selectedStudentId || selectedStudentId === "__none__" || selectedStudentId === "") {
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoadingStudentWorksheets(true);
+
+    getWorksheetsByBranch(selectedStudentId)
+      .then((studentWorksheets) => {
+        if (!isMounted) return;
+        if (studentWorksheets && studentWorksheets.length > 0) {
+          setLoadedWorksheets((prev) => {
+            const map = new Map(prev.map((w) => [w.id, w]));
+            studentWorksheets.forEach((w) => map.set(w.id, w));
+            return Array.from(map.values());
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching full student worksheets:", err);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingStudentWorksheets(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedStudentId]);
+
   // Filter worksheets by student AND date range
   const filteredWorksheets = useMemo(() => {
-    return initialWorksheets.filter((w) => {
+    return loadedWorksheets.filter((w) => {
       const matchStudent =
         selectedStudentId === "" ||
         selectedStudentId === "__none__" ||
@@ -224,7 +267,7 @@ export function WorksheetClientWrapper({
       if (endDate && dateOnly > endDate) return false;
       return true;
     });
-  }, [initialWorksheets, selectedStudentId, startDate, endDate]);
+  }, [loadedWorksheets, selectedStudentId, startDate, endDate]);
 
   const handleDownloadPdf = async () => {
     const cardEl = printableRef.current;
@@ -645,11 +688,34 @@ export function WorksheetClientWrapper({
                   ? `${selectedStudentObj.name} ${selectedStudentObj.nickname ? `(${selectedStudentObj.nickname})` : ""}`
                   : `Semua Siswa (${students.length})`}
             </span>
-            <Icons.chevronDown
-              className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${
-                isStudentDropdownOpen ? "rotate-180" : ""
-              }`}
-            />
+            {isLoadingStudentWorksheets ? (
+              <svg
+                className="animate-spin h-4 w-4 text-brand-600 dark:text-brand-400 shrink-0"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            ) : (
+              <Icons.chevronDown
+                className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                  isStudentDropdownOpen ? "rotate-180" : ""
+                }`}
+              />
+            )}
           </button>
 
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -938,7 +1004,7 @@ export function WorksheetClientWrapper({
           templates={templates}
           labels={labels}
           initialData={editingWorksheet}
-          worksheets={initialWorksheets}
+          worksheets={loadedWorksheets}
           lockedStudentId={lockedStudentId}
           onClose={() => {
             setIsModalOpen(false);

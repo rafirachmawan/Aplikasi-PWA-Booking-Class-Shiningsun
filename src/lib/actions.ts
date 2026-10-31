@@ -359,7 +359,14 @@ export async function getClasses() {
   return data;
 }
 
+let memoryLabelsCache: { data: any[]; timestamp: number } | null = null;
+const LABELS_CACHE_TTL = 3 * 60 * 1000; // 3 menit cache in-memory
+
 export async function getLabels() {
+  if (memoryLabelsCache && Date.now() - memoryLabelsCache.timestamp < LABELS_CACHE_TTL) {
+    return memoryLabelsCache.data;
+  }
+
   const supabaseServer = await createClient();
   // Hemat Origin (tanpa ubah logika/data): UI hanya pakai
   // id,main_level,sub_level,hex_color (+branch_id/is_system_default defensif).
@@ -374,6 +381,7 @@ export async function getLabels() {
     console.error("Error fetching labels:", error);
     return [];
   }
+  memoryLabelsCache = { data: data || [], timestamp: Date.now() };
   return data;
 }
 
@@ -386,8 +394,9 @@ export async function getOverdueWorksheets(branchId = "ALL") {
     const supabaseServer = await createClient();
     const todayISO = getTodayISO();
 
-    // Mulai pengecekan permanen sejak tanggal 23 September 2026
-    const startDate = "2026-09-23";
+    // Batasi pengecekan overdue maksimal 60 hari ke belakang agar query tidak membengkak seiring waktu
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const startDate = sixtyDaysAgo > "2026-09-23" ? sixtyDaysAgo : "2026-09-23";
 
     // 1. Get all active students for this branch - ONLY REGISTERED (NOT CG or INACTIVE)
     // registered_at menandai kapan siswa menjadi REGISTERED agar periode CG tidak masuk overdue.
@@ -1813,6 +1822,7 @@ export async function createLabel(formData: FormData) {
     console.error("Error creating label:", error);
     throw new Error(error.message);
   }
+  memoryLabelsCache = null;
   return true;
 }
 
@@ -2096,6 +2106,7 @@ export async function deleteLabel(id: string) {
     throw new Error(
       "Gagal menghapus label. Pastikan tidak ada siswa yang menggunakan label ini.",
     );
+  memoryLabelsCache = null;
   return true;
 }
 
@@ -2457,52 +2468,42 @@ export async function changeUserPassword(userId: string, newPassword: string) {
 // LEMBAR KERJA SISWA & PORTAL ORANG TUA ACTIONS
 // =========================================
 
-export async function getWorksheetsByBranch() {
+export async function getWorksheetsByBranch(studentId?: string, limit: number = 100) {
   try {
     const branchId = await getBranchId();
     if (!branchId) return [];
 
     const supabaseServer = await createClient();
-    const PAGE = 1000;
-    const allWorksheets: any[] = [];
 
-    for (let page = 0; ; page++) {
-      const from = page * PAGE;
-      let query = supabaseServer
-        .from("student_worksheets")
-        .select(
-          `
-          *,
-          student:students(id, name, nickname, gender, date_of_birth, status, access_pin, label_id, label:labels(id, main_level, sub_level, hex_color))
-        `,
-        )
-        .order("worksheet_date", { ascending: false })
-        .order("created_at", { ascending: false })
-        // Tiebreaker unik agar paginasi .range() stabil (tidak lompat/double
-        // saat banyak baris punya tanggal & created_at yang sama).
-        .order("id", { ascending: false })
-        .range(from, from + PAGE - 1);
+    let query = supabaseServer
+      .from("student_worksheets")
+      .select(
+        `
+        *,
+        student:students(id, name, nickname, gender, date_of_birth, status, access_pin, label_id, label:labels(id, main_level, sub_level, hex_color))
+      `,
+      )
+      .order("worksheet_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
 
-      if (branchId !== "ALL") {
-        query = query.eq("branch_id", branchId);
-      }
+    if (studentId) {
+      query = query.eq("student_id", studentId);
+    } else {
+      query = query.limit(limit);
+    }
 
-      const { data, error } = await query;
-      if (error) {
-        console.warn(
-          "Notice fetching worksheets (Pastikan SQL Migration sudah dijalankan):",
-          error.message || error,
-        );
-        break;
-      }
+    if (branchId !== "ALL") {
+      query = query.eq("branch_id", branchId);
+    }
 
-      if (data && data.length > 0) {
-        allWorksheets.push(...data);
-      }
-
-      if (!data || data.length < PAGE) {
-        break;
-      }
+    const { data: allWorksheets, error } = await query;
+    if (error) {
+      console.warn(
+        "Notice fetching worksheets (Pastikan SQL Migration sudah dijalankan):",
+        error.message || error,
+      );
+      return [];
     }
 
     if (allWorksheets.length > 0) {
