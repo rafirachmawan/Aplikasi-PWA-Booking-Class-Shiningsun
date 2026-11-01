@@ -43,7 +43,7 @@ async function ScheduleData({
   const [schedules, classes, students, activeBranchName] = await Promise.all([
     getMonthlySchedules(currentYear, currentMonth),
     getClasses(),
-    getStudents(),
+    getStudents({ includePointsAndSchedule: false }),
     role === 'SUPERADMIN' ? getActiveBranchName() : Promise.resolve(null),
   ]);
 

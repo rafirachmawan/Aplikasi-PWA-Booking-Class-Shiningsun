@@ -904,7 +904,32 @@ export async function getStudentScheduleMap(
   }
 }
 
-export async function getStudents() {
+const ABSENT_WORKSHEET_OR_FILTER = [
+  "materi",
+  "title",
+  "kegiatan",
+  "hasil_belajar",
+]
+  .flatMap((col) =>
+    ["tidak hadir", "libur", "ijin", "izin", "sakit"].map(
+      (kw) => `${col}.ilike.%${kw}%`,
+    ),
+  )
+  .join(",");
+
+const POINTS_CACHE_TTL = 2 * 60 * 1000; // 2 menit cache in-memory untuk poin siswa
+const memoryPointsCache = new Map<
+  string,
+  {
+    grossPointsMap: Record<string, number>;
+    redeemedPointsMap: Record<string, number>;
+    timestamp: number;
+  }
+>();
+
+export async function getStudents(options?: {
+  includePointsAndSchedule?: boolean;
+}) {
   const supabaseServer = await createClient();
   const branchId = await getBranchId();
   if (!branchId) return [];
@@ -925,23 +950,46 @@ export async function getStudents() {
     return [];
   }
 
+  if (options?.includePointsAndSchedule === false) {
+    return data || [];
+  }
+
   if (data && data.length > 0) {
     const studentIds = data.map((s) => s.id);
-    // Ketiganya independen (hanya butuh studentIds) — jalan paralel, hasil sama.
-    // Redemptions tetap dibungkus try/catch seperti semula agar tabel yang
-    // belum ada tetap ditoleransi tanpa mengubah hasil.
     const scheduleMapPromise = getStudentScheduleMap(studentIds);
-    const worksheetsPromise = (async () => {
+
+    const cachedPoints = memoryPointsCache.get(branchId);
+    if (
+      cachedPoints &&
+      Date.now() - cachedPoints.timestamp < POINTS_CACHE_TTL
+    ) {
+      const scheduleMap = await scheduleMapPromise;
+      const { grossPointsMap, redeemedPointsMap } = cachedPoints;
+      return data.map((s) => {
+        const gross = grossPointsMap[s.id] || 0;
+        const redeemed = redeemedPointsMap[s.id] || 0;
+        const net = Math.max(0, gross - redeemed);
+        return {
+          ...s,
+          schedule: scheduleMap[s.id] || null,
+          gross_points: gross,
+          redeemed_points: redeemed,
+          points: net,
+        };
+      });
+    }
+
+    // Hemat Egress ~80% dengan hasil 100% identik:
+    // Tarik hanya student_id (tanpa teks materi/kegiatan/hasil_belajar yang besar)
+    // lalu kurangi dengan jumlah baris absen yang difilter di PostgreSQL.
+    const allWsIdsPromise = (async () => {
       const PAGE = 1000;
       const allWs: any[] = [];
       for (let page = 0; ; page++) {
         const from = page * PAGE;
-        // ORDER deterministik (student_id + id unik) WAJIB saat pakai .range():
-        // tanpa ORDER, urutan antar-halaman tidak stabil → baris bisa double
-        // di satu halaman dan hilang di halaman lain (poin siswa jadi kurang).
         const { data: wsPage, error: wsErr } = await supabaseServer
           .from("student_worksheets")
-          .select("student_id, materi, title, kegiatan, hasil_belajar")
+          .select("student_id")
           .in("student_id", studentIds)
           .order("student_id", { ascending: true })
           .order("id", { ascending: true })
@@ -955,9 +1003,38 @@ export async function getStudents() {
         }
         if (!wsPage || wsPage.length < PAGE) break;
       }
-      return { data: allWs };
+      return allWs;
     })();
-    // Paginasi + ORDER deterministik (sama seperti worksheets di atas):
+
+    const absentWsIdsPromise = (async () => {
+      const PAGE = 1000;
+      const absWs: any[] = [];
+      for (let page = 0; ; page++) {
+        const from = page * PAGE;
+        const { data: absPage, error: absErr } = await supabaseServer
+          .from("student_worksheets")
+          .select("student_id")
+          .in("student_id", studentIds)
+          .or(ABSENT_WORKSHEET_OR_FILTER)
+          .order("student_id", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (absErr) {
+          console.warn(
+            "Notice fetching absent worksheets for points:",
+            absErr.message,
+          );
+          break;
+        }
+        if (absPage && absPage.length > 0) {
+          absWs.push(...absPage);
+        }
+        if (!absPage || absPage.length < PAGE) break;
+      }
+      return absWs;
+    })();
+
+    // Paginasi + ORDER deterministik:
     // tanpa ini, cabang dengan >1000 redemption akan terpotong diam-diam.
     const redemptionsPromise = (async () => {
       const PAGE = 1000;
@@ -978,17 +1055,22 @@ export async function getStudents() {
       return { data: allRed };
     })();
 
-    const [scheduleMap, { data: worksheetsData }] = await Promise.all([
+    const [scheduleMap, allWsIds, absentWsIds] = await Promise.all([
       scheduleMapPromise,
-      worksheetsPromise,
+      allWsIdsPromise,
+      absentWsIdsPromise,
     ]);
 
-    // Fetch worksheets to calculate gross attendance points for each student
+    // Hitung gross attendance points (Total Worksheet - Worksheet Absen)
     const grossPointsMap: Record<string, number> = {};
-    (worksheetsData || []).forEach((w) => {
-      if (!isAbsentWorksheet(w)) {
-        grossPointsMap[w.student_id] = (grossPointsMap[w.student_id] || 0) + 1;
-      }
+    (allWsIds || []).forEach((w) => {
+      grossPointsMap[w.student_id] = (grossPointsMap[w.student_id] || 0) + 1;
+    });
+    (absentWsIds || []).forEach((w) => {
+      grossPointsMap[w.student_id] = Math.max(
+        0,
+        (grossPointsMap[w.student_id] || 0) - 1,
+      );
     });
 
     // Fetch redemptions to calculate redeemed points per student
@@ -1003,6 +1085,12 @@ export async function getStudents() {
     } catch (e) {
       // Gracefully handle if table does not exist yet
     }
+
+    memoryPointsCache.set(branchId, {
+      grossPointsMap,
+      redeemedPointsMap,
+      timestamp: Date.now(),
+    });
 
     return data.map((s) => {
       const gross = grossPointsMap[s.id] || 0;
@@ -2854,6 +2942,7 @@ export async function createWorksheet(formData: FormData) {
     throw new Error(error.message);
   }
 
+  memoryPointsCache.clear();
   revalidatePath("/points");
   return true;
 }
@@ -3063,6 +3152,7 @@ export async function updateWorksheet(id: string, formData: FormData) {
     throw new Error(error.message);
   }
 
+  memoryPointsCache.clear();
   revalidatePath("/points");
   return true;
 }
@@ -3079,6 +3169,7 @@ export async function deleteWorksheet(id: string) {
     throw new Error("Gagal menghapus laporan perkembangan: " + error.message);
   }
 
+  memoryPointsCache.clear();
   revalidatePath("/points");
   return true;
 }
@@ -3106,6 +3197,7 @@ export async function deleteWorksheetMonth(
     throw new Error("Gagal menghapus laporan perkembangan: " + error.message);
   }
 
+  memoryPointsCache.clear();
   revalidatePath("/points");
   return true;
 }
@@ -3961,22 +4053,34 @@ function templateBranchId(category: string, branchId: string) {
   return category === "materi" ? null : branchId || null;
 }
 
+let memoryTemplatesCache: { data: any[]; timestamp: number } | null = null;
+const TEMPLATES_CACHE_TTL = 5 * 60 * 1000; // 5 menit cache in-memory
+
 export async function getAssessmentTemplates() {
   try {
     const supabaseServer = await createClient();
     const branchId = await getBranchId();
 
-    const { data, error } = await supabaseServer
-      .from("assessment_templates")
-      .select("*, label:labels(id, main_level, sub_level, hex_color)")
-      .eq("is_active", true)
-      .order("created_at", { ascending: true });
+    let templates: any[] = [];
+    if (
+      memoryTemplatesCache &&
+      Date.now() - memoryTemplatesCache.timestamp < TEMPLATES_CACHE_TTL
+    ) {
+      templates = memoryTemplatesCache.data;
+    } else {
+      const { data, error } = await supabaseServer
+        .from("assessment_templates")
+        .select("*, label:labels(id, main_level, sub_level, hex_color)")
+        .eq("is_active", true)
+        .order("created_at", { ascending: true });
 
-    if (error) {
-      console.warn("Notice fetching assessment templates:", error.message);
-      return [];
+      if (error) {
+        console.warn("Notice fetching assessment templates:", error.message);
+        return [];
+      }
+      templates = data || [];
+      memoryTemplatesCache = { data: templates, timestamp: Date.now() };
     }
-    const templates = data || [];
 
     // Kategori "materi" global; kategori lain per-cabang agar editan
     // admin cabang tidak mempengaruhi cabang lainnya.
@@ -4007,6 +4111,7 @@ export async function getAssessmentTemplates() {
           .insert(clones)
           .select("*, label:labels(id, main_level, sub_level, hex_color)");
         if (!cloneError && cloned) {
+          memoryTemplatesCache = null;
           return [...materiRows, ...cloned];
         }
         console.warn(
@@ -4118,6 +4223,7 @@ export async function createAssessmentTemplate(formData: FormData) {
     }
   }
 
+  memoryTemplatesCache = null;
   revalidatePath("/templates");
   revalidatePath("/worksheets");
   revalidatePath("/master");
@@ -4225,6 +4331,7 @@ export async function updateAssessmentTemplate(id: string, formData: FormData) {
     }
   }
 
+  memoryTemplatesCache = null;
   revalidatePath("/templates");
   revalidatePath("/worksheets");
   revalidatePath("/master");
@@ -4245,6 +4352,7 @@ export async function deleteAssessmentTemplate(idOrIds: string | string[]) {
     throw new Error("Gagal menghapus template: " + error.message);
   }
 
+  memoryTemplatesCache = null;
   revalidatePath("/templates");
   revalidatePath("/worksheets");
   revalidatePath("/master");
@@ -4319,6 +4427,7 @@ export async function redeemStudentPoints({
     throw new Error("Gagal memotong poin: " + error.message);
   }
 
+  memoryPointsCache.clear();
   revalidatePath("/points");
   revalidatePath("/students");
   revalidatePath("/portal-ortu/dashboard");
@@ -4367,6 +4476,7 @@ export async function addManualStudentPoints({
     throw new Error("Gagal menambah poin manual: " + error.message);
   }
 
+  memoryPointsCache.clear();
   revalidatePath("/points");
   revalidatePath("/students");
   revalidatePath("/portal-ortu/dashboard");
@@ -4409,10 +4519,14 @@ export async function getWorksheetAttendanceHistory() {
   const activeBranchId = await getBranchId();
 
   try {
+    const isSpecificBranch = Boolean(
+      activeBranchId && activeBranchId !== "ALL",
+    );
     let query = supabaseServer
       .from("student_worksheets")
       .select(
-        `
+        isSpecificBranch
+          ? `
         id,
         student_id,
         title,
@@ -4420,31 +4534,40 @@ export async function getWorksheetAttendanceHistory() {
         kegiatan,
         hasil_belajar,
         created_at,
-        bulan_ke,
-        catatan_guru,
+        student:students!inner(name, nickname, branch_id)
+      `
+          : `
+        id,
+        student_id,
+        title,
+        materi,
+        kegiatan,
+        hasil_belajar,
+        created_at,
         student:students(name, nickname, branch_id)
       `,
       )
       .order("created_at", { ascending: false });
+
+    if (isSpecificBranch) {
+      query = query.eq("student.branch_id", activeBranchId);
+    }
 
     const { data, error } = await query;
     if (error) {
       return [];
     }
 
-    let filtered = data || [];
-    if (activeBranchId && activeBranchId !== "ALL") {
-      filtered = filtered.filter(
-        (item: any) => item.student?.branch_id === activeBranchId,
-      );
-    }
-
-    return filtered.map((item: any) => {
-      return {
-        ...item,
-        is_absent: isAbsentWorksheet(item),
-      };
-    });
+    const rows = data || [];
+    return rows.map((item: any) => ({
+      id: item.id,
+      student_id: item.student_id,
+      title: item.title,
+      materi: item.materi,
+      created_at: item.created_at,
+      student: item.student,
+      is_absent: isAbsentWorksheet(item),
+    }));
   } catch (e) {
     return [];
   }

@@ -56,7 +56,7 @@ async function SchedulingData({
   currentYear: number;
 }) {
   const [students, classes, schedules, nextMonthScheduledIds] = await Promise.all([
-    getStudents(),
+    getStudents({ includePointsAndSchedule: false }),
     getClasses(),
     getMonthlySchedules(currentYear, currentMonth),
     getStudentsWithNextMonthSchedule(currentYear, currentMonth),
