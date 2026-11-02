@@ -1142,6 +1142,10 @@ export async function createStudent(formData: FormData) {
   const registration_date =
     (formData.get("registration_date") as string) ||
     new Date().toISOString().split("T")[0];
+  // Jadwal sesi CG (opsional di level server; wajib divalidasi di form).
+  const cg_date = (formData.get("cg_date") as string) || "";
+  const cg_class_id = (formData.get("cg_class_id") as string) || "";
+  const cg_time = (formData.get("cg_time") as string) || "";
 
   const insertPayload: any = {
     branch_id: await getBranchId(),
@@ -1163,7 +1167,12 @@ export async function createStudent(formData: FormData) {
   }
 
   const supabaseServer = await createClient();
-  let { error } = await supabaseServer.from("students").insert(insertPayload);
+
+  // insert().select("id") agar ID siswa baru bisa dipakai untuk booking jadwal CG.
+  const insertStudent = () =>
+    supabaseServer.from("students").insert(insertPayload).select("id").single();
+
+  let { data: createdStudent, error } = await insertStudent();
 
   // Fallback jika kolom registered_at belum ada (migrasi belum dijalankan)
   if (
@@ -1174,12 +1183,9 @@ export async function createStudent(formData: FormData) {
       error.code === "42703")
   ) {
     delete insertPayload.registered_at;
-    const retry = await supabaseServer.from("students").insert(insertPayload);
+    const retry = await insertStudent();
+    createdStudent = retry.data;
     error = retry.error;
-    // Jangan timpa error gender di bawah jika masih ada; lanjutkan ke fallback gender
-    if (!error) {
-      return true;
-    }
   }
 
   // Fallback jika kolom gender belum ada di database Supabase
@@ -1191,7 +1197,8 @@ export async function createStudent(formData: FormData) {
       error.code === "42703")
   ) {
     delete insertPayload.gender;
-    const retry = await supabaseServer.from("students").insert(insertPayload);
+    const retry = await insertStudent();
+    createdStudent = retry.data;
     error = retry.error;
     if (
       error &&
@@ -1201,7 +1208,8 @@ export async function createStudent(formData: FormData) {
           error.details.toLowerCase().includes("registered_at")))
     ) {
       delete insertPayload.registered_at;
-      const retry2 = await supabaseServer.from("students").insert(insertPayload);
+      const retry2 = await insertStudent();
+      createdStudent = retry2.data;
       error = retry2.error;
     }
   }
@@ -1211,7 +1219,23 @@ export async function createStudent(formData: FormData) {
     throw new Error(error.message);
   }
 
-  return true;
+  const newStudentId = (createdStudent as any)?.id as string | undefined;
+
+  // Booking jadwal CG: memakai ulang bookStudentManual (slot dibuat otomatis
+  // bila belum ada). Jika gagal, hapus siswa yang baru dibuat agar tidak ada
+  // pendaftaran setengah jadi / duplikat saat admin mencoba ulang.
+  if (status === "CG" && newStudentId && cg_class_id && cg_date && cg_time) {
+    try {
+      await bookStudentManual(newStudentId, cg_class_id, cg_date, cg_time);
+    } catch (bookingError: any) {
+      await supabaseServer.from("students").delete().eq("id", newStudentId);
+      throw new Error(
+        `Jadwal CG gagal dibuat: ${bookingError?.message || "silakan pilih jadwal lain."} Pendaftaran dibatalkan, data siswa tidak tersimpan.`,
+      );
+    }
+  }
+
+  return newStudentId || true;
 }
 
 // =========================================
@@ -5443,6 +5467,57 @@ export async function getPaginatedStudents(options?: {
     }
   }
 
+  // Jadwal CG: ambil booking untuk siswa berstatus CG di halaman ini saja,
+  // lalu pilih jadwal terdekat (upcoming; jika tidak ada, yang paling akhir).
+  const cgStudentIds = (pageIndexItems as any[])
+    .filter((s) => s.status === "CG")
+    .map((s) => s.id as string);
+  const cgScheduleMap: Record<
+    string,
+    { date: string; time: string; class_name: string }
+  > = {};
+
+  if (cgStudentIds.length > 0) {
+    try {
+      const { data: cgBookings } = await supabaseServer
+        .from("schedule_student")
+        .select(
+          "student_id, slot:schedule_slots!inner(date, time, class:classes(name))",
+        )
+        .in("student_id", cgStudentIds);
+
+      const todayISO = getTodayISO();
+      const candidates: Record<
+        string,
+        Array<{ date: string; time: string; class_name: string }>
+      > = {};
+
+      for (const row of (cgBookings || []) as any[]) {
+        const slot = row?.slot;
+        if (!slot) continue;
+        const cls = Array.isArray(slot.class) ? slot.class[0] : slot.class;
+        const entry = {
+          date: String(slot.date || "").slice(0, 10),
+          time: String(slot.time || "").slice(0, 5),
+          class_name: cls?.name || "-",
+        };
+        if (!candidates[row.student_id]) candidates[row.student_id] = [];
+        candidates[row.student_id].push(entry);
+      }
+
+      for (const [studentId, list] of Object.entries(candidates)) {
+        list.sort((a, b) =>
+          `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`),
+        );
+        const upcoming = list.find((e) => e.date >= todayISO);
+        cgScheduleMap[studentId] = upcoming || list[list.length - 1];
+      }
+    } catch (cgErr) {
+      // Data jadwal tidak boleh memblokir tampilan daftar siswa.
+      console.warn("Notice fetching CG schedule map:", cgErr);
+    }
+  }
+
   const students = pageIndexItems.map((idxItem) => {
     const full = detailById.get(idxItem.id) || idxItem;
     const gross = grossPointsMap[idxItem.id] || 0;
@@ -5453,6 +5528,7 @@ export async function getPaginatedStudents(options?: {
       gross_points: gross,
       redeemed_points: redeemed,
       points: net,
+      cg_schedule: cgScheduleMap[idxItem.id] || null,
     };
   });
 

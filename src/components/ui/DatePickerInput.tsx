@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icons } from "@/components/ui/icons";
 import { formatNumericDate } from "@/lib/dateUtils";
 
@@ -14,6 +14,8 @@ interface DatePickerInputProps {
   name?: string;
   disabled?: boolean;
   showManualInput?: boolean;
+  /** Popover kalender lebih lebar di layar besar (untuk field sempit). */
+  widePopover?: boolean;
 }
 
 const MONTH_NAMES = [
@@ -46,6 +48,7 @@ export function DatePickerInput({
   name,
   disabled,
   showManualInput = true,
+  widePopover = false,
 }: DatePickerInputProps) {
   const isIsoDate = /^\d{4}-\d{2}-\d{2}$/.test(value || "");
   const displayFormatted = value
@@ -56,6 +59,7 @@ export function DatePickerInput({
 
   // Custom calendar popover state
   const [isOpen, setIsOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -68,6 +72,34 @@ export function DatePickerInput({
       setViewMonth(base.getMonth());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  // Geser container scroll agar kalender (yang selalu terbuka ke bawah)
+  // tetap terlihat penuh saat field berada dekat batas bawah modal.
+  useEffect(() => {
+    if (!isOpen) return;
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const estimatedPopoverHeight = 360;
+    const spaceBelow = window.innerHeight - trigger.getBoundingClientRect().bottom;
+
+    if (spaceBelow >= estimatedPopoverHeight + 12) return;
+
+    let parent = trigger.parentElement;
+    while (parent && parent !== document.body) {
+      const style = window.getComputedStyle(parent);
+      const isScrollable =
+        /(auto|scroll)/.test(style.overflowY) &&
+        parent.scrollHeight > parent.clientHeight;
+
+      if (isScrollable) {
+        const deficit = estimatedPopoverHeight + 12 - spaceBelow;
+        parent.scrollBy({ top: deficit + 8, behavior: "smooth" });
+        break;
+      }
+      parent = parent.parentElement;
+    }
   }, [isOpen]);
 
   const firstDow = new Date(viewYear, viewMonth, 1).getDay();
@@ -106,6 +138,7 @@ export function DatePickerInput({
       <div className="relative w-full">
         <button
           type="button"
+          ref={triggerRef}
           disabled={disabled}
           onClick={() => setIsOpen(!isOpen)}
           className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl border bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs text-sm min-h-11 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
@@ -149,7 +182,11 @@ export function DatePickerInput({
               onClick={() => setIsOpen(false)}
             />
 
-            <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-3 animate-in fade-in zoom-in-95 duration-150">
+            <div
+              className={`absolute left-0 right-0 z-50 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-3 animate-in fade-in zoom-in-95 duration-150 top-full mt-1.5 ${
+                widePopover ? "sm:w-72 sm:right-auto" : ""
+              }`}
+            >
               {/* Month Navigation */}
               <div className="flex items-center justify-between mb-2">
                 <button
@@ -172,7 +209,7 @@ export function DatePickerInput({
                     <path d="m15 18-6-6 6-6" />
                   </svg>
                 </button>
-                <span className="text-sm font-bold text-slate-900 dark:text-white select-none">
+                <span className="text-sm font-bold text-slate-900 dark:text-white select-none whitespace-nowrap">
                   {MONTH_NAMES[viewMonth]} {viewYear}
                 </span>
                 <button

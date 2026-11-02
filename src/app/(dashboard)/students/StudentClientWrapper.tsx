@@ -12,7 +12,7 @@ import {
   getPaginatedStudents,
 } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { formatNumericDate } from "@/lib/dateUtils";
+import { formatNumericDate, formatShortDate } from "@/lib/dateUtils";
 
 const PAGE_SIZE = 10;
 
@@ -34,11 +34,13 @@ export function StudentClientWrapper({
   initialStudents,
   initialPagination,
   labels,
+  classes = [],
   activeBranchName,
 }: {
   initialStudents: any[];
   initialPagination?: PaginationState;
   labels: any[];
+  classes?: any[];
   activeBranchName?: string | null;
 }) {
   const router = useRouter();
@@ -981,6 +983,19 @@ export function StudentClientWrapper({
                             </span>
                           )}
                         </div>
+                        {person.status === "CG" && person.cg_schedule && (
+                          <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                            <Icons.calendar className="w-3 h-3 shrink-0" />
+                            <span
+                              className="max-w-56 truncate"
+                              title={`Jadwal CG: ${formatShortDate(person.cg_schedule.date)} · ${person.cg_schedule.time} · ${person.cg_schedule.class_name}`}
+                            >
+                              {formatShortDate(person.cg_schedule.date)} ·{" "}
+                              {person.cg_schedule.time} ·{" "}
+                              {person.cg_schedule.class_name}
+                            </span>
+                          </div>
+                        )}
                       </td>
                       <td className="whitespace-nowrap px-3 py-3.5 align-middle text-sm">
                         <span
@@ -1259,6 +1274,20 @@ export function StudentClientWrapper({
                   </span>
                 </div>
 
+                {person.status === "CG" && person.cg_schedule && (
+                  <div className="mb-3 flex items-center gap-1.5 rounded-xl border border-amber-200/70 bg-amber-50/70 px-2.5 py-1.5 text-[11px] font-semibold text-amber-800 dark:border-amber-800/40 dark:bg-amber-500/10 dark:text-amber-300 relative z-10">
+                    <Icons.calendar className="w-3.5 h-3.5 shrink-0" />
+                    <span
+                      className="truncate"
+                      title={`Jadwal CG: ${formatShortDate(person.cg_schedule.date)} · ${person.cg_schedule.time} · ${person.cg_schedule.class_name}`}
+                    >
+                      Jadwal CG: {formatShortDate(person.cg_schedule.date)} ·{" "}
+                      {person.cg_schedule.time} ·{" "}
+                      {person.cg_schedule.class_name}
+                    </span>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-3 gap-2 text-xs text-slate-500 dark:text-zinc-400 mb-4 relative z-10 bg-slate-50 dark:bg-zinc-800/60 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800">
                   <div>
                     <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-zinc-500 mb-0.5">
@@ -1445,6 +1474,7 @@ export function StudentClientWrapper({
       {(isModalOpen || editingStudent) && (
         <StudentRegistrationForm
           labels={labels}
+          classes={classes}
           initialData={editingStudent}
           onClose={() => {
             setIsModalOpen(false);

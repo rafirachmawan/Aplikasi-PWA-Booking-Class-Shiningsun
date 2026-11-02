@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import {
   getPaginatedStudents,
   getLabels,
+  getClasses,
   getCurrentUserRole,
   getBranchId,
   getActiveBranchName,
@@ -29,17 +30,20 @@ export default async function StudentsPage() {
 }
 
 async function StudentsData({ role }: { role: string | null }) {
-  const [initialPagination, labels, activeBranchName] = await Promise.all([
-    getPaginatedStudents({ page: 1, pageSize: 10 }),
-    getLabels(),
-    role === "SUPERADMIN" ? getActiveBranchName() : Promise.resolve(null),
-  ]);
+  const [initialPagination, labels, classes, activeBranchName] =
+    await Promise.all([
+      getPaginatedStudents({ page: 1, pageSize: 10 }),
+      getLabels(),
+      getClasses(),
+      role === "SUPERADMIN" ? getActiveBranchName() : Promise.resolve(null),
+    ]);
 
   return (
     <StudentClientWrapper
       initialStudents={initialPagination.students}
       initialPagination={initialPagination}
       labels={labels}
+      classes={classes}
       activeBranchName={activeBranchName}
     />
   );

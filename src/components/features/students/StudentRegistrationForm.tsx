@@ -13,11 +13,58 @@ interface Label {
   hex_color: string;
 }
 
+interface ClassOption {
+  id: string;
+  name: string;
+  max_quota?: number;
+}
+
 interface StudentRegistrationFormProps {
   onClose: () => void;
   labels: Label[];
+  classes?: ClassOption[];
   onSuccess: () => void;
   initialData?: any;
+}
+
+// Opsi jam sesi CG — sama dengan daftar jam di halaman Jadwal.
+const SESSION_TIME_GROUPS: Array<{ label: string; times: string[] }> = [
+  { label: "Pagi", times: ["08:00", "09:00", "10:00", "11:00"] },
+  { label: "Sore", times: ["13:00", "14:00", "15:00", "16:00", "17:00"] },
+];
+
+/**
+ * Ambil jam dari teks bebas WhatsApp.
+ * Contoh: "kelas pagi jam 10 pagi" -> 10:00, "jam 4 sore" -> 16:00, "16:00" -> 16:00.
+ */
+function parseSessionTime(value: string): string | null {
+  const lower = value.toLowerCase();
+  const explicit = lower.match(/(\d{1,2})\s*[:.]\s*(\d{2})/);
+
+  let hour: number | null = null;
+  let minute = 0;
+
+  if (explicit) {
+    hour = parseInt(explicit[1], 10);
+    minute = parseInt(explicit[2], 10);
+  } else {
+    const withPeriod = lower.match(/(\d{1,2})\s*(pagi|siang|sore|malam)/);
+    const withJam = lower.match(/jam\s*(\d{1,2})/);
+    if (withPeriod) hour = parseInt(withPeriod[1], 10);
+    else if (withJam) hour = parseInt(withJam[1], 10);
+  }
+
+  if (hour === null || isNaN(hour)) return null;
+
+  const period = lower.match(/(pagi|siang|sore|malam)/)?.[1];
+  if (period === "sore" || period === "malam") {
+    if (hour < 12) hour += 12;
+  } else if (period === "siang" && hour < 11) {
+    hour += 12;
+  }
+
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
 function parseIndonesianDate(dateStr: string) {
@@ -36,6 +83,17 @@ function parseIndonesianDate(dateStr: string) {
     const day = numMatch[1].padStart(2, "0");
     const month = numMatch[2].padStart(2, "0");
     const year = numMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  // 2b. Numeric date dengan prefix hari, mis. "Senin, 02/11/2026"
+  const embeddedNumMatch = cleaned.match(
+    /(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{4})/,
+  );
+  if (embeddedNumMatch) {
+    const day = embeddedNumMatch[1].padStart(2, "0");
+    const month = embeddedNumMatch[2].padStart(2, "0");
+    const year = embeddedNumMatch[3];
     return `${year}-${month}-${day}`;
   }
 
@@ -102,6 +160,7 @@ function parseIndonesianDate(dateStr: string) {
 export function StudentRegistrationForm({
   onClose,
   labels,
+  classes = [],
   onSuccess,
   initialData,
 }: StudentRegistrationFormProps) {
@@ -120,9 +179,17 @@ export function StudentRegistrationForm({
     initialData?.label_id ? initialData.label_id : "",
   );
 
+  // Jadwal sesi CG (hanya untuk pendaftaran baru berstatus CG)
+  const [cgDate, setCgDate] = useState("");
+  const [cgClassId, setCgClassId] = useState("");
+  const [cgTime, setCgTime] = useState("");
+  const [isCgClassOpen, setIsCgClassOpen] = useState(false);
+  const [isCgTimeOpen, setIsCgTimeOpen] = useState(false);
+
   const [isLevelOpen, setIsLevelOpen] = useState(false);
   const [showWaAutofill, setShowWaAutofill] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const cgFieldsRef = useRef<HTMLDivElement>(null);
 
   const [formError, setFormError] = useState("");
 
@@ -133,6 +200,13 @@ export function StudentRegistrationForm({
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setIsLevelOpen(false);
+      }
+      if (
+        cgFieldsRef.current &&
+        !cgFieldsRef.current.contains(event.target as Node)
+      ) {
+        setIsCgClassOpen(false);
+        setIsCgTimeOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -178,8 +252,103 @@ export function StudentRegistrationForm({
     }
   }, [dob]);
 
+  const isCgRegistration = status === "CG" && !initialData;
+
+  const cgDayName = (() => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(cgDate)) return "";
+    const [y, m, d] = cgDate.split("-").map(Number);
+    if (!y || !m || !d) return "";
+    return (
+      ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][
+        new Date(y, m - 1, d).getDay()
+      ] || ""
+    );
+  })();
+
+  // Tambahkan jam hasil autofill bila di luar daftar standar.
+  const sessionTimeGroups = SESSION_TIME_GROUPS.map((group) => ({
+    ...group,
+    times: [...group.times],
+  }));
+  if (cgTime && !sessionTimeGroups.some((g) => g.times.includes(cgTime))) {
+    const hour = parseInt(cgTime.split(":")[0], 10);
+    const target = hour < 12 ? sessionTimeGroups[0] : sessionTimeGroups[1];
+    target.times.push(cgTime);
+    target.times.sort();
+  }
+
+  const selectedClass = classes.find((cls) => cls.id === cgClassId);
+
+  const [cgDateSchedules, setCgDateSchedules] = useState<any[]>([]);
+  const [isLoadingCgSchedules, setIsLoadingCgSchedules] = useState(false);
+
+  useEffect(() => {
+    if (!isCgRegistration || !/^\d{4}-\d{2}-\d{2}$/.test(cgDate)) {
+      setCgDateSchedules([]);
+      return;
+    }
+    let cancelled = false;
+    setIsLoadingCgSchedules(true);
+    import("@/lib/actions")
+      .then(({ getSchedulesByDate }) => getSchedulesByDate(cgDate))
+      .then((slots) => {
+        if (!cancelled) setCgDateSchedules(slots || []);
+      })
+      .catch(() => {
+        if (!cancelled) setCgDateSchedules([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingCgSchedules(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isCgRegistration, cgDate]);
+
+  const getCgRemainingSlots = (
+    timeStr: string,
+    classId: string,
+  ): number | null => {
+    if (!cgDate || !timeStr || !classId) return null;
+    const cls = classes.find((c) => c.id === classId);
+    const maxQuota = cls?.max_quota || 4;
+    const normTime = timeStr.substring(0, 5);
+    const slot = cgDateSchedules.find(
+      (s) =>
+        String(s.date || "").split("T")[0] === cgDate &&
+        String(s.time || "").substring(0, 5) === normTime &&
+        s.class_id === classId,
+    );
+    if (!slot) return maxQuota;
+    return Math.max(0, maxQuota - (slot.bookings ? slot.bookings.length : 0));
+  };
+
+  const selectedSlotRemaining =
+    cgDate && cgClassId && cgTime
+      ? getCgRemainingSlots(cgTime, cgClassId)
+      : null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError("");
+
+    if (isCgRegistration && !(cgDate && cgClassId && cgTime)) {
+      setFormError("Jadwal CG wajib dipilih: tanggal sesi, kelas, dan jam.");
+      return;
+    }
+
+    if (
+      isCgRegistration &&
+      !isLoadingCgSchedules &&
+      selectedSlotRemaining !== null &&
+      selectedSlotRemaining <= 0
+    ) {
+      setFormError(
+        "Kuota kelas pada tanggal dan jam yang dipilih sudah penuh. Silakan pilih jam atau kelas lain.",
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -193,6 +362,13 @@ export function StudentRegistrationForm({
       formData.append("date_of_birth", dob);
       formData.append("status", status);
       formData.append("gender", gender);
+
+      // Jadwal CG hanya dikirim saat pendaftaran baru berstatus CG.
+      if (isCgRegistration) {
+        formData.append("cg_date", cgDate);
+        formData.append("cg_class_id", cgClassId);
+        formData.append("cg_time", cgTime);
+      }
 
       // If status is CG, we set label_id to empty/null to clear previous label
       if (status === "REGISTERED" && labelId) {
@@ -221,17 +397,37 @@ export function StudentRegistrationForm({
     }
   };
 
+  // Cocokkan teks kelas dari WhatsApp ke nama kelas di Master Data.
+  // Hanya memilih otomatis jika kandidatnya tunggal (hindari salah kelas).
+  const matchClassIdByText = (value: string) => {
+    const v = value.toLowerCase();
+    const exactMatches = classes.filter(
+      (cls) => cls.name && v.includes(cls.name.toLowerCase()),
+    );
+    if (exactMatches.length === 1) return exactMatches[0].id;
+
+    // Fallback: "kelas pagi"/"kelas sore" -> kelas yang namanya mengandung kata tersebut.
+    const keyword = ["pagi", "siang", "sore"].find((k) => v.includes(k));
+    if (keyword) {
+      const keywordMatches = classes.filter((cls) =>
+        cls.name.toLowerCase().includes(keyword),
+      );
+      if (keywordMatches.length === 1) return keywordMatches[0].id;
+    }
+    return "";
+  };
+
   const handlePasteWA = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     if (!text) return;
 
     // Detect status from header text (Form Coba Gratis/Trial vs Reguler)
     const textLower = text.toLowerCase();
-    if (
+    const isCGText =
       textLower.includes("coba gratis") ||
       textLower.includes("trial") ||
-      textLower.includes("cg")
-    ) {
+      textLower.includes("cg");
+    if (isCGText) {
       setStatus("CG");
     } else if (textLower.includes("reguler") || textLower.includes("regular")) {
       setStatus("REGISTERED");
@@ -249,14 +445,9 @@ export function StudentRegistrationForm({
 
       if (!val) continue;
 
-      // 1. Hari & Tanggal / Tanggal Pendaftaran
-      if (
-        key.includes("hari") ||
-        key.includes("pendaftaran") ||
-        (key.includes("tanggal") && !key.includes("lahir"))
-      ) {
-        const parsedDate = parseIndonesianDate(val);
-        if (parsedDate) setRegistrationDate(parsedDate);
+      // 1. Nama panggilan (harus dicek sebelum nama lengkap)
+      if (key.includes("panggilan")) {
+        setNickname(val);
       }
       // 2. Nama Lengkap anak
       else if (
@@ -265,11 +456,7 @@ export function StudentRegistrationForm({
       ) {
         setName(val);
       }
-      // 3. Nama panggilan
-      else if (key.includes("panggilan")) {
-        setNickname(val);
-      }
-      // 4. Tanggal lahir anak
+      // 3. Tanggal lahir anak (harus dicek sebelum tanggal jadwal)
       else if (
         key.includes("lahir") ||
         key.includes("dob") ||
@@ -278,7 +465,7 @@ export function StudentRegistrationForm({
         const parsedDate = parseIndonesianDate(val);
         if (parsedDate) setDob(parsedDate);
       }
-      // 5. Jenis Kelamin
+      // 4. Jenis Kelamin
       else if (
         key.includes("kelamin") ||
         key.includes("gender") ||
@@ -301,7 +488,7 @@ export function StudentRegistrationForm({
           setGender("Laki-laki");
         }
       }
-      // 6. No HP
+      // 5. No HP
       else if (
         key.includes("hp") ||
         key.includes("wa") ||
@@ -312,13 +499,45 @@ export function StudentRegistrationForm({
         const cleanPhone = val.replace(/[^0-9\+]/g, "");
         if (cleanPhone) setPhone(cleanPhone);
       }
-      // 7. Alamat
+      // 6. Alamat
       else if (key.includes("alamat")) {
         setAddress(val);
       }
-      // 8. Sekolah
+      // 7. Sekolah
       else if (key.includes("sekolah")) {
         setSchool(val);
+      }
+      // 8. Kelas & jam sesi CG, mis. "Kelas Pagi/Sore (Jam): kelas pagi jam 10 pagi"
+      else if (
+        key.includes("kelas") ||
+        key.includes("jam") ||
+        key.includes("sesi")
+      ) {
+        if (!isCGText) continue;
+        const parsedTime = parseSessionTime(val);
+        if (parsedTime) setCgTime(parsedTime);
+        const matchedClassId = matchClassIdByText(val);
+        if (matchedClassId) setCgClassId(matchedClassId);
+      }
+      // 9. Usia dihitung otomatis; cabang mengikuti cabang login.
+      else if (
+        key.includes("usia") ||
+        key.includes("umur") ||
+        key.includes("cabang")
+      ) {
+        continue;
+      }
+      // 10. Tanggal pendaftaran eksplisit (kapan siswa mendaftar)
+      else if (key.includes("pendaftaran")) {
+        const parsedDate = parseIndonesianDate(val);
+        if (parsedDate) setRegistrationDate(parsedDate);
+      }
+      // 11. "Hari & Tanggal": tanggal sesi CG untuk CG, tanggal daftar untuk reguler.
+      else if (key.includes("hari") || key.includes("tanggal")) {
+        const parsedDate = parseIndonesianDate(val);
+        if (!parsedDate) continue;
+        if (isCGText) setCgDate(parsedDate);
+        else setRegistrationDate(parsedDate);
       }
     }
   };
@@ -544,6 +763,327 @@ export function StudentRegistrationForm({
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Jadwal Sesi CG (pendaftaran baru saja) */}
+                {status === "CG" && !initialData && (
+                  <div className="animate-in fade-in duration-200 rounded-xl border border-amber-200/80 bg-amber-50/60 p-3.5 space-y-3 dark:border-amber-800/50 dark:bg-amber-500/10">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                        Jadwal Sesi CG{" "}
+                        <span className="text-red-500" aria-hidden="true">
+                          *
+                        </span>
+                      </p>
+                      {cgDayName && (
+                        <span className="inline-flex items-center rounded-lg bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
+                          {cgDayName}
+                        </span>
+                      )}
+                    </div>
+
+                    <div
+                      className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+                      ref={cgFieldsRef}
+                    >
+                      <div
+                        onClick={() => {
+                          setIsCgClassOpen(false);
+                          setIsCgTimeOpen(false);
+                        }}
+                      >
+                        <label
+                          htmlFor="cgDate"
+                          className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                        >
+                          Tanggal Sesi
+                        </label>
+                        <DatePickerInput
+                          id="cgDate"
+                          value={cgDate}
+                          onChange={(e) => setCgDate(e.target.value)}
+                          showManualInput={false}
+                          widePopover
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="cgTime"
+                          className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                        >
+                          Jam
+                          {selectedSlotRemaining !== null && (
+                            <span
+                              className={`ml-1 font-bold ${
+                                selectedSlotRemaining <= 0
+                                  ? "text-red-600 dark:text-red-400"
+                                  : "text-brand-600 dark:text-brand-400"
+                              }`}
+                            >
+                              {selectedSlotRemaining <= 0
+                                ? "(Penuh)"
+                                : `(Sisa ${selectedSlotRemaining})`}
+                            </span>
+                          )}
+                        </label>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            id="cgTime"
+                            onClick={() => {
+                              setIsCgTimeOpen(!isCgTimeOpen);
+                              setIsCgClassOpen(false);
+                            }}
+                            aria-haspopup="listbox"
+                            aria-expanded={isCgTimeOpen}
+                            className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl border bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs text-sm min-h-11 transition-all cursor-pointer ${
+                              isCgTimeOpen
+                                ? "border-brand-500 ring-2 ring-brand-500/30"
+                                : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            }`}
+                          >
+                            <span
+                              className={
+                                cgTime
+                                  ? "font-semibold text-slate-800 dark:text-slate-100 truncate"
+                                  : "text-slate-400 truncate text-xs sm:text-sm"
+                              }
+                            >
+                              {cgTime || "-- Pilih Jam --"}
+                            </span>
+                            <svg
+                              className={`w-4 h-4 text-slate-400 shrink-0 ml-2 transition-transform duration-200 ${isCgTimeOpen ? "rotate-180" : ""}`}
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                              aria-hidden="true"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </button>
+
+                          {isCgTimeOpen && (
+                            <div
+                              className={`absolute z-50 w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg max-h-52 overflow-y-auto py-1 animate-in fade-in duration-100 top-full mt-1`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCgTime("");
+                                  setIsCgTimeOpen(false);
+                                }}
+                                className={`w-full px-4 py-2 text-xs text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 ${
+                                  cgTime === ""
+                                    ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20"
+                                    : "text-slate-700 dark:text-slate-300"
+                                }`}
+                              >
+                                -- Pilih Jam --
+                              </button>
+                              {sessionTimeGroups.map((group) => (
+                                <div key={group.label}>
+                                  <p className="px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                    {group.label}
+                                  </p>
+                                  {group.times.map((t) => {
+                                    const rem =
+                                      cgDate && cgClassId
+                                        ? getCgRemainingSlots(t, cgClassId)
+                                        : null;
+                                    const isFull = rem !== null && rem <= 0;
+                                    return (
+                                      <button
+                                        key={t}
+                                        type="button"
+                                        disabled={isFull}
+                                        onClick={() => {
+                                          setCgTime(t);
+                                          setIsCgTimeOpen(false);
+                                        }}
+                                        className={`w-full px-4 py-2 text-xs text-left transition-colors flex items-center justify-between gap-2 ${
+                                          isFull
+                                            ? "opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800/40"
+                                            : "hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                                        } ${
+                                          cgTime === t
+                                            ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20"
+                                            : "text-slate-700 dark:text-slate-300"
+                                        }`}
+                                      >
+                                        <span>{t}</span>
+                                        {rem !== null && (
+                                          <span
+                                            className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-lg ${
+                                              isFull
+                                                ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300"
+                                                : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                                            }`}
+                                          >
+                                            {isFull ? "Penuh" : `Sisa ${rem}`}
+                                          </span>
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="cgClassId"
+                          className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"
+                        >
+                          Kelas
+                          {selectedClass && (
+                            <span
+                              className={`ml-1 font-bold ${
+                                selectedSlotRemaining !== null &&
+                                selectedSlotRemaining <= 0
+                                  ? "text-red-600 dark:text-red-400"
+                                  : "text-brand-600 dark:text-brand-400"
+                              }`}
+                            >
+                              {selectedSlotRemaining !== null
+                                ? selectedSlotRemaining <= 0
+                                  ? "(Penuh)"
+                                  : `(Sisa ${selectedSlotRemaining}/${selectedClass.max_quota || 4})`
+                                : `(Max ${selectedClass.max_quota || 4})`}
+                            </span>
+                          )}
+                        </label>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            id="cgClassId"
+                            disabled={classes.length === 0}
+                            onClick={() => {
+                              setIsCgClassOpen(!isCgClassOpen);
+                              setIsCgTimeOpen(false);
+                            }}
+                            aria-haspopup="listbox"
+                            aria-expanded={isCgClassOpen}
+                            className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl border bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs text-sm min-h-11 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
+                              isCgClassOpen
+                                ? "border-brand-500 ring-2 ring-brand-500/30"
+                                : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            }`}
+                          >
+                            <span
+                              className={
+                                selectedClass
+                                  ? "font-semibold text-slate-800 dark:text-slate-100 truncate"
+                                  : "text-slate-400 truncate text-xs sm:text-sm"
+                              }
+                            >
+                              {selectedClass
+                                ? selectedClass.name
+                                : "-- Pilih Kelas --"}
+                            </span>
+                            <svg
+                              className={`w-4 h-4 text-slate-400 shrink-0 ml-2 transition-transform duration-200 ${isCgClassOpen ? "rotate-180" : ""}`}
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                              aria-hidden="true"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </button>
+
+                          {isCgClassOpen && (
+                            <div
+                              className={`absolute z-50 w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg max-h-48 overflow-y-auto py-1 animate-in fade-in duration-100 top-full mt-1`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCgClassId("");
+                                  setIsCgClassOpen(false);
+                                }}
+                                className={`w-full px-4 py-2 text-xs text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 ${
+                                  cgClassId === ""
+                                    ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20"
+                                    : "text-slate-700 dark:text-slate-300"
+                                }`}
+                              >
+                                -- Pilih Kelas --
+                              </button>
+                              {classes.map((cls) => {
+                                const maxQuota = cls.max_quota || 4;
+                                const rem =
+                                  cgDate && cgTime
+                                    ? getCgRemainingSlots(cgTime, cls.id)
+                                    : null;
+                                const isFull = rem !== null && rem <= 0;
+                                return (
+                                  <button
+                                    key={cls.id}
+                                    type="button"
+                                    disabled={isFull}
+                                    onClick={() => {
+                                      setCgClassId(cls.id);
+                                      setIsCgClassOpen(false);
+                                    }}
+                                    className={`w-full px-4 py-2 text-xs text-left transition-colors flex items-center justify-between gap-2 ${
+                                      isFull
+                                        ? "opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800/40"
+                                        : "hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                                    } ${
+                                      cgClassId === cls.id
+                                        ? "font-bold text-brand-600 bg-brand-50/50 dark:bg-brand-950/20"
+                                        : "text-slate-700 dark:text-slate-300"
+                                    }`}
+                                  >
+                                    <span className="truncate">{cls.name}</span>
+                                    <span
+                                      className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-lg ${
+                                        isFull
+                                          ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300"
+                                          : rem !== null
+                                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                                            : "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
+                                      }`}
+                                    >
+                                      {isFull
+                                        ? "Penuh"
+                                        : rem !== null
+                                          ? `Sisa ${rem}/${maxQuota}`
+                                          : `Max: ${maxQuota}`}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+
+                        {classes.length === 0 && (
+                          <p className="mt-1 text-[11px] font-medium text-red-600 dark:text-red-400">
+                            Belum ada kelas. Tambahkan kelas di menu Master Data.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] leading-relaxed text-amber-800/80 dark:text-amber-300/80">
+                      Tanggal pendaftaran di atas mencatat kapan siswa
+                      mendaftar. Jadwal CG ini otomatis masuk ke menu Jadwal dan
+                      terhitung pada kuota kelas.
+                    </p>
                   </div>
                 )}
               </div>
