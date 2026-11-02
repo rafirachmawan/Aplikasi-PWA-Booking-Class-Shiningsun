@@ -1,25 +1,48 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { StudentRegistrationForm } from "@/components/features/students/StudentRegistrationForm";
 import { StudentFeedbackModal } from "@/components/features/students/StudentFeedbackModal";
-import { deleteStudent, updateStudentStatus } from "@/lib/actions";
+import {
+  deleteStudent,
+  updateStudentStatus,
+  getPaginatedStudents,
+} from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { formatNumericDate } from "@/lib/dateUtils";
 
+const PAGE_SIZE = 10;
+
+interface PaginationState {
+  students: any[];
+  totalFiltered: number;
+  totalPages: number;
+  page: number;
+  pageSize: number;
+  counts: {
+    all: number;
+    reguler: number;
+    cg: number;
+    inactive: number;
+  };
+}
+
 export function StudentClientWrapper({
   initialStudents,
+  initialPagination,
   labels,
   activeBranchName,
 }: {
   initialStudents: any[];
+  initialPagination?: PaginationState;
   labels: any[];
   activeBranchName?: string | null;
 }) {
   const router = useRouter();
+  const listTopRef = useRef<HTMLDivElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,6 +57,125 @@ export function StudentClientWrapper({
 
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Pagination & On-Demand Fetch State
+  const [displayedStudents, setDisplayedStudents] = useState<any[]>(
+    initialPagination?.students || initialStudents || [],
+  );
+  const [currentPage, setCurrentPage] = useState<number>(
+    initialPagination?.page || 1,
+  );
+  const [totalPages, setTotalPages] = useState<number>(
+    initialPagination?.totalPages || 1,
+  );
+  const [totalFiltered, setTotalFiltered] = useState<number>(
+    initialPagination?.totalFiltered ?? (initialStudents?.length || 0),
+  );
+  const [counts, setCounts] = useState(
+    initialPagination?.counts || {
+      all: initialStudents?.length || 0,
+      reguler: (initialStudents || []).filter((s) => s.status === "REGISTERED")
+        .length,
+      cg: (initialStudents || []).filter((s) => s.status === "CG").length,
+      inactive: (initialStudents || []).filter((s) => s.status === "INACTIVE")
+        .length,
+    },
+  );
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const fetchReqIdRef = useRef(0);
+  const isFirstRenderRef = useRef(true);
+
+  // Sinkronkan ulang jika props server berubah (misal saat Superadmin ganti cabang)
+  useEffect(() => {
+    if (initialPagination) {
+      setDisplayedStudents(initialPagination.students);
+      setCurrentPage(initialPagination.page);
+      setTotalPages(initialPagination.totalPages);
+      setTotalFiltered(initialPagination.totalFiltered);
+      setCounts(initialPagination.counts);
+    }
+  }, [initialPagination]);
+
+  const scrollToTopOfList = useCallback(() => {
+    if (typeof window !== "undefined") {
+      if (listTopRef.current) {
+        const rect = listTopRef.current.getBoundingClientRect();
+        const targetY = Math.max(0, window.scrollY + rect.top - 16);
+        window.scrollTo({ top: targetY, behavior: "smooth" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }
+  }, []);
+
+  const fetchPageData = useCallback(
+    async (
+      targetPage: number,
+      overrides?: {
+        search?: string;
+        labelId?: string;
+        gender?: string;
+        statusTab?: string;
+      },
+    ) => {
+      const reqId = ++fetchReqIdRef.current;
+      setIsPageLoading(true);
+      try {
+        const res = await getPaginatedStudents({
+          page: targetPage,
+          pageSize: PAGE_SIZE,
+          search: overrides?.search !== undefined ? overrides.search : searchQuery,
+          labelId:
+            overrides?.labelId !== undefined
+              ? overrides.labelId
+              : selectedLabelId,
+          gender:
+            overrides?.gender !== undefined ? overrides.gender : selectedGender,
+          statusTab:
+            overrides?.statusTab !== undefined ? overrides.statusTab : activeTab,
+        });
+        if (reqId !== fetchReqIdRef.current) return;
+        setDisplayedStudents(res.students);
+        setCurrentPage(res.page);
+        setTotalPages(res.totalPages);
+        setTotalFiltered(res.totalFiltered);
+        setCounts(res.counts);
+      } catch (err) {
+        console.error("Error fetching paginated students:", err);
+      } finally {
+        if (reqId === fetchReqIdRef.current) {
+          setIsPageLoading(false);
+        }
+      }
+    },
+    [searchQuery, selectedLabelId, selectedGender, activeTab],
+  );
+
+  // Debounce saat user mengetik pencarian atau mengubah filter -> reset ke halaman 1 & fetch
+  useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetchPageData(1);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedLabelId, selectedGender, activeTab, fetchPageData]);
+
+  const handlePageChange = async (newPage: number) => {
+    if (
+      newPage < 1 ||
+      newPage > totalPages ||
+      newPage === currentPage ||
+      isPageLoading
+    ) {
+      return;
+    }
+    scrollToTopOfList();
+    await fetchPageData(newPage);
+    scrollToTopOfList();
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent | TouchEvent) {
@@ -88,127 +230,10 @@ export function StudentClientWrapper({
   const [modalError, setModalError] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Helper check for gender matching (aturan sama, di-memo agar stabil
-  // sebagai depedensi useMemo di bawah)
-  const matchesGenderFilter = useCallback(
-    (s: any) => {
-      if (selectedGender === "") return true;
-      if (selectedGender === "unset") return !s.gender || s.gender === "";
-      return s.gender === selectedGender;
-    },
-    [selectedGender],
-  );
-
-  // Filter and sort students based on all states (search, level filter, gender filter, active tab, and sort by label)
-  // Di-memo: hitung ulang hanya saat input berubah, bukan tiap render
-  // (misal saat modal/hover memicu render). Isi & urutan hasil identik.
-  const displayedStudents = useMemo(
-    () =>
-      initialStudents
-        .filter((s) => {
-          const matchesSearch =
-            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (s.nickname &&
-              s.nickname.toLowerCase().includes(searchQuery.toLowerCase()));
-
-          const matchesLabel =
-            selectedLabelId === "" || s.label_id === selectedLabelId;
-
-          const matchesGender = matchesGenderFilter(s);
-
-          const matchesTab =
-            activeTab === "all" ||
-            (activeTab === "reguler" && s.status === "REGISTERED") ||
-            (activeTab === "cg" && s.status === "CG") ||
-            (activeTab === "inactive" && s.status === "INACTIVE");
-
-          return matchesSearch && matchesLabel && matchesGender && matchesTab;
-        })
-        .sort((a, b) => {
-          // Put students with labels first
-          if (a.label && !b.label) return -1;
-          if (!a.label && b.label) return 1;
-          if (!a.label && !b.label) {
-            return a.name.localeCompare(b.name);
-          }
-
-          // Sort by main_level
-          const mainCompare = a.label.main_level.localeCompare(
-            b.label.main_level,
-          );
-          if (mainCompare !== 0) return mainCompare;
-
-          // Sort by sub_level
-          const subCompare = a.label.sub_level.localeCompare(b.label.sub_level);
-          if (subCompare !== 0) return subCompare;
-
-          // Sort by name if levels are same
-          return a.name.localeCompare(b.name);
-        }),
-    [
-      initialStudents,
-      searchQuery,
-      selectedLabelId,
-      activeTab,
-      matchesGenderFilter,
-    ],
-  );
-
-  // Calculate totals dynamically for tabs based on current search & level & gender filters
-  const regulerCount = useMemo(
-    () =>
-      initialStudents.filter(
-        (s) =>
-          s.status === "REGISTERED" &&
-          (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (s.nickname &&
-              s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) &&
-          (selectedLabelId === "" || s.label_id === selectedLabelId) &&
-          matchesGenderFilter(s),
-      ).length,
-    [initialStudents, searchQuery, selectedLabelId, matchesGenderFilter],
-  );
-
-  const cgCount = useMemo(
-    () =>
-      initialStudents.filter(
-        (s) =>
-          s.status === "CG" &&
-          (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (s.nickname &&
-              s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) &&
-          (selectedLabelId === "" || s.label_id === selectedLabelId) &&
-          matchesGenderFilter(s),
-      ).length,
-    [initialStudents, searchQuery, selectedLabelId, matchesGenderFilter],
-  );
-
-  const inactiveCount = useMemo(
-    () =>
-      initialStudents.filter(
-        (s) =>
-          s.status === "INACTIVE" &&
-          (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (s.nickname &&
-              s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) &&
-          (selectedLabelId === "" || s.label_id === selectedLabelId) &&
-          matchesGenderFilter(s),
-      ).length,
-    [initialStudents, searchQuery, selectedLabelId, matchesGenderFilter],
-  );
-
-  const allCount = useMemo(
-    () =>
-      initialStudents.filter(
-        (s) =>
-          (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (s.nickname &&
-              s.nickname.toLowerCase().includes(searchQuery.toLowerCase()))) &&
-          (selectedLabelId === "" || s.label_id === selectedLabelId) &&
-          matchesGenderFilter(s),
-      ).length,
-    [initialStudents, searchQuery, selectedLabelId, matchesGenderFilter],
-  );
+  const allCount = counts.all;
+  const regulerCount = counts.reguler;
+  const cgCount = counts.cg;
+  const inactiveCount = counts.inactive;
 
   const handleDelete = (id: string, name: string) => {
     setConfirmModal({
@@ -252,6 +277,7 @@ export function StudentClientWrapper({
         );
       }
       setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+      await fetchPageData(currentPage);
       router.refresh();
     } catch (error: any) {
       setModalError(error.message || "Terjadi kesalahan saat memproses data.");
@@ -260,8 +286,44 @@ export function StudentClientWrapper({
     }
   };
 
+  // Hitung nomor halaman yang ditampilkan pada bar pagination Desktop
+  const getVisiblePageNumbers = (): Array<number | string> => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages: Array<number | string> = [1];
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+
+    if (start > 2) pages.push("...");
+    for (let p = start; p <= end; p++) {
+      pages.push(p);
+    }
+    if (end < totalPages - 1) pages.push("...");
+    pages.push(totalPages);
+    return pages;
+  };
+
+  // Hitung nomor halaman yang ringkas khusus layar Mobile (maks 5 tombol angka)
+  const getMobilePageNumbers = (): Array<number | string> => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (currentPage <= 3) {
+      return [1, 2, 3, "...", totalPages];
+    }
+    if (currentPage >= totalPages - 2) {
+      return [1, "...", totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, "...", currentPage, "...", totalPages];
+  };
+
+  const startRow =
+    totalFiltered === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const endRow = Math.min(currentPage * PAGE_SIZE, totalFiltered);
+
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div ref={listTopRef} className="space-y-6 sm:space-y-8">
       {isProcessing && <LoadingSpinner usePortal={true} />}
 
       {/* Custom Confirm Modal */}
@@ -347,7 +409,7 @@ export function StudentClientWrapper({
                   type="button"
                   disabled={isProcessing}
                   onClick={handleExecuteAction}
-                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 active:translate-y-[1px] ${
+                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 active:translate-y-px ${
                     confirmModal.type === "delete"
                       ? "bg-red-600 hover:bg-red-700"
                       : "bg-brand-600 hover:bg-brand-700"
@@ -383,7 +445,7 @@ export function StudentClientWrapper({
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-brand-700 hover:bg-blue-50 active:translate-y-[1px] px-5 py-3 text-sm font-semibold shrink-0 w-full sm:w-auto transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-brand-700 hover:bg-blue-50 active:translate-y-px px-5 py-3 text-sm font-semibold shrink-0 w-full sm:w-auto transition-colors cursor-pointer"
           >
             <Icons.add className="h-5 w-5" aria-hidden="true" />
             Pendaftaran Baru
@@ -572,7 +634,7 @@ export function StudentClientWrapper({
                       !`${l.main_level} - ${l.sub_level}`
                         .toLowerCase()
                         .includes(levelSearch.trim().toLowerCase()),
-                    ) && (
+                  ) && (
                     <p className="px-3 py-2 text-xs text-slate-400 dark:text-zinc-500 text-center font-medium">
                       Level tidak ditemukan.
                     </p>
@@ -657,7 +719,15 @@ export function StudentClientWrapper({
       </div>
 
       {/* Desktop Table (Sembunyi di Mobile) */}
-      <div className="hidden sm:block bg-white dark:bg-zinc-900 shadow-sm border border-slate-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
+      <div className="hidden sm:block bg-white dark:bg-zinc-900 shadow-sm border border-slate-200 dark:border-zinc-800 rounded-2xl overflow-hidden relative">
+        {isPageLoading && (
+          <div className="absolute inset-0 z-20 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-[1px] flex items-center justify-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-zinc-800 shadow-md border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-700 dark:text-zinc-200">
+              <span className="h-4 w-4 rounded-full border-2 border-brand-600 border-t-transparent animate-spin" />
+              Memuat halaman {currentPage}...
+            </div>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 dark:divide-zinc-800">
             <thead className="bg-slate-50 dark:bg-zinc-800/60">
@@ -720,6 +790,10 @@ export function StudentClientWrapper({
                 </tr>
               ) : (
                 displayedStudents.map((person) => {
+                  const labelObj = Array.isArray(person.label)
+                    ? person.label[0]
+                    : person.label;
+
                   // Hitung umur secara instan untuk display
                   const bDate = new Date(person.date_of_birth);
                   const tDate = new Date();
@@ -743,10 +817,10 @@ export function StudentClientWrapper({
                       key={person.id}
                       className="transition-all hover:brightness-95 dark:hover:brightness-110"
                       style={
-                        person.label
+                        labelObj
                           ? {
-                              backgroundColor: `${person.label.hex_color}10`, // 10% opacity
-                              borderLeft: `4px solid ${person.label.hex_color}`,
+                              backgroundColor: `${labelObj.hex_color}10`,
+                              borderLeft: `4px solid ${labelObj.hex_color}`,
                             }
                           : {}
                       }
@@ -780,7 +854,7 @@ export function StudentClientWrapper({
                             person.status === "REGISTERED"
                               ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20"
                               : person.status === "CG"
-                                ? "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20"
+                                ? "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20"
                                 : "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-500/20"
                           }`}
                         >
@@ -792,15 +866,15 @@ export function StudentClientWrapper({
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500 dark:text-slate-400">
-                        {person.label ? (
+                        {labelObj ? (
                           <div className="flex items-center gap-2">
                             <div
                               className="w-3 h-3 rounded-full"
                               style={{
-                                backgroundColor: person.label.hex_color,
+                                backgroundColor: labelObj.hex_color,
                               }}
                             ></div>
-                            {person.label.main_level} - {person.label.sub_level}
+                            {labelObj.main_level} - {labelObj.sub_level}
                           </div>
                         ) : (
                           "-"
@@ -876,10 +950,80 @@ export function StudentClientWrapper({
             </tbody>
           </table>
         </div>
+
+        {/* Desktop Pagination Footer */}
+        {totalFiltered > 0 && (
+          <div className="flex items-center justify-between border-t border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/80 px-4 py-3.5 sm:px-6">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+              Menampilkan{" "}
+              <span className="font-bold text-slate-900 dark:text-white">
+                {startRow}–{endRow}
+              </span>{" "}
+              dari{" "}
+              <span className="font-bold text-slate-900 dark:text-white">
+                {totalFiltered}
+              </span>{" "}
+              siswa{" "}
+              <span className="text-slate-400 dark:text-zinc-500">
+                (Halaman {currentPage} dari {totalPages})
+              </span>
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage <= 1 || isPageLoading}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                ‹ Sebelumnya
+              </button>
+              {getVisiblePageNumbers().map((item, idx) =>
+                typeof item === "string" ? (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="px-2 py-1 text-xs font-semibold text-slate-400 dark:text-zinc-500"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => handlePageChange(item)}
+                    disabled={isPageLoading}
+                    className={`min-w-8 h-8 px-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      item === currentPage
+                        ? "bg-brand-600 text-white shadow-sm"
+                        : "border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages || isPageLoading}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                Selanjutnya ›
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile Card Layout (Sembunyi di Desktop) */}
-      <div className="block sm:hidden space-y-3">
+      <div className="block sm:hidden space-y-3 relative pb-6">
+        {isPageLoading && (
+          <div className="sticky top-16 z-20 flex justify-center py-2">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-zinc-800 shadow-md border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-700 dark:text-zinc-200">
+              <span className="h-3.5 w-3.5 rounded-full border-2 border-brand-600 border-t-transparent animate-spin" />
+              Memuat halaman {currentPage}...
+            </div>
+          </div>
+        )}
         {displayedStudents.length === 0 ? (
           <div className="py-10 text-center bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800">
             <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">
@@ -891,6 +1035,10 @@ export function StudentClientWrapper({
           </div>
         ) : (
           displayedStudents.map((person) => {
+            const labelObj = Array.isArray(person.label)
+              ? person.label[0]
+              : person.label;
+
             const bDate = new Date(person.date_of_birth);
             const tDate = new Date();
             let y = tDate.getFullYear() - bDate.getFullYear();
@@ -913,12 +1061,11 @@ export function StudentClientWrapper({
                 key={person.id}
                 className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-200 dark:border-zinc-800 p-4 relative overflow-hidden"
                 style={
-                  person.label
-                    ? { borderLeft: `4px solid ${person.label.hex_color}` }
+                  labelObj
+                    ? { borderLeft: `4px solid ${labelObj.hex_color}` }
                     : {}
                 }
               >
-
                 <div className="flex justify-between items-start mb-3 relative z-10">
                   <div className="flex-1 pr-3">
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-1.5 flex-wrap">
@@ -946,13 +1093,13 @@ export function StudentClientWrapper({
                       </span>
                     </h3>
                     <div className="mt-1.5 flex items-center gap-2 text-xs text-slate-500 dark:text-zinc-400">
-                      {person.label ? (
+                      {labelObj ? (
                         <span className="flex items-center gap-1.5 font-medium">
                           <span
                             className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: person.label.hex_color }}
+                            style={{ backgroundColor: labelObj.hex_color }}
                           ></span>
-                          {person.label.main_level} - {person.label.sub_level}
+                          {labelObj.main_level} - {labelObj.sub_level}
                         </span>
                       ) : (
                         <span>Tidak ada tingkat</span>
@@ -1033,14 +1180,14 @@ export function StudentClientWrapper({
                       setEditingStudent(person);
                       setIsModalOpen(true);
                     }}
-                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 active:translate-y-[1px] transition-colors text-center min-h-11 flex items-center justify-center cursor-pointer"
+                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 active:translate-y-px transition-colors text-center min-h-11 flex items-center justify-center cursor-pointer"
                   >
                     Edit
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDelete(person.id, person.name)}
-                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-xl bg-white dark:bg-zinc-900 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 hover:bg-red-50 dark:hover:bg-red-500/10 active:translate-y-[1px] transition-colors text-center min-h-11 flex items-center justify-center cursor-pointer"
+                    className="flex-1 py-2.5 px-2 text-xs font-semibold rounded-xl bg-white dark:bg-zinc-900 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 hover:bg-red-50 dark:hover:bg-red-500/10 active:translate-y-px transition-colors text-center min-h-11 flex items-center justify-center cursor-pointer"
                   >
                     Hapus
                   </button>
@@ -1048,6 +1195,105 @@ export function StudentClientWrapper({
               </div>
             );
           })
+        )}
+
+        {/* Mobile Pagination Footer */}
+        {totalFiltered > 0 && (
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-4 shadow-sm space-y-3.5">
+            {/* Info Bar */}
+            <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+              <p className="text-xs text-slate-500 dark:text-zinc-400">
+                Menampilkan{" "}
+                <span className="font-bold text-slate-900 dark:text-white tabular-nums">
+                  {startRow}–{endRow}
+                </span>{" "}
+                dari{" "}
+                <span className="font-bold text-slate-900 dark:text-white tabular-nums">
+                  {totalFiltered}
+                </span>{" "}
+                siswa
+              </p>
+              <span className="inline-flex items-center rounded-lg bg-brand-50 dark:bg-brand-500/15 px-2.5 py-1 text-[11px] font-bold text-brand-700 dark:text-brand-300 ring-1 ring-inset ring-brand-200/60 dark:ring-brand-800/50 tabular-nums">
+                Hal. {currentPage} / {totalPages}
+              </span>
+            </div>
+
+            {/* Compact Page Numbers for Mobile */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-1.5">
+                {getMobilePageNumbers().map((item, idx) =>
+                  typeof item === "string" ? (
+                    <span
+                      key={`mob-ellipsis-${idx}`}
+                      className="px-1.5 text-xs font-semibold text-slate-400 dark:text-zinc-500"
+                    >
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={`mob-page-${item}`}
+                      type="button"
+                      onClick={() => handlePageChange(item)}
+                      disabled={isPageLoading}
+                      className={`min-w-9 h-9 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer tabular-nums ${
+                        item === currentPage
+                          ? "bg-brand-600 text-white shadow-sm shadow-brand-500/25 ring-2 ring-brand-600/20"
+                          : "border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700 active:scale-95"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
+
+            {/* Prev / Next Action Buttons */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage <= 1 || isPageLoading}
+                className="min-h-11 px-3.5 py-2.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <svg
+                  className="w-4 h-4 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+                <span>Sebelumnya</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages || isPageLoading}
+                className="min-h-11 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white shadow-sm shadow-brand-500/20 active:scale-[0.99] disabled:opacity-40 disabled:bg-slate-200 disabled:text-slate-500 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500 disabled:shadow-none disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span>Selanjutnya</span>
+                <svg
+                  className="w-4 h-4 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -1062,6 +1308,7 @@ export function StudentClientWrapper({
           }}
           onSuccess={() => {
             setEditingStudent(null);
+            fetchPageData(currentPage);
             router.refresh();
           }}
         />

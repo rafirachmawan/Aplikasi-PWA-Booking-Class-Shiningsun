@@ -1,5 +1,11 @@
 import { Suspense } from "react";
-import { getStudents, getLabels, getCurrentUserRole, getBranchId, getActiveBranchName } from "@/lib/actions";
+import {
+  getPaginatedStudents,
+  getLabels,
+  getCurrentUserRole,
+  getBranchId,
+  getActiveBranchName,
+} from "@/lib/actions";
 import { StudentClientWrapper } from "./StudentClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
 
@@ -10,11 +16,11 @@ export default async function StudentsPage() {
     getCurrentUserRole(),
     getBranchId(),
   ]);
-  if (role === 'SUPERADMIN' && !branchId) {
+  if (role === "SUPERADMIN" && !branchId) {
     return <NoBranchSelected pageName="Kelola Siswa" />;
   }
 
-  // Data berat di-streaming (query & props sama persis, hanya tidak blocking).
+  // Data berat di-streaming (hanya me-load 10 siswa halaman pertama saat awal buka).
   return (
     <Suspense fallback={<StudentsPageSkeleton />}>
       <StudentsData role={role} />
@@ -22,15 +28,21 @@ export default async function StudentsPage() {
   );
 }
 
-// Query & props sama persis seperti sebelumnya.
 async function StudentsData({ role }: { role: string | null }) {
-  const [students, labels, activeBranchName] = await Promise.all([
-    getStudents(),
+  const [initialPagination, labels, activeBranchName] = await Promise.all([
+    getPaginatedStudents({ page: 1, pageSize: 10 }),
     getLabels(),
-    role === 'SUPERADMIN' ? getActiveBranchName() : Promise.resolve(null),
+    role === "SUPERADMIN" ? getActiveBranchName() : Promise.resolve(null),
   ]);
 
-  return <StudentClientWrapper initialStudents={students} labels={labels} activeBranchName={activeBranchName} />;
+  return (
+    <StudentClientWrapper
+      initialStudents={initialPagination.students}
+      initialPagination={initialPagination}
+      labels={labels}
+      activeBranchName={activeBranchName}
+    />
+  );
 }
 
 function StudentsPageSkeleton() {
