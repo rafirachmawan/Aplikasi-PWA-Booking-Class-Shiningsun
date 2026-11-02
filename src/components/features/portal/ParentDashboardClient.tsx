@@ -157,6 +157,7 @@ export function ParentDashboardClient({
 
   useEffect(() => {
     const fetchBirthdayGreeting = async () => {
+      let isBirthdayTodayLocal = false;
       try {
         // Skip fetching if no student data
         if (!student?.id || !student?.date_of_birth) {
@@ -181,6 +182,7 @@ export function ParentDashboardClient({
         // Check if today IS their birthday
         const isTodayBirthday =
           today.getMonth() + 1 === birthMonth && today.getDate() === birthDay;
+        isBirthdayTodayLocal = isTodayBirthday;
 
         console.log(`✅ Is today birthday: ${isTodayBirthday}`);
 
@@ -213,8 +215,8 @@ export function ParentDashboardClient({
       } finally {
         setLoadingBirthday(false);
 
-        // Check if feedback already submitted
-        const studentIdToCheck = birthdayData?.id || student.id;
+        // Check if feedback already submitted HANYA jika hari ini ulang tahun siswa
+        const studentIdToCheck = isBirthdayTodayLocal ? student?.id : null;
         if (studentIdToCheck) {
           try {
             console.log(

@@ -208,7 +208,7 @@ export const getActiveBranchName = cache(async (): Promise<string | null> => {
   return data?.name || null;
 });
 
-export async function getBranches() {
+export const getBranches = cache(async () => {
   const supabaseServer = await createClient();
   // Hemat Origin (tanpa ubah logika/data): UI hanya pakai id+name
   // (dashboard, BranchSelector, portal-ortu). Filter + order sama.
@@ -223,7 +223,7 @@ export async function getBranches() {
     return [];
   }
   return data;
-}
+});
 
 export async function getDashboardStats() {
   try {
@@ -336,7 +336,7 @@ export async function getDashboardStats() {
   }
 }
 
-export async function getClasses() {
+export const getClasses = cache(async () => {
   const supabaseServer = await createClient();
   const branchId = await getBranchId();
   if (!branchId) return [];
@@ -357,7 +357,7 @@ export async function getClasses() {
     return [];
   }
   return data;
-}
+});
 
 let memoryLabelsCache: { data: any[]; timestamp: number } | null = null;
 const LABELS_CACHE_TTL = 3 * 60 * 1000; // 3 menit cache in-memory
@@ -934,16 +934,36 @@ export async function getStudents(options?: {
   const branchId = await getBranchId();
   if (!branchId) return [];
 
+  // Hemat Egress Supabase & Vercel Origin: kecualikan kolom photo_url (Base64 40-80KB/siswa)
+  // yang tidak pernah dipakai di halaman daftar siswa/jadwal/lembar kerja/poin.
+  const STUDENT_COLS_NO_PHOTO =
+    "id, branch_id, label_id, name, nickname, gender, date_of_birth, phone, address, school, status, registration_date, registered_at, access_pin, created_at, label:labels(id, main_level, sub_level, hex_color)";
+  const STUDENT_COLS_FALLBACK =
+    "id, branch_id, label_id, name, nickname, gender, date_of_birth, phone, address, school, status, registration_date, created_at, label:labels(id, main_level, sub_level, hex_color)";
+
   let query = supabaseServer
     .from("students")
-    .select("*, label:labels(id, main_level, sub_level, hex_color)")
+    .select(STUDENT_COLS_NO_PHOTO)
     .order("created_at", { ascending: false });
 
   if (branchId !== "ALL") {
     query = query.eq("branch_id", branchId);
   }
 
-  const { data, error } = await query;
+  let { data, error } = await query;
+
+  if (error && isMissingColumnError(error)) {
+    let fbQuery = supabaseServer
+      .from("students")
+      .select(STUDENT_COLS_FALLBACK)
+      .order("created_at", { ascending: false });
+    if (branchId !== "ALL") {
+      fbQuery = fbQuery.eq("branch_id", branchId);
+    }
+    const fbRes = await fbQuery;
+    data = fbRes.data as any;
+    error = fbRes.error;
+  }
 
   if (error) {
     console.error("Error fetching students:", error);
@@ -1258,48 +1278,87 @@ export async function autoBookStudentToClass(
     new Set([normalizedTime, `${normalizedTime}:00`]),
   );
 
-  // 2. Loop setiap tanggal, cari slot, jika tidak ada buat baru
-  for (const dateStr of datesToBook) {
-    // Cari slot dengan mencocokkan variasi format jam
-    let { data: slots, error: fetchError } = await supabaseServer
+  // 2. Batch-fetch seluruh slot yang sudah ada untuk daftar tanggal tersebut dalam 1 query
+  // (menggantikan loop N+1 query per tanggal tanpa mengubah logika validasi kuota/lock/duplikat)
+  const { data: existingSlots, error: fetchError } = await supabaseServer
+    .from("schedule_slots")
+    .select(
+      "id, date, class_id, is_locked, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id, student:students(status))",
+    )
+    .in("date", datesToBook)
+    .eq("class_id", classId)
+    .in("time", timeVariants);
+
+  if (fetchError)
+    throw new Error("Gagal mengambil jadwal: " + fetchError.message);
+
+  const slotsByDate = new Map<string, any>();
+  for (const s of existingSlots || []) {
+    if (!slotsByDate.has(s.date)) {
+      slotsByDate.set(s.date, s);
+    }
+  }
+
+  // Buat slot baru secara batch untuk tanggal yang belum punya slot
+  const missingDates = datesToBook.filter((d) => !slotsByDate.has(d));
+  const createdSlotIdByDate = new Map<string, string>();
+
+  if (missingDates.length > 0) {
+    const { data: insertedSlots, error: batchInsertErr } = await supabaseServer
       .from("schedule_slots")
-      .select(
-        "id, class_id, is_locked, max_quota:classes!inner(max_quota), bookings:schedule_student(student_id, student:students(status))",
+      .insert(
+        missingDates.map((d) => ({
+          branch_id: finalBranchId,
+          class_id: classId,
+          date: d,
+          time: normalizedTime,
+          is_locked: false,
+        })),
       )
-      .eq("date", dateStr)
-      .eq("class_id", classId)
-      .in("time", timeVariants);
+      .select("id, date");
 
-    if (fetchError)
-      throw new Error("Gagal mengambil jadwal: " + fetchError.message);
+    if (!batchInsertErr && insertedSlots) {
+      for (const ns of insertedSlots) {
+        createdSlotIdByDate.set(ns.date, ns.id);
+      }
+    } else {
+      // Fallback per-tanggal jika batch insert gagal (misal balapan klik bersamaan)
+      for (const d of missingDates) {
+        const { data: newSlot, error: insertError } = await supabaseServer
+          .from("schedule_slots")
+          .insert({
+            branch_id: finalBranchId,
+            class_id: classId,
+            date: d,
+            time: normalizedTime,
+            is_locked: false,
+          })
+          .select("id, date")
+          .single();
 
-    let slotId = slots && slots.length > 0 ? slots[0].id : null;
+        if (insertError)
+          throw new Error(
+            "Gagal membuat sesi jadwal baru: " + insertError.message,
+          );
+        createdSlotIdByDate.set(d, newSlot.id);
+      }
+    }
+  }
+
+  const toBookItems: Array<{ dateStr: string; slotId: string }> = [];
+
+  for (const dateStr of datesToBook) {
+    const existingSlot = slotsByDate.get(dateStr);
+    let slotId = existingSlot
+      ? existingSlot.id
+      : createdSlotIdByDate.get(dateStr) || null;
     let isFull = false;
     let isLocked = false;
     let alreadyBooked = false;
 
-    if (!slotId) {
-      // Buat slot baru
-      const { data: newSlot, error: insertError } = await supabaseServer
-        .from("schedule_slots")
-        .insert({
-          branch_id: finalBranchId,
-          class_id: classId,
-          date: dateStr,
-          time: normalizedTime,
-          is_locked: false,
-        })
-        .select()
-        .single();
-
-      if (insertError)
-        throw new Error(
-          "Gagal membuat sesi jadwal baru: " + insertError.message,
-        );
-      slotId = newSlot.id;
-    } else {
+    if (existingSlot) {
       // Cek kuota (abaikan siswa nonaktif agar sesuai tampilan UI)
-      const slot = slots![0];
+      const slot = existingSlot;
       let maxQ = 4;
       if (slot.max_quota) {
         if (Array.isArray(slot.max_quota) && slot.max_quota.length > 0) {
@@ -1325,24 +1384,43 @@ export async function autoBookStudentToClass(
       }
     }
 
-    if (!isFull && !isLocked && !alreadyBooked) {
-      // Booking
-      const { error: bookErr } = await supabaseServer
-        .from("schedule_student")
-        .insert({ student_id: studentId, schedule_slot_id: slotId });
-
-      if (!bookErr) {
-        bookedCount++;
-      } else {
-        console.error(
-          "Auto-booking insert error on date:",
-          dateStr,
-          bookErr.message,
-        );
-        failedDates.push(dateStr);
-      }
+    if (slotId && !isFull && !isLocked && !alreadyBooked) {
+      toBookItems.push({ dateStr, slotId });
     } else {
       failedDates.push(dateStr);
+    }
+  }
+
+  if (toBookItems.length > 0) {
+    const { error: batchBookErr } = await supabaseServer
+      .from("schedule_student")
+      .insert(
+        toBookItems.map((item) => ({
+          student_id: studentId,
+          schedule_slot_id: item.slotId,
+        })),
+      );
+
+    if (!batchBookErr) {
+      bookedCount += toBookItems.length;
+    } else {
+      // Fallback per-tanggal jika ada constraint pada salah satu tanggal agar tanggal lain tetap tersimpan
+      for (const item of toBookItems) {
+        const { error: bookErr } = await supabaseServer
+          .from("schedule_student")
+          .insert({ student_id: studentId, schedule_slot_id: item.slotId });
+
+        if (!bookErr) {
+          bookedCount++;
+        } else {
+          console.error(
+            "Auto-booking insert error on date:",
+            item.dateStr,
+            bookErr.message,
+          );
+          failedDates.push(item.dateStr);
+        }
+      }
     }
   }
 
@@ -1491,10 +1569,44 @@ export async function copyScheduleToNextMonth(
   currentYear: number,
   currentMonth: number,
 ) {
-  const schedules = await getMonthlySchedules(currentYear, currentMonth);
-  const studentSchedules = schedules.filter((s) =>
-    s.bookings?.some((b: any) => b.student_id === studentId),
-  );
+  const branchId = await getBranchId();
+  if (!branchId) return { totalBooked: 0, failedDates: [] };
+
+  const supabaseServer = await createClient();
+  const monthStr = String(currentMonth).padStart(2, "0");
+  const startDate = `${currentYear}-${monthStr}-01`;
+  const lastDay = new Date(currentYear, currentMonth, 0).getDate();
+  const endDate = `${currentYear}-${monthStr}-${String(lastDay).padStart(2, "0")}`;
+
+  // Ambil jadwal bulan ini khusus untuk 1 murid tersebut langsung di SQL
+  // (tanpa menarik ribuan jadwal seluruh murid se-cabang via getMonthlySchedules)
+  let query = supabaseServer
+    .from("schedule_student")
+    .select(
+      "student_id, student:students!inner(status), slot:schedule_slots!inner(date, time, class_id, branch_id)",
+    )
+    .eq("student_id", studentId)
+    .neq("student.status", "INACTIVE")
+    .gte("slot.date", startDate)
+    .lte("slot.date", endDate);
+
+  if (branchId !== "ALL") {
+    query = query.eq("slot.branch_id", branchId);
+  }
+
+  const { data: bookingRows, error } = await query;
+  if (error || !bookingRows || bookingRows.length === 0) {
+    return { totalBooked: 0, failedDates: [] };
+  }
+
+  const studentSchedules = bookingRows
+    .map((row: any) => (Array.isArray(row.slot) ? row.slot[0] : row.slot))
+    .filter((slot: any) => slot && slot.date && slot.time && slot.class_id)
+    .sort((a: any, b: any) => {
+      const cmpDate = String(a.date).localeCompare(String(b.date));
+      if (cmpDate !== 0) return cmpDate;
+      return String(a.time).localeCompare(String(b.time));
+    });
 
   if (studentSchedules.length === 0) return { totalBooked: 0, failedDates: [] };
 
@@ -2620,7 +2732,7 @@ export async function getWorksheetsByBranch(studentId?: string, limit: number = 
   }
 }
 
-export async function getWorksheetsByStudent(studentId: string) {
+export const getWorksheetsByStudent = cache(async (studentId: string) => {
   try {
     const supabaseServer = await createClient();
     const { data, error } = await supabaseServer
@@ -2642,7 +2754,7 @@ export async function getWorksheetsByStudent(studentId: string) {
     console.warn("Exception fetching student worksheets:", err?.message || err);
     return [];
   }
-}
+});
 
 const DUPLICATE_REPORT_MESSAGE =
   "LAPORAN_SUDAH_TERISI: Laporan perkembangan siswa ini pada jadwal (tanggal & jam) tersebut sudah terisi. Tidak bisa isi 2x.";
@@ -3295,23 +3407,50 @@ export async function verifyParentAccess(
   let students: any[] | null = null;
   let error: any = null;
 
-  const primaryRes = await supabaseServer.from("students").select(`
+  // Filter SQL langsung jika branchId berupa UUID cabang valid (hemat Egress tanpa ubah hasil)
+  const cleanBranchFilter =
+    branchId && branchId.trim() !== "" && branchId !== "ALL"
+      ? branchId.trim()
+      : null;
+  const isBranchUuid =
+    !!cleanBranchFilter &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      cleanBranchFilter,
+    );
+
+  let primaryQuery = supabaseServer.from("students").select(`
       id, name, nickname, gender, date_of_birth, status, registration_date, access_pin, branch_id,
       branch:branches(id, name),
       label:labels(id, main_level, sub_level, hex_color)
     `);
+  if (isBranchUuid && cleanBranchFilter) {
+    primaryQuery = primaryQuery.eq("branch_id", cleanBranchFilter);
+  }
+  const primaryRes = await primaryQuery;
 
   students = primaryRes.data;
   error = primaryRes.error;
 
   if (error) {
-    const fallbackRes = await supabaseServer.from("students").select(`
+    let fallbackQuery = supabaseServer.from("students").select(`
         id, name, nickname, gender, date_of_birth, status, registration_date, branch_id,
         branch:branches(id, name),
         label:labels(id, main_level, sub_level, hex_color)
       `);
+    if (isBranchUuid && cleanBranchFilter) {
+      fallbackQuery = fallbackQuery.eq("branch_id", cleanBranchFilter);
+    }
+    const fallbackRes = await fallbackQuery;
     students = fallbackRes.data;
     error = fallbackRes.error;
+  }
+
+  if (!error && isBranchUuid && (!students || students.length === 0)) {
+    return {
+      success: false,
+      error:
+        "Siswa tidak ditemukan pada Unit/Cabang yang dipilih. Mohon periksa kembali pilihan Unit/Cabang.",
+    };
   }
 
   if (error || !students || students.length === 0) {
@@ -3738,18 +3877,16 @@ export async function getParentSessionStudent() {
   }
 
   // Ketiganya independen (hanya butuh student.id) — jalan paralel.
-  // Aturan hitung poin & toleransi tabel redemptions sama persis.
+  // getWorksheetsByStudent terdedup otomatis via cache() dengan panggilan di ParentDashboardPage
+  // sehingga tidak terjadi query student_worksheets 2x untuk siswa yang sama.
   const scheduleMapPromise = getStudentScheduleMap([student.id]);
-  const worksheetsPromise = supabaseServer
-    .from("student_worksheets")
-    .select("materi, title, kegiatan, hasil_belajar")
-    .eq("student_id", student.id);
+  const worksheetsPromise = getWorksheetsByStudent(student.id);
   const redemptionsPromise = supabaseServer
     .from("student_point_redemptions")
     .select("points_deducted")
     .eq("student_id", student.id);
 
-  const [scheduleMap, { data: worksheetsData }] = await Promise.all([
+  const [scheduleMap, worksheetsData] = await Promise.all([
     scheduleMapPromise,
     worksheetsPromise,
   ]);
@@ -4522,6 +4659,8 @@ export async function getWorksheetAttendanceHistory() {
     const isSpecificBranch = Boolean(
       activeBranchId && activeBranchId !== "ALL",
     );
+    // Hemat Egress: jangan tarik kolom teks panjang (kegiatan, hasil_belajar)
+    // yang tidak pernah dipakai UI. Deteksi absen via filter SQL yang sama dengan getStudents.
     let query = supabaseServer
       .from("student_worksheets")
       .select(
@@ -4531,8 +4670,6 @@ export async function getWorksheetAttendanceHistory() {
         student_id,
         title,
         materi,
-        kegiatan,
-        hasil_belajar,
         created_at,
         student:students!inner(name, nickname, branch_id)
       `
@@ -4541,22 +4678,37 @@ export async function getWorksheetAttendanceHistory() {
         student_id,
         title,
         materi,
-        kegiatan,
-        hasil_belajar,
         created_at,
         student:students(name, nickname, branch_id)
       `,
       )
       .order("created_at", { ascending: false });
 
+    let absentQuery = supabaseServer
+      .from("student_worksheets")
+      .select(
+        isSpecificBranch
+          ? "id, student:students!inner(branch_id)"
+          : "id",
+      )
+      .or(ABSENT_WORKSHEET_OR_FILTER);
+
     if (isSpecificBranch) {
       query = query.eq("student.branch_id", activeBranchId);
+      absentQuery = absentQuery.eq("student.branch_id", activeBranchId);
     }
 
-    const { data, error } = await query;
+    const [{ data, error }, { data: absentRows }] = await Promise.all([
+      query,
+      absentQuery,
+    ]);
     if (error) {
       return [];
     }
+
+    const absentIdSet = new Set(
+      (absentRows || []).map((r: any) => r.id).filter(Boolean),
+    );
 
     const rows = data || [];
     return rows.map((item: any) => ({
@@ -4566,7 +4718,7 @@ export async function getWorksheetAttendanceHistory() {
       materi: item.materi,
       created_at: item.created_at,
       student: item.student,
-      is_absent: isAbsentWorksheet(item),
+      is_absent: absentIdSet.has(item.id) || isAbsentWorksheet(item),
     }));
   } catch (e) {
     return [];

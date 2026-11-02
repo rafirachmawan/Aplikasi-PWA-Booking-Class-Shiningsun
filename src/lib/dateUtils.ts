@@ -103,10 +103,13 @@ export function getIndonesianMonthYearName(dateInput: Date = new Date()): string
  * may return M/D/YYYY instead of YYYY-MM-DD.
  */
 export function getTodayISO(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
+  // Waktu Indonesia Barat (WIB / Asia/Jakarta) selalu tetap UTC+7.
+  // Offset eksplisit dari UTC menjamin tanggal YYYY-MM-DD 100% akurat di server
+  // Vercel/VPS (yang umumnya berjalan di TZ=UTC) maupun di semua browser HP.
+  const wibNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const y = wibNow.getUTCFullYear();
+  const m = String(wibNow.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(wibNow.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
 

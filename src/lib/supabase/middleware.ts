@@ -6,6 +6,17 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
+  // Server Action (Next-Action header): jangan panggil getUser() di middleware
+  // agar tidak berebut merotasi refresh_token dengan createClient() di dalam action,
+  // serta tidak me-redirect HTML ("An unexpected response was received from the server").
+  // Action tetap memvalidasi sesi & memperbarui cookie langsung melalui server.ts.
+  const isServerAction =
+    request.headers.has('next-action') ||
+    request.headers.get('x-nextjs-action') !== null;
+  if (isServerAction) {
+    return supabaseResponse
+  }
+
   let supabase;
   try {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -65,16 +76,6 @@ export async function updateSession(request: NextRequest) {
     // Redirect root / to /dashboard if logged in, or /login if not logged in
     if (request.nextUrl.pathname === '/') {
       return redirectWithCookies(user ? '/dashboard' : '/login')
-    }
-
-    // Server Action (Next-Action header) jangan di-redirect ke /login:
-    // redirect HTML adalah penyebab "An unexpected response was received from the server".
-    // Biarkan action berjalan dan gagal dengan pesan 401 yang jelas di level action.
-    const isServerAction =
-      request.headers.has('next-action') ||
-      request.headers.get('x-nextjs-action') !== null;
-    if (isServerAction) {
-      return supabaseResponse
     }
 
     // Protect Dashboard and private routes

@@ -57,12 +57,12 @@ export async function GET(request: NextRequest) {
       ? parseInt(searchParams.get("day")!)
       : null;
 
-    // Query students based on user role and branch
+    // Query students based on user role and branch (tanpa photo_url Base64 dulu agar hemat Egress)
     let query = supabase
       .from("students")
       .select(
         `
-        id, name, nickname, date_of_birth, photo_url, status, branch_id,
+        id, name, nickname, date_of_birth, status, branch_id,
         branch:branches(name),
         label:labels(main_level, sub_level, hex_color)
       `,
@@ -184,6 +184,24 @@ export async function GET(request: NextRequest) {
     studentsWithProximity.sort(
       (a, b) => a.days_until_birthday - b.days_until_birthday,
     );
+
+    // Ambil photo_url HANYA untuk siswa yang lolos filter ulang tahun (hemat Egress Base64)
+    const matchedIds = studentsWithProximity
+      .map((s: any) => s.id)
+      .filter(Boolean);
+    if (matchedIds.length > 0) {
+      const { data: photoRows } = await supabase
+        .from("students")
+        .select("id, photo_url")
+        .in("id", matchedIds);
+      const photoMap = new Map(
+        (photoRows || []).map((r: any) => [r.id, r.photo_url ?? null]),
+      );
+      studentsWithProximity = studentsWithProximity.map((s: any) => ({
+        ...s,
+        photo_url: photoMap.get(s.id) ?? null,
+      }));
+    }
 
     return NextResponse.json(
       {

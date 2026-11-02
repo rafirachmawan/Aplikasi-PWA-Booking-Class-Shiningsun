@@ -9,6 +9,11 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "5mb",
+    },
+  },
   // Hemat byte mentah: hilangkan header X-Powered-By di tiap respons.
   // Murni header, tanpa ubah logika/data.
   poweredByHeader: false,

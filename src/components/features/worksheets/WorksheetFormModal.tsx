@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { createBrowserClient } from "@supabase/ssr";
 import { Icons } from "@/components/ui/icons";
 import {
   createWorksheet,
@@ -1966,10 +1967,59 @@ export function WorksheetFormModal({
         if (effTime) formData.append("schedule_time", effTime);
       }
 
-      if (isEditing) {
-        await updateWorksheet(initialData.id, formData);
-      } else {
-        await createWorksheet(formData);
+      // Pastikan cookie sesi segar di browser sebelum mengirim Server Action
+      // (mencegah gagal simpan setelah layar HP sempat mati / pindah aplikasi > 1 jam).
+      const getBrowserSupabase = () => {
+        const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (!sbUrl || !sbKey) return null;
+        return createBrowserClient(sbUrl, sbKey);
+      };
+
+      try {
+        const sb = getBrowserSupabase();
+        if (sb) {
+          const { data: sessionData } = await sb.auth.getSession();
+          const exp = sessionData.session?.expires_at ?? 0;
+          // Jika sesi sudah kedaluwarsa atau sisa < 10 menit, perbarui dulu di browser
+          if (!sessionData.session || (exp > 0 && exp * 1000 - Date.now() < 10 * 60 * 1000)) {
+            await sb.auth.refreshSession();
+          }
+        }
+      } catch {
+        // Abaikan jika gagal cek awal, lanjut panggil Server Action
+      }
+
+      const runSaveAction = async () => {
+        if (isEditing) {
+          await updateWorksheet(initialData.id, formData);
+        } else {
+          await createWorksheet(formData);
+        }
+      };
+
+      try {
+        await runSaveAction();
+      } catch (firstErr: any) {
+        const firstMsg = String(firstErr?.message || "");
+        if (
+          /sesi login kedaluwarsa|auth session missing|jwt expired|invalid jwt|refresh token|not authenticated/i.test(
+            firstMsg,
+          )
+        ) {
+          // Auto-retry 1x setelah refresh sesi di browser
+          try {
+            const sb = getBrowserSupabase();
+            if (sb) {
+              await sb.auth.refreshSession();
+            }
+          } catch {
+            // abaikan
+          }
+          await runSaveAction();
+        } else {
+          throw firstErr;
+        }
       }
 
       // Sukses: hapus draft lokal jadwal ini (tidak menyentuh data server selain insert/update di atas)

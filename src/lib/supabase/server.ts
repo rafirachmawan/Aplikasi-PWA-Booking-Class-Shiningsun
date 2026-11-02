@@ -1,7 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { cache } from 'react'
 
-export async function createClient() {
+// Deduplikasi instance SupabaseClient per-request (render / Server Action)
+// agar panggilan paralel tidak merotasi refresh_token secara ganda.
+export const createClient = cache(async () => {
   const cookieStore = await cookies()
 
   return createServerClient(
@@ -31,4 +34,4 @@ export async function createClient() {
       },
     }
   )
-}
+})

@@ -17,6 +17,7 @@ Akun: Rafi Rachmawan (Hobby)
 
 ## 2. Apakah Project Akan Berhenti?
 
+1
 Ya, jika tembus 10GB:
 
 - Plan Hobby tidak ada overage billing.
@@ -81,7 +82,7 @@ Catatan: usage ini 1 akun untuk 6 project, ada duplikat:
 ### 4.1 Darurat - Hari Ini (Tanpa Coding)
 
 - [ ] Hapus/disable project duplikat, sisakan 1 ShiningSun saja
-- [ ] Pause zubair_*, rafi-web-studio, website-profile-react jika tidak dipakai
+- [ ] Pause zubair\_\*, rafi-web-studio, website-profile-react jika tidak dipakai
 - [ ] Hapus Preview Deployments lama
 - [ ] Stop deploy berulang hari ini
 - [ ] Opsional: pindah sementara ke VPS + Cloudflare Tunnel sambil fix
@@ -98,7 +99,7 @@ Catatan: usage ini 1 akun untuk 6 project, ada duplikat:
 - [ ] next.config.ts + vercel.json: tambah headers immutable `/_next/static/* (1y)`, `/logo.png (1d)`, images avif/webp
 - [ ] Upload: ganti WorksheetFormModal.tsx:572 jadi direct upload / Supabase Storage + limit 5MB + kompresi client
 - [ ] Kurangi router.refresh(): optimistic update di Scheduling/Worksheet/StudentClientWrapper
-- [ ] Sempitkan middleware matcher hanya /dashboard/*, /schedule/*, /login*, /portal-ortu/dashboard/*
+- [ ] Sempitkan middleware matcher hanya /dashboard/_, /schedule/_, /login*, /portal-ortu/dashboard/*
 - [ ] Hapus supabase.ts:24 cache:no-store global, ganti per-query revalidate:60
 - [ ] Kompres logo/icon 300KB -> WebP <50KB, tambah priority/sizes di Header.tsx:78-84
 

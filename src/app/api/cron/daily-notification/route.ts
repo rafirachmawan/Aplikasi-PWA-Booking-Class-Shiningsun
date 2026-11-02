@@ -141,7 +141,9 @@ export async function GET(req: Request) {
   try {
     // 1. Get today's date string (YYYY-MM-DD) in WIB timezone (+07:00)
     const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const wibNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+    const todayWibStr = `${wibNow.getUTCFullYear()}-${String(wibNow.getUTCMonth() + 1).padStart(2, "0")}-${String(wibNow.getUTCDate()).padStart(2, "0")}`;
+    const todayStr = todayWibStr;
     const DAYS = [
       "Minggu",
       "Senin",
@@ -151,12 +153,10 @@ export async function GET(req: Request) {
       "Jumat",
       "Sabtu",
     ];
-    const dayName = DAYS[now.getDay()];
+    const dayName = DAYS[wibNow.getUTCDay()];
 
     // 1b. Tanggal hari ini dalam WIB + isi otomatis worksheet Libur
     // jika tanggal merah (sebelum early-return agar tetap berjalan)
-    const wibNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
-    const todayWibStr = `${wibNow.getUTCFullYear()}-${String(wibNow.getUTCMonth() + 1).padStart(2, "0")}-${String(wibNow.getUTCDate()).padStart(2, "0")}`;
     const holidayName = getHolidayName(todayWibStr);
     let autoLibur: { created: number; error?: string } = { created: 0 };
     if (holidayName) {
