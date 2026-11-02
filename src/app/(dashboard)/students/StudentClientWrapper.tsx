@@ -322,6 +322,20 @@ export function StudentClientWrapper({
     totalFiltered === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const endRow = Math.min(currentPage * PAGE_SIZE, totalFiltered);
 
+  const genderOptions = [
+    { value: "", label: "Semua Jenis Kelamin" },
+    { value: "Laki-laki", label: "Laki-laki" },
+    { value: "Perempuan", label: "Perempuan" },
+    { value: "unset", label: "Belum Ada (Kosong)" },
+  ];
+
+  const statusOptions = [
+    { value: "all", label: `Semua Siswa (${allCount})` },
+    { value: "reguler", label: `Reguler (${regulerCount})` },
+    { value: "cg", label: `Coba Gratis (${cgCount})` },
+    { value: "inactive", label: `Nonaktif (${inactiveCount})` },
+  ];
+
   return (
     <div ref={listTopRef} className="space-y-6 sm:space-y-8">
       {isProcessing && <LoadingSpinner usePortal={true} />}
@@ -644,19 +658,25 @@ export function StudentClientWrapper({
             )}
           </div>
 
-          {/* Gender Dropdown */}
-          <div className="relative">
-            <select
-              value={selectedGender}
-              onChange={(e) => setSelectedGender(e.target.value)}
+          {/* Gender Dropdown (Custom, selaras dengan Level) */}
+          <div className="relative" ref={genderDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsGenderOpen(!isGenderOpen)}
+              aria-haspopup="listbox"
+              aria-expanded={isGenderOpen}
               aria-label="Filter jenis kelamin"
-              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-zinc-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-colors cursor-pointer h-11 leading-tight truncate"
+              className={`w-full flex items-center rounded-xl border bg-slate-50 dark:bg-zinc-800 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-zinc-200 transition-colors cursor-pointer h-11 text-left ${
+                isGenderOpen
+                  ? "border-brand-500 ring-2 ring-brand-500/20"
+                  : "border-slate-200 dark:border-zinc-700"
+              }`}
             >
-              <option value="">Semua Jenis Kelamin</option>
-              <option value="Laki-laki">Laki-laki</option>
-              <option value="Perempuan">Perempuan</option>
-              <option value="unset">Belum Ada (Kosong)</option>
-            </select>
+              <span className="truncate">
+                {genderOptions.find((o) => o.value === selectedGender)?.label ??
+                  "Semua Jenis Kelamin"}
+              </span>
+            </button>
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
               <Icons.users
                 className="h-4 w-4 text-brand-500"
@@ -665,7 +685,9 @@ export function StudentClientWrapper({
             </div>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
               <svg
-                className="h-4 w-4 text-slate-400"
+                className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
+                  isGenderOpen ? "rotate-180 text-brand-500" : ""
+                }`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -678,21 +700,78 @@ export function StudentClientWrapper({
                 />
               </svg>
             </div>
+
+            {/* Floating Menu Popover */}
+            {isGenderOpen && (
+              <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-1.5 space-y-1">
+                <div className="max-h-52 overflow-y-auto space-y-1">
+                  {genderOptions.map((option) => {
+                    const isSelected = option.value === selectedGender;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setSelectedGender(option.value);
+                          setIsGenderOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
+                          isSelected
+                            ? "bg-brand-50 dark:bg-brand-500/15 border border-brand-200 dark:border-brand-800/50"
+                            : "hover:bg-slate-100 dark:hover:bg-zinc-800"
+                        }`}
+                      >
+                        <span
+                          className={`truncate text-left font-semibold ${
+                            isSelected
+                              ? "text-brand-700 dark:text-brand-300"
+                              : "text-slate-900 dark:text-white"
+                          }`}
+                        >
+                          {option.label}
+                        </span>
+                        {isSelected && (
+                          <svg
+                            className="h-4 w-4 text-brand-600 dark:text-brand-400 shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Status Dropdown */}
-          <div className="relative">
-            <select
-              value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value)}
+          {/* Status Dropdown (Custom, selaras dengan Level) */}
+          <div className="relative" ref={statusDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsStatusOpen(!isStatusOpen)}
+              aria-haspopup="listbox"
+              aria-expanded={isStatusOpen}
               aria-label="Filter status siswa"
-              className="appearance-none block w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-zinc-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-colors cursor-pointer h-11 leading-tight truncate"
+              className={`w-full flex items-center rounded-xl border bg-slate-50 dark:bg-zinc-800 pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-zinc-200 transition-colors cursor-pointer h-11 text-left ${
+                isStatusOpen
+                  ? "border-brand-500 ring-2 ring-brand-500/20"
+                  : "border-slate-200 dark:border-zinc-700"
+              }`}
             >
-              <option value="all">Semua Siswa ({allCount})</option>
-              <option value="reguler">Reguler ({regulerCount})</option>
-              <option value="cg">Coba Gratis ({cgCount})</option>
-              <option value="inactive">Nonaktif ({inactiveCount})</option>
-            </select>
+              <span className="truncate">
+                {statusOptions.find((o) => o.value === activeTab)?.label ??
+                  "Semua Siswa"}
+              </span>
+            </button>
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
               <Icons.filter
                 className="h-4 w-4 text-brand-500"
@@ -701,7 +780,9 @@ export function StudentClientWrapper({
             </div>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
               <svg
-                className="h-4 w-4 text-slate-400"
+                className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
+                  isStatusOpen ? "rotate-180 text-brand-500" : ""
+                }`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -714,6 +795,57 @@ export function StudentClientWrapper({
                 />
               </svg>
             </div>
+
+            {/* Floating Menu Popover */}
+            {isStatusOpen && (
+              <div className="absolute left-0 top-full mt-1.5 z-50 min-w-56 w-full bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-1.5 space-y-1">
+                <div className="max-h-52 overflow-y-auto space-y-1">
+                  {statusOptions.map((option) => {
+                    const isSelected = option.value === activeTab;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setActiveTab(option.value);
+                          setIsStatusOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
+                          isSelected
+                            ? "bg-brand-50 dark:bg-brand-500/15 border border-brand-200 dark:border-brand-800/50"
+                            : "hover:bg-slate-100 dark:hover:bg-zinc-800"
+                        }`}
+                      >
+                        <span
+                          className={`truncate text-left font-semibold ${
+                            isSelected
+                              ? "text-brand-700 dark:text-brand-300"
+                              : "text-slate-900 dark:text-white"
+                          }`}
+                        >
+                          {option.label}
+                        </span>
+                        {isSelected && (
+                          <svg
+                            className="h-4 w-4 text-brand-600 dark:text-brand-400 shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -729,54 +861,54 @@ export function StudentClientWrapper({
           </div>
         )}
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 dark:divide-zinc-800">
-            <thead className="bg-slate-50 dark:bg-zinc-800/60">
-              <tr>
+          <table className="min-w-full border-collapse">
+            <thead>
+              <tr className="bg-brand-100 dark:bg-zinc-800">
                 <th
                   scope="col"
-                  className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 dark:text-white sm:pl-6"
+                  className="border-b-2 border-brand-300/80 py-3.5 pl-4 pr-3 text-left text-[11px] font-bold uppercase tracking-wider text-brand-800 dark:border-zinc-700 dark:text-zinc-200 sm:pl-6"
                 >
                   Nama Lengkap
                 </th>
                 <th
                   scope="col"
-                  className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900 dark:text-white"
+                  className="border-b-2 border-brand-300/80 px-3 py-3.5 text-left text-[11px] font-bold uppercase tracking-wider text-brand-800 dark:border-zinc-700 dark:text-zinc-200"
                 >
                   Status
                 </th>
                 <th
                   scope="col"
-                  className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900 dark:text-white"
+                  className="border-b-2 border-brand-300/80 px-3 py-3.5 text-left text-[11px] font-bold uppercase tracking-wider text-brand-800 dark:border-zinc-700 dark:text-zinc-200"
                 >
                   Tingkat Level
                 </th>
                 <th
                   scope="col"
-                  className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900 dark:text-white"
+                  className="border-b-2 border-brand-300/80 px-3 py-3.5 text-left text-[11px] font-bold uppercase tracking-wider text-brand-800 dark:border-zinc-700 dark:text-zinc-200"
                 >
                   Poin Kehadiran
                 </th>
                 <th
                   scope="col"
-                  className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900 dark:text-white"
+                  className="border-b-2 border-brand-300/80 px-3 py-3.5 text-left text-[11px] font-bold uppercase tracking-wider text-brand-800 dark:border-zinc-700 dark:text-zinc-200"
                 >
-                  Tgl Lahir & Usia
+                  Tgl Lahir &amp; Usia
                 </th>
                 <th
                   scope="col"
-                  className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900 dark:text-white"
+                  className="border-b-2 border-brand-300/80 px-3 py-3.5 text-left text-[11px] font-bold uppercase tracking-wider text-brand-800 dark:border-zinc-700 dark:text-zinc-200"
                 >
                   Tgl Masuk
                 </th>
                 <th
                   scope="col"
-                  className="py-3.5 pl-3 pr-4 text-right text-sm font-semibold text-slate-900 dark:text-white sm:pr-6"
+                  className="border-b-2 border-brand-300/80 py-3.5 pl-3 pr-4 text-right text-[11px] font-bold uppercase tracking-wider text-brand-800 dark:border-zinc-700 dark:text-zinc-200 sm:pr-6"
                 >
                   Aksi
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-zinc-800 bg-white dark:bg-zinc-900">
+            <tbody className="divide-y divide-slate-100 bg-white dark:divide-zinc-800 dark:bg-zinc-900">
               {displayedStudents.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center">
@@ -815,7 +947,7 @@ export function StudentClientWrapper({
                   return (
                     <tr
                       key={person.id}
-                      className="transition-all hover:brightness-95 dark:hover:brightness-110"
+                      className="transition-[filter,background-color] duration-150 hover:brightness-95 dark:hover:brightness-110"
                       style={
                         labelObj
                           ? {
@@ -825,9 +957,11 @@ export function StudentClientWrapper({
                           : {}
                       }
                     >
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 dark:text-white sm:pl-6">
+                      <td className="max-w-70 whitespace-nowrap py-3.5 pl-4 pr-3 align-middle text-sm font-semibold text-slate-900 dark:text-white sm:pl-6">
                         <div className="flex items-center gap-2">
-                          <span>{person.name}</span>
+                          <span className="truncate" title={person.name}>
+                            {person.name}
+                          </span>
                           {person.nickname ? (
                             <span className="text-slate-400 dark:text-slate-500">
                               ({person.nickname})
@@ -848,7 +982,7 @@ export function StudentClientWrapper({
                           )}
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm">
+                      <td className="whitespace-nowrap px-3 py-3.5 align-middle text-sm">
                         <span
                           className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
                             person.status === "REGISTERED"
@@ -865,43 +999,45 @@ export function StudentClientWrapper({
                               : "Nonaktif"}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500 dark:text-slate-400">
+                      <td className="px-3 py-3.5 align-middle text-sm text-slate-500 dark:text-slate-400">
                         {labelObj ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
                             <div
-                              className="w-3 h-3 rounded-full"
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
                               style={{
                                 backgroundColor: labelObj.hex_color,
                               }}
                             ></div>
-                            {labelObj.main_level} - {labelObj.sub_level}
+                            <span className="truncate">
+                              {labelObj.main_level} - {labelObj.sub_level}
+                            </span>
                           </div>
                         ) : (
                           "-"
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm font-bold text-amber-700 dark:text-amber-300">
+                      <td className="whitespace-nowrap px-3 py-3.5 align-middle text-sm font-bold text-amber-700 dark:text-amber-300">
                         <span className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-800/50 px-2.5 py-1 rounded-lg text-xs tabular-nums">
                           {person.points || 0} Poin
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500 dark:text-slate-400">
+                      <td className="whitespace-nowrap px-3 py-3.5 align-middle text-sm text-slate-500 dark:text-slate-400">
                         <div>{formatNumericDate(person.date_of_birth)}</div>
                         <div className="text-xs text-slate-400 font-semibold">
                           {ageText}
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500 dark:text-slate-400">
+                      <td className="whitespace-nowrap px-3 py-3.5 align-middle text-sm text-slate-500 dark:text-slate-400">
                         {formatNumericDate(person.registration_date)}
                       </td>
-                      <td className="whitespace-nowrap py-3 pl-3 pr-4 sm:pr-6">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="whitespace-nowrap py-3.5 pl-3 pr-4 align-middle sm:pr-6">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => {
                               setSelectedStudentForFeedback(person);
                               setFeedbackModalOpen(true);
                             }}
-                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-brand-50 text-brand-700 hover:bg-brand-100 ring-1 ring-brand-200/60 transition-colors dark:bg-brand-500/15 dark:text-brand-300 dark:hover:bg-brand-500/25 dark:ring-brand-800/50 cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold bg-brand-50 text-brand-700 hover:bg-brand-100 ring-1 ring-brand-200/60 transition-colors dark:bg-brand-500/15 dark:text-brand-300 dark:hover:bg-brand-500/25 dark:ring-brand-800/50 cursor-pointer"
                           >
                             Feedback
                           </button>
@@ -913,7 +1049,7 @@ export function StudentClientWrapper({
                                 person.status,
                               )
                             }
-                            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ring-1 cursor-pointer ${
+                            className={`inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors ring-1 cursor-pointer ${
                               person.status === "INACTIVE"
                                 ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ring-emerald-200/60 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25 dark:ring-emerald-800/50"
                                 : "bg-slate-50 text-slate-600 hover:bg-slate-100 ring-slate-200/60 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:ring-zinc-700"
@@ -929,14 +1065,14 @@ export function StudentClientWrapper({
                               setEditingStudent(person);
                               setIsModalOpen(true);
                             }}
-                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-brand-50 text-brand-700 hover:bg-brand-100 ring-1 ring-brand-200/60 transition-colors dark:bg-brand-500/15 dark:text-brand-300 dark:hover:bg-brand-500/25 dark:ring-brand-800/50 cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold bg-brand-50 text-brand-700 hover:bg-brand-100 ring-1 ring-brand-200/60 transition-colors dark:bg-brand-500/15 dark:text-brand-300 dark:hover:bg-brand-500/25 dark:ring-brand-800/50 cursor-pointer"
                           >
                             Edit
                             <span className="sr-only">, {person.name}</span>
                           </button>
                           <button
                             onClick={() => handleDelete(person.id, person.name)}
-                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 ring-1 ring-red-200/60 transition-colors dark:bg-red-500/15 dark:text-red-400 dark:hover:bg-red-500/25 dark:ring-red-800/50 cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold bg-red-50 text-red-600 hover:bg-red-100 ring-1 ring-red-200/60 transition-colors dark:bg-red-500/15 dark:text-red-400 dark:hover:bg-red-500/25 dark:ring-red-800/50 cursor-pointer"
                           >
                             Hapus
                             <span className="sr-only">, {person.name}</span>
@@ -1125,7 +1261,7 @@ export function StudentClientWrapper({
 
                 <div className="grid grid-cols-3 gap-2 text-xs text-slate-500 dark:text-zinc-400 mb-4 relative z-10 bg-slate-50 dark:bg-zinc-800/60 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800">
                   <div>
-                    <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500 mb-0.5">
+                    <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-zinc-500 mb-0.5">
                       Tgl Lahir
                     </span>
                     <span className="block font-medium text-slate-700 dark:text-zinc-200">
@@ -1133,7 +1269,7 @@ export function StudentClientWrapper({
                     </span>
                   </div>
                   <div>
-                    <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500 mb-0.5">
+                    <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-zinc-500 mb-0.5">
                       Tgl Masuk
                     </span>
                     <span className="block font-medium text-slate-700 dark:text-zinc-200">
@@ -1141,7 +1277,7 @@ export function StudentClientWrapper({
                     </span>
                   </div>
                   <div>
-                    <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500 mb-0.5">
+                    <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-zinc-500 mb-0.5">
                       Poin
                     </span>
                     <span className="block font-bold text-amber-700 dark:text-amber-300 tabular-nums">
@@ -1150,7 +1286,7 @@ export function StudentClientWrapper({
                   </div>
                 </div>
 
-                <div className="flex gap-2 relative z-10 border-t border-slate-200 dark:border-zinc-800 pt-3 flex-wrap">
+                <div className="grid grid-cols-2 gap-2 relative z-10 border-t border-slate-200 dark:border-zinc-800 pt-3">
                   <button
                     type="button"
                     onClick={() => {
