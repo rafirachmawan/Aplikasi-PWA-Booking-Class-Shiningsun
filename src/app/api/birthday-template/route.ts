@@ -1,3 +1,17 @@
+async function assertSuperadmin(supabase: any) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error("UNAUTHORIZED");
+  }
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role !== "SUPERADMIN") {
+    throw new Error("FORBIDDEN");
+  }
+}
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
@@ -40,6 +54,7 @@ export async function GET(request: NextRequest) {
 
     // Toggle active action
     if (action === "toggle-active" && id) {
+      await assertSuperadmin(supabase);
       // Fetch current status
       const { data: currentTemplate } = await supabase
         .from("birthday_templates")
@@ -106,6 +121,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
+    await assertSuperadmin(supabase);
     const body = await request.json();
 
     const { title, greeting_text, motivational_quote, is_active } = body;
@@ -152,6 +168,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const supabase = await createClient();
+    await assertSuperadmin(supabase);
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -209,6 +226,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createClient();
+    await assertSuperadmin(supabase);
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 

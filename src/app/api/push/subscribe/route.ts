@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { savePushSubscription } from "@/lib/push";
+import { requireUser } from "@/lib/actions/_internal";
 
 export async function POST(req: Request) {
   try {
+    // Hanya admin yang login — langganan push berisi notifikasi data siswa.
+    try {
+      await requireUser();
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     const { subscription, branchId } = body;
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { sendWebPushNotification } from "@/lib/push";
 import { formatShortDate } from "@/lib/dateUtils";
 import { getHolidayName } from "@/lib/holidays";
@@ -19,6 +19,10 @@ type CGSessionItem = {
 // sudah punya worksheet di tanggal itu dilewati.
 // ============================================
 async function autoFillHolidayWorksheets(todayStr: string, holiday: string) {
+  // Service role: cron berjalan tanpa sesi Supabase dan harus tetap
+  // membaca/menulis setelah RLS diketatkan. Logika tidak berubah.
+  const supabase = getAdminClient();
+
   // 1. Siswa yang terjadwal di tanggal tersebut (kecuali INACTIVE)
   const { data: slots, error: slotErr } = await supabase
     .from("schedule_slots")
@@ -125,20 +129,29 @@ async function autoFillHolidayWorksheets(todayStr: string, holiday: string) {
 export async function GET(req: Request) {
   // Authorization check (Verify CRON_SECRET or allow GET in dev)
   const authHeader = req.headers.get("authorization");
-  const cronSecret =
-    process.env.CRON_SECRET || "shiningsun_daily_cron_secret_key_2026";
+  // Tidak ada lagi secret cadangan yang tertulis di kode. Jika CRON_SECRET
+  // belum diset di production, cron menolak berjalan (fail-safe).
+  const cronSecret = process.env.CRON_SECRET;
 
-  if (
-    process.env.NODE_ENV === "production" &&
-    authHeader !== `Bearer ${cronSecret}`
-  ) {
-    return NextResponse.json(
-      { error: "Unauthorized cron call" },
-      { status: 401 },
-    );
+  if (process.env.NODE_ENV === "production") {
+    if (!cronSecret) {
+      return NextResponse.json(
+        { error: "CRON_SECRET belum diset di server" },
+        { status: 500 },
+      );
+    }
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json(
+        { error: "Unauthorized cron call" },
+        { status: 401 },
+      );
+    }
   }
 
   try {
+    // Service role: cron berjalan tanpa sesi Supabase.
+    const supabase = getAdminClient();
+
     // 1. Get today's date string (YYYY-MM-DD) in WIB timezone (+07:00)
     const now = new Date();
     const wibNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);

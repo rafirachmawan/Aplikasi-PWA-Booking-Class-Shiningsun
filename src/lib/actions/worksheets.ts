@@ -1,16 +1,17 @@
 "use server";
 
-import { supabase } from "../supabase";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
 import { parseIndonesianDateToISO, isAbsentWorksheet, formatFullIndonesianDate } from "../dateUtils";
-import { ABSENT_WORKSHEET_OR_FILTER, memoryPointsCache, normalizeScheduleTime, isMissingColumnError } from "./_internal";
+import { ABSENT_WORKSHEET_OR_FILTER, memoryPointsCache, normalizeScheduleTime, isMissingColumnError, requireUserOrParent, requireUser } from "./_internal";
 import { getBranchId } from "./auth-branch";
 import { getStudentScheduleMap } from "./schedules";
 import { getStudents } from "./students";
+import { getAdminClient } from "@/lib/supabase/admin";
 
 export async function getWorksheetsByBranch(studentId?: string, limit: number = 100) {
+  await requireUser();
   try {
     const branchId = await getBranchId();
     if (!branchId) return [];
@@ -76,7 +77,9 @@ export async function getWorksheetsByBranch(studentId?: string, limit: number = 
 
 export const getWorksheetsByStudent = cache(async (studentId: string) => {
   try {
-    const supabaseServer = await createClient();
+    // Guard: admin login ATAU portal ortu siswa yang sama.
+    await requireUserOrParent(studentId);
+    const supabaseServer = getAdminClient();
     const { data, error } = await supabaseServer
       .from("student_worksheets")
       .select("*")
@@ -152,6 +155,7 @@ export async function getStudentSessionTimes(
   studentId: string,
   dateStr: string,
 ): Promise<string[]> {
+  await requireUser();
   try {
     if (!studentId || !dateStr) return [];
     const iso = String(dateStr).slice(0, 10);
@@ -204,6 +208,7 @@ async function assertWorksheetDateMatchesSlot(
 }
 
 export async function createWorksheet(formData: FormData) {
+  await requireUser();
   const student_id = formData.get("student_id") as string;
   const title = formData.get("title") as string;
   const description = (formData.get("description") as string) || "";
@@ -381,6 +386,7 @@ export async function createWorksheet(formData: FormData) {
 }
 
 export async function updateWorksheet(id: string, formData: FormData) {
+  await requireUser();
   const title = formData.get("title") as string;
   const description = (formData.get("description") as string) || "";
   const worksheet_date = formData.get("worksheet_date") as string;
@@ -591,6 +597,7 @@ export async function updateWorksheet(id: string, formData: FormData) {
 }
 
 export async function deleteWorksheet(id: string) {
+  await requireUser();
   const supabaseServer = await createClient();
   const { error } = await supabaseServer
     .from("student_worksheets")
@@ -611,6 +618,7 @@ export async function deleteWorksheetMonth(
   studentId: string,
   bulanKe: number | null,
 ) {
+  await requireUser();
   const supabaseServer = await createClient();
   let query = supabaseServer
     .from("student_worksheets")
@@ -636,6 +644,7 @@ export async function deleteWorksheetMonth(
 }
 
 export async function getWorksheetAttendanceHistory() {
+  await requireUser();
   const supabaseServer = await createClient();
   const activeBranchId = await getBranchId();
 

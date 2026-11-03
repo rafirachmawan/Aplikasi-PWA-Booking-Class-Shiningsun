@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/actions/_internal";
 
 export const maxDuration = 60;
 
@@ -13,28 +14,26 @@ export function setMemoryGDriveRefreshToken(token: string | null) {
 async function getStoredRefreshToken(): Promise<string | null> {
   if (memoryGDriveRefreshToken) return memoryGDriveRefreshToken;
 
-  // 1. Cek database Supabase terlebih dahulu (token aktif terbaru tersimpan di sini)
+  // 1. Cek database Supabase terlebih dahulu (token aktif terbaru tersimpan di sini).
+  //    Service role: token ini tidak boleh dapat dibaca anon setelah RLS diketatkan.
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (supabaseUrl && supabaseKey) {
-      const { createClient: createSupabaseDirect } = await import("@supabase/supabase-js");
-      const supabaseDirect = createSupabaseDirect(supabaseUrl, supabaseKey);
-      const { data } = await supabaseDirect
-        .from("system_settings")
-        .select("value")
-        .eq("key", "gdrive_refresh_token")
-        .maybeSingle();
+    const { getAdminClient } = await import("@/lib/supabase/admin");
+    const supabaseDirect = getAdminClient();
+    const { data } = await supabaseDirect
+      .from("system_settings")
+      .select("value")
+      .eq("key", "gdrive_refresh_token")
+      .maybeSingle();
 
-      if (data?.value) {
-        memoryGDriveRefreshToken = data.value;
-        return data.value;
-      }
+    if (data?.value) {
+      memoryGDriveRefreshToken = data.value;
+      return data.value;
     }
   } catch (e) {
     console.warn("Direct query failed for gdrive_refresh_token:", e);
   }
 
+  // 2. Fallback: tetap coba lewat klien server (hasil sama), lalu env.
   try {
     const supabaseServer = await createClient();
     const { data } = await supabaseServer
@@ -111,20 +110,17 @@ async function getAccessTokenFromRefreshToken(
     process.env.GOOGLE_DRIVE_REFRESH_TOKEN = data.refresh_token;
 
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      if (supabaseUrl && supabaseKey) {
-        const { createClient: createSupabaseDirect } = await import("@supabase/supabase-js");
-        const supabaseDirect = createSupabaseDirect(supabaseUrl, supabaseKey);
-        await supabaseDirect.from("system_settings").upsert(
-          {
-            key: "gdrive_refresh_token",
-            value: data.refresh_token,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "key" }
-        );
-      }
+      // Service role: system_settings tidak lagi dapat ditulis anon.
+      const { getAdminClient } = await import("@/lib/supabase/admin");
+      const supabaseDirect = getAdminClient();
+      await supabaseDirect.from("system_settings").upsert(
+        {
+          key: "gdrive_refresh_token",
+          value: data.refresh_token,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "key" }
+      );
     } catch (e) {
       console.warn("Failed to persist rotated refresh token to DB:", e);
     }
@@ -145,6 +141,13 @@ export async function POST(req: NextRequest) {
         { error: "File terlalu besar (maks 5 MB)." },
         { status: 413 }
       );
+    }
+
+    // Hanya admin yang login — route ini memakai service role + token Drive.
+    try {
+      await requireUser();
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;

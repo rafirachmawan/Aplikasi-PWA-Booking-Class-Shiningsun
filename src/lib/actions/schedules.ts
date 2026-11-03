@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getTodayISO } from "../dateUtils";
 import { getBranchId } from "./auth-branch";
+import { requireUser } from "./_internal";
 
 const DAYS_INDONESIAN = [
   "Minggu",
@@ -162,6 +163,7 @@ export async function autoBookStudentToClass(
   startDateStr: string,
   time: string,
 ) {
+  await requireUser();
   const supabaseServer = await createClient();
   let branchId = await getBranchId();
 
@@ -371,6 +373,7 @@ export async function bookStudentManual(
   dateStr: string,
   time: string,
 ) {
+  await requireUser();
   const supabaseServer = await createClient();
   let branchId = await getBranchId();
 
@@ -475,6 +478,7 @@ export async function removeStudentBooking(
   scheduleSlotId: string,
   studentId: string,
 ) {
+  await requireUser();
   const supabaseServer = await createClient();
   const { error } = await supabaseServer
     .from("schedule_student")
@@ -490,6 +494,7 @@ export async function bulkRemoveStudentBookings(
   studentId: string,
   scheduleSlotIds: string[],
 ) {
+  await requireUser();
   if (scheduleSlotIds.length === 0) return true;
   const supabaseServer = await createClient();
   const { error } = await supabaseServer
@@ -507,6 +512,7 @@ export async function copyScheduleToNextMonth(
   currentYear: number,
   currentMonth: number,
 ) {
+  await requireUser();
   const branchId = await getBranchId();
   if (!branchId) return { totalBooked: 0, failedDates: [] };
 
@@ -611,6 +617,7 @@ export async function getStudentsWithNextMonthSchedule(
   year: number,
   month: number,
 ): Promise<string[]> {
+  await requireUser();
   try {
     const branchId = await getBranchId();
     if (!branchId) return [];
@@ -672,6 +679,7 @@ export async function moveStudentBooking(
   newDateStr: string,
   newTime: string,
 ) {
+  await requireUser();
   const supabaseServer = await createClient();
   // Normalisasi jam seperti bookStudentManual agar lookup slot tujuan cocok.
   const normalizedNewTime = newTime.substring(0, 5);
@@ -720,6 +728,7 @@ export async function moveStudentBooking(
 }
 
 export async function getMonthlySchedules(year: number, month: number) {
+  await requireUser();
   const branchId = await getBranchId();
   if (!branchId) return [];
 
@@ -787,6 +796,7 @@ export async function getMonthlySchedules(year: number, month: number) {
 }
 
 export async function createScheduleSlot(formData: FormData) {
+  await requireUser();
   const class_id = formData.get("class_id") as string;
   const dateStr = formData.get("date") as string; // YYYY-MM-DD
   const time = formData.get("time") as string; // HH:MM
@@ -840,6 +850,7 @@ export async function bookStudentToSlot(
   studentId: string,
   scheduleSlotId: string,
 ) {
+  await requireUser();
   const supabaseServer = await createClient();
   // Pessimistic Quota Check
   // 1. Dapatkan slot saat ini beserta kuota maksimal kelas
@@ -898,6 +909,7 @@ export async function toggleSlotLock(
   scheduleSlotId: string,
   currentStatus: boolean,
 ) {
+  await requireUser();
   const supabaseServer = await createClient();
   const { error } = await supabaseServer
     .from("schedule_slots")
@@ -916,6 +928,7 @@ export async function toggleSlotLock(
 // =========================================
 
 export async function cancelBooking(scheduleSlotId: string, studentId: string) {
+  await requireUser();
   const supabaseServer = await createClient();
   const { error } = await supabaseServer
     .from("schedule_student")
@@ -927,6 +940,7 @@ export async function cancelBooking(scheduleSlotId: string, studentId: string) {
 }
 
 export async function getSchedulesByDate(dateStr: string) {
+  await requireUser();
   const branchId = await getBranchId();
 
   // Jika belum pilih cabang, return kosong
@@ -968,6 +982,7 @@ export async function getSchedulesByDate(dateStr: string) {
 }
 
 export async function getTodaySchedules() {
+  await requireUser();
   const today = getTodayISO();
   return getSchedulesByDate(today);
 }

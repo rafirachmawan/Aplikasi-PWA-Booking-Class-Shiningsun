@@ -4,14 +4,16 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
 import { getTodayISO } from "../dateUtils";
-import { ABSENT_WORKSHEET_OR_FILTER, memoryPointsCache, isMissingColumnError } from "./_internal";
+import { ABSENT_WORKSHEET_OR_FILTER, memoryPointsCache, isMissingColumnError, requireUser, requireUserOrParent } from "./_internal";
 import { getBranchId } from "./auth-branch";
 import { getStudentScheduleMap, bookStudentManual } from "./schedules";
+import { getAdminClient } from "@/lib/supabase/admin";
 
 const POINTS_CACHE_TTL = 2 * 60 * 1000; // 2 menit cache in-memory untuk poin siswa
 export async function getStudents(options?: {
   includePointsAndSchedule?: boolean;
 }) {
+  await requireUser();
   const supabaseServer = await createClient();
   const branchId = await getBranchId();
   if (!branchId) return [];
@@ -212,6 +214,7 @@ export async function getStudents(options?: {
 }
 
 export async function createStudent(formData: FormData) {
+  await requireUser();
   const name = formData.get("name") as string;
   const nickname = formData.get("nickname") as string;
   const gender = formData.get("gender") as string;
@@ -325,6 +328,7 @@ export async function createStudent(formData: FormData) {
 // =========================================
 
 export async function deleteStudent(id: string) {
+  await requireUser();
   const supabaseServer = await createClient();
   const { error } = await supabaseServer.from("students").delete().eq("id", id);
 
@@ -333,6 +337,7 @@ export async function deleteStudent(id: string) {
 }
 
 export async function updateStudentStatus(id: string, status: string) {
+  await requireUser();
   const supabaseServer = await createClient();
   const today = new Date().toISOString().split("T")[0];
 
@@ -384,6 +389,7 @@ export async function updateStudentStatus(id: string, status: string) {
 }
 
 export async function updateStudentLabel(id: string, labelId: string | null) {
+  await requireUser();
   const supabaseServer = await createClient();
   const { error } = await supabaseServer
     .from("students")
@@ -395,6 +401,7 @@ export async function updateStudentLabel(id: string, labelId: string | null) {
 }
 
 export async function updateStudent(id: string, formData: FormData) {
+  await requireUser();
   const name = formData.get("name") as string;
   const nickname = formData.get("nickname") as string;
   const gender = formData.get("gender") as string;
@@ -499,6 +506,7 @@ export async function updateStudent(id: string, formData: FormData) {
 export async function getStudentsByStatusWithSchedules(
   status: "REGISTERED" | "CG",
 ) {
+  await requireUser();
   const branchId = await getBranchId();
   if (!branchId) return [];
 
@@ -596,7 +604,8 @@ export async function updateStudentAccessPin(
     throw new Error("PIN Akses minimal 4 karakter.");
   }
 
-  const supabaseServer = await createClient();
+  await requireUserOrParent(studentId);
+  const supabaseServer = getAdminClient();
   const { error } = await supabaseServer
     .from("students")
     .update({ access_pin: newPin.trim() })
@@ -618,7 +627,8 @@ export async function updateStudentPhotoUrl(
   photoUrl: string,
 ) {
   try {
-    const supabaseServer = await createClient();
+    await requireUserOrParent(studentId);
+    const supabaseServer = getAdminClient();
     const { error } = await supabaseServer
       .from("students")
       .update({ photo_url: photoUrl })
@@ -650,6 +660,7 @@ export async function getPaginatedStudents(options?: {
   gender?: string;
   statusTab?: string;
 }) {
+  await requireUser();
   const pageSize = Math.max(1, options?.pageSize || 10);
   const emptyResult = {
     students: [] as any[],

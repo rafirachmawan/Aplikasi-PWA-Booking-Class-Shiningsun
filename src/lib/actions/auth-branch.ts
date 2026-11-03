@@ -120,7 +120,9 @@ export const getBranchId = cache(async (): Promise<string> => {
     } = await supabaseServer.auth.getUser();
 
     if (!user) {
-      return "11111111-1111-1111-1111-111111111111";
+      // Tidak ada sesi → tidak ada cabang. Jangan pernah menebak cabang
+      // default: RLS kini menolak akses anon, jadi data memang harus kosong.
+      return "";
     }
 
     let { data: profile } = await supabaseServer
@@ -293,11 +295,16 @@ export async function getAllUsers() {
   const supabaseServer = await createClient();
   const { data, error } = await supabaseServer
     .from("users")
-    .select("*, branch:branches(name)")
+    .select("id, name, email, role, branch_id, created_at, branch:branches(name)")
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return data;
+  // Bentuk data sama seperti sebelumnya (termasuk branch), hanya kolom
+  // sensitif seperti password tidak lagi ikut terkirim ke browser.
+  return (data || []).map((u) => ({
+    ...u,
+    branch: Array.isArray(u.branch) ? (u.branch[0] ?? null) : u.branch,
+  }));
 }
 
 export async function changeUserPassword(userId: string, newPassword: string) {

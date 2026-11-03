@@ -1,21 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, getSupabaseClient } from "@/lib/supabase";
+import { cookies } from "next/headers";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+import { getAdminClient } from "@/lib/supabase/admin";
+
+// Siapa yang boleh melihat/menulis feedback siswa ini:
+// - admin yang login (Supabase Auth), atau
+// - portal ortu yang cookie sesinya cocok dengan student_id.
+async function assertCanAccessStudent(studentId: string) {
+  const supabaseServer = await createServerClient();
+  const {
+    data: { user },
+  } = await supabaseServer.auth.getUser();
+  if (user) return;
+
+  const cookieStore = await cookies();
+  const parentStudentId = cookieStore.get("parent_student_id")?.value;
+  if (parentStudentId && parentStudentId === studentId) return;
+
+  throw new Error("UNAUTHORIZED");
+}
 
 // POST /api/student-feedback - Kirim feedback dari parent
 export async function POST(request: NextRequest) {
   try {
-    // Use SERVICE ROLE client to bypass RLS for admin operations
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: true,
-          detectSessionInUrl: false,
-        },
-      },
-    );
+    const supabase = getAdminClient();
 
     const body = await request.json();
     const { student_id, parent_user_id, message } = body;
@@ -32,6 +40,9 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+
+    // Hanya admin login atau portal ortu siswa tsb. yang boleh menulis.
+    await assertCanAccessStudent(student_id);
 
     // Validate message length
     if (message.length > 500) {
@@ -78,6 +89,12 @@ export async function POST(request: NextRequest) {
         2,
       ),
     );
+    if (error?.message === "UNAUTHORIZED") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
     return NextResponse.json(
       { success: false, error: error?.message || "Internal server error" },
       { status: 500 },
@@ -100,17 +117,10 @@ export async function GET(request: Request) {
     }
 
     // Use SERVICE ROLE client to bypass RLS completely
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: true,
-          detectSessionInUrl: false,
-        },
-      },
-    );
+    const supabase = getAdminClient();
+
+    // Hanya admin login atau portal ortu siswa tsb. yang boleh membaca.
+    await assertCanAccessStudent(studentId);
 
     // Get feedbacks for this student
     // Hemat Origin (tanpa ubah logika/data): select kolom yang dipakai UI saja
@@ -204,6 +214,12 @@ export async function GET(request: Request) {
     );
   } catch (error: any) {
     console.error("Error in student-feedback API:", error);
+    if (error?.message === "UNAUTHORIZED") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
     return NextResponse.json(
       {
         success: false,

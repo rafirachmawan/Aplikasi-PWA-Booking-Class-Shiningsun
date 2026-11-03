@@ -1,13 +1,13 @@
 "use server";
 
-import { supabase } from "../supabase";
-import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
 import { getTodayISO, isAbsentWorksheet } from "../dateUtils";
 import { getStudentScheduleMap } from "./schedules";
 import { getWorksheetsByStudent } from "./worksheets";
+import { getAdminClient } from "@/lib/supabase/admin";
+import { requireUserOrParent } from "./_internal";
 
 // ── Log diagnostik Portal Orang Tua ────────────────────────────────────────
 // Sementara dipakai untuk menelusuri laporan client "halaman gagal dimuat".
@@ -63,7 +63,7 @@ export async function verifyParentAccess(
 
   const cleanSearch = normalizeText(cleanSearchRaw);
 
-  const supabaseServer = await createClient();
+  const supabaseServer = getAdminClient();
 
   // Bukti request login sampai ke server (penting saat client lapor
   // "halaman gagal dimuat" — kalau baris ini tidak ada, masalahnya
@@ -399,7 +399,7 @@ export async function confirmParentStudentSelection(
     (str || "").trim().toLowerCase().replace(/\s+/g, " ");
   const cleanSearch = normalizeText(cleanSearchRaw);
 
-  const supabaseServer = await createClient();
+  const supabaseServer = getAdminClient();
   const { data: s, error } = await supabaseServer
     .from("students")
     .select(
@@ -498,7 +498,7 @@ export async function getParentSessionStudent() {
     return null;
   }
 
-  const supabaseServer = await createClient();
+  const supabaseServer = getAdminClient();
   let student: any = null;
   let error: any = null;
 
@@ -605,7 +605,9 @@ export async function clearParentSession() {
 }
 
 export async function getStudentUpcomingSchedule(studentId: string) {
-  const supabaseServer = await createClient();
+  // Guard: admin login ATAU portal ortu siswa yang sama.
+  await requireUserOrParent(studentId);
+  const supabaseServer = getAdminClient();
   const today = getTodayISO();
 
   const { data: bookings, error } = await supabaseServer
@@ -641,7 +643,9 @@ export async function getStudentUpcomingSchedule(studentId: string) {
 }
 
 export async function getStudentScheduleHistory(studentId: string) {
-  const supabaseServer = await createClient();
+  // Guard: admin login ATAU portal ortu siswa yang sama.
+  await requireUserOrParent(studentId);
+  const supabaseServer = getAdminClient();
   const today = getTodayISO();
 
   const { data: bookings, error } = await supabaseServer
@@ -679,7 +683,9 @@ export async function updateParentFeedback(
   bulanKe: number | null,
   catatanOrtu: string | null,
 ) {
-  const supabaseServer = await createClient();
+  // Guard: admin login ATAU portal ortu siswa yang sama.
+  await requireUserOrParent(studentId);
+  const supabaseServer = getAdminClient();
   const valueToStore =
     typeof catatanOrtu === "string" && catatanOrtu.trim().length > 0
       ? catatanOrtu.trim()
@@ -722,7 +728,19 @@ export async function updateSingleWorksheetParentFeedback(
   worksheetId: string,
   catatanOrtu: string | null,
 ) {
-  const supabaseServer = await createClient();
+  const supabaseServer = getAdminClient();
+
+  // Guard: cari pemilik lembar kerja dulu, lalu hanya admin login atau
+  // portal ortu siswa tersebut yang boleh mengubah catatan.
+  const { data: ownerRow } = await supabaseServer
+    .from("student_worksheets")
+    .select("student_id")
+    .eq("id", worksheetId)
+    .maybeSingle();
+
+  if (!ownerRow?.student_id) throw new Error("UNAUTHORIZED");
+  await requireUserOrParent(ownerRow.student_id);
+
   const valueToStore =
     typeof catatanOrtu === "string" && catatanOrtu.trim().length > 0
       ? catatanOrtu.trim()

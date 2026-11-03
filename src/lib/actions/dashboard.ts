@@ -1,12 +1,12 @@
 "use server";
 
-import { supabase } from "../supabase";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayISO } from "../dateUtils";
-import { normalizeScheduleTime, isMissingColumnError } from "./_internal";
+import { normalizeScheduleTime, isMissingColumnError, requireUser } from "./_internal";
 import { getBranchId } from "./auth-branch";
 
 export async function getDashboardStats() {
+  await requireUser();
   try {
     const supabaseServer = await createClient();
     const branchId = await getBranchId();
@@ -122,6 +122,7 @@ export async function getDashboardStats() {
  * Shows students who have schedules but haven't filled their worksheets
  */
 export async function getOverdueWorksheets(branchId = "ALL") {
+  await requireUser();
   try {
     const supabaseServer = await createClient();
     const todayISO = getTodayISO();
@@ -485,6 +486,7 @@ export async function getOverdueWorksheets(branchId = "ALL") {
 }
 
 export async function getRecentActivities() {
+  await requireUser();
   const supabaseServer = await createClient();
   const {
     data: { user },

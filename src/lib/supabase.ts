@@ -1,3 +1,8 @@
+// ⚠️ DEPRECATED (03/11/2026): jangan pakai modul ini untuk query server.
+// Setelah RLS diketatkan, anon key tidak boleh lagi membaca/menulis tabel admin.
+//   - Server tanpa sesi  → pakai `@/lib/supabase/admin` (getAdminClient).
+//   - Server dengan sesi → pakai `@/lib/supabase/server` (createClient).
+//   - Browser            → pakai `@supabase/ssr` createBrowserClient.
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 let _supabase: SupabaseClient | null = null;

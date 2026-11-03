@@ -1,5 +1,5 @@
 import webpush from "web-push";
-import { supabase } from "./supabase";
+import { getAdminClient } from "./supabase/admin";
 
 // Initialize VAPID configuration
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
@@ -27,6 +27,9 @@ export type PushSubscriptionPayload = {
   * Save device push subscription to Supabase
   */
 export async function savePushSubscription(sub: PushSubscriptionPayload, branchId?: string) {
+  // Service role: tabel push_subscriptions tidak lagi dapat diakses anon
+  // setelah RLS diketatkan. Alur & data yang disimpan tidak berubah.
+  const supabase = getAdminClient();
   const { data, error } = await supabase
     .from("push_subscriptions")
     .upsert(
@@ -76,6 +79,9 @@ export async function sendWebPushNotification(
     console.error("Error sending push notification:", error);
     // If subscription is expired or invalid (404/410), delete it from DB
     if (error.statusCode === 404 || error.statusCode === 410) {
+      // Service role: pembersihan langganan kedaluwarsa tetap berjalan
+      // meski RLS aktif. Tidak ada perubahan perilaku.
+      const supabase = getAdminClient();
       await supabase.from("push_subscriptions").delete().eq("endpoint", subscription.endpoint);
     }
     return { success: false, error };

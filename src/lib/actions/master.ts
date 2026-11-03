@@ -1,10 +1,11 @@
 "use server";
 
-import { supabase } from "../supabase";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
 import { getCurrentUserRole, getBranchId } from "./auth-branch";
+import { requireUser } from "./_internal";
+import { getAdminClient } from "@/lib/supabase/admin";
 
 export const getClasses = cache(async () => {
   const supabaseServer = await createClient();
@@ -33,6 +34,7 @@ let memoryLabelsCache: { data: any[]; timestamp: number } | null = null;
 const LABELS_CACHE_TTL = 3 * 60 * 1000; // 3 menit cache in-memory
 
 export async function getLabels() {
+  await requireUser();
   if (memoryLabelsCache && Date.now() - memoryLabelsCache.timestamp < LABELS_CACHE_TTL) {
     return memoryLabelsCache.data;
   }
@@ -56,6 +58,7 @@ export async function getLabels() {
 }
 
 export async function createClass(formData: FormData) {
+  await requireUser();
   const name = formData.get("name") as string;
   const max_quota = parseInt(formData.get("max_quota") as string, 10) || 4;
   const branchId = await getBranchId();
@@ -82,6 +85,7 @@ export async function createClass(formData: FormData) {
 }
 
 export async function createLabel(formData: FormData) {
+  await requireUser();
   const main_level = formData.get("main_level") as string;
   const sub_level = formData.get("sub_level") as string;
   const hex_color = formData.get("hex_color") as string;
@@ -109,6 +113,7 @@ export async function createLabel(formData: FormData) {
 // =========================================
 
 export async function deleteClass(id: string) {
+  await requireUser();
   const supabaseServer = await createClient();
 
   // 1. Dapatkan semua jadwal yang terkait dengan kelas ini
@@ -144,6 +149,7 @@ export async function deleteClass(id: string) {
 export async function getClassDeletionImpact(
   classId: string,
 ): Promise<{ slots: number; bookings: number; students: number } | null> {
+  await requireUser();
   try {
     const supabaseServer = await createClient();
 
@@ -194,6 +200,7 @@ export async function getClassDeletionImpact(
 }
 
 export async function deleteLabel(id: string) {
+  await requireUser();
   const supabaseServer = await createClient();
   const { error } = await supabaseServer.from("labels").delete().eq("id", id);
 
@@ -206,6 +213,7 @@ export async function deleteLabel(id: string) {
 }
 
 export async function getClassesWithSchedules() {
+  await requireUser();
   const branchId = await getBranchId();
   if (!branchId) return [];
 
@@ -271,6 +279,7 @@ export async function getClassesWithSchedules() {
 }
 
 export async function getTeachers() {
+  await requireUser();
   try {
     const supabaseServer = await createClient();
     const branchId = await getBranchId();
@@ -299,6 +308,7 @@ export async function getTeachers() {
 }
 
 export async function createTeacher(formData: FormData) {
+  await requireUser();
   const name = formData.get("name") as string;
   if (!name || !name.trim()) {
     throw new Error("Nama Guru wajib diisi.");
@@ -325,6 +335,7 @@ export async function createTeacher(formData: FormData) {
 }
 
 export async function updateTeacher(id: string, formData: FormData) {
+  await requireUser();
   const name = formData.get("name") as string;
   if (!name || !name.trim()) {
     throw new Error("Nama Guru wajib diisi.");
@@ -348,6 +359,7 @@ export async function updateTeacher(id: string, formData: FormData) {
 }
 
 export async function deleteTeacher(id: string) {
+  await requireUser();
   const supabaseServer = await createClient();
   const { error } = await supabaseServer.from("teachers").delete().eq("id", id);
 
@@ -376,6 +388,7 @@ let memoryTemplatesCache: { data: any[]; timestamp: number } | null = null;
 const TEMPLATES_CACHE_TTL = 5 * 60 * 1000; // 5 menit cache in-memory
 
 export async function getAssessmentTemplates() {
+  await requireUser();
   try {
     const supabaseServer = await createClient();
     const branchId = await getBranchId();
@@ -454,6 +467,7 @@ export async function getAssessmentTemplates() {
 }
 
 export async function createAssessmentTemplate(formData: FormData) {
+  await requireUser();
   const category = (formData.get("category") as string) || "kegiatan";
   const title = formData.get("title") as string;
   const materi = (formData.get("materi") as string) || "";
@@ -550,6 +564,7 @@ export async function createAssessmentTemplate(formData: FormData) {
 }
 
 export async function updateAssessmentTemplate(id: string, formData: FormData) {
+  await requireUser();
   const category = (formData.get("category") as string) || "kegiatan";
   const title = formData.get("title") as string;
   const materi = (formData.get("materi") as string) || "";
@@ -658,6 +673,7 @@ export async function updateAssessmentTemplate(id: string, formData: FormData) {
 }
 
 export async function deleteAssessmentTemplate(idOrIds: string | string[]) {
+  await requireUser();
   const supabaseServer = await createClient();
   const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
 
@@ -709,7 +725,10 @@ export async function getStudentRulesDocument() {
  */
 export async function getStudentRulesDocuments() {
   try {
-    const supabaseServer = await createClient();
+    // Dokumen peraturan dibaca dashboard (admin) DAN portal ortu (tanpa sesi
+    // Supabase), jadi pakai service role. Isinya metadata file publik yang
+    // memang ditampilkan ke orang tua.
+    const supabaseServer = getAdminClient();
     const { data, error } = await supabaseServer
       .from("student_rules_documents")
       .select("id, file_url, file_name, uploaded_at")
@@ -739,6 +758,7 @@ export async function saveStudentRulesDocument(
   fileUrl: string,
   fileName: string,
 ) {
+  await requireUser();
   try {
     const supabaseServer = await createClient();
     const {
@@ -783,6 +803,7 @@ export async function saveStudentRulesDocument(
  * Mengubah nama dokumen Upload File PDF
  */
 export async function renameStudentRulesDocument(id: string, newName: string) {
+  await requireUser();
   try {
     const supabaseServer = await createClient();
     const {
@@ -832,6 +853,7 @@ export async function renameStudentRulesDocument(id: string, newName: string) {
  * Menghapus dokumen Peraturan Siswa
  */
 export async function deleteStudentRulesDocument(id: string) {
+  await requireUser();
   try {
     const supabaseServer = await createClient();
     const {
@@ -871,6 +893,7 @@ export async function deleteStudentRulesDocument(id: string) {
  * Mengambil daftar dokumen Kurikulum (superadmin & branch admin)
  */
 export async function getCurriculumDocuments() {
+  await requireUser();
   try {
     const supabaseServer = await createClient();
     const { data, error } = await supabaseServer
@@ -899,6 +922,7 @@ export async function saveCurriculumDocument(
   fileUrl: string,
   fileName: string,
 ) {
+  await requireUser();
   try {
     const role = await getCurrentUserRole();
     if (role !== "SUPERADMIN") {
@@ -950,6 +974,7 @@ export async function saveCurriculumDocument(
  * Mengubah nama dokumen Kurikulum — khusus SUPERADMIN
  */
 export async function renameCurriculumDocument(id: string, newName: string) {
+  await requireUser();
   try {
     const role = await getCurrentUserRole();
     if (role !== "SUPERADMIN") {
@@ -995,6 +1020,7 @@ export async function renameCurriculumDocument(id: string, newName: string) {
  * Menghapus dokumen Kurikulum — khusus SUPERADMIN
  */
 export async function deleteCurriculumDocument(id: string) {
+  await requireUser();
   try {
     const role = await getCurrentUserRole();
     if (role !== "SUPERADMIN") {

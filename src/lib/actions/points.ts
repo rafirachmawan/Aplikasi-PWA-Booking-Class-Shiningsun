@@ -4,8 +4,9 @@ import { supabase } from "../supabase";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { isAbsentWorksheet } from "../dateUtils";
-import { memoryPointsCache } from "./_internal";
+import { memoryPointsCache, requireUser, requireUserOrParent } from "./_internal";
 import { getBranchId } from "./auth-branch";
+import { getAdminClient } from "@/lib/supabase/admin";
 
 export async function redeemStudentPoints({
   studentId,
@@ -18,6 +19,7 @@ export async function redeemStudentPoints({
   pointsDeducted: number;
   rewardNote?: string;
 }) {
+  await requireUser();
   const supabaseServer = await createClient();
 
   if (!studentId || pointsDeducted <= 0) {
@@ -93,6 +95,7 @@ export async function addManualStudentPoints({
   pointsAdded: number;
   note?: string;
 }) {
+  await requireUser();
   const supabaseServer = await createClient();
 
   if (!studentId || pointsAdded <= 0) {
@@ -132,7 +135,12 @@ export async function addManualStudentPoints({
 }
 
 export async function getPointRedemptions(studentId?: string) {
-  const supabaseServer = await createClient();
+  if (studentId) {
+    await requireUserOrParent(studentId);
+  } else {
+    await requireUser();
+  }
+  const supabaseServer = getAdminClient();
   const activeBranchId = await getBranchId();
 
   try {

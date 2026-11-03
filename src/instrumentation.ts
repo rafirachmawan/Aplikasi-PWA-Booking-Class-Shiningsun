@@ -8,6 +8,7 @@ export async function register() {
   const globalWithCron = globalThis as typeof globalThis & {
     __shiningsunDailyCronStarted?: boolean;
     __shiningsunLastCronDateWib?: string;
+    __shiningsunMissingSecretWarned?: boolean;
   };
 
   if (globalWithCron.__shiningsunDailyCronStarted) return;
@@ -27,9 +28,19 @@ export async function register() {
         wibHour === 5 &&
         globalWithCron.__shiningsunLastCronDateWib !== todayWibStr
       ) {
+        // Tidak ada lagi secret cadangan yang tertulis di kode.
+        const cronSecret = process.env.CRON_SECRET;
+        if (!cronSecret) {
+          if (!globalWithCron.__shiningsunMissingSecretWarned) {
+            globalWithCron.__shiningsunMissingSecretWarned = true;
+            console.error(
+              "[VPS Cron Scheduler] CRON_SECRET belum diset — cron harian tidak dijalankan.",
+            );
+          }
+          return;
+        }
+
         globalWithCron.__shiningsunLastCronDateWib = todayWibStr;
-        const cronSecret =
-          process.env.CRON_SECRET || "shiningsun_daily_cron_secret_key_2026";
         const { GET } = await import(
           "./app/api/cron/daily-notification/route"
         );
