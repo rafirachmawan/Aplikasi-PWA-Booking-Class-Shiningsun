@@ -110,14 +110,20 @@ Agar 100% aman dan bisa diuji setiap tahapnya, refactoring nantinya dilakukan **
   - Import `@supabase/supabase-js` yang sebelumnya ada di tengah file dipindah ke atas `auth-branch.ts`.
 - [x] **Verifikasi:** skrip pembanding multiset baris → seluruh baris kode asli identik 100%; `npx tsc --noEmit` = 0 error; `npm run build` sukses. Log "Dynamic server usage" saat build sudah ada sejak sebelum refactor (bukan efek refactor).
 
-### Tahap B — Frontend (Per Halaman)
-- [x] **Langkah B0 (aman, selesai — commit `36c26a7`):** Helper murni (tanpa state/JSX) dipindah apa adanya:
+### Tahap B — Frontend (Per Halaman) ✅ SELESAI (branch `refactor/clean-code`)
+- [x] **Langkah B0 (commit `36c26a7`):** Helper murni (tanpa state/JSX) dipindah apa adanya:
   - `StudentRegistrationForm.tsx` → `studentFormUtils.ts` (`SESSION_TIME_GROUPS`, `parseSessionTime`, `parseIndonesianDate`)
   - `WorksheetFormModal.tsx` → `worksheetFormUtils.ts` (`normalizeClientTime`, `normalizeClientDate`, `parseBulletList`, `formatAnandaLine`, `compressImage`, `formatPlainLine`)
-- [ ] **Langkah B1:** Pecah `StudentRegistrationForm.tsx` & `StudentClientWrapper.tsx` → Verifikasi UI & kuota CG/Reguler tetap identik.
-- [ ] **Langkah B2:** Pecah `PointsClientWrapper.tsx` & `ParentDashboardClient.tsx` → Verifikasi UI Portal Ortu & Poin tetap identik.
-- [ ] **Langkah B3:** Pecah `SchedulingClientWrapper.tsx` → Verifikasi UI Penjadwalan tetap identik.
-- [ ] **Langkah B4:** Pecah `WorksheetFormModal.tsx` → Verifikasi UI Lembar Kerja & upload GDrive tetap identik.
+- [x] **Langkah B1 (commit `23f01af`):** Pecah `StudentClientWrapper.tsx` (1.505 → 483 baris) & `StudentRegistrationForm.tsx` (1.320 → 746 baris):
+  - `src/components/features/students/list/`: `StudentConfirmModal.tsx`, `StudentFilterToolbar.tsx`, `StudentDesktopTable.tsx`, `StudentMobileList.tsx`
+  - `src/components/features/students/form-parts/`: `StudentCgScheduleSection.tsx`, `StudentIdentitySection.tsx`, `StudentContactSection.tsx`
+- [x] **Langkah B2 (commit `83cfa9c`):** Pecah `PointsClientWrapper.tsx` (1.838 → 926 baris) & `ParentDashboardClient.tsx` (1.887 → 1.016 baris):
+  - `src/components/features/points/`: `PointsRedeemTab.tsx`, `PointsHistoryTab.tsx`, `RedeemPointsModal.tsx`, `ManualBonusPointsModal.tsx`, `PointsLockModal.tsx`, `PointHistoryModal.tsx`
+  - `src/components/features/portal/tabs/`: `ParentOverviewCard.tsx`, `ParentWorksheetSection.tsx`, `ParentPhotoCropModal.tsx`, `ParentChangePinModal.tsx`, `ParentPointsHistoryModal.tsx`
+- [x] **Langkah B3 (commit `644c8de`):** Pecah `SchedulingClientWrapper.tsx` (2.489 → 980 baris):
+  - `src/components/features/scheduling/`: `NextMonthReadinessBanner.tsx`, `SchedulingStudentSelector.tsx`, `AutoBookingForm.tsx`, `ManualBookingForm.tsx`, `SchedulingNotificationModal.tsx`, `StudentScheduleDetailModal.tsx`
+- [x] **Langkah B4:** Pecah `WorksheetFormModal.tsx` (4.161 → 2.345 baris):
+  - `src/components/features/worksheets/form-parts/`: `WorksheetBasicInfoSection.tsx`, `WorksheetAssessmentSection.tsx`, `WorksheetMediaUploader.tsx`, `WorksheetLivePreviewSection.tsx`
 
 ---
 
