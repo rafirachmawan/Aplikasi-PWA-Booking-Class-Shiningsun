@@ -102,13 +102,18 @@ Saat ini 1 file menangani form nilai, kamera langsung, upload Google Drive, komp
 
 Agar 100% aman dan bisa diuji setiap tahapnya, refactoring nantinya dilakukan **bertahap satu per satu** (bukan sekaligus semua file):
 
-### Tahap A — Backend (`src/lib/actions/`)
-- [ ] **Langkah A1:** Buat `src/lib/actions/shared-cache.ts` (pindahkan variabel cache & helper internal).
-- [ ] **Langkah A2:** Pecah fungsi ke `auth-branch.ts`, `master.ts`, dan `points.ts`, lalu *re-export* di `src/lib/actions.ts`. Jalankan `npx tsc --noEmit`.
-- [ ] **Langkah A3:** Pecah fungsi ke `dashboard.ts`, `portal.ts`, dan `worksheets.ts`, lalu *re-export* di `src/lib/actions.ts`. Jalankan `npx tsc --noEmit`.
-- [ ] **Langkah A4:** Pecah fungsi ke `students.ts` dan `schedules.ts`, lalu *re-export* di `src/lib/actions.ts`. Jalankan `npx tsc --noEmit` & `npm run build`.
+### Tahap A — Backend (`src/lib/actions/`) ✅ SELESAI (branch `refactor/clean-code`, commit `836cade`)
+- [x] **Langkah A1:** Helper internal yang dipakai lintas modul dipindah ke `src/lib/actions/_internal.ts` (`ABSENT_WORKSHEET_OR_FILTER`, `memoryPointsCache`, `normalizeScheduleTime`, `isMissingColumnError`). File ini sengaja **tanpa** `"use server"` agar helper tidak terekspos sebagai Server Action.
+- [x] **Langkah A2–A4:** Dipecah ke `auth-branch.ts`, `dashboard.ts`, `master.ts`, `schedules.ts`, `students.ts`, `worksheets.ts`, `portal.ts`, `points.ts` (masing-masing ber-`"use server"`). `src/lib/actions.ts` kini hanya barrel re-export (84 export, tanpa `"use server"`).
+- [x] **Koreksi teknis yang diterapkan:**
+  - Variabel `let` cache (`memoryLabelsCache`, `memoryTemplatesCache`, `memoryLockPasswords`) **tetap lokal** di modul yang memakainya (master / auth-branch), jadi tidak ada perubahan perilaku cache.
+  - Import `@supabase/supabase-js` yang sebelumnya ada di tengah file dipindah ke atas `auth-branch.ts`.
+- [x] **Verifikasi:** skrip pembanding multiset baris → seluruh baris kode asli identik 100%; `npx tsc --noEmit` = 0 error; `npm run build` sukses. Log "Dynamic server usage" saat build sudah ada sejak sebelum refactor (bukan efek refactor).
 
 ### Tahap B — Frontend (Per Halaman)
+- [x] **Langkah B0 (aman, selesai — commit `36c26a7`):** Helper murni (tanpa state/JSX) dipindah apa adanya:
+  - `StudentRegistrationForm.tsx` → `studentFormUtils.ts` (`SESSION_TIME_GROUPS`, `parseSessionTime`, `parseIndonesianDate`)
+  - `WorksheetFormModal.tsx` → `worksheetFormUtils.ts` (`normalizeClientTime`, `normalizeClientDate`, `parseBulletList`, `formatAnandaLine`, `compressImage`, `formatPlainLine`)
 - [ ] **Langkah B1:** Pecah `StudentRegistrationForm.tsx` & `StudentClientWrapper.tsx` → Verifikasi UI & kuota CG/Reguler tetap identik.
 - [ ] **Langkah B2:** Pecah `PointsClientWrapper.tsx` & `ParentDashboardClient.tsx` → Verifikasi UI Portal Ortu & Poin tetap identik.
 - [ ] **Langkah B3:** Pecah `SchedulingClientWrapper.tsx` → Verifikasi UI Penjadwalan tetap identik.
