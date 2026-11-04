@@ -17,6 +17,10 @@ import { Icons } from "@/components/ui/icons";
  * Shape lock: kartu 16px (rounded-2xl), kontrol 12px (rounded-xl), badge kecil 8px (rounded-lg).
  * Aksen tunggal: brand-600. Amber hanya untuk medali maskot (aset brand).
  */
+// Penanda versi untuk bantuan support: memastikan perangkat benar-benar memuat
+// build terbaru (bukan halaman lama yang masih terbuka). Aman dihapus nanti.
+const PORTAL_BUILD = "build 04-Nov-2026c";
+
 export default function ParentLoginPage() {
   const router = useRouter();
   const [studentName, setStudentName] = useState("");
@@ -751,6 +755,9 @@ export default function ParentLoginPage() {
           <div className="px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] min-[380px]:px-5 sm:px-8 lg:px-12">
             <p className="border-t border-slate-200 pt-4 text-xs text-slate-400 lg:hidden dark:border-zinc-800 dark:text-zinc-500">
               &copy; 2026 ShiningSun Preschool &amp; Academy
+              <span className="ml-1 text-slate-300 dark:text-zinc-600">
+                &middot; {PORTAL_BUILD}
+              </span>
             </p>
           </div>
         </div>

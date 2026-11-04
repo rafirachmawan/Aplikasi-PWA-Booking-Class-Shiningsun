@@ -138,6 +138,14 @@ export async function POST(req: NextRequest) {
     // Langkah 1: verifikasi nama + PIN (fungsi yang sama dengan server action).
     const result = await verifyParentAccess(name, pin, branchId || undefined);
 
+    console.log(
+      `[PORTAL] NATIVE-POST-RESULT ${JSON.stringify({
+        ok: result.success,
+        perluPilih: result.needSelection ?? false,
+        err: result.error ?? null,
+      })}`,
+    );
+
     if (result.success) {
       return NextResponse.redirect(`${origin}${BASE}/dashboard`, 303);
     }
