@@ -412,6 +412,7 @@ export async function updateStudent(id: string, formData: FormData) {
   const status = formData.get("status") as string;
   const label_id = formData.get("label_id") as string;
   const registration_date = formData.get("registration_date") as string;
+  const branch_id = formData.get("branch_id") as string;
 
   const updatePayload: any = {
     name,
@@ -423,6 +424,11 @@ export async function updateStudent(id: string, formData: FormData) {
     status,
     label_id: label_id ? label_id : null,
   };
+
+  // Khusus mutasi siswa antar-cabang oleh Superadmin
+  if (branch_id && branch_id.trim().length > 0) {
+    updatePayload.branch_id = branch_id.trim();
+  }
 
   if (gender) {
     updatePayload.gender = gender;

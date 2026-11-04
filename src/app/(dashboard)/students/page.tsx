@@ -6,6 +6,7 @@ import {
   getCurrentUserRole,
   getBranchId,
   getActiveBranchName,
+  getBranches,
 } from "@/lib/actions";
 import { StudentClientWrapper } from "./StudentClientWrapper";
 import { NoBranchSelected } from "@/components/ui/NoBranchSelected";
@@ -30,12 +31,14 @@ export default async function StudentsPage() {
 }
 
 async function StudentsData({ role }: { role: string | null }) {
-  const [initialPagination, labels, classes, activeBranchName] =
+  const isSuperadmin = role === "SUPERADMIN";
+  const [initialPagination, labels, classes, activeBranchName, branches] =
     await Promise.all([
       getPaginatedStudents({ page: 1, pageSize: 10 }),
       getLabels(),
       getClasses(),
-      role === "SUPERADMIN" ? getActiveBranchName() : Promise.resolve(null),
+      isSuperadmin ? getActiveBranchName() : Promise.resolve(null),
+      isSuperadmin ? getBranches() : Promise.resolve([]),
     ]);
 
   return (
@@ -45,6 +48,8 @@ async function StudentsData({ role }: { role: string | null }) {
       labels={labels}
       classes={classes}
       activeBranchName={activeBranchName}
+      branches={branches || []}
+      isSuperadmin={isSuperadmin}
     />
   );
 }

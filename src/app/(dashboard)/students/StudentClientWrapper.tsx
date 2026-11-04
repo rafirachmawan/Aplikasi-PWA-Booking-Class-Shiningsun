@@ -39,12 +39,16 @@ export function StudentClientWrapper({
   labels,
   classes = [],
   activeBranchName,
+  branches = [],
+  isSuperadmin = false,
 }: {
   initialStudents: any[];
   initialPagination?: PaginationState;
   labels: any[];
   classes?: any[];
   activeBranchName?: string | null;
+  branches?: Array<{ id: string; name: string }>;
+  isSuperadmin?: boolean;
 }) {
   const router = useRouter();
   const listTopRef = useRef<HTMLDivElement>(null);
@@ -453,6 +457,8 @@ export function StudentClientWrapper({
         <StudentRegistrationForm
           labels={labels}
           classes={classes}
+          branches={branches}
+          isSuperadmin={isSuperadmin}
           initialData={editingStudent}
           onClose={() => {
             setIsModalOpen(false);

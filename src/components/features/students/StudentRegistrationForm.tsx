@@ -27,6 +27,8 @@ interface StudentRegistrationFormProps {
   onClose: () => void;
   labels: Label[];
   classes?: ClassOption[];
+  branches?: Array<{ id: string; name: string }>;
+  isSuperadmin?: boolean;
   onSuccess: () => void;
   initialData?: any;
 }
@@ -35,6 +37,8 @@ export function StudentRegistrationForm({
   onClose,
   labels,
   classes = [],
+  branches = [],
+  isSuperadmin = false,
   onSuccess,
   initialData,
 }: StudentRegistrationFormProps) {
@@ -48,6 +52,7 @@ export function StudentRegistrationForm({
   );
   const [dob, setDob] = useState(initialData ? initialData.date_of_birth : "");
   const [status, setStatus] = useState(initialData ? initialData.status : "CG");
+  const [branchId, setBranchId] = useState(initialData?.branch_id || "");
   const [gender, setGender] = useState(initialData?.gender || "");
   const [labelId, setLabelId] = useState(
     initialData?.label_id ? initialData.label_id : "",
@@ -558,6 +563,36 @@ export function StudentRegistrationForm({
                     </div>
                   </div>
                 </div>
+
+                {/* Khusus Superadmin: Mutasi / Pindah Cabang Siswa */}
+                {isSuperadmin && Boolean(initialData) && branches && branches.length > 0 && (
+                  <div className="pt-3 border-t border-slate-200/80 dark:border-slate-700/60">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label htmlFor="branchSelect" className="block text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                        📍 Lokasi Unit / Cabang Siswa (Khusus Superadmin)
+                      </label>
+                      <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold px-2 py-0.5 rounded-full border border-indigo-200/60 dark:border-indigo-800/60">
+                        Mutasi Cabang
+                      </span>
+                    </div>
+                    <select
+                      id="branchSelect"
+                      value={branchId}
+                      onChange={(e) => setBranchId(e.target.value)}
+                      className="w-full text-xs font-medium rounded-xl border border-indigo-200 dark:border-indigo-800/80 bg-white dark:bg-slate-900 py-2.5 px-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
+                    >
+                      <option value="">-- Tetap di Cabang Saat Ini --</option>
+                      {branches.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          Unit {b.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                      Pindahkan siswa ini ke cabang lain tanpa menghapus riwayat lembar perkembangan & poinnya.
+                    </p>
+                  </div>
+                )}
 
                 {/* Level Dropdown (Only show if Regular) */}
                 {status === "REGISTERED" && (
