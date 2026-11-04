@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
 import { getTodayISO, isAbsentWorksheet } from "../dateUtils";
@@ -493,8 +493,31 @@ export async function confirmParentStudentSelection(
 export async function getParentSessionStudent() {
   const cookieStore = await cookies();
   const studentId = cookieStore.get("parent_student_id")?.value;
+
+  // ── DIAGNOSA SEMENTARA (portal orang tua) ────────────────────────────────
+  // Mencatat cookie apa saja yang benar-benar tiba di server. Ini membedakan:
+  //   cookieNames kosong        → cookie tidak tersimpan di perangkat sama sekali
+  //   cookieNames ada, tanpa    → cookie tersimpan tapi tidak terkirim / tertimpa
+  //   parent_student_id
+  // Hapus blok ini setelah kasus selesai.
+  let diagUserAgent = "";
+  let diagCookieNames: string[] = [];
+  try {
+    diagCookieNames = cookieStore.getAll().map((c) => c.name).sort();
+    diagUserAgent = (await headers()).get("user-agent") ?? "";
+  } catch {
+    diagCookieNames = [];
+    diagUserAgent = "";
+  }
+  const diag = {
+    cookieNames: diagCookieNames,
+    adaCookieSesi: diagCookieNames.includes("parent_student_id"),
+    ua: diagUserAgent.slice(0, 140),
+  };
+  // ─────────────────────────────────────────────────────────────────────────
+
   if (!studentId) {
-    logPortal("DASH", { tahap: "TANPA-SESSION" });
+    logPortal("DASH", { tahap: "TANPA-SESSION", alasan: "cookie-tidak-ada", ...diag });
     return null;
   }
 
@@ -536,12 +559,12 @@ export async function getParentSessionStudent() {
   }
 
   if (error || !student) {
-    logPortal("DASH", { tahap: "TANPA-SESSION", studentId, alasan: "siswa-tidak-ditemukan" });
+    logPortal("DASH", { tahap: "TANPA-SESSION", studentId, alasan: "siswa-tidak-ditemukan", pesan: error?.message, ...diag });
     return null;
   }
 
   if (student.status === "INACTIVE") {
-    logPortal("DASH", { tahap: "TANPA-SESSION", studentId, alasan: "siswa-nonaktif" });
+    logPortal("DASH", { tahap: "TANPA-SESSION", studentId, alasan: "siswa-nonaktif", ...diag });
     cookieStore.delete("parent_student_id");
     return null;
   }

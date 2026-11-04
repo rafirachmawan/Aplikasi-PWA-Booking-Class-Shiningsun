@@ -12,6 +12,23 @@ export async function proxy(request: NextRequest) {
   if (path.startsWith('/_next') || path.startsWith('/api') || path.startsWith('/public') || path.includes('.')) {
     return;
   }
+
+  // ── DIAGNOSA SEMENTARA (portal orang tua) ────────────────────────────────
+  // Kalau form login terkirim sebagai GET biasa (bukan Server Action), berarti
+  // JavaScript gagal hydrate di perangkat itu. Gejalanya: halaman "mental"
+  // kembali ke login tanpa pesan error. Baris log ini membuktikannya.
+  // Hapus blok ini setelah kasus selesai.
+  if (path.startsWith('/portal-ortu') && request.nextUrl.searchParams.has('student_name')) {
+    console.log(
+      `[PORTAL] NATIVE-SUBMIT ${new Date().toISOString()} | ${JSON.stringify({
+        path,
+        ua: request.headers.get('user-agent'),
+        accept: request.headers.get('accept'),
+      })}`,
+    );
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   return await updateSession(request)
 }
 

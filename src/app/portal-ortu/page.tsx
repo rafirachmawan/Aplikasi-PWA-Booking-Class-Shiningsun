@@ -31,6 +31,18 @@ export default function ParentLoginPage() {
   const [candidates, setCandidates] = useState<any[]>([]);
   const [needSelection, setNeedSelection] = useState(false);
   const [selectingId, setSelectingId] = useState<string | null>(null);
+  // Diagnosa sementara: penanda bahwa dashboard mengalihkan balik ke sini
+  // karena cookie sesi tidak tersimpan di perangkat (bukan nama/PIN salah).
+  const [expiredNotice, setExpiredNotice] = useState(false);
+  // Diagnosa perangkat (sementara) — membantu melacak kenapa cookie sesi tidak
+  // tersimpan di perangkat tertentu. Tidak memengaruhi alur login.
+  const [diag, setDiag] = useState<{
+    cookieEnabled: boolean;
+    cookieRoundTrip: boolean;
+    swControlled: boolean;
+    secureContext: boolean;
+    ua: string;
+  } | null>(null);
 
   useEffect(() => {
     getBranches().then((data) => {
@@ -38,6 +50,15 @@ export default function ParentLoginPage() {
         setBranches(data);
       }
     });
+  }, []);
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("expired") === "1") setExpiredNotice(true);
+    } catch {
+      // abaikan
+    }
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -112,6 +133,32 @@ export default function ParentLoginPage() {
     setNeedSelection(false);
     setSelectingId(null);
     setErrorMsg("");
+  };
+
+  // Diagnosa perangkat (sementara). Hanya membaca/menulis cookie uji milik
+  // halaman ini sendiri, tidak menyentuh cookie sesi.
+  const runDeviceDiagnostics = () => {
+    let cookieRoundTrip = false;
+    let cookieEnabled = false;
+    let swControlled = false;
+    try {
+      cookieEnabled = !!navigator.cookieEnabled;
+      const testName = "_ss_diag";
+      document.cookie = `${testName}=1; path=/; max-age=60; SameSite=Lax`;
+      cookieRoundTrip = document.cookie.split(";").some((c) => c.trim().startsWith(`${testName}=1`));
+      document.cookie = `${testName}=; path=/; max-age=0; SameSite=Lax`;
+      swControlled =
+        "serviceWorker" in navigator && !!navigator.serviceWorker.controller;
+    } catch {
+      cookieRoundTrip = false;
+    }
+    setDiag({
+      cookieEnabled,
+      cookieRoundTrip,
+      swControlled,
+      secureContext: typeof window !== "undefined" ? window.isSecureContext : false,
+      ua: navigator.userAgent,
+    });
   };
 
   return (
@@ -224,6 +271,22 @@ export default function ParentLoginPage() {
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
+              {expiredNotice && (
+                <div
+                  role="status"
+                  className="flex gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs font-medium text-amber-700 dark:text-amber-400"
+                >
+                  <Icons.alertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    Nama dan PIN Anda benar, tetapi <strong>sesi tidak
+                    tersimpan di perangkat ini</strong>. Coba: (1) buka di Safari
+                    biasa, bukan dari aplikasi lain, (2) matikan &ldquo;Blokir
+                    Semua Cookie&rdquo;, (3) hapus lalu install ulang aplikasi.
+                    Buka menu <em>Diagnosa perangkat</em> di bawah untuk detail.
+                  </span>
+                </div>
+              )}
+
               {errorMsg && (
                 <div
                   role="alert"
@@ -620,6 +683,51 @@ export default function ParentLoginPage() {
 
             {/* Footer Install PWA Button & Copyright */}
             <div className="mt-6 space-y-2 border-t border-slate-200 pt-4 text-center dark:border-zinc-800">
+              {/* Diagnosa perangkat (sementara) — hapus setelah kasus selesai */}
+              <details className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-left dark:border-zinc-800 dark:bg-zinc-900/60">
+                <summary className="cursor-pointer list-none text-xs font-semibold text-slate-600 dark:text-zinc-300">
+                  Diagnosa perangkat
+                </summary>
+                <div className="mt-2 space-y-2">
+                  <p className="text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400">
+                    Tekan tombol, lalu tunjukkan hasilnya ke admin sekolah.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={runDeviceDiagnostics}
+                    className="min-h-9 w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  >
+                    Jalankan diagnosa
+                  </button>
+                  {diag && (
+                    <dl className="space-y-1 rounded-lg bg-white p-2.5 text-[11px] dark:bg-zinc-950/60">
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-slate-500 dark:text-zinc-400">Cookie aktif</dt>
+                        <dd className="font-bold">{diag.cookieEnabled ? "YA" : "TIDAK"}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-slate-500 dark:text-zinc-400">Cookie bisa ditulis</dt>
+                        <dd className="font-bold">{diag.cookieRoundTrip ? "YA" : "TIDAK"}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-slate-500 dark:text-zinc-400">Mode HTTPS aman</dt>
+                        <dd className="font-bold">{diag.secureContext ? "YA" : "TIDAK"}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-slate-500 dark:text-zinc-400">Cache aplikasi aktif</dt>
+                        <dd className="font-bold">{diag.swControlled ? "YA" : "TIDAK"}</dd>
+                      </div>
+                      <div className="pt-1">
+                        <dt className="text-slate-500 dark:text-zinc-400">Perangkat</dt>
+                        <dd className="mt-0.5 break-words font-mono text-[10px] leading-snug">
+                          {diag.ua}
+                        </dd>
+                      </div>
+                    </dl>
+                  )}
+                </div>
+              </details>
+
               <InstallPWAButton />
               <p className="pb-1 text-xs text-slate-400 dark:text-zinc-500">
                 &copy; 2026 ShiningSun. All rights reserved.

@@ -29,7 +29,9 @@ export default async function ParentDashboardPage() {
 
   if (!student) {
     logPortalDashboard({ tahap: "TANPA-SESSION", hasil: "redirect-ke-login" });
-    redirect("/portal-ortu");
+    // Diagnosa sementara: bawa penanda supaya halaman login bisa menjelaskan
+    // ke orang tua bahwa sesi tidak tersimpan (bukan nama/PIN salah).
+    redirect("/portal-ortu?expired=1");
   }
 
   const [
