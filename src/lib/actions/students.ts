@@ -438,7 +438,7 @@ export async function updateStudent(id: string, formData: FormData) {
     updatePayload.registration_date = registration_date;
   }
 
-  const supabaseServer = await createClient();
+  const supabaseServer = process.env.SUPABASE_SERVICE_ROLE_KEY ? getAdminClient() : await createClient();
 
   // Tandai promosi CG -> REGISTERED agar periode CG tidak masuk overdue.
   // Read-only untuk cek status lama, tidak menambah data baru.
@@ -506,6 +506,33 @@ export async function updateStudent(id: string, formData: FormData) {
   }
 
   if (error) throw new Error(error.message);
+  
+  // Jika ada mutasi cabang siswa oleh Superadmin, sinkronkan data turunan & refresh cache
+  if (updatePayload.branch_id) {
+    try {
+      await Promise.all([
+        supabaseServer
+          .from("student_worksheets")
+          .update({ branch_id: updatePayload.branch_id })
+          .eq("student_id", id),
+        supabaseServer
+          .from("student_point_redemptions")
+          .update({ branch_id: updatePayload.branch_id })
+          .eq("student_id", id),
+      ]);
+    } catch (syncErr) {
+      console.warn("Notice: sync branch_id on worksheets/redemptions:", syncErr);
+    }
+
+    memoryPointsCache.clear();
+  }
+
+  revalidatePath("/students");
+  revalidatePath("/worksheets");
+  revalidatePath("/points");
+  revalidatePath("/schedule");
+  revalidatePath("/portal-ortu/dashboard");
+  revalidatePath("/dashboard");
   return true;
 }
 
