@@ -56,6 +56,9 @@ export default function ParentLoginPage() {
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("expired") === "1") setExpiredNotice(true);
+      // Pesan error dari fallback native (POST /portal-ortu/masuk).
+      const err = params.get("err");
+      if (err) setErrorMsg(err);
     } catch {
       // abaikan
     }
@@ -270,7 +273,16 @@ export default function ParentLoginPage() {
               </p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form
+              onSubmit={handleLogin}
+              action="/portal-ortu/masuk"
+              method="post"
+              className="space-y-4"
+            >
+              {/* Fallback native: hanya terpakai kalau JavaScript gagal hydrate
+                  di perangkat. Saat JS hidup, onSubmit + preventDefault tetap
+                  memakai server action seperti sebelumnya. */}
+              <input type="hidden" name="branch_id" value={selectedBranchId} />
               {expiredNotice && (
                 <div
                   role="status"
