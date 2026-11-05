@@ -9,6 +9,7 @@ import { getBranchId } from "./auth-branch";
 import { getStudentScheduleMap } from "./schedules";
 import { getStudents } from "./students";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { logActivity } from "@/lib/logger";
 
 export async function getWorksheetsByBranch(studentId?: string, limit: number = 100) {
   await requireUser();
@@ -139,7 +140,7 @@ function isSlotDuplicate(
     // 3. Jika keduanya sama-sama tidak memiliki slot & tidak memiliki jam
     // (laporan umum tanggal yang sama tanpa konteks jam)
     if (!newSlot && !newTime && !wSlot && !wTime) {
-      return true;
+    return true;
     }
 
     // Sesi dengan jam berbeda tidak dianggap duplikat (siswa boleh les 2 sesi sehari)
@@ -382,6 +383,12 @@ export async function createWorksheet(formData: FormData) {
 
   memoryPointsCache.clear();
   revalidatePath("/points");
+  logActivity("WORKSHEET", "Lembar kerja baru disimpan", {
+    student_id,
+    tanggal: worksheet_date,
+    materi: materi || title,
+    hadir: !isAbsentWorksheet({ materi, title, kegiatan, hasil_belajar }),
+  });
   return true;
 }
 
@@ -593,6 +600,11 @@ export async function updateWorksheet(id: string, formData: FormData) {
 
   memoryPointsCache.clear();
   revalidatePath("/points");
+  logActivity("WORKSHEET", "Lembar kerja diperbarui", {
+    id,
+    tanggal: worksheet_date,
+    materi: materi || title,
+  });
   return true;
 }
 
@@ -611,6 +623,7 @@ export async function deleteWorksheet(id: string) {
 
   memoryPointsCache.clear();
   revalidatePath("/points");
+  logActivity("WORKSHEET", "Lembar kerja dihapus", { id });
   return true;
 }
 
@@ -640,6 +653,10 @@ export async function deleteWorksheetMonth(
 
   memoryPointsCache.clear();
   revalidatePath("/points");
+  logActivity("WORKSHEET", "Lembar kerja sebulan dihapus", {
+    student_id: studentId,
+    bulan_ke: bulanKe,
+  });
   return true;
 }
 

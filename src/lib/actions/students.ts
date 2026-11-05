@@ -8,6 +8,7 @@ import { ABSENT_WORKSHEET_OR_FILTER, memoryPointsCache, isMissingColumnError, re
 import { getBranchId } from "./auth-branch";
 import { getStudentScheduleMap, bookStudentManual } from "./schedules";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { logActivity } from "@/lib/logger";
 
 const POINTS_CACHE_TTL = 2 * 60 * 1000; // 2 menit cache in-memory untuk poin siswa
 export async function getStudents(options?: {
@@ -320,6 +321,13 @@ export async function createStudent(formData: FormData) {
     }
   }
 
+  logActivity("STUDENT", "Siswa baru terdaftar", {
+    id: newStudentId,
+    nama: name,
+    panggilan: nickname,
+    status,
+    cabang: insertPayload.branch_id,
+  });
   return newStudentId || true;
 }
 
@@ -333,6 +341,7 @@ export async function deleteStudent(id: string) {
   const { error } = await supabaseServer.from("students").delete().eq("id", id);
 
   if (error) throw new Error(error.message);
+  logActivity("STUDENT", "Siswa dihapus", { id });
   return true;
 }
 
@@ -533,6 +542,12 @@ export async function updateStudent(id: string, formData: FormData) {
   revalidatePath("/schedule");
   revalidatePath("/portal-ortu/dashboard");
   revalidatePath("/dashboard");
+  logActivity("STUDENT", updatePayload.branch_id ? "Mutasi cabang siswa" : "Data siswa diperbarui", {
+    id,
+    nama: name,
+    mutasi_cabang: updatePayload.branch_id || undefined,
+    status,
+  });
   return true;
 }
 

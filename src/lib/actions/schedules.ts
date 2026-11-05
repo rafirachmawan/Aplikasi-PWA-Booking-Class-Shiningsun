@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getTodayISO } from "../dateUtils";
 import { getBranchId } from "./auth-branch";
 import { requireUser } from "./_internal";
+import { logActivity } from "@/lib/logger";
 
 const DAYS_INDONESIAN = [
   "Minggu",
@@ -471,6 +472,11 @@ export async function bookStudentManual(
     .insert({ student_id: studentId, schedule_slot_id: slotId });
 
   if (bookErr) throw new Error("Gagal mem-booking siswa: " + bookErr.message);
+  logActivity("SCHEDULE", "Booking sesi siswa", {
+    student_id: studentId,
+    tanggal: dateStr,
+    jam: time,
+  });
   return true;
 }
 
@@ -487,6 +493,10 @@ export async function removeStudentBooking(
     .eq("student_id", studentId);
 
   if (error) throw new Error("Gagal menghapus jadwal: " + error.message);
+  logActivity("SCHEDULE", "Batal booking sesi", {
+    student_id: studentId,
+    slot_id: scheduleSlotId,
+  });
   return true;
 }
 

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { syncUserIdentity } from '@/lib/actions';
+import { logActivity } from '@/lib/logger';
 
 export async function login(email: string, password: string, rememberMe: boolean = true) {
   const cookieStore = await cookies();
@@ -22,6 +23,7 @@ export async function login(email: string, password: string, rememberMe: boolean
   });
 
   if (error) {
+    logActivity("AUTH-ADMIN", "Login gagal", { email, error: error.message });
     return { success: false, error: error.message };
   }
 
@@ -35,6 +37,7 @@ export async function login(email: string, password: string, rememberMe: boolean
     console.error("syncUserIdentity failed during login:", err);
   }
 
+  logActivity("AUTH-ADMIN", "Login berhasil", { email });
   return { success: true };
 }
 
@@ -47,5 +50,6 @@ export async function logout() {
   cookieStore.delete('remember_me');
   
   await supabase.auth.signOut();
+  logActivity("AUTH-ADMIN", "Logout admin");
   return { success: true };
 }

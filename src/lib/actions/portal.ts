@@ -8,6 +8,7 @@ import { getStudentScheduleMap } from "./schedules";
 import { getWorksheetsByStudent } from "./worksheets";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrParent } from "./_internal";
+import { logActivity } from "@/lib/logger";
 
 // ── Log diagnostik Portal Orang Tua ────────────────────────────────────────
 // Sementara dipakai untuk menelusuri laporan client "halaman gagal dimuat".
@@ -34,6 +35,23 @@ function logPortal(
     console.log(
       `[PORTAL] ${stage} ${new Date().toISOString()} | ${JSON.stringify(detail)}`,
     );
+    if (stage === "LOGIN" && detail.tahap === "COCOK") {
+      logActivity("PORTAL-ORTU", "Login berhasil", {
+        siswa: detail.nama,
+        id: detail.studentId,
+        level: detail.level,
+      });
+    } else if (stage === "LOGIN" && detail.tahap === "GAGAL") {
+      logActivity("PORTAL-ORTU", "Login gagal", {
+        nama: detail.nama,
+        alasan: detail.alasan,
+      });
+    } else if (stage === "LOGIN-PILIH") {
+      logActivity("PORTAL-ORTU", "Pilih siswa (ganda)", {
+        siswa: detail.nama,
+        id: detail.studentId,
+      });
+    }
   } catch (e) {
     // logger tidak boleh pernah mengganggu alur portal
   }

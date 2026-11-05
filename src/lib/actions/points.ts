@@ -7,6 +7,7 @@ import { isAbsentWorksheet } from "../dateUtils";
 import { memoryPointsCache, requireUser, requireUserOrParent } from "./_internal";
 import { getBranchId } from "./auth-branch";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { logActivity } from "@/lib/logger";
 
 export async function redeemStudentPoints({
   studentId,
@@ -81,6 +82,11 @@ export async function redeemStudentPoints({
   revalidatePath("/points");
   revalidatePath("/students");
   revalidatePath("/portal-ortu/dashboard");
+  logActivity("POINT", "Tukar poin", {
+    student_id: studentId,
+    poin_dipotong: pointsDeducted,
+    hadiah: rewardNote?.trim() || "Penukaran Hadiah",
+  });
   return redemption;
 }
 
@@ -131,6 +137,11 @@ export async function addManualStudentPoints({
   revalidatePath("/points");
   revalidatePath("/students");
   revalidatePath("/portal-ortu/dashboard");
+  logActivity("POINT", "Tambah poin manual", {
+    student_id: studentId,
+    poin_ditambah: pointsAdded,
+    catatan: note?.trim(),
+  });
   return record;
 }
 

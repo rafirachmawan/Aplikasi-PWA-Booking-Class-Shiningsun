@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { logActivity } from '@/lib/logger'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -92,6 +93,7 @@ export async function updateSession(request: NextRequest) {
 
     // Redirect to dashboard if logged in and trying to access /login
     if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/login-basic'))) {
+      logActivity("AUTH-ADMIN", "User terautentikasi -> diarahkan ke Dashboard", { email: user.email });
       return redirectWithCookies('/dashboard')
     }
 
