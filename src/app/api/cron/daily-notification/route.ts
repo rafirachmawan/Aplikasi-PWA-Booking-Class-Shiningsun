@@ -183,7 +183,6 @@ export async function GET(req: Request) {
         `
         id, name, nickname, status, branch_id,
         schedule_student (
-          slot_id,
           schedule_slots ( id, date, time, branch_id )
         )
       `,

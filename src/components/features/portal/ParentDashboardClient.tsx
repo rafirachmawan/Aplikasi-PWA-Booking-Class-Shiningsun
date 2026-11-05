@@ -133,20 +133,12 @@ export function ParentDashboardClient({
   const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false);
 
   // Determine if should show full dashboard (or only birthday card)
-  // Jika belum loading → selalu tampilkan dulu untuk prevent blank screen
   const shouldShowFullDashboard = useMemo(() => {
-    const hasBirthdayToday = birthdayData !== null;
+    if (loadingBirthday) return false;
+    const hasBirthday = birthdayData !== null;
     const submitted = hasSubmittedFeedback;
-
-    console.log(
-      "[Dashboard Logic] birthdayData:",
-      hasBirthdayToday ? "YES" : "NO",
-      "submitted:",
-      submitted ? "TRUE" : "FALSE",
-    );
-
-    return !hasBirthdayToday || submitted;
-  }, [birthdayData, hasSubmittedFeedback]);
+    return !hasBirthday || submitted;
+  }, [loadingBirthday, birthdayData, hasSubmittedFeedback]);
 
   // Log for debugging
   useEffect(() => {
@@ -159,95 +151,74 @@ export function ParentDashboardClient({
 
   useEffect(() => {
     const fetchBirthdayGreeting = async () => {
-      let isBirthdayTodayLocal = false;
       try {
-        // Skip fetching if no student data
         if (!student?.id || !student?.date_of_birth) {
-          console.log("❌ No student data or date_of_birth");
           setLoadingBirthday(false);
           return;
         }
 
-        console.log(`🔍 Checking birthday for: ${student.name}`);
-        console.log(`📅 Student DOB: ${student.date_of_birth}`);
-
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
         const dob = new Date(student.date_of_birth);
-        const birthMonth = dob.getMonth() + 1;
+        const birthMonth = dob.getMonth(); // 0-indexed
         const birthDay = dob.getDate();
 
-        console.log(
-          `📅 Today: ${today.toDateString()} (Month: ${today.getMonth() + 1}, Day: ${today.getDate()})`,
-        );
-        console.log(`🎂 Birth Month: ${birthMonth}, Birth Day: ${birthDay}`);
+        // Cari ulang tahun terdekat (bisa hari ini atau yang baru saja lewat dalam 30 hari)
+        let latestBirthday = new Date(today.getFullYear(), birthMonth, birthDay);
+        latestBirthday.setHours(0, 0, 0, 0);
+        if (today.getTime() < latestBirthday.getTime()) {
+          latestBirthday = new Date(today.getFullYear() - 1, birthMonth, birthDay);
+          latestBirthday.setHours(0, 0, 0, 0);
+        }
 
-        // Check if today IS their birthday
-        const isTodayBirthday =
-          today.getMonth() + 1 === birthMonth && today.getDate() === birthDay;
-        isBirthdayTodayLocal = isTodayBirthday;
+        const diffMs = today.getTime() - latestBirthday.getTime();
+        const daysSinceBirthday = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const isWithinBirthdayWindow = daysSinceBirthday >= 0 && daysSinceBirthday <= 30;
 
-        console.log(`✅ Is today birthday: ${isTodayBirthday}`);
+        if (isWithinBirthdayWindow) {
+          // Cek apakah feedback sudah diisi untuk perayaan ultah siklus ini
+          const feedbackResponse = await fetch(
+            `/api/student-feedback?student_id=${student.id}`,
+          );
+          const feedbackResult = await feedbackResponse.json();
 
-        if (isTodayBirthday) {
-          // Calculate age
-          let age = today.getFullYear() - dob.getFullYear();
-          const monthDiff = today.getMonth() - dob.getMonth();
-          if (
-            monthDiff < 0 ||
-            (monthDiff === 0 && today.getDate() < dob.getDate())
-          ) {
-            age--;
+          const birthdayThreshold = latestBirthday.getTime() - 24 * 60 * 60 * 1000;
+          let hasSubmittedCurrentCycle = false;
+
+          if (feedbackResult.success && feedbackResult.feedbacks && feedbackResult.feedbacks.length > 0) {
+            const lastSubmittedAt = new Date(feedbackResult.feedbacks[0].submitted_at).getTime();
+            if (lastSubmittedAt >= birthdayThreshold) {
+              hasSubmittedCurrentCycle = true;
+            }
           }
 
-          const birthdayStudent = {
-            ...student,
-            age: age > 0 ? age : 0,
-            is_today_birthday: true,
-            days_until_birthday: 0,
-          };
+          if (hasSubmittedCurrentCycle) {
+            setBirthdayData(null);
+            setHasSubmittedFeedback(true);
+          } else {
+            let age = latestBirthday.getFullYear() - dob.getFullYear();
+            if (age <= 0) age = 1;
 
-          setBirthdayData(birthdayStudent);
-          console.log(`✅ Birthday card will show!`);
+            const birthdayStudent = {
+              ...student,
+              age,
+              is_today_birthday: daysSinceBirthday === 0,
+              days_until_birthday: 0,
+            };
+
+            setBirthdayData(birthdayStudent);
+            setHasSubmittedFeedback(false);
+          }
         } else {
           setBirthdayData(null);
-          console.log(`❌ Not today's birthday`);
+          setHasSubmittedFeedback(true);
         }
       } catch (error) {
-        console.error("Error checking birthday:", error);
+        console.error("Error checking birthday greeting:", error);
+        setBirthdayData(null);
+        setHasSubmittedFeedback(true);
       } finally {
         setLoadingBirthday(false);
-
-        // Check if feedback already submitted HANYA jika hari ini ulang tahun siswa
-        const studentIdToCheck = isBirthdayTodayLocal ? student?.id : null;
-        if (studentIdToCheck) {
-          try {
-            console.log(
-              `[Dashboard] Checking feedback for student: ${studentIdToCheck}`,
-            );
-            const feedbackResponse = await fetch(
-              `/api/student-feedback?student_id=${studentIdToCheck}`,
-            );
-            const feedbackResult = await feedbackResponse.json();
-
-            if (feedbackResult.success && feedbackResult.feedbacks.length > 0) {
-              setHasSubmittedFeedback(true);
-              console.log("✅ Has submitted feedback, can show dashboard");
-            } else {
-              setHasSubmittedFeedback(false);
-              console.log(
-                "❌ No feedback yet, will block dashboard only on birthday",
-              );
-            }
-          } catch (err) {
-            console.error("Error checking feedback status:", err);
-            // Jika error, default show full dashboard
-            setHasSubmittedFeedback(true);
-          }
-        } else {
-          // No birthday data → show full dashboard immediately
-          setHasSubmittedFeedback(true);
-          console.log("📊 No birthday today, showing full dashboard");
-        }
       }
     };
 
@@ -624,19 +595,22 @@ export function ParentDashboardClient({
       </header>
 
       {/* Main Content Container */}
-      {!shouldShowFullDashboard && birthdayData ? (
+      {loadingBirthday ? (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-4 border-brand-500 border-t-transparent"></div>
+          <p className="text-xs text-gray-500 font-medium">Memuat data portal...</p>
+        </div>
+      ) : !shouldShowFullDashboard && birthdayData ? (
         /* ONLY BIRTHDAY CARD - Hide everything else until feedback submitted */
         <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 pb-8">
-          {loadingBirthday ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-500 border-t-transparent"></div>
-            </div>
-          ) : (
-            <BirthdayGreetingCard
-              student={birthdayData}
-              parentUserId={student.id}
-            />
-          )}
+          <BirthdayGreetingCard
+            student={birthdayData}
+            parentUserId={student.id}
+            onFeedbackSubmitted={() => {
+              setHasSubmittedFeedback(true);
+              setBirthdayData(null);
+            }}
+          />
         </div>
       ) : (
         /* SHOW FULL DASHBOARD */
@@ -662,7 +636,11 @@ export function ParentDashboardClient({
             <div>
               <BirthdayGreetingCard
                 student={birthdayData}
-                parentUserId={student.id} // Pass student ID as parent user id for this demo
+                parentUserId={student.id}
+                onFeedbackSubmitted={() => {
+                  setHasSubmittedFeedback(true);
+                  setBirthdayData(null);
+                }}
               />
 
               {/* Hapus semua konten lain sampai feedback dikirim */}

@@ -33,7 +33,27 @@ export function getAdminClient(): SupabaseClient {
         detectSessionInUrl: false,
       },
       global: {
-        fetch: (url, options) => fetch(url, { ...options, cache: "no-store" }),
+        fetch: async (url, options) => {
+          let retries = 2;
+          while (retries > 0) {
+            try {
+              return await fetch(url, { ...options, cache: "no-store" });
+            } catch (err: any) {
+              const isNetErr =
+                err?.code === "ECONNRESET" ||
+                err?.message?.includes("ECONNRESET") ||
+                err?.message?.includes("terminated") ||
+                err?.message?.includes("fetch failed");
+              if (isNetErr && retries > 1) {
+                retries--;
+                await new Promise((r) => setTimeout(r, 200));
+                continue;
+              }
+              throw err;
+            }
+          }
+          return await fetch(url, { ...options, cache: "no-store" });
+        },
       },
     });
   }

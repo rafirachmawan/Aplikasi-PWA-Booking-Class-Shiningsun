@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 // Internal helpers shared between action modules.
 // Intentionally NOT a "use server" file so these helpers are never exposed as Server Actions.
 
@@ -59,7 +60,9 @@ export async function requireUser() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("UNAUTHORIZED");
+  if (!user) {
+    redirect("/login");
+  }
   return user;
 }
 
@@ -76,7 +79,7 @@ export async function requireUserOrParent(studentId: string) {
   if (parentStudentId && parentStudentId === studentId) {
     return { kind: "parent" as const, user: null };
   }
-  throw new Error("UNAUTHORIZED");
+  redirect("/portal-ortu");
 }
 
 /** Boleh admin login ATAU portal ortu bila siswa sesi ada di daftar ids. */
@@ -92,5 +95,5 @@ export async function requireUserOrParentOfAny(studentIds: string[]) {
   if (parentStudentId && studentIds.includes(parentStudentId)) {
     return { kind: "parent" as const, user: null };
   }
-  throw new Error("UNAUTHORIZED");
+  redirect("/portal-ortu");
 }

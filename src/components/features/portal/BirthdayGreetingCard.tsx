@@ -23,7 +23,8 @@ interface Template {
 
 interface BirthdayGreetingCardProps {
   student: Student;
-  parentUserId?: string; // Add parent user ID from session
+  parentUserId?: string;
+  onFeedbackSubmitted?: () => void;
 }
 
 // Replace template variables with actual values
@@ -51,6 +52,7 @@ const replaceTemplateVariables = (
 export function BirthdayGreetingCard({
   student,
   parentUserId: incomingParentUserId,
+  onFeedbackSubmitted,
 }: BirthdayGreetingCardProps) {
   const [mounted, setMounted] = useState(false);
   const [template, setTemplate] = useState<Template | null>(null);
@@ -179,6 +181,7 @@ export function BirthdayGreetingCard({
       // Clear form and hide it
       setFeedbackMessage("");
       setShowFeedbackForm(false);
+      onFeedbackSubmitted?.();
 
       // Clear sessionStorage
       sessionStorage.removeItem(`feedback_${student.id}`);
@@ -201,29 +204,37 @@ export function BirthdayGreetingCard({
       const result = await response.json();
 
       if (result.success && result.feedbacks && result.feedbacks.length > 0) {
-        // Has real feedback in database
-        console.log(
-          "[BirthdayCard] Found real feedback in database:",
-          result.feedbacks.length,
-        );
-        setHasSubmitted(true);
-
-        // Sync with session storage
-        sessionStorage.setItem(`submitted_feedback_${student.id}`, "true");
-        if (result.feedbacks[0].message) {
-          sessionStorage.setItem(
-            `feedback_${student.id}`,
-            result.feedbacks[0].message,
-          );
-          setFeedbackMessage(result.feedbacks[0].message);
+        const dob = new Date(student.date_of_birth);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let latestBirthday = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
+        latestBirthday.setHours(0, 0, 0, 0);
+        if (today.getTime() < latestBirthday.getTime()) {
+          latestBirthday = new Date(today.getFullYear() - 1, dob.getMonth(), dob.getDate());
+          latestBirthday.setHours(0, 0, 0, 0);
         }
-      } else {
-        // No feedback in database - clear old session storage
-        console.log("[BirthdayCard] No feedback in database, will show card");
-        setHasSubmitted(false);
-        sessionStorage.removeItem(`submitted_feedback_${student.id}`);
-        sessionStorage.removeItem(`feedback_${student.id}`);
+        const birthdayThreshold = latestBirthday.getTime() - 24 * 60 * 60 * 1000;
+        const lastSubmittedAt = new Date(result.feedbacks[0].submitted_at).getTime();
+
+        if (lastSubmittedAt >= birthdayThreshold) {
+          console.log("[BirthdayCard] Found valid feedback for current birthday cycle");
+          setHasSubmitted(true);
+          sessionStorage.setItem(`submitted_feedback_${student.id}`, "true");
+          if (result.feedbacks[0].message) {
+            sessionStorage.setItem(
+              `feedback_${student.id}`,
+              result.feedbacks[0].message,
+            );
+            setFeedbackMessage(result.feedbacks[0].message);
+          }
+          return;
+        }
       }
+
+      console.log("[BirthdayCard] No feedback for current cycle, card remains blocking");
+      setHasSubmitted(false);
+      sessionStorage.removeItem(`submitted_feedback_${student.id}`);
+      sessionStorage.removeItem(`feedback_${student.id}`);
     } catch (err) {
       console.error("[BirthdayCard] Error checking database:", err);
     } finally {
@@ -253,27 +264,18 @@ export function BirthdayGreetingCard({
   ];
   const birthMonth = birthMonthNames[dob.getMonth()];
 
-  // Use custom template or default message (only for today's birthday)
+  // Use custom template or default message
   let greetingMessage: string | null = null;
   if (template && !loadingTemplate) {
-    // Only show greeting when it's their birthday day
-    if (student.is_today_birthday) {
-      greetingMessage = replaceTemplateVariables(
-        template.greeting_text,
-        student,
-        birthDay,
-        birthMonth,
-      );
-    } else {
-      greetingMessage = null; // No message for upcoming birthdays
-    }
+    greetingMessage = replaceTemplateVariables(
+      template.greeting_text,
+      student,
+      birthDay,
+      birthMonth,
+    );
   } else {
     // Fallback to default message
-    if (student.is_today_birthday) {
-      greetingMessage = `🎉 Selamat Ulang Tahun yang ke-${student.age} tahun, ${student.name}! Semoga makin hebat dan ceria selalu ya! 🎈`;
-    } else {
-      greetingMessage = null;
-    }
+    greetingMessage = `🎉 Selamat Ulang Tahun yang ke-${student.age} tahun, ${student.name}! Semoga makin hebat dan ceria selalu ya! 🎈`;
   }
 
   // Hide card if no greeting message (for upcoming birthdays)
@@ -297,7 +299,7 @@ export function BirthdayGreetingCard({
         <div className="relative z-10 w-full max-w-sm">
           <div className="flex justify-center mb-3">
             <span className="text-[10px] font-bold tracking-wider uppercase bg-amber-400 text-amber-950 px-3 py-1 rounded-lg">
-              Spesial Hari Ini
+              {student.is_today_birthday ? "Spesial Hari Ini" : "Momen Ulang Tahun"}
             </span>
           </div>
 
@@ -347,11 +349,9 @@ export function BirthdayGreetingCard({
                     {birthDay} {birthMonth}
                   </span>
                 </span>
-                {student.is_today_birthday && (
-                  <span className="text-amber-300 font-bold tabular-nums">
-                    Umur {student.age} tahun
-                  </span>
-                )}
+                <span className="text-amber-300 font-bold tabular-nums">
+                  Umur {student.age} tahun
+                </span>
               </div>
             </div>
 
@@ -361,15 +361,13 @@ export function BirthdayGreetingCard({
             </p>
 
             {/* Motivational Footer */}
-            {student.is_today_birthday && (
-              <div className="my-4 px-4 sm:px-6 w-full">
-                <div className="bg-white/10 rounded-xl p-4 border-l-4 border-amber-400">
-                  <p className="text-sm sm:text-base text-white/95 italic leading-relaxed">
-                    "{motivationalQuote.replace(/"/g, "")}"
-                  </p>
-                </div>
+            <div className="my-4 px-4 sm:px-6 w-full">
+              <div className="bg-white/10 rounded-xl p-4 border-l-4 border-amber-400">
+                <p className="text-sm sm:text-base text-white/95 italic leading-relaxed">
+                  "{motivationalQuote.replace(/"/g, "")}"
+                </p>
               </div>
-            )}
+            </div>
 
             {/* Blocking Feedback Section - Must submit */}
             <div className="mt-4 pt-4 border-t border-white/20 w-full">
