@@ -467,7 +467,7 @@ export function LoginForm() {
               </>
             ) : (
               <>
-                Masuk ke Dashboard Admin
+                Login
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="15"
