@@ -49,7 +49,9 @@ export async function logout() {
   cookieStore.delete('superadmin_branch_id');
   cookieStore.delete('remember_me');
   
-  await supabase.auth.signOut();
+  // scope 'local': hanya logout perangkat ini. Default Supabase 'global'
+  // mencabut sesi akun cabang di SEMUA perangkat guru lain yang memakai akun sama.
+  await supabase.auth.signOut({ scope: "local" });
   logActivity("AUTH-ADMIN", "Logout admin");
   return { success: true };
 }

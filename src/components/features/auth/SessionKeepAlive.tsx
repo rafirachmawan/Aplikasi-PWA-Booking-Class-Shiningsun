@@ -123,8 +123,8 @@ export function SessionKeepAlive() {
             setShowWarning(false);
           }
           
-          // Auto-refresh if less than 10 minutes left
-          if (timeUntilExpiry < 10 * 60 * 1000) {
+          // Auto-refresh if less than 15 minutes left
+          if (timeUntilExpiry < 15 * 60 * 1000) {
             await supabase.auth.refreshSession();
             if (!disposed) {
               console.log('✅ Session auto-refreshed (token expiring soon)');
@@ -146,7 +146,7 @@ export function SessionKeepAlive() {
       }
     };
 
-    // Proactive refresh every 45 minutes (safely before 1 hour expiry)
+    // Proactive refresh setiap 3 jam (selaras dengan access token Supabase 8 jam)
     const proactiveRefresh = setInterval(async () => {
       if (!disposed && supabase) {
         setIsRefreshing(true);
@@ -154,7 +154,7 @@ export function SessionKeepAlive() {
           const { data } = await supabase.auth.getSession();
           if (data.session) {
             await supabase.auth.refreshSession();
-            console.log('✅ Proactive session refresh (45-minute interval)');
+            console.log('✅ Proactive session refresh (3-hour interval)');
           }
         } catch (error) {
           console.debug('Proactive refresh failed:', error);
@@ -162,13 +162,13 @@ export function SessionKeepAlive() {
           setIsRefreshing(false);
         }
       }
-    }, 45 * 60 * 1000); // 45 minutes
+    }, 3 * 60 * 60 * 1000); // 3 jam
 
     // Initial check
     maybeRefresh();
     
-    // Periodic check every 10 minutes (backup to proactive refresh)
-    const interval = setInterval(maybeRefresh, 10 * 60 * 1000);
+    // Periodic check setiap 15 menit (backup ke proactive refresh)
+    const interval = setInterval(maybeRefresh, 15 * 60 * 1000);
     
     // Listen for visibility changes
     window.addEventListener("focus", onWake);
