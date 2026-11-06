@@ -159,16 +159,31 @@ export function WorksheetMediaUploader({
               Foto gagal tidak menghalangi Simpan — laporan tetap bisa
               disimpan dulu, foto bisa diunggah ulang / paste link manual.
             </div>
-            {/* Tombol Coba Lagi — hanya muncul jika tidak sedang upload & masih ada file */}
+            {/* Tombol Coba Lagi / Login Ulang — hanya muncul jika tidak sedang upload & masih ada file */}
             {!isUploadingGDrive && selectedFile && (
-              <button
-                type="button"
-                onClick={() => handleUploadToGDrive()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-bold text-[11px] transition-colors shadow-xs"
-              >
-                <span>🔄</span>
-                <span>Coba Upload Lagi</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {(uploadError.includes("Sesi login") ||
+                  uploadError.toLowerCase().includes("unauthorized") ||
+                  uploadError.toLowerCase().includes("sesi")) && (
+                  <a
+                    href="/login"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] transition-colors shadow-xs"
+                  >
+                    <span>🔑</span>
+                    <span>Login Ulang di Tab Baru</span>
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleUploadToGDrive()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-bold text-[11px] transition-colors shadow-xs"
+                >
+                  <span>🔄</span>
+                  <span>Coba Upload Lagi</span>
+                </button>
+              </div>
             )}
             {(uploadError.includes("/api/auth/gdrive") ||
               uploadError.includes("Google Drive belum terhubung") ||

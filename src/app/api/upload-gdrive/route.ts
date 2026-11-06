@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/actions/_internal";
 
 export const maxDuration = 60;
 
@@ -145,9 +144,27 @@ export async function POST(req: NextRequest) {
 
     // Hanya admin yang login — route ini memakai service role + token Drive.
     try {
-      await requireUser();
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json(
+          {
+            error: "Sesi login Anda telah berakhir. Silakan login ulang.",
+            code: "UNAUTHORIZED",
+          },
+          { status: 401 }
+        );
+      }
     } catch {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        {
+          error: "Sesi login Anda telah berakhir. Silakan login ulang.",
+          code: "UNAUTHORIZED",
+        },
+        { status: 401 }
+      );
     }
 
     const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;

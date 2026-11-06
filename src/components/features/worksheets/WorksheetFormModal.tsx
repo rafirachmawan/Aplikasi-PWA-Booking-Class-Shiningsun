@@ -517,6 +517,22 @@ export function WorksheetFormModal({
     setIsUploadingGDrive(true);
     setUploadError(null);
 
+    // Refresh sesi di browser secara proaktif jika token hampir habis / idle
+    try {
+      const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (sbUrl && sbKey) {
+        const sb = createBrowserClient(sbUrl, sbKey);
+        const { data: sessionData } = await sb.auth.getSession();
+        const exp = sessionData.session?.expires_at ?? 0;
+        if (!sessionData.session || (exp > 0 && exp * 1000 - Date.now() < 10 * 60 * 1000)) {
+          await sb.auth.refreshSession();
+        }
+      }
+    } catch {
+      // Abaikan jika gagal cek awal, lanjut mencoba
+    }
+
     // Kompresi sekali di awal — tidak diulang per retry (hemat 2-5 dtk per attempt).
     let compressedFile: File;
     try {
@@ -538,7 +554,6 @@ export function WorksheetFormModal({
     }
 
     // Upload terpisah dari Simpan: gagal upload tidak boleh blokir Simpan.
-    // Timeout progresif 30→40→50 dtk + 3x retry + jeda antar-attempt.
     const uploadOnce = async (signal: AbortSignal) => {
       const formData = new FormData();
       formData.append("file", compressedFile);
@@ -551,7 +566,10 @@ export function WorksheetFormModal({
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || "Gagal mengunggah ke Google Drive");
+        const err: any = new Error(data.error || "Gagal mengunggah ke Google Drive");
+        err.status = res.status;
+        err.code = data.code;
+        throw err;
       }
       return data;
     };
@@ -577,6 +595,43 @@ export function WorksheetFormModal({
         } catch (e: any) {
           clearTimeout(timer);
           lastErr = e;
+
+          // Jika 401 Unauthorized / Sesi berakhir:
+          if (e?.status === 401 || e?.code === "UNAUTHORIZED" || /unauthorized|sesi login/i.test(e?.message || "")) {
+            // Coba perbarui sesi di browser 1x
+            try {
+              const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+              const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+              if (sbUrl && sbKey) {
+                const sb = createBrowserClient(sbUrl, sbKey);
+                const refreshResult = await sb.auth.refreshSession();
+                if (refreshResult.data?.session) {
+                  // Berhasil refresh, coba upload 1x lagi
+                  const retryCtrl = new AbortController();
+                  const retryTimer = setTimeout(() => retryCtrl.abort(), 30000);
+                  try {
+                    const retryData = await uploadOnce(retryCtrl.signal);
+                    clearTimeout(retryTimer);
+                    if (retryData.gdriveLink) {
+                      setGdriveLink(retryData.gdriveLink);
+                    }
+                    lastErr = null;
+                    break;
+                  } catch (reErr: any) {
+                    clearTimeout(retryTimer);
+                    lastErr = reErr;
+                  }
+                }
+              }
+            } catch {}
+
+            // Jika masih gagal setelah dicoba refresh, STOP retry loop seketika!
+            if (lastErr) {
+              setUploadError(lastErr.message || "Sesi login Anda telah berakhir. Silakan login ulang.");
+              break;
+            }
+          }
+
           if (e?.name === "AbortError") {
             setUploadError(
               attempt < 3
