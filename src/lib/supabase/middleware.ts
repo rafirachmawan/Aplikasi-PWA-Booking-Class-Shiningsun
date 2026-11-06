@@ -14,7 +14,9 @@ export async function updateSession(request: NextRequest) {
   const isServerAction =
     request.headers.has('next-action') ||
     request.headers.get('x-nextjs-action') !== null;
-  // isServerAction ditangani setelah getUser() agar token tetap diperbarui
+  if (isServerAction) {
+    return supabaseResponse;
+  }
 
   let supabase;
   try {
@@ -72,11 +74,7 @@ export async function updateSession(request: NextRequest) {
       return response
     }
 
-    // Untuk Server Action: biarkan sesi diperbarui melalui getUser() di atas,
-    // tetapi jangan me-redirect HTML agar tidak merusak payload respon Server Action Next.js.
-    if (isServerAction) {
-      return supabaseResponse;
-    }
+
 
     // Redirect root / to /dashboard if logged in, or /login if not logged in
     if (request.nextUrl.pathname === '/') {
