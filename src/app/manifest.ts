@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Jadwal Shiningsun',
-    short_name: 'Jadwal Shiningsun',
+    name: 'Laporan Shining Sun',
+    short_name: 'Laporan Shining Sun',
     description: 'Aplikasi Penjadwalan dan Booking Kelas ShiningSun',
     // Hemat 1 hop redirect saat PWA diluncurkan: langsung ke /dashboard
     // (tujuan akhir identik — yang belum login tetap diarahkan proxy ke /login).

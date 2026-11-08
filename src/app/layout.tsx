@@ -18,14 +18,14 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "ShiningSun Booking Class",
+  title: "Laporan Shining Sun",
   description: "Sistem Manajemen Penjadwalan Multi-Branch",
   icons: {
     icon: "/logo.png",
     apple: "/logo.png",
   },
   appleWebApp: {
-    title: "ShiningSun",
+    title: "Laporan Shining Sun",
     statusBarStyle: "black-translucent",
     capable: true,
   },
