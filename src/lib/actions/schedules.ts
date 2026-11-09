@@ -27,10 +27,11 @@ const DAY_ORDER = [
 
 export async function getStudentScheduleMap(
   studentIds: string[],
+  client?: any,
 ): Promise<Record<string, string>> {
   if (!studentIds || studentIds.length === 0) return {};
   try {
-    const supabaseServer = await createClient();
+    const supabaseServer = client || (await createClient());
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = String(now.getMonth() + 1).padStart(2, "0");

@@ -590,7 +590,7 @@ export async function getParentSessionStudent() {
   // Ketiganya independen (hanya butuh student.id) — jalan paralel.
   // getWorksheetsByStudent terdedup otomatis via cache() dengan panggilan di ParentDashboardPage
   // sehingga tidak terjadi query student_worksheets 2x untuk siswa yang sama.
-  const scheduleMapPromise = getStudentScheduleMap([student.id]);
+  const scheduleMapPromise = getStudentScheduleMap([student.id], supabaseServer);
   const worksheetsPromise = getWorksheetsByStudent(student.id);
   const redemptionsPromise = supabaseServer
     .from("student_point_redemptions")
