@@ -21,27 +21,6 @@ function timeAgo(dateStr: string): string {
   return `${diffDays} hari lalu`;
 }
 
-const monthNames = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "Mei",
-  "Jun",
-  "Jul",
-  "Agu",
-  "Sep",
-  "Okt",
-  "Nov",
-  "Des",
-];
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  return `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
-}
-
 export function NotificationBell({ role }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activities, setActivities] = useState<any[]>([]);
@@ -233,91 +212,76 @@ export function NotificationBell({ role }: NotificationBellProps) {
                   <p className="text-xs">Belum ada aktivitas terbaru.</p>
                 </div>
               ) : (
-                activities.map((act: any, i: number) => {
-                  const student = Array.isArray(act.student)
-                    ? act.student[0]
-                    : act.student;
-                  const slot = Array.isArray(act.slot) ? act.slot[0] : act.slot;
-                  const cls = slot
-                    ? Array.isArray(slot.class)
-                      ? slot.class[0]
-                      : slot.class
-                    : null;
-                  const branch = slot
-                    ? Array.isArray(slot.branch)
-                      ? slot.branch[0]
-                      : slot.branch
-                    : null;
-                  const statusColor =
-                    student?.status === "REGISTERED"
-                      ? "bg-emerald-500"
-                      : student?.status === "CG"
-                        ? "bg-amber-500"
-                        : "bg-slate-400";
+                activities.map((act: any) => {
+                  const isBirthday = act.type === "BIRTHDAY_FEEDBACK";
+                  const message = String(act.message ?? "")
+                    .replace(/\s+/g, " ")
+                    .trim();
+                  const preview =
+                    message.length > 140
+                      ? `${message.slice(0, 140).trimEnd()}…`
+                      : message;
 
                   return (
                     <div
-                      key={i}
+                      key={act.id}
                       className="flex gap-3 px-4 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
                     >
-                      <div className="shrink-0 mt-0.5">
-                        <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-500/10 flex items-center justify-center">
-                          <svg
-                            className="w-4 h-4 text-brand-600 dark:text-brand-400"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth="2"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-                            />
-                          </svg>
-                        </div>
+                      <div
+                        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                          isBirthday
+                            ? "bg-pink-100 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400"
+                            : "bg-sky-100 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400"
+                        }`}
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d={
+                              isBirthday
+                                ? "M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+                                : "M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
+                            }
+                          />
+                        </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed">
-                          <span className="font-bold">
-                            {student?.name || "?"}
-                          </span>{" "}
-                          ditambahkan ke jadwal{" "}
-                          <span className="font-semibold text-brand-600 dark:text-brand-400">
-                            {slot ? formatDate(slot.date) : "?"}
-                          </span>
-                          {cls && (
-                            <span className="text-slate-500 dark:text-slate-400">
-                              {" "}
-                              · {cls.name}
-                            </span>
-                          )}
-                          {slot?.time && (
-                            <span className="text-slate-400">
-                              {" "}
-                              · {slot.time.substring(0, 5)}
-                            </span>
-                          )}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                          <span
-                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded text-white ${statusColor}`}
-                          >
-                            {student?.status === "REGISTERED"
-                              ? "Reguler"
-                              : student?.status === "CG"
-                                ? "CG"
-                                : "Nonaktif"}
-                          </span>
-                          {isSuperAdmin && branch?.name && (
-                            <span className="text-[9px] text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                              📍 {branch.name}
-                            </span>
-                          )}
-                          <span className="text-[9px] text-slate-400 ml-auto">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                            {act.student_name}
+                          </p>
+                          <span className="shrink-0 text-[10px] text-slate-400">
                             {timeAgo(act.created_at)}
                           </span>
                         </div>
+                        <p
+                          className={`mt-0.5 text-[11px] font-medium ${
+                            isBirthday
+                              ? "text-pink-600 dark:text-pink-400"
+                              : "text-sky-600 dark:text-sky-400"
+                          }`}
+                        >
+                          {isBirthday
+                            ? "Feedback ulang tahun"
+                            : `Feedback laporan perkembangan${
+                                act.bulan_ke ? ` · Bulan ke-${act.bulan_ke}` : ""
+                              }`}
+                        </p>
+                        <p className="mt-1.5 rounded-lg border-l-2 border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs leading-relaxed text-slate-600 dark:border-slate-600 dark:bg-slate-800/60 dark:text-slate-300 line-clamp-3 wrap-break-word">
+                          {preview}
+                        </p>
+                        {isSuperAdmin && act.branch_name && (
+                          <span className="mt-1.5 inline-block text-[9px] text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                            📍 {act.branch_name}
+                          </span>
+                        )}
                       </div>
                     </div>
                   );

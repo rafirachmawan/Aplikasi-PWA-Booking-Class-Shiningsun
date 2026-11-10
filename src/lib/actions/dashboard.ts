@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { getTodayISO } from "../dateUtils";
 import { normalizeScheduleTime, isMissingColumnError, requireUser } from "./_internal";
 import { getBranchId } from "./auth-branch";
@@ -485,6 +486,29 @@ export async function getOverdueWorksheets(branchId = "ALL") {
   }
 }
 
+// catatan_ortu disimpan sebagai JSON array [{ date, text }] (atau teks biasa
+// untuk data lama). Ambil catatan paling akhir sebagai isi notifikasi.
+function extractLatestParentNote(raw: unknown): string {
+  if (typeof raw !== "string") return "";
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        const texts = parsed
+          .map((item) => (typeof item?.text === "string" ? item.text.trim() : ""))
+          .filter(Boolean);
+        return texts.length > 0 ? texts[texts.length - 1] : "";
+      }
+    } catch {
+      // bukan JSON valid, pakai teks apa adanya
+    }
+  }
+  return trimmed;
+}
+
 export async function getRecentActivities() {
   await requireUser();
   const supabaseServer = await createClient();
@@ -501,37 +525,82 @@ export async function getRecentActivities() {
 
   if (!profile) return [];
 
-  // Single unified query with branch_id always in select to keep types consistent
   const isBranchAdmin = profile.role !== "SUPERADMIN" && !!profile.branch_id;
+  const adminClient = getAdminClient();
+  const studentSelect = "student:students!inner(name, branch_id, branch:branches(name))";
 
-  const selectQuery = supabaseServer
-    .from("schedule_student")
-    .select(
-      `
-      created_at,
-      student:students(name, status),
-      slot:schedule_slots!inner(
-        date,
-        time,
-        branch_id,
-        class:classes(name),
-        branch:branches(name)
-      )
-    `,
-    )
-    .order("created_at", { ascending: false })
+  // Feedback ulang tahun dari orang tua (student_feedback)
+  let birthdayQuery = adminClient
+    .from("student_feedback")
+    .select(`id, message, submitted_at, ${studentSelect}`)
+    .order("submitted_at", { ascending: false })
     .limit(20);
-
-  const finalQuery = isBranchAdmin
-    ? selectQuery.eq("slot.branch_id", profile.branch_id)
-    : selectQuery;
-
-  const { data, error } = await finalQuery;
-  if (error) {
-    console.error("Error fetching activities:", error);
-    return [];
+  if (isBranchAdmin) {
+    birthdayQuery = birthdayQuery.eq("student.branch_id", profile.branch_id);
   }
 
-  return data || [];
+  // Feedback laporan perkembangan dari orang tua (student_worksheets.catatan_ortu)
+  let progressQuery = adminClient
+    .from("student_worksheets")
+    .select(
+      `id, catatan_ortu, bulan_ke, worksheet_date, updated_at, ${studentSelect}`,
+    )
+    .not("catatan_ortu", "is", null)
+    .neq("catatan_ortu", "")
+    .order("updated_at", { ascending: false })
+    .limit(20);
+  if (isBranchAdmin) {
+    progressQuery = progressQuery.eq("student.branch_id", profile.branch_id);
+  }
+
+  const [birthdayRes, progressRes] = await Promise.all([
+    birthdayQuery,
+    progressQuery,
+  ]);
+
+  if (birthdayRes.error) {
+    console.error("Error fetching birthday feedback:", birthdayRes.error);
+  }
+  if (progressRes.error) {
+    console.error("Error fetching progress feedback:", progressRes.error);
+  }
+
+  const pickOne = <T,>(value: T | T[] | null | undefined): T | null =>
+    Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+
+  const birthdayItems = (birthdayRes.data || []).map((row: any) => {
+    const student = pickOne<any>(row.student);
+    return {
+      id: `birthday-${row.id}`,
+      type: "BIRTHDAY_FEEDBACK" as const,
+      created_at: row.submitted_at as string,
+      message: row.message as string,
+      student_name: (student?.name as string) || "?",
+      branch_name: (pickOne<any>(student?.branch)?.name as string) || null,
+      bulan_ke: null as number | null,
+    };
+  });
+
+  const progressItems = (progressRes.data || [])
+    .map((row: any) => {
+      const student = pickOne<any>(row.student);
+      return {
+        id: `progress-${row.id}`,
+        type: "PROGRESS_FEEDBACK" as const,
+        created_at: (row.updated_at || row.worksheet_date) as string,
+        message: extractLatestParentNote(row.catatan_ortu),
+        student_name: (student?.name as string) || "?",
+        branch_name: (pickOne<any>(student?.branch)?.name as string) || null,
+        bulan_ke: (row.bulan_ke as number | null) ?? null,
+      };
+    })
+    .filter((item) => item.message !== "");
+
+  return [...birthdayItems, ...progressItems]
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
+    .slice(0, 20);
 }
 
