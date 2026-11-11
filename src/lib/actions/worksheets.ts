@@ -434,7 +434,6 @@ export async function updateWorksheet(id: string, formData: FormData) {
     rekomendasi_rumah,
     ttd_guru,
     bulan_ke,
-    updated_at: new Date().toISOString(),
   };
 
   if (worksheet_date) {

@@ -27,6 +27,7 @@ interface StudentWorksheetTableProps {
 interface ParentFeedbackItem {
   date: string;
   text: string;
+  created_at?: string;
 }
 
 function calculateAge(dobStr?: string | null): string {
@@ -102,6 +103,7 @@ function parseParentFeedback(
           .map((item) => ({
             date: item.date || fallbackDate || formatShortDate(new Date()),
             text: item.text || "",
+            ...(item.created_at ? { created_at: item.created_at } : {}),
           }))
           .filter((item) => item.text.trim() !== "");
       }
@@ -167,6 +169,7 @@ function DailyWorksheetSessionItem({
     const newItem: ParentFeedbackItem = {
       date: formatShortDate(new Date()),
       text: newInputText.trim(),
+      created_at: new Date().toISOString(),
     };
     const updatedList = [...feedbackList, newItem];
     const serialized = JSON.stringify(updatedList);

@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getAdminClient } from "@/lib/supabase/admin";
-import { getTodayISO } from "../dateUtils";
+import { getTodayISO, parseIndonesianDateToISO } from "../dateUtils";
 import { normalizeScheduleTime, isMissingColumnError, requireUser } from "./_internal";
 import { getBranchId } from "./auth-branch";
 
@@ -486,27 +486,68 @@ export async function getOverdueWorksheets(branchId = "ALL") {
   }
 }
 
-// catatan_ortu disimpan sebagai JSON array [{ date, text }] (atau teks biasa
-// untuk data lama). Ambil catatan paling akhir sebagai isi notifikasi.
-function extractLatestParentNote(raw: unknown): string {
-  if (typeof raw !== "string") return "";
+// catatan_ortu disimpan sebagai JSON array [{ date, text, created_at? }] (atau teks biasa
+// untuk data lama). Ambil catatan paling akhir beserta waktu asli saat orang tua mengirimnya
+// agar edit laporan oleh guru tidak mengubah waktu feedback di notifikasi.
+function toWibDateISO(isoStr?: string | null): string | null {
+  if (!isoStr) return null;
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return null;
+  const wib = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  const y = wib.getUTCFullYear();
+  const m = String(wib.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(wib.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function extractLatestParentNoteInfo(
+  raw: unknown,
+  rowUpdatedAt?: string | null,
+  worksheetDate?: string | null,
+): { message: string; feedbackAt: string } {
+  const fallbackTime = (rowUpdatedAt || worksheetDate || new Date().toISOString()) as string;
+  if (typeof raw !== "string") return { message: "", feedbackAt: fallbackTime };
   const trimmed = raw.trim();
-  if (!trimmed) return "";
+  if (!trimmed) return { message: "", feedbackAt: fallbackTime };
 
   if (trimmed.startsWith("[")) {
     try {
       const parsed = JSON.parse(trimmed);
       if (Array.isArray(parsed)) {
-        const texts = parsed
-          .map((item) => (typeof item?.text === "string" ? item.text.trim() : ""))
-          .filter(Boolean);
-        return texts.length > 0 ? texts[texts.length - 1] : "";
+        const validItems = parsed.filter(
+          (item) => typeof item?.text === "string" && item.text.trim() !== "",
+        );
+        if (validItems.length === 0) {
+          return { message: "", feedbackAt: fallbackTime };
+        }
+        const lastItem = validItems[validItems.length - 1];
+        const message = lastItem.text.trim();
+
+        // 1. Jika ada created_at eksplisit dari saat ortu klik simpan, gunakan langsung
+        if (typeof lastItem.created_at === "string" && lastItem.created_at.trim()) {
+          return { message, feedbackAt: lastItem.created_at.trim() };
+        }
+
+        // 2. Untuk data lama yang hanya menyimpan label tanggal (misal "Sel, 3 Nov 2026"):
+        // Jika updated_at jatuh di tanggal yang sama dengan tanggal feedback, gunakan updated_at
+        // agar jam/menit hari itu tetap akurat. Jika berbeda hari (karena laporan diedit guru
+        // di hari lain), gunakan tanggal asli feedback dari catatan_ortu.
+        if (typeof lastItem.date === "string" && lastItem.date.trim()) {
+          const noteDateISO = parseIndonesianDateToISO(lastItem.date.trim());
+          const updatedDateISO = toWibDateISO(rowUpdatedAt);
+          if (updatedDateISO && updatedDateISO === noteDateISO && rowUpdatedAt) {
+            return { message, feedbackAt: rowUpdatedAt };
+          }
+          return { message, feedbackAt: `${noteDateISO}T12:00:00+07:00` };
+        }
+
+        return { message, feedbackAt: fallbackTime };
       }
     } catch {
       // bukan JSON valid, pakai teks apa adanya
     }
   }
-  return trimmed;
+  return { message: trimmed, feedbackAt: fallbackTime };
 }
 
 export async function getRecentActivities(options?: {
@@ -563,6 +604,9 @@ export async function getRecentActivities(options?: {
   }
 
   // Feedback laporan perkembangan dari orang tua (student_worksheets.catatan_ortu)
+  // Ambil window secukupnya lalu urutkan berdasarkan waktu asli feedback ortu
+  // (bukan waktu edit guru) sebelum dipotong sesuai progressOffset.
+  const progressWindowLimit = Math.min(Math.max(40, progressOffset + pageSize + 20), 200);
   let progressQuery = adminClient
     .from("student_worksheets")
     .select(
@@ -571,7 +615,7 @@ export async function getRecentActivities(options?: {
     .not("catatan_ortu", "is", null)
     .neq("catatan_ortu", "")
     .order("updated_at", { ascending: false })
-    .range(progressOffset, progressOffset + pageSize);
+    .limit(progressWindowLimit);
   if (isBranchAdmin) {
     progressQuery = progressQuery.eq("student.branch_id", profile.branch_id);
   }
@@ -610,23 +654,40 @@ export async function getRecentActivities(options?: {
     };
   });
 
-  const progressItems = progressRaw
-    .map((row: any, idx: number) => {
+  const allSortedProgressItems = progressRaw
+    .map((row: any) => {
       const student = pickOne<any>(row.student);
+      const { message, feedbackAt } = extractLatestParentNoteInfo(
+        row.catatan_ortu,
+        row.updated_at,
+        row.worksheet_date,
+      );
       return {
         id: `progress-${row.id}`,
         type: "PROGRESS_FEEDBACK" as const,
-        created_at: (row.updated_at || row.worksheet_date) as string,
-        message: extractLatestParentNote(row.catatan_ortu),
+        created_at: feedbackAt,
+        message,
         student_id: ((row.student_id || student?.id) as string) || "",
         student_name: (student?.name as string) || "?",
         branch_name: (pickOne<any>(student?.branch)?.name as string) || null,
         bulan_ke: (row.bulan_ke as number | null) ?? null,
         worksheet_id: (row.id as string) || null,
-        _nextOffset: progressOffset + idx + 1,
       };
     })
-    .filter((item) => item.message !== "");
+    .filter((item) => item.message !== "")
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+
+  const progressSlice = allSortedProgressItems.slice(
+    progressOffset,
+    progressOffset + pageSize + 1,
+  );
+  const progressItems = progressSlice.map((item, idx) => ({
+    ...item,
+    _nextOffset: progressOffset + idx + 1,
+  }));
 
   const merged = [...birthdayItems, ...progressItems].sort(
     (a, b) =>
@@ -648,7 +709,7 @@ export async function getRecentActivities(options?: {
   const hasMore =
     merged.length > pageSize ||
     birthdayRaw.length > pageSize ||
-    progressRaw.length > pageSize;
+    allSortedProgressItems.length > progressOffset + pageSize;
 
   return {
     items: sliced.map(({ _nextOffset, ...rest }) => rest),
