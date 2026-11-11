@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icons } from "@/components/ui/icons";
 import { getSchedulesByDate } from "@/lib/actions";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -45,6 +45,14 @@ export function TodaySchedule({
   const [editingStudent, setEditingStudent] = useState<any>(null);
   const [editingSlot, setEditingSlot] = useState<any>(null);
   const [labelsList, setLabelsList] = useState<any[]>([]);
+
+  // Sinkronkan jadwal hari ini ketika data server diperbarui (misal saat superadmin pindah cabang)
+  useEffect(() => {
+    setCurrentSlots(initialSlots);
+    setSelectedDate(getTodayStr());
+    setSelectedClass("ALL");
+    setLabelsList([]);
+  }, [initialSlots]);
 
   const todayStr = getTodayStr();
   const isToday = selectedDate === todayStr;

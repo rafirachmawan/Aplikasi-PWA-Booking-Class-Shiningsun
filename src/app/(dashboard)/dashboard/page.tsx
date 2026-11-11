@@ -224,7 +224,11 @@ async function DashboardMain({
         {/* Birthday List Collapsible */}
         <BirthdayListCollapsible />
 
-        <TodaySchedule slots={todaySlots} classes={classes} />
+        <TodaySchedule
+          key={branchId}
+          slots={todaySlots}
+          classes={classes}
+        />
       </div>
 
       {/* Quick Access */}

@@ -509,13 +509,24 @@ function extractLatestParentNote(raw: unknown): string {
   return trimmed;
 }
 
-export async function getRecentActivities() {
+export async function getRecentActivities(options?: {
+  birthdayOffset?: number;
+  progressOffset?: number;
+  limit?: number;
+}) {
   await requireUser();
   const supabaseServer = await createClient();
   const {
     data: { user },
   } = await supabaseServer.auth.getUser();
-  if (!user) return [];
+  if (!user) {
+    return {
+      items: [],
+      hasMore: false,
+      nextBirthdayOffset: 0,
+      nextProgressOffset: 0,
+    };
+  }
 
   const { data: profile } = await supabaseServer
     .from("users")
@@ -523,18 +534,30 @@ export async function getRecentActivities() {
     .eq("id", user.id)
     .single();
 
-  if (!profile) return [];
+  if (!profile) {
+    return {
+      items: [],
+      hasMore: false,
+      nextBirthdayOffset: 0,
+      nextProgressOffset: 0,
+    };
+  }
+
+  const birthdayOffset = Math.max(0, options?.birthdayOffset ?? 0);
+  const progressOffset = Math.max(0, options?.progressOffset ?? 0);
+  const pageSize = Math.max(1, Math.min(options?.limit ?? 10, 50));
 
   const isBranchAdmin = profile.role !== "SUPERADMIN" && !!profile.branch_id;
   const adminClient = getAdminClient();
-  const studentSelect = "student:students!inner(name, branch_id, branch:branches(name))";
+  const studentSelect = "student:students!inner(id, name, branch_id, branch:branches(name))";
 
-  // Feedback ulang tahun dari orang tua (student_feedback)
+  // Ambil pageSize + 1 baris dari masing-masing tabel sesuai offset saat ini
+  // agar sekali buka ringan dan tidak menarik semua data sekaligus
   let birthdayQuery = adminClient
     .from("student_feedback")
-    .select(`id, message, submitted_at, ${studentSelect}`)
+    .select(`id, student_id, message, submitted_at, ${studentSelect}`)
     .order("submitted_at", { ascending: false })
-    .limit(20);
+    .range(birthdayOffset, birthdayOffset + pageSize);
   if (isBranchAdmin) {
     birthdayQuery = birthdayQuery.eq("student.branch_id", profile.branch_id);
   }
@@ -543,12 +566,12 @@ export async function getRecentActivities() {
   let progressQuery = adminClient
     .from("student_worksheets")
     .select(
-      `id, catatan_ortu, bulan_ke, worksheet_date, updated_at, ${studentSelect}`,
+      `id, student_id, catatan_ortu, bulan_ke, worksheet_date, updated_at, ${studentSelect}`,
     )
     .not("catatan_ortu", "is", null)
     .neq("catatan_ortu", "")
     .order("updated_at", { ascending: false })
-    .limit(20);
+    .range(progressOffset, progressOffset + pageSize);
   if (isBranchAdmin) {
     progressQuery = progressQuery.eq("student.branch_id", profile.branch_id);
   }
@@ -568,39 +591,70 @@ export async function getRecentActivities() {
   const pickOne = <T,>(value: T | T[] | null | undefined): T | null =>
     Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
 
-  const birthdayItems = (birthdayRes.data || []).map((row: any) => {
+  const birthdayRaw = birthdayRes.data || [];
+  const progressRaw = progressRes.data || [];
+
+  const birthdayItems = birthdayRaw.map((row: any, idx: number) => {
     const student = pickOne<any>(row.student);
     return {
       id: `birthday-${row.id}`,
       type: "BIRTHDAY_FEEDBACK" as const,
       created_at: row.submitted_at as string,
       message: row.message as string,
+      student_id: ((row.student_id || student?.id) as string) || "",
       student_name: (student?.name as string) || "?",
       branch_name: (pickOne<any>(student?.branch)?.name as string) || null,
       bulan_ke: null as number | null,
+      worksheet_id: null as string | null,
+      _nextOffset: birthdayOffset + idx + 1,
     };
   });
 
-  const progressItems = (progressRes.data || [])
-    .map((row: any) => {
+  const progressItems = progressRaw
+    .map((row: any, idx: number) => {
       const student = pickOne<any>(row.student);
       return {
         id: `progress-${row.id}`,
         type: "PROGRESS_FEEDBACK" as const,
         created_at: (row.updated_at || row.worksheet_date) as string,
         message: extractLatestParentNote(row.catatan_ortu),
+        student_id: ((row.student_id || student?.id) as string) || "",
         student_name: (student?.name as string) || "?",
         branch_name: (pickOne<any>(student?.branch)?.name as string) || null,
         bulan_ke: (row.bulan_ke as number | null) ?? null,
+        worksheet_id: (row.id as string) || null,
+        _nextOffset: progressOffset + idx + 1,
       };
     })
     .filter((item) => item.message !== "");
 
-  return [...birthdayItems, ...progressItems]
-    .sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    )
-    .slice(0, 20);
+  const merged = [...birthdayItems, ...progressItems].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+
+  const sliced = merged.slice(0, pageSize);
+
+  let nextBirthdayOffset = birthdayOffset;
+  let nextProgressOffset = progressOffset;
+  for (const item of sliced) {
+    if (item.type === "BIRTHDAY_FEEDBACK") {
+      nextBirthdayOffset = Math.max(nextBirthdayOffset, item._nextOffset);
+    } else {
+      nextProgressOffset = Math.max(nextProgressOffset, item._nextOffset);
+    }
+  }
+
+  const hasMore =
+    merged.length > pageSize ||
+    birthdayRaw.length > pageSize ||
+    progressRaw.length > pageSize;
+
+  return {
+    items: sliced.map(({ _nextOffset, ...rest }) => rest),
+    hasMore,
+    nextBirthdayOffset,
+    nextProgressOffset,
+  };
 }
 

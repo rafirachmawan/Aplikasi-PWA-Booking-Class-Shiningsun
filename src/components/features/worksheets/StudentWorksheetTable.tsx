@@ -258,7 +258,7 @@ function DailyWorksheetSessionItem({
         : "text-sky-500 font-bold shrink-0 mt-0.5";
 
   return (
-    <div className={containerClass}>
+    <div id={`worksheet-session-${item.id}`} className={containerClass}>
       {/* 1. Metadata Header Bar per Session */}
       <div className={headerBarClass}>
         <div className="flex items-start justify-between gap-3">
@@ -494,7 +494,8 @@ function DailyWorksheetSessionItem({
 
       {/* 3. SARAN ORANG TUA PER HARI (MATCHING SKETCH "Saran :" PER SESI) */}
       <div
-        className={`p-3.5 sm:p-4 border-t-2 ${
+        id={`worksheet-feedback-${item.id}`}
+        className={`p-3.5 sm:p-4 border-t-2 transition-all duration-500 ${
           isSakit
             ? "bg-red-50/80 dark:bg-red-950/40 border-red-300 dark:border-red-800/80"
             : "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/80"

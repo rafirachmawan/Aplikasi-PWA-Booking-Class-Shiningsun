@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { WorksheetFormModal } from "@/components/features/worksheets/WorksheetFormModal";
 import { StudentWorksheetTable } from "@/components/features/worksheets/StudentWorksheetTable";
@@ -32,7 +32,12 @@ export function WorksheetClientWrapper({
   templates = [],
 }: WorksheetClientWrapperProps) {
   const router = useRouter();
-  const [selectedStudentId, setSelectedStudentId] = useState("__none__");
+  const searchParams = useSearchParams();
+  const urlStudentId = searchParams.get("student_id");
+  const urlWorksheetId = searchParams.get("worksheet_id");
+  const [selectedStudentId, setSelectedStudentId] = useState(
+    urlStudentId || "__none__",
+  );
   const [loadedWorksheets, setLoadedWorksheets] = useState<any[]>(initialWorksheets);
   const [isLoadingStudentWorksheets, setIsLoadingStudentWorksheets] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -96,17 +101,43 @@ export function WorksheetClientWrapper({
     };
   }, []);
 
-  // Sync URL searchParam student_id on load and lock if specified
+  // Sync URL searchParam student_id on load or client navigation and lock if specified
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const studentIdParam = urlParams.get("student_id");
-      if (studentIdParam) {
-        setSelectedStudentId(studentIdParam);
-        setLockedStudentId(studentIdParam); // Lock student from dashboard
-      }
+    if (urlStudentId) {
+      setSelectedStudentId(urlStudentId);
+      setLockedStudentId(urlStudentId); // Lock student from dashboard
     }
-  }, []);
+  }, [urlStudentId]);
+
+  // Auto-scroll to specific worksheet feedback when navigating from NotificationBell
+  useEffect(() => {
+    if (!urlWorksheetId || isLoadingStudentWorksheets) return;
+
+    const timer = setTimeout(() => {
+      const targetEl =
+        document.getElementById(`worksheet-feedback-${urlWorksheetId}`) ||
+        document.getElementById(`worksheet-session-${urlWorksheetId}`);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        targetEl.classList.add(
+          "ring-4",
+          "ring-sky-400",
+          "dark:ring-sky-500",
+          "rounded-lg",
+        );
+        setTimeout(() => {
+          targetEl.classList.remove(
+            "ring-4",
+            "ring-sky-400",
+            "dark:ring-sky-500",
+            "rounded-lg",
+          );
+        }, 3000);
+      }
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [urlWorksheetId, isLoadingStudentWorksheets, loadedWorksheets]);
 
   const selectedStudentObj = useMemo(() => {
     return students.find((s) => s.id === selectedStudentId);

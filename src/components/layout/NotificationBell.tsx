@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { getRecentActivities } from "@/lib/actions";
+import { StudentFeedbackModal } from "@/components/features/students/StudentFeedbackModal";
 
 interface NotificationBellProps {
   role: string | null;
@@ -22,11 +24,20 @@ function timeAgo(dateStr: string): string {
 }
 
 export function NotificationBell({ role }: NotificationBellProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [activities, setActivities] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [birthdayOffset, setBirthdayOffset] = useState(0);
+  const [progressOffset, setProgressOffset] = useState(0);
   const [hasFetched, setHasFetched] = useState(false);
   const [hasNew, setHasNew] = useState(true);
+  const [feedbackModalStudent, setFeedbackModalStudent] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,13 +56,44 @@ export function NotificationBell({ role }: NotificationBellProps) {
   const fetchActivities = async () => {
     setIsLoading(true);
     try {
-      const data = await getRecentActivities();
-      setActivities(data);
+      const res = await getRecentActivities({
+        birthdayOffset: 0,
+        progressOffset: 0,
+        limit: 10,
+      });
+      setActivities(res.items);
+      setHasMore(res.hasMore);
+      setBirthdayOffset(res.nextBirthdayOffset);
+      setProgressOffset(res.nextProgressOffset);
       setHasFetched(true);
     } catch (e) {
       console.error(e);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    try {
+      const res = await getRecentActivities({
+        birthdayOffset,
+        progressOffset,
+        limit: 10,
+      });
+      setActivities((prev) => {
+        const existingIds = new Set(prev.map((item) => item.id));
+        const newItems = res.items.filter((item) => !existingIds.has(item.id));
+        return [...prev, ...newItems];
+      });
+      setHasMore(res.hasMore);
+      setBirthdayOffset(res.nextBirthdayOffset);
+      setProgressOffset(res.nextProgressOffset);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -222,10 +264,40 @@ export function NotificationBell({ role }: NotificationBellProps) {
                       ? `${message.slice(0, 140).trimEnd()}…`
                       : message;
 
+                  const handleActivityClick = () => {
+                    if (!act.student_id) return;
+                    setIsOpen(false);
+                    if (isBirthday) {
+                      setFeedbackModalStudent({
+                        id: act.student_id,
+                        name: act.student_name || "Siswa",
+                      });
+                    } else {
+                      const params = new URLSearchParams({
+                        student_id: act.student_id,
+                      });
+                      if (act.worksheet_id) {
+                        params.set("worksheet_id", act.worksheet_id);
+                      }
+                      router.push(`/worksheets?${params.toString()}`);
+                    }
+                  };
+
                   return (
                     <div
                       key={act.id}
-                      className="flex gap-3 px-4 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                      role={act.student_id ? "button" : undefined}
+                      tabIndex={act.student_id ? 0 : undefined}
+                      onClick={handleActivityClick}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleActivityClick();
+                        }
+                      }}
+                      className={`group flex gap-3 px-4 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors ${
+                        act.student_id ? "cursor-pointer" : ""
+                      }`}
                     >
                       <div
                         className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
@@ -254,7 +326,7 @@ export function NotificationBell({ role }: NotificationBellProps) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline justify-between gap-2">
-                          <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                             {act.student_name}
                           </p>
                           <span className="shrink-0 text-[10px] text-slate-400">
@@ -271,17 +343,34 @@ export function NotificationBell({ role }: NotificationBellProps) {
                           {isBirthday
                             ? "Feedback ulang tahun"
                             : `Feedback laporan perkembangan${
-                                act.bulan_ke ? ` · Bulan ke-${act.bulan_ke}` : ""
+                                act.bulan_ke
+                                  ? ` · Bulan ke-${act.bulan_ke}`
+                                  : ""
                               }`}
                         </p>
                         <p className="mt-1.5 rounded-lg border-l-2 border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs leading-relaxed text-slate-600 dark:border-slate-600 dark:bg-slate-800/60 dark:text-slate-300 line-clamp-3 wrap-break-word">
                           {preview}
                         </p>
-                        {isSuperAdmin && act.branch_name && (
-                          <span className="mt-1.5 inline-block text-[9px] text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                            📍 {act.branch_name}
-                          </span>
-                        )}
+                        <div className="mt-1.5 flex items-center justify-between gap-2">
+                          {isSuperAdmin && act.branch_name ? (
+                            <span className="inline-block text-[9px] text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                              📍 {act.branch_name}
+                            </span>
+                          ) : (
+                            <span />
+                          )}
+                          {act.student_id && (
+                            <span
+                              className={`text-[10px] font-semibold transition-colors ${
+                                isBirthday
+                                  ? "text-pink-600 dark:text-pink-400 group-hover:underline"
+                                  : "text-sky-600 dark:text-sky-400 group-hover:underline"
+                              }`}
+                            >
+                              Lihat feedback →
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -291,15 +380,59 @@ export function NotificationBell({ role }: NotificationBellProps) {
 
             {/* Footer */}
             {activities.length > 0 && (
-              <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 shrink-0">
+              <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 shrink-0 space-y-2">
+                {hasMore && (
+                  <button
+                    type="button"
+                    onClick={handleLoadMore}
+                    disabled={isLoadingMore}
+                    className="w-full py-2 px-3 rounded-xl text-xs font-bold text-brand-600 dark:text-brand-400 bg-white dark:bg-slate-800 hover:bg-brand-50 dark:hover:bg-brand-500/10 border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <svg
+                          className="w-3.5 h-3.5 animate-spin"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
+                        </svg>
+                        <span>Memuat...</span>
+                      </>
+                    ) : (
+                      <span>Muat lebih banyak</span>
+                    )}
+                  </button>
+                )}
                 <p className="text-[10px] text-slate-400 text-center">
-                  {activities.length} aktivitas terbaru • diambil saat lonceng
-                  diklik
+                  Menampilkan {activities.length} aktivitas • diambil bertahap
                 </p>
               </div>
             )}
           </div>
         </>
+      )}
+
+      {/* Modal riwayat feedback ulang tahun siswa saat item diklik */}
+      {feedbackModalStudent && (
+        <StudentFeedbackModal
+          isOpen={!!feedbackModalStudent}
+          studentId={feedbackModalStudent.id}
+          studentName={feedbackModalStudent.name}
+          onClose={() => setFeedbackModalStudent(null)}
+        />
       )}
     </div>
   );
