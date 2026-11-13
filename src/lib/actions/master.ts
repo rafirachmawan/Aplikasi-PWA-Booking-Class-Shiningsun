@@ -177,6 +177,10 @@ export async function getClassDeletionImpact(
         .from("schedule_student")
         .select("student_id, slot:schedule_slots!inner(class_id)")
         .eq("slot.class_id", classId)
+        // Tiebreaker unik agar paginasi .range() stabil (tanpa ORDER BY,
+        // PostgreSQL tidak menjamin urutan antar-halaman).
+        .order("student_id", { ascending: true })
+        .order("schedule_slot_id", { ascending: true })
         .range(from, from + PAGE - 1);
       if (error) throw error;
       if (data && data.length > 0) {

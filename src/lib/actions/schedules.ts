@@ -54,6 +54,10 @@ export async function getStudentScheduleMap(
         )
         .in("student_id", studentIds)
         .gte("slot.date", firstDayOfMonth)
+        // Tiebreaker unik agar paginasi .range() stabil (tanpa ORDER BY,
+        // PostgreSQL tidak menjamin urutan antar-halaman).
+        .order("student_id", { ascending: true })
+        .order("schedule_slot_id", { ascending: true })
         .range(from, from + PAGE - 1);
 
       if (pageBookings && pageBookings.length > 0) {
@@ -85,6 +89,8 @@ export async function getStudentScheduleMap(
           )
           .in("student_id", missingStudentIds)
           .gte("slot.date", firstDayOfPrevMonth)
+          .order("student_id", { ascending: true })
+          .order("schedule_slot_id", { ascending: true })
           .range(from, from + PAGE - 1);
 
         if (monthBookings && monthBookings.length > 0) {
@@ -656,6 +662,8 @@ export async function getStudentsWithNextMonthSchedule(
         .select("student_id, slot:schedule_slots!inner(date, branch_id)")
         .gte("slot.date", startDate)
         .lte("slot.date", endDate)
+        .order("student_id", { ascending: true })
+        .order("schedule_slot_id", { ascending: true })
         .range(from, from + PAGE - 1);
       if (branchId !== "ALL") {
         q = q.eq("slot.branch_id", branchId);

@@ -247,6 +247,11 @@ export async function getOverdueWorksheets(branchId = "ALL") {
         .in("student_id", studentIds)
         .gte("slot.date", startDate)
         .lte("slot.date", todayISO)
+        // Tiebreaker unik agar paginasi .range() stabil: tanpa ORDER BY,
+        // PostgreSQL tidak menjamin urutan antar-halaman sehingga baris bisa
+        // terlewat/duplikat dan memunculkan overdue palsu.
+        .order("student_id", { ascending: true })
+        .order("schedule_slot_id", { ascending: true })
         .range(from, from + PAGE - 1);
 
       if (bookingsError) {
@@ -310,6 +315,12 @@ export async function getOverdueWorksheets(branchId = "ALL") {
         .in("student_id", studentIds)
         .gte("worksheet_date", startDate)
         .lte("worksheet_date", todayISO)
+        // Tiebreaker unik agar paginasi .range() stabil: tanpa ORDER BY,
+        // PostgreSQL tidak menjamin urutan antar-halaman sehingga baris
+        // worksheet bisa terlewat dan siswa tampak "belum mengisi laporan"
+        // padahal laporannya sudah ada.
+        .order("student_id", { ascending: true })
+        .order("id", { ascending: true })
         .range(from, from + PAGE - 1);
 
       if (wsError) {
